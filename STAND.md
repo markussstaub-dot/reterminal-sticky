@@ -7,6 +7,9 @@ version: Durchstiche laufen – Bild, Tasten/Touch, Audio per BLE, Spracherkennu
 wartet: Markus wählt den nächsten Schritt (eigene Android-Tastatur fürs Diktat, Visitenkarte in der App, E-Book …)
 ---
 
+Repo: github.com/markussstaub-dot/reterminal-sticky (privat, seit 11.11.2026). `backup/`, Modelle und
+Build-Ausgaben sind per `.gitignore` draußen.
+
 ## Zwei Geräte
 - **Bastel-Sticky** (MAC `xx:xx:xx:xx:xx:xx`, BLE-Name `Sticky-559D`): trägt seit 11.11.2026 die eigene
   Firmware `firmware-ble/`. Die Werks-Firmware dieses Geräts liegt in `backup/`
