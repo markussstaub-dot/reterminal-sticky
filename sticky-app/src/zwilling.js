@@ -37,8 +37,14 @@ export class Zwilling {
 
   get verbunden() { return !!this.verbindung?.verbunden; }
 
-  /** Schickt ein 1-bpp-Bild; liefert Messwerte (ms gesamt, ms Empfang laut Gerät, ms Anzeige). */
-  async sendeBild(bild, { schnell = false, fortschritt = () => {} } = {}) {
+  /** Schickt ein 1-bpp-Bild; liefert Messwerte. Übertragungen laufen strikt nacheinander (Warteschlange). */
+  sendeBild(bild, optionen = {}) {
+    const lauf = (this.schlange ?? Promise.resolve()).catch(() => {}).then(() => this.#sende(bild, optionen));
+    this.schlange = lauf;
+    return lauf;
+  }
+
+  async #sende(bild, { schnell = false, fortschritt = () => {}, bereich = null } = {}) {
     const v = this.verbindung;
     const t0 = performance.now();
     const nutzlast = nutzlastFuer(v.mtu);
@@ -51,8 +57,9 @@ export class Zwilling {
       this.warteSchnell = fertig;
       fertig();
     });
-    await v.schreiben(rahmenStart(bild));
-    const warSchnell = await schnellDa;
+    await v.schreiben(rahmenStart(bild, bereich));
+    // Kleine Teilbilder (Rückmeldung „✓ …“) gehen auch im Ruhetakt in wenigen Rahmen durch
+    const warSchnell = bild.length > 4000 ? await schnellDa : false;
     const tStart = performance.now();
     let gesendet = 0;
     for (const r of rahmen) {
@@ -68,7 +75,7 @@ export class Zwilling {
     await v.schreiben(rahmenEnde(schnell));
     const e = await antwort;
     if (!e.ok) throw new Error(`Sticky meldet Fehler: ${e.err}${e.got != null ? ` (${e.got} Byte angekommen)` : ''}`);
-    this.gesendetCrc = crc32(bild);
+    if (!bereich) this.gesendetCrc = crc32(bild);
     return {
       gesamt: Math.round(performance.now() - t0),
       funk: Math.round(tFunk),

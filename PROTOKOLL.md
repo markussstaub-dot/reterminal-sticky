@@ -14,7 +14,7 @@ Gedacht auch für den Microlino-Knopf: gleiche Rahmen, nur andere Bildgröße im
 ## Rahmen auf BEFEHL (Little Endian)
 | Op | Name | Aufbau |
 |---|---|---|
-| `01` | BILD_START | `01 fmt w:u16 h:u16 len:u32 crc32:u32` – fmt 0 = 1 bpp; 800×480 → len 48000 |
+| `01` | BILD_START | `01 fmt w:u16 h:u16 len:u32 crc32:u32 [x:u16 y:u16]` – fmt 0 = 1 bpp; 800×480 → len 48000. Mit x/y ein **Teilbild** (x, w Vielfache von 8, Teil-Refresh; unter 4 KB ohne Umschalten auf schnell) |
 | `02` | BILD_DATEN | `02 offset:u32 daten…` – Nutzlast = min(MTU−3, 512) − 5, write-no-response |
 | `03` | BILD_ENDE | `03 modus` – 0 = Vollbild-Refresh, 1 = schnell |
 | `10` | PING | Gerät antwortet `{"t":"pong"}` und schickt den Zustand |

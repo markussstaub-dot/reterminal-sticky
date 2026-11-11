@@ -3,8 +3,8 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: Durchstiche laufen – Bild, Tasten/Touch, Audio per BLE, Spracherkennung offline (Text ~0,8 s nach Loslassen) (11.11.2026)
-wartet: Markus wählt den nächsten Schritt (eigene Android-Tastatur fürs Diktat, Visitenkarte in der App, E-Book …)
+version: MVP Runde 1 läuft – Testnotizen per Schnellknopf und Diktat mit GPS, JSONL zum Teilen (11.11.2026)
+wartet: MVP Runde 2 (Bordbuch): Markus gibt die Quelle der Betriebsanleitung frei
 ---
 
 Repo: github.com/markussstaub-dot/reterminal-sticky (privat, seit 11.11.2026). `backup/`, Modelle und
@@ -40,6 +40,17 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   `adb shell "run-as app.sticky.zwilling cp /data/local/tmp/<modell> files/modelle/"` (in Git-Bash vorher
   `MSYS_NO_PATHCONV=1`, sonst verbiegt es den Handy-Pfad). `adb install -r` behält die Modelle
 - Build braucht NDK 28.2.13676358 + CMake 3.31.6 (im Android-SDK). Erster Build ~5 min, danach schnell
+- **MVP 1 Testnotizen** (Firmware 0.3.0): Beim Verbinden zeichnet die App die Seite „Fahrt“ (5 Schnellknöpfe, per App
+  änderbar) und schickt sie. Ein Tipp auf eine Kachel oder ein Diktat (KI halten) ergibt eine Notiz mit Zeit und GPS.
+  Am Sticky erscheint „✓ Bug 14:32“ als **Teilbild** (neu: BILD_START mit x/y, Teil-Refresh). Notizen liegen in
+  `files/notizen/sticky-notizen-JJJJ-MM-TT.jsonl`, Zeilen `{"t","typ":"notiz","quelle":"sticky","art":"knopf|diktat",
+  "knopf"|"text","audio","lat","lon","gen","tempo"}` wie im Bubble-Log-Entwickler-Log; „Notizen teilen“ öffnet Android-Teilen
+- whisper mit gekürztem Fenster kann in eine **Wiederholschleife** kippen (1,9-s-Diktat hing minutenlang). Abhilfe:
+  temperature_inc 0, max_tokens nach Länge, Abbruch nach 15 s, Rand 128 Frames; erkennt die App eine Schleife, rechnet
+  sie mit vollem Fenster nach (~4 s). Danach 3 Diktate in 0,6–0,7 s, kurze Sätze teils schwach erkannt
+- Moduswechsel Fahrt/Bordbuch per **▲ lang** (nicht KI lang: KI halten ist schon Diktat)
+- Offen: Läuft die App im Hintergrund weiter (BLE, Notizen), wenn Bubble Log/Android Auto vorne ist? Bei der
+  ersten Testfahrt prüfen
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

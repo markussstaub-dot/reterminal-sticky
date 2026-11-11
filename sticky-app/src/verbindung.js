@@ -149,8 +149,9 @@ export class SimVerbindung extends Basis {
     const r = lies(rahmen);
     if (r.op === 'start') {
       this.erwartet = r;
+      this.erwartetTeil = r.breite !== BREITE || r.hoehe !== HOEHE;
       this.t0 = performance.now();
-      this.puffer.fill(0);
+      this.puffer = new Uint8Array(r.laenge);
       setTimeout(() => this.onEreignis({ t: 'itvl', v: 6, lat: 0 }), 150);
     } else if (r.op === 'daten' && this.erwartet) {
       this.puffer.set(r.daten, r.offset);
@@ -159,7 +160,8 @@ export class SimVerbindung extends Basis {
       const ok = crc32(this.puffer) === this.erwartet.crc;
       this.erwartet = null;
       await warte(r.schnell ? 400 : 1500); // E-Paper-Refresh
-      if (ok) { this.bild = this.puffer.slice(); this.seite = 'bild'; }
+      if (ok && this.erwartetTeil) { /* Teilbild: der Simulator merkt sich nur die ganze Seite */ }
+      else if (ok) { this.bild = this.puffer.slice(); this.seite = 'bild'; }
       this.onEreignis(ok ? { t: 'img', ok: true, ms, show: r.schnell ? 400 : 1500, mtu: this.mtu, phy: 2 } : { t: 'img', ok: false, err: 'crc' });
       this.#zustand();
     } else if (r.op === 'ping') {

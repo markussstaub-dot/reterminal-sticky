@@ -2,4 +2,6 @@
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
     <external-path name="my_images" path="." />
     <cache-path name="my_cache_images" path="." />
+    <!-- App-Speicher (Directory.Data): Notizen-JSONL und Aufnahmen teilen. Fehlte bei Bubble Log bis 28.10.2026 -->
+    <files-path name="dateien" path="." />
 </paths>

@@ -27,6 +27,8 @@ public class Spracherkennung extends Plugin {
     static native String nativeErkennen(long ctx, float[] samples, int threads, String sprache, int audioCtx);
     static native String nativeSystem();
 
+    // Zusätzliche Encoder-Frames über die Audiolänge hinaus (50 je Sekunde). Zu knapp → Wiederholschleifen
+    static int RAND = 128;
     private final ExecutorService arbeiter = Executors.newSingleThreadExecutor();
     private long ctx = 0;
     private String geladen = null;
@@ -80,8 +82,16 @@ public class Spracherkennung extends Plugin {
                 float[] samples = new float[sb.remaining()];
                 for (int i = 0; i < samples.length; i++) samples[i] = sb.get(i) / 32768f;
                 long t0 = System.currentTimeMillis();
-                int audioCtx = kurz ? Math.min(1500, samples.length / 320 + 64) : 0;
+                int audioCtx = kurz ? Math.min(1500, samples.length / 320 + RAND) : 0;
+                if (call.getInt("audioCtx") != null) audioCtx = call.getInt("audioCtx");   // zum Messen
                 String text = nativeErkennen(ctx, samples, threads, sprache, audioCtx);
+                // Gekürztes Fenster kann in eine Wiederholschleife kippen („Einfach so ein Test Einfach so ein Test …“,
+                // 11.11.2026). Dann einmal mit vollem 30-s-Fenster nachrechnen – langsamer, aber sauber
+                boolean zweiter = false;
+                if (audioCtx > 0 && schleife(text)) {
+                    text = nativeErkennen(ctx, samples, threads, sprache, 0);
+                    zweiter = true;
+                }
                 JSObject r = new JSObject();
                 r.put("text", text.trim());
                 r.put("ms", System.currentTimeMillis() - t0);
@@ -89,11 +99,28 @@ public class Spracherkennung extends Plugin {
                 r.put("modell", modell);
                 r.put("threads", threads);
                 r.put("audioCtx", audioCtx);
+                r.put("zweiterLauf", zweiter);
                 call.resolve(r);
             } catch (Throwable e) {
                 call.reject("Erkennung fehlgeschlagen: " + e.getMessage());
             }
         });
+    }
+
+    /** true, wenn irgendwo dieselbe Wortfolge (2–8 Wörter) dreimal direkt hintereinander steht
+     *  oder ein einzelnes Wort viermal (Wiederholschleife des Decoders) */
+    static boolean schleife(String text) {
+        String[] w = text.trim().toLowerCase().replaceAll("[^\\p{L}\\p{N} ]", " ").trim().split("\\s+");
+        for (int k = 1; k <= 8; k++) {
+            int mal = k == 1 ? 4 : 3;
+            for (int s = 0; s + mal * k <= w.length; s++) {
+                boolean gleich = true;
+                for (int r = 1; r < mal && gleich; r++)
+                    for (int i = 0; i < k && gleich; i++) gleich = w[s + i].equals(w[s + r * k + i]);
+                if (gleich) return true;
+            }
+        }
+        return false;
     }
 
     /** Vorab laden (z. B. beim App-Start), damit die erste Erkennung nicht aufs Laden warten muss */

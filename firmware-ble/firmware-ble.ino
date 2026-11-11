@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.2.0";
+static const char* FW_VERSION = "0.3.0";
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "Markus";
@@ -75,8 +75,11 @@ static volatile uint16_t mtu = 23;
 static volatile uint8_t phy = 1;
 static volatile uint16_t connItvl = 0;
 
-// Bildempfang (Puffer im PSRAM, befüllt im NimBLE-Task, angezeigt in loop())
+// Bildempfang (Puffer im PSRAM, befüllt im NimBLE-Task, angezeigt in loop()).
+// rxBuf = Empfang, imgBuf = was die Seite gerade zeigt (für Teilbilder und zum Wiederherstellen nach Hinweisen)
 static uint8_t* imgBuf;
+static uint8_t* rxBuf;
+static volatile uint16_t imgX = 0, imgY = 0, imgW = 800, imgH = 480;
 static volatile uint32_t imgLen = 0, imgCrc = 0, imgGot = 0, imgT0 = 0, imgT1 = 0, imgFrames = 0;
 static volatile uint16_t dleTx = 27, dleRx = 27;
 static volatile bool imgActive = false, imgReady = false, imgFast = false;
@@ -388,28 +391,31 @@ class CmdCb : public NimBLECharacteristicCallbacks {
         size_t n = v.length();
         if (n < 1) return;
         switch (d[0]) {
-        case OP_IMG_BEGIN:   // 01 fmt w16 h16 len32 crc32
+        case OP_IMG_BEGIN: { // 01 fmt w16 h16 len32 crc32 [x16 y16] – mit x/y ein Teilbild (x, w Vielfache von 8)
             if (n < 14) return;
+            uint16_t w = rd16(d + 2), h = rd16(d + 4);
+            uint16_t x = n >= 18 ? rd16(d + 14) : 0, y = n >= 18 ? rd16(d + 16) : 0;
             imgLen = rd32(d + 6);
             imgCrc = rd32(d + 10);
-            if (d[1] != 0 || rd16(d + 2) != W || rd16(d + 4) != H || imgLen != IMG_BYTES) {
+            if (d[1] != 0 || w == 0 || h == 0 || (w & 7) || (x & 7) || x + w > W || y + h > H || imgLen != (uint32_t)w / 8 * h) {
                 sendEvt("{\"t\":\"img\",\"ok\":false,\"err\":\"format\"}");
                 return;
             }
+            imgX = x; imgY = y; imgW = w; imgH = h;
             imgGot = 0;
             imgFrames = 0;
             imgT0 = millis();
             imgActive = true;
-            wantFast = true;
-            slowAt = 0;
+            if (imgLen > 4000) { wantFast = true; slowAt = 0; }   // kleine Teilbilder gehen auch im Ruhetakt schnell genug
             break;
+        }
         case OP_IMG_DATA: {  // 02 off32 bytes…
             if (!imgActive || n < 5) return;
             imgFrames++;
             uint32_t off = rd32(d + 1);
             size_t k = n - 5;
             if (off + k > imgLen) return;
-            memcpy(imgBuf + off, d + 5, k);
+            memcpy(rxBuf + off, d + 5, k);
             if (off + k > imgGot) imgGot = off + k;
             break;
         }
@@ -495,7 +501,8 @@ void setup() {
     Serial.printf("Akku: %s %d %% %d mV %d mA %s\n", bfgOk ? "BQ27220" : "nicht gefunden", batPct, batMv, batMa, laedt ? "lädt" : "");
 
     imgBuf = (uint8_t*)ps_malloc(IMG_BYTES);
-    if (!imgBuf) Serial.println("Kein PSRAM!");
+    rxBuf = (uint8_t*)ps_malloc(IMG_BYTES);
+    if (!imgBuf || !rxBuf) Serial.println("Kein PSRAM!");
 
     if (!display.begin()) {
         Serial.println(display.lastResult().message);
@@ -524,20 +531,29 @@ void loop() {
     if (imgReady) {
         imgReady = false;
         uint32_t empfang = imgT1 - imgT0;
-        bool ok = imgGot == imgLen && crc32(imgBuf, imgLen) == imgCrc;
-        slowAt = millis() + 1500;              // nach dem Bild wieder träge
+        bool ok = imgGot == imgLen && crc32(rxBuf, imgLen) == imgCrc;
+        bool teil = !(imgX == 0 && imgY == 0 && imgW == W && imgH == H);
+        if (!teil || slowAt) slowAt = millis() + 1500;   // nach dem Bild wieder träge
         if (!ok) {
             char j[96];
             snprintf(j, sizeof j, "{\"t\":\"img\",\"ok\":false,\"err\":\"crc\",\"got\":%lu,\"ms\":%lu}", (unsigned long)imgGot, (unsigned long)empfang);
             sendEvt(j);
         } else {
             uint32_t t0 = millis();
-            display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
-            if (imgFast) display.updateFast(); else display.update();
-            seite = "bild";
-            char j[128];
-            snprintf(j, sizeof j, "{\"t\":\"img\",\"ok\":true,\"ms\":%lu,\"show\":%lu,\"mtu\":%u,\"phy\":%u,\"n\":%lu,\"dle\":%u}",
-                     (unsigned long)empfang, (unsigned long)(millis() - t0), mtu, phy, (unsigned long)imgFrames, dleTx);
+            if (teil) {
+                // Teilbild in die gemerkte Seite einsetzen (zeilenweise, x und w sind Byte-genau) und nur den Bereich auffrischen
+                for (int r = 0; r < imgH; r++) memcpy(imgBuf + (imgY + r) * (W / 8) + imgX / 8, rxBuf + r * (imgW / 8), imgW / 8);
+                display.drawBitmap(imgX, imgY, rxBuf, imgW, imgH, TFT_BLACK, TFT_WHITE);
+                display.updatePartial(imgX, imgY, imgW, imgH);
+            } else {
+                memcpy(imgBuf, rxBuf, IMG_BYTES);
+                display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+                if (imgFast) display.updateFast(); else display.update();
+                seite = "bild";
+            }
+            char j[192];
+            snprintf(j, sizeof j, "{\"t\":\"img\",\"ok\":true,\"ms\":%lu,\"show\":%lu,\"mtu\":%u,\"phy\":%u,\"n\":%lu,\"dle\":%u,\"teil\":%s}",
+                     (unsigned long)empfang, (unsigned long)(millis() - t0), mtu, phy, (unsigned long)imgFrames, dleTx, teil ? "true" : "false");
             sendEvt(j);
             wantState = true;
         }

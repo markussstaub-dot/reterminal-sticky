@@ -48,14 +48,16 @@ export function rgbaZu1bpp(rgba, breite = BREITE, hoehe = HOEHE, schwelle = 128)
 
 const le = (arr, off, wert, n) => { for (let i = 0; i < n; i++) arr[off + i] = (wert >>> (8 * i)) & 0xff; };
 
-export function rahmenStart(bild) {
-  const b = new Uint8Array(14);
+/** BILD_START; mit bereich {x, y, w, h} ein Teilbild (x und w Vielfache von 8). */
+export function rahmenStart(bild, bereich = null) {
+  const b = new Uint8Array(bereich ? 18 : 14);
   b[0] = OP.BILD_START;
   b[1] = 0; // Format 0 = 1 bpp
-  le(b, 2, BREITE, 2);
-  le(b, 4, HOEHE, 2);
+  le(b, 2, bereich ? bereich.w : BREITE, 2);
+  le(b, 4, bereich ? bereich.h : HOEHE, 2);
   le(b, 6, bild.length, 4);
   le(b, 10, crc32(bild), 4);
+  if (bereich) { le(b, 14, bereich.x, 2); le(b, 16, bereich.y, 2); }
   return b;
 }
 
@@ -84,7 +86,8 @@ export const nutzlastFuer = (mtu) => Math.min(mtu - 3, 512) - 5;
 export function lies(rahmen) {
   const r32 = (o) => (rahmen[o] | rahmen[o + 1] << 8 | rahmen[o + 2] << 16 | rahmen[o + 3] << 24) >>> 0;
   switch (rahmen[0]) {
-    case OP.BILD_START: return { op: 'start', breite: rahmen[2] | rahmen[3] << 8, hoehe: rahmen[4] | rahmen[5] << 8, laenge: r32(6), crc: r32(10) };
+    case OP.BILD_START: return { op: 'start', breite: rahmen[2] | rahmen[3] << 8, hoehe: rahmen[4] | rahmen[5] << 8, laenge: r32(6), crc: r32(10),
+      x: rahmen.length >= 18 ? rahmen[14] | rahmen[15] << 8 : 0, y: rahmen.length >= 18 ? rahmen[16] | rahmen[17] << 8 : 0 };
     case OP.BILD_DATEN: return { op: 'daten', offset: r32(1), daten: rahmen.subarray(5) };
     case OP.BILD_ENDE: return { op: 'ende', schnell: rahmen[1] === 1 };
     case OP.PING: return { op: 'ping' };

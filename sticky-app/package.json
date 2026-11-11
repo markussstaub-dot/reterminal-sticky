@@ -14,7 +14,9 @@
     "@capacitor/android": "^8.5.3",
     "@capacitor/clipboard": "^8.0.1",
     "@capacitor/core": "^8.5.3",
-    "@capacitor/filesystem": "^8.1.5"
+    "@capacitor/filesystem": "^8.1.5",
+    "@capacitor/geolocation": "^8.2.4",
+    "@capacitor/share": "^8.0.3"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.3",

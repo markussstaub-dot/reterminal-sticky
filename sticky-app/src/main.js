@@ -2,6 +2,8 @@ import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Clipboard } from '@capacitor/clipboard';
 import { Spracherkennung, MODELLE, pcmBase64 } from './sprache.js';
+import { zeichneFahrt, trefferKnopf, rueckmeldung, STANDARD_KNOEPFE } from './fahrtseite.js';
+import * as notizen from './notizen.js';
 import { BREITE, HOEHE, rgbaZu1bpp, crc32 } from './protokoll.js';
 import { BleVerbindung, SimVerbindung } from './verbindung.js';
 import { Zwilling } from './zwilling.js';
@@ -197,9 +199,10 @@ async function zeigeAufnahme(a) {
     kopieren.onclick = async () => {
       try { await Clipboard.write({ string: r.text }); kopieren.textContent = 'Kopiert ✓'; } catch (e) { eintrag(`Kopieren fehlgeschlagen: ${e.message}`, true); }
     };
-    const zusatz = ` · Text nach ${gesamt} ms (Erkennung ${r.ms} ms${r.ladeMs ? `, Laden ${r.ladeMs} ms` : ''}, ${r.modell.replace('ggml-', '').replace('.bin', '')})`;
+    const zusatz = ` · Text nach ${gesamt} ms (Erkennung ${r.ms} ms${r.ladeMs ? `, Laden ${r.ladeMs} ms` : ''}${r.zweiterLauf ? ', 2. Lauf wegen Wiederholung' : ''}, ${r.modell.replace('ggml-', '').replace('.bin', '')})`;
     werte.textContent += zusatz;
-    console.info('[sticky] sprache', JSON.stringify({ dauer: a.dauerMs, gesamt, erkennung: r.ms, laden: r.ladeMs, modell: r.modell, text: r.text, umweg: Math.round(tErk - a.tLos) }));
+    console.info('[sticky] sprache', JSON.stringify({ dauer: a.dauerMs, gesamt, erkennung: r.ms, laden: r.ladeMs, modell: r.modell, zweiter: r.zweiterLauf, text: r.text, umweg: Math.round(tErk - a.tLos) }));
+    neueNotiz({ art: 'diktat', text: r.text || '', audio: nativ ? `aufnahmen/${name}` : name, dauerMs: a.dauerMs }, a.ort, 'Diktat');
   }).catch((e) => {
     text.className = 'text';
     text.textContent = `Erkennung fehlgeschlagen: ${e.message}`;
@@ -219,14 +222,14 @@ async function zeigeAufnahme(a) {
 }
 
 zwilling.beobachte((art, d) => {
-  if (art === 'aufnahmeLaeuft') $('aufnahmeStatus').hidden = false;
-  if (art === 'aufnahme') { $('aufnahmeStatus').hidden = true; zeigeAufnahme(d); }
+  if (art === 'aufnahmeLaeuft') { $('aufnahmeStatus').hidden = false; ortBeiAufnahme = notizen.standort(); }
+  if (art === 'aufnahme') { $('aufnahmeStatus').hidden = true; d.ort = ortBeiAufnahme; zeigeAufnahme(d); }
   if (art === 'zustand') zeigeZustand(d);
   else if (art === 'log') eintrag(d);
   else if (art === 'getrennt') { eintrag('Verbindung getrennt', true); zeigeVerbindung(); }
   else if (art === 'ereignis') {
     if (d.t === 'key' && d.a === 'down') eintrag(`Taste ${TASTEN[d.k] || d.k} gedrückt`);
-    else if (d.t === 'touch' && d.a === 'down') { eintrag(`Touch bei ${d.x}, ${d.y}`); touchMarke(d.x, d.y); }
+    else if (d.t === 'touch' && d.a === 'down') { eintrag(`Touch bei ${d.x}, ${d.y}`); touchMarke(d.x, d.y); fahrtTouch(d.x, d.y); }
     else if (d.t === 'pong') eintrag('Pong');
     else if (d.t === 'audio' && d.a === 'fehler') { eintrag(`Aufnahme nicht möglich: ${d.err}`, true); $('aufnahmeStatus').hidden = true; }
   }
@@ -250,6 +253,7 @@ function zeigeVerbindung() {
   $('verbinden').textContent = an ? 'Trennen' : 'Verbinden';
   $('verbinden').classList.toggle('haupt', !an);
   $('senden').disabled = !an;
+  $('fahrtZeigen').disabled = !an;
   $('karte').disabled = !an;
   $('simTasten').hidden = !(an && verbindung instanceof SimVerbindung);
   if (!an) $('geraet').textContent = '';
@@ -270,6 +274,7 @@ $('verbinden').onclick = async () => {
     zwilling.anbinden(verbindung);
     await verbindung.verbinden();
     eintrag(`Verbunden mit ${verbindung.name} (MTU ${verbindung.mtu})`);
+    if ($('fahrtAuto').checked) zeigeFahrtSeite().catch((e) => eintrag(e.message, true));
   } catch (e) {
     eintrag(`Verbinden fehlgeschlagen: ${e.message || e}`, true);
   } finally {
@@ -323,6 +328,77 @@ const vorladen = () => Spracherkennung.vorladen({ modell: $('modell').value })
   .catch((e) => eintrag(`Sprachmodell fehlt: ${e.message}`, true));
 $('modell').onchange = () => { try { localStorage.setItem('sticky.modell', $('modell').value); } catch { /* egal */ } vorladen(); };
 vorladen();
+
+// ---- Fahrt: Testnotizen (SPEC „MVP 1“) -----------------------------------------------
+let ortBeiAufnahme = null;
+let fahrtCrc = null;
+const knoepfe = () => {
+  const l = $('knoepfe').value.split(',').map((t) => t.trim()).filter(Boolean).slice(0, 5);
+  return l.length ? l : STANDARD_KNOEPFE;
+};
+try { $('knoepfe').value = localStorage.getItem('sticky.knoepfe') || STANDARD_KNOEPFE.join(', '); } catch { $('knoepfe').value = STANDARD_KNOEPFE.join(', '); }
+try { $('fahrtAuto').checked = localStorage.getItem('sticky.fahrtAuto') !== 'nein'; } catch { /* egal */ }
+$('fahrtAuto').onchange = () => { try { localStorage.setItem('sticky.fahrtAuto', $('fahrtAuto').checked ? 'ja' : 'nein'); } catch { /* egal */ } };
+$('knoepfe').onchange = () => {
+  try { localStorage.setItem('sticky.knoepfe', knoepfe().join(', ')); } catch { /* egal */ }
+  if (fahrtAktiv()) zeigeFahrtSeite().catch((e) => eintrag(e.message, true));
+};
+
+const fahrtAktiv = () => fahrtCrc != null && zwilling.gesendetCrc === fahrtCrc && zwilling.geraet.seite !== 'karte';
+
+async function zeigeFahrtSeite() {
+  zeichneFahrt(g, knoepfe());
+  const bytes = bildBytes();
+  fahrtCrc = crc32(bytes);
+  pruefeAbgleich();
+  const m = await zwilling.sendeBild(bytes, { schnell: false });
+  eintrag(`Fahrt-Seite gezeigt (${m.gesamt} ms)`);
+  pruefeAbgleich();
+}
+$('fahrtZeigen').onclick = () => zeigeFahrtSeite().catch((e) => eintrag(e.message, true));
+
+async function fahrtTouch(x, y) {
+  if (!fahrtAktiv()) return;
+  const i = trefferKnopf(x, y, knoepfe());
+  if (i < 0) return;
+  const k = knoepfe()[i];
+  await neueNotiz({ art: 'knopf', knopf: k }, notizen.standort(), k);
+}
+
+/** Notiz speichern, in der Liste zeigen und am Sticky kurz bestätigen */
+async function neueNotiz(teile, ortPromise, kurz) {
+  const ort = await (ortPromise ?? null);
+  let n;
+  try { n = await notizen.notiere(teile, ort); } catch (e) { eintrag(`Notiz nicht gespeichert: ${e.message}`, true); return; }
+  zeigeNotiz(n, true);
+  if (fahrtAktiv()) {
+    const zeit = new Date(n.t).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    const r = rueckmeldung(`✓ ${kurz} ${zeit}`);
+    zwilling.sendeBild(r.bytes, { bereich: r.bereich }).catch((e) => eintrag(`Rückmeldung: ${e.message}`, true));
+  }
+}
+
+function zeigeNotiz(n, neu = false) {
+  const li = document.createElement('li');
+  li.className = `${n.art}${neu ? ' neu' : ''}`;
+  const kopf = document.createElement('div');
+  kopf.className = 'kopf';
+  const ort = n.lat != null ? `${n.lat.toFixed(5)}, ${n.lon.toFixed(5)} (±${n.gen} m)` : 'ohne GPS';
+  kopf.textContent = `${new Date(n.t).toLocaleTimeString('de-DE')} · ${ort}`;
+  const was = document.createElement('div');
+  was.className = 'was';
+  was.textContent = n.art === 'diktat' ? `🎙 ${n.text || '(nichts erkannt)'}` : n.knopf;
+  li.append(kopf, was);
+  $('notizen').prepend(li);
+}
+
+$('notizenTeilen').onclick = async () => {
+  try {
+    const r = await notizen.teilen();
+    if (r === 'leer') eintrag('Heute noch keine Notizen');
+  } catch (e) { eintrag(`Teilen fehlgeschlagen: ${e.message}`, true); }
+};
+notizen.heute().then((l) => l.reverse().forEach((n) => zeigeNotiz(n)));
 
 muster();
 zeigeVerbindung();

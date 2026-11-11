@@ -11,6 +11,41 @@ Legende: **fest** = entschieden · **Vorschlag** = Claudes Idee, Markus entschei
 - fest: Werks-Firmware kann KI-Notizen, ist aber träge → eigene Firmware auf dem Bastel-Sticky
 - Vorschlag: das zweite Gerät bleibt in Folie, bis klar ist, ob es gebraucht wird
 
+## MVP (Markus, 11.11.2026)
+
+fest: Das MVP sind **zwei Funktionen für den Microlino**, alles andere wartet:
+
+### 1. Testnotizen für Bubble-Log-Testfahrten
+- fest: Notiz per **Schnellknopf** (ein Tipp) oder **Diktat** (Taste halten), App stempelt Zeit + GPS
+- Vorschlag Schnellknöpfe (5, groß, per App änderbar): „Bug“, „Erkennung falsch“, „Ampel“, „holprig“, „Merken“
+- Vorschlag Diktat: whisper Stufe 1 (läuft schon); Audio zusätzlich aufheben, falls der Text danebenliegt
+- Vorschlag **Übergabe ohne Umbau von Bubble Log**: Die Sticky-App schreibt die Notizen als JSONL
+  (gleiches Format wie das Entwickler-Log: Zeit, Lage, Typ, Text) und teilt sie wie die Bubble-Log-Logs.
+  Zusammengeführt wird bei der Auswertung über die Zeitstempel. Eine direkte Einspeisung in Bubble Log
+  kommt erst, wenn sich das bewährt
+- Vorschlag Rückmeldung am Sticky: kurzes „✓ Bug 14:32“ unten in der Ecke (Teil-Refresh), keine Ablenkung
+- fest: Fahrsicherheit – ein Tipp bzw. ein Knopf, nichts lesen während der Fahrt
+
+### 2. Digitales Bordbuch mit Handbuch
+- fest: **Betriebsanleitung** des Microlino zum Blättern; die App rendert die PDF-Seiten für 800×480 und
+  legt sie im Flash ab → lesbar ohne Handy
+- Vorschlag Bedienung: ▲/▼ blättern, Touch aufs Inhaltsverzeichnis springt zum Kapitel, KI-Taste = zurück
+- Vorschlag **Spickzettel-Seiten** vorne: Warnleuchten, Laden (Typ 2/Schuko, 8 A), Reifendruck,
+  Sicherungen, Pannenhilfe/Notfallnummern – in der App als Text gepflegt
+- Vorschlag Startseite im Bordbuch: schlichte Titelseite „Microlino – Bordbuch“ mit Inhaltsverzeichnis,
+  ohne Kennzeichen und ohne QR
+- nicht im MVP: Bordbuch-Seiten aus Bubble Log (Fahrten, Akku, Wartung)
+
+### Umschalten und Betrieb
+- Vorschlag: zwei Modi „Fahrt“ (Schnellknöpfe) und „Bordbuch“ (Lesen), Wechsel per langem Druck auf die KI-Taste
+- Vorschlag: im Auto magnetisch, mit Akku; Halterung/Strom per USB-C erst nach dem MVP
+- fest: **Claude lädt die offizielle Betriebsanleitung** vom Hersteller (passend zum Pioneer; Quelle und
+  Größe vorher Markus nennen). Bleibt privat, nicht im Repo
+- fest: **Claude füllt die Spickzettel** aus dem Handbuch vor, Markus prüft
+
+### Nicht im MVP
+Eigene Tastatur, E-Book allgemein, Benachrichtigungen, Cloud-Stufe, Knopf-Kopplung, Ideensammlung.
+
 ## Architektur: Handy-App als Digital Twin (Markus, 11.11.2026)
 
 Leitbild: **Der Sticky ist ein dünnes Terminal, die App ist sein Zwilling und sein Gehirn.**
