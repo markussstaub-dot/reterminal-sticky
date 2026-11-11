@@ -93,6 +93,14 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
     waren zwei Aufnahmen mit demselben Dateinamen. Jetzt Aufnahmezeit Ortszeit mit ms (`sticky-JJJJ-MM-TT-hh-mm-ss-mmm.wav`)
   - **Wortliste** als whisper-`initial_prompt` (in der App änderbar): Bexbach, Homburg, Tanke, Bubble Log werden mit
     den Testfahrt-Aufnahmen richtig erkannt; kostet +0,1–0,3 s
+- **Wächter und Mikro** (Firmware 0.7.2): Aufnahmen unter 1 s, zu leise (Spitze < −38 dBFS) oder ohne Pegelabstand
+  (< 8 dB zwischen 90 %- und 20 %-Quantil) gehen nicht an whisper, Text „(unklar)“, Ton bleibt; Text nur aus
+  Wortlisten-Wörtern gilt auch als „(unklar)“. Mikro: Verstärkung ×2 statt ×4 (6 von 16 Fahrt-Aufnahmen übersteuert),
+  weicher Begrenzer ab 20000, Hochpass ~120 Hz zweistufig gegen Fahrbrummen. Messung mit kühlem Fold: 14/14
+  Sprachaufnahmen der Testfahrt erkannt in 1,3–3,2 s, die zwei 0,9-s-Schnipsel „(unklar)“. **Achtung:** Läuft parallel
+  ein anderer whisper (z. B. whisper-cli-Tests) oder ist das Fold heiß (Thermal Status ≥ 2), dauert jede Erkennung bis
+  zur 15-s-Notbremse und liefert leeren Text
+- **App in Tabs** (unten: Sticky, Notizen, Bordbuch, Bestellen, Mehr; letzter Tab wird gemerkt), Logik unverändert
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

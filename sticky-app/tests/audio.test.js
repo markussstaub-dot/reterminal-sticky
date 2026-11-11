@@ -44,3 +44,16 @@ test('WAV-Kopf stimmt', () => {
   assert.equal(w.length, 44 + 32000);
   assert.equal(new DataView(w.buffer).getUint32(24, true), 16000);
 });
+
+test('Wächter: kurz, leise, Rauschen, Sprache', async () => {
+  const { sprachPruefung, nurWortliste } = await import('../src/audio.js');
+  const rauschen = (n, a) => Int16Array.from({ length: n }, () => Math.round((Math.random() * 2 - 1) * a));
+  assert.equal(sprachPruefung(rauschen(14400, 3000)).grund, 'zu kurz');                 // 0,9 s
+  assert.equal(sprachPruefung(rauschen(32000, 200)).grund, 'zu leise');                 // 2 s fast still
+  assert.equal(sprachPruefung(rauschen(32000, 3000)).grund, 'keine klare Sprache');     // gleichmäßiges Rauschen
+  const sprache = rauschen(32000, 1500);                                                 // Grundrauschen …
+  for (let i = 8000; i < 24000; i++) sprache[i] = Math.round(12000 * Math.sin(i / 7)); // … plus lauter Abschnitt
+  assert.equal(sprachPruefung(sprache).ok, true);
+  assert.equal(nurWortliste('Bexbach. Bexbach.', 'Microlino, Bexbach, Homburg'), true);
+  assert.equal(nurWortliste('Tanke in Bexbach hat zu', 'Microlino, Bexbach, Tanke'), false);
+});

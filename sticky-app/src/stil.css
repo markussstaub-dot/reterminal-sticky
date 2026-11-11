@@ -87,3 +87,23 @@ select { font: inherit; color: var(--text); background: var(--flaeche); border: 
 #ereignisse li.neu { animation: blitz 1s; }
 #ereignisse li.fehler { color: var(--schlecht); }
 @keyframes blitz { from { background: #5a4a1f; } }
+
+/* ---- Tabs unten (Daumen am Außendisplay des Fold) ---- */
+main { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+.tab { display: grid; gap: 14px; }
+.tab[hidden] { display: none; }
+#tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  background: var(--flaeche); border-top: 1px solid var(--linie);
+  padding: 4px 4px calc(4px + env(safe-area-inset-bottom));
+}
+#tabs button {
+  display: grid; justify-items: center; gap: 2px; min-height: 60px; padding: 6px 2px;
+  background: none; border: 0; border-radius: 12px; color: var(--leise); font-size: 12px;
+}
+#tabs button span { font-size: 22px; line-height: 1; }
+#tabs button.an { color: var(--akzent); background: var(--grund); }
+.werkstatt { border: 1px solid var(--linie); border-radius: 12px; padding: 8px 12px; display: grid; gap: 10px; }
+.werkstatt[open] summary { margin-bottom: 6px; }
+footer { padding: 0; }

@@ -15,6 +15,14 @@ const leinwand = (b, h) => (typeof OffscreenCanvas !== 'undefined' ? new Offscre
 
 /** Home-Karte (Uhrfeld bleibt leer) gedreht in den 800×480-Kontext g; mit beispielZeit zur Vorschau gefüllt */
 export function zeichneHome(g, karte = KARTE, beispielZeit = null) {
+  const c = homeHochkant(karte, beispielZeit);
+  g.fillStyle = '#fff';
+  g.fillRect(0, 0, BREITE, HOEHE);
+  drehe(c, g, PB, PH);
+}
+
+/** Home-Karte hochkant (480×800), wie man sie am Sticky sieht – für die Vorschau in der App */
+export function homeHochkant(karte = KARTE, beispielZeit = null) {
   const c = leinwand(PB, PH);
   const p = c.getContext('2d');
   p.fillStyle = '#fff';
@@ -41,9 +49,7 @@ export function zeichneHome(g, karte = KARTE, beispielZeit = null) {
   p.font = '20px system-ui, sans-serif';
   p.fillText(karte.zeile, PB / 2, qy + n * m + 22);
   if (beispielZeit) zeichneZeit(p, beispielZeit);
-  g.fillStyle = '#fff';
-  g.fillRect(0, 0, BREITE, HOEHE);
-  drehe(c, g, PB, PH);
+  return c;
 }
 
 function zeichneZiffer(p, z, x, y) {

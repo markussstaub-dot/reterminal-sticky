@@ -114,3 +114,35 @@ export function wav(pcm, rate = RATE) {
   new Int16Array(b, 44).set(pcm);
   return new Uint8Array(b);
 }
+
+/**
+ * Lohnt sich die Erkennung? Kurze oder kaum hörbare Aufnahmen lässt whisper sonst Wörter erfinden – mit Wortliste
+ * z. B. „Bexbach. Bexbach.“ aus 0,9 s Rauschen (Messung 11.11.2026). Rahmen à 30 ms, Pegel in dBFS.
+ * → { ok, grund, dauerMs, spitzeDb, grundDb }
+ */
+export function sprachPruefung(pcm, rate = RATE) {
+  const dauerMs = Math.round(pcm.length / rate * 1000);
+  const n = Math.floor(rate * 0.03);
+  const pegel = [];
+  for (let o = 0; o + n <= pcm.length; o += n) {
+    let q = 0;
+    for (let i = o; i < o + n; i++) q += pcm[i] * pcm[i];
+    pegel.push(20 * Math.log10(Math.sqrt(q / n) / 32768 + 1e-9));
+  }
+  pegel.sort((a, b) => a - b);
+  const quantil = (p) => (pegel.length ? pegel[Math.min(pegel.length - 1, Math.floor(p * pegel.length))] : -120);
+  const spitzeDb = Math.round(quantil(0.9)), grundDb = Math.round(quantil(0.2));
+  let grund = null;
+  if (dauerMs < 1000) grund = 'zu kurz';
+  else if (spitzeDb < -38) grund = 'zu leise';
+  else if (spitzeDb - grundDb < 8) grund = 'keine klare Sprache';
+  return { ok: !grund, grund, dauerMs, spitzeDb, grundDb };
+}
+
+/** Besteht der Text nur aus Wörtern der Wortliste, hat whisper die Vorgabe nachgeplappert */
+export function nurWortliste(text, liste) {
+  const norm = (t) => t.toLowerCase().replace(/[^\p{L}\p{N} ]/gu, ' ').split(/\s+/).filter(Boolean);
+  const erlaubt = new Set(norm(liste));
+  const woerter = norm(text);
+  return woerter.length > 0 && woerter.every((w) => erlaubt.has(w));
+}

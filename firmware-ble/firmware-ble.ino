@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.7.1";
+static const char* FW_VERSION = "0.7.3";
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "Markus";
@@ -91,6 +91,7 @@ static volatile int imgSpeichern = -1;   // >= 0: Bild als Bordbuch-Seite n spei
 static volatile int imgRueckSlot = -1;   // >= 0: Teilbild als Rückmeldung für den Offline-Betrieb speichern
 static volatile int imgHome = -1;        // >= 0: Bild als Home-Bild n speichern (0 Karte, 1 Notiz-Seite, 2 Ziffern)
 static char homeVersionNeu[24];
+static volatile int bestellWunsch = -1;   // Zettel, den die App per Fernbedienung zeigen will
 static volatile bool homeVersionDa = false;
 static volatile bool wantFast = false, wantSlow = false, wantKarte = false, wantState = false;
 static volatile uint32_t slowAt = 0;
@@ -354,12 +355,12 @@ static void zeigeKarte() {
 // ---- Zustand -------------------------------------------------------------------
 static void sendState() {
     readBattery();
-    char j[260];
+    char j[400];
     snprintf(j, sizeof j,
-             "{\"fw\":\"%s\",\"seite\":\"%s\",\"bat\":%d,\"mv\":%d,\"ma\":%d,\"chg\":%s,\"mtu\":%u,\"phy\":%u,\"itvl\":%u,\"tp\":\"%ux%u\",\"fahrtv\":\"%08lx\",\"offen\":%d,\"uhr\":%s,\"modus\":\"%s\",\"homev\":\"%s\",\"usb\":%s}",
+             "{\"fw\":\"%s\",\"seite\":\"%s\",\"bat\":%d,\"mv\":%d,\"ma\":%d,\"chg\":%s,\"mtu\":%u,\"phy\":%u,\"itvl\":%u,\"tp\":\"%ux%u\",\"fahrtv\":\"%08lx\",\"offen\":%d,\"uhr\":%s,\"modus\":\"%s\",\"homev\":\"%s\",\"usb\":%s,\"bb\":%d,\"zettel\":%d}",
              FW_VERSION, seite, batPct, batMv, batMa, laedt ? "true" : "false", mtu, phy, connItvl, tpResX, tpResY,
              (unsigned long)fahrtVersion, offeneNotizen, rtcDa ? "true" : "false",
-             modusName(), homeVersion, usbDa() ? "true" : "false");
+             modusName(), homeVersion, usbDa() ? "true" : "false", bbAktuell, bestellAktuell);
     chState->setValue((const uint8_t*)j, strlen(j));
     if (connected) chState->notify();
     Serial.printf("STATE %s\n", j);
@@ -482,7 +483,12 @@ class CmdCb : public NimBLECharacteristicCallbacks {
             }
             break;
         case OP_BB_MODUS:    // 14 modus [seite] – 0 Home, 1 Bordbuch, 2 Notiz
-            if (n > 1 && d[1] <= 3) { modusWunsch = d[1]; if (n > 2) bbWunsch = d[2]; }
+            // Fernbedienung aus der App: Modus und optional Seite (Bordbuch) bzw. Zettel (Bestellen)
+            if (n > 1 && d[1] <= 3) {
+                modusWunsch = d[1];
+                if (n > 2 && d[1] == M_BESTELL) bestellWunsch = d[2];
+                else if (n > 2) bbWunsch = d[2];
+            }
             break;
         case OP_HOME_VERSION: // 1A Text
             if (n > 1 && n - 1 < sizeof homeVersionNeu) { memcpy(homeVersionNeu, d + 1, n - 1); homeVersionNeu[n - 1] = 0; homeVersionDa = true; }

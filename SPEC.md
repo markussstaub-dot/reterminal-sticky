@@ -154,6 +154,19 @@ Rechenarbeit im Handy, KI und Cloud nur als zuschaltbare Zusatzstufe.
 - **„Bitte nicht stören“-Schild**: an der Tür, per Handy oder Kalender umgeschaltet
 - ~~Bestellzettel zum Vorzeigen~~ → umgesetzt, siehe „Home, Modi und Bestellzettel“ unten
 
+### Anregungen aus dem Seeed-Playground (11.11.2026, seeedstudio.com/sticky/playground/firmware/)
+Gesichtet: 38 Firmwares. Passend zu unserer Rolle (Handy-Erweiterung, Microlino), alles geparkt:
+- **Erinnerung aus Diktat** (vgl. RxNudge, Followup): „dran denken, morgen gelbe Tonne“ (kam so auf der
+  Testfahrt!) → App erkennt die Zeitangabe, Sticky piept (Summer GPIO48) und zeigt es zur Zeit an
+- **Makro-Tasten** (vgl. Sticky Stream Deck): Touch-Raster als Fernbedienung fürs Handy: Musik, Navi nach
+  Hause, Anruf, Bubble-Log-Aktionen. Passt zu den Knopf-Sätzen
+- **Microlino-Status beim Parken** (vgl. Bus ETA, TRMNL, Moments): Akku, Reichweite, nächster Ladepunkt aus
+  Bubble Log auf dem Startbild, bleibt ohne Strom stehen
+- **Startbild mit Zitat** (vgl. CrossNext: Highlights auf dem Ruhebild): z. B. ein Spruch aus dem Weisheitsbuch
+- **Handschrift-Notiz** (vgl. Handwriting Pad): Skizze per Finger, als Bild in die Notizen
+- **EPUB-Leser** (CrossPoint/CrossInk, quelloffen): für E-Books allgemein; Lizenz prüfen, eher Ideen übernehmen
+- **Smart Home** (Voice Companion, OpenDisplay, ESPHome): erst mit Home Assistant, eher Sache des EE05
+
 ## Zusammenhang mit dem Microlino-Knopf
 Beide Geräte sind ESP32-S3 mit BLE, beide folgen dem Muster „Handy rechnet, Gerät zeigt“.
 - Vorschlag **Rollen im Microlino**: Der **Knopf** (rundes AMOLED, schnell, leuchtet) zeigt live, was beim
@@ -245,6 +258,17 @@ Modell gerade noch lud). Trefferqualität: Sinn immer richtig, kleine Fehler
 - Satz mit Datum: Zahlen richtig, Monatsname verhört
 → Vorschlag: Eigennamen per `initial_prompt` vorgeben (z. B. „Microlino, Fold“); für Diktat ausreichend,
 Feinschliff optional über Stufe 3 („Aufräumen“ per KI)
+
+**Modellvergleich mit echten Fahrt-Aufnahmen** (11.11.2026, 16 Diktate, whisper-cli am Fold, 6 Threads):
+| Variante | Namen (Bexbach/Homburg/Tanke) | Zeit je Diktat* |
+|---|---|---|
+| small-q5_1, kurzes Fenster (wie App) | falsch | ~1,5–2 s |
+| small-q5_1, volles Fenster | kaum besser | +4 s |
+| **small-q5_1, kurzes Fenster + Wortliste** | **richtig** | ~2–3 s |
+| large-v3-turbo-q5_0 (574 MB) | richtig, etwas natürlicher | 6–60 s, mit kurzem Fenster Wiederholschleifen |
+\*inkl. Modell-Laden der CLI, in der App ~1 s weniger
+→ fest: small + kurzes Fenster + Wortliste aufs Handy. turbo nur für Stufe 2 (Zenbook) bzw. Nachbearbeitung.
+Ton: Am Mund gehalten übersteuert das Mikro (6/16 Aufnahmen kappen); während der Fahrt SNR nur 11–15 dB.
 
 ## MVP umgesetzt (11.11.2026)
 **1. Testnotizen** – läuft. Fahrt-Seite mit 5 Kacheln (in der App änderbar), Tipp = Notiz, KI halten = Diktat;

@@ -184,6 +184,10 @@ static void modusLoop() {
         tone(PIN_BUZZER, 2000, 60);
         if (modus == M_BORDBUCH) bbWunsch = bbToc;   // ▲ 1 s im Bordbuch = Inhaltsverzeichnis
     }
+    if (bestellWunsch >= 0) {
+        if (bestellWunsch < bestellAnzahl) bestellAktuell = bestellWunsch;
+        bestellWunsch = -1;
+    }
     if (modusWunsch >= 0) {
         Modus m = (Modus)modusWunsch;
         modusWunsch = -1;

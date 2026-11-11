@@ -33,6 +33,14 @@ function passeText(g, text, maxB, start) {
 
 /** Zeichnet die Fahrt-Seite (gedreht) in den 800×480-Kontext g */
 export function zeichneFahrt(g, knoepfe = STANDARD_KNOEPFE) {
+  const c = fahrtHochkant(knoepfe);
+  g.fillStyle = '#fff';
+  g.fillRect(0, 0, BREITE, HOEHE);
+  drehe(c, g, PB, PH);
+}
+
+/** Notiz-Seite hochkant (480×800) für die Vorschau */
+export function fahrtHochkant(knoepfe = STANDARD_KNOEPFE) {
   const c = leinwand(PB, PH);
   const p = c.getContext('2d');
   p.fillStyle = '#fff';
@@ -60,11 +68,13 @@ export function zeichneFahrt(g, knoepfe = STANDARD_KNOEPFE) {
   p.textAlign = 'center';
   p.font = '22px system-ui, sans-serif';
   p.fillStyle = '#000';
-  p.fillText('KI halten = Diktat · ▲ 1 s = Bordbuch', PB / 2, 698);
-  g.fillStyle = '#fff';
-  g.fillRect(0, 0, BREITE, HOEHE);
-  drehe(c, g, PB, PH);
+  p.fillText('KI halten = Diktat · KI = Home · ▲ = Bordbuch', PB / 2, 698);
+  return c;
 }
+
+/** Hochkant-Punkt (Vorschau) → Display-Koordinaten des Sticky (Umkehrung von zuHochkant) */
+export const vonHochkant = (px, py) => ({ x: py, y: PB - 1 - px });
+export { RUECK_HOCH };
 
 /** Welcher Knopf liegt unter dem Touch-Punkt (Display-Koordinaten)? → Index oder -1 */
 export function trefferKnopf(x, y, knoepfe = STANDARD_KNOEPFE) {

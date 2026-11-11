@@ -11,12 +11,21 @@ const dateiZeit = (t) => { const d = new Date(t); return `${d.getFullYear()}-${p
 /** GPS nur, wenn das Ereignis frisch ist; was mehr als 60 s zu spät ankommt, bekommt keinen (falschen) Ort */
 const VERSPAETET_MS = 60000;
 const woerter = () => $('woerter').value.trim();
+/** Erkennung mit Wächter: kurze/leise Aufnahmen und nachgeplapperte Wortliste werden „(unklar)“, der Ton bleibt */
+async function erkenne(pcm) {
+  const p = sprachPruefung(pcm);
+  if (!p.ok) return { text: '(unklar)', unklar: p.grund, ms: 0, ladeMs: 0, modell: $('modell').value, pruefung: p };
+  const r = await Spracherkennung.erkennen({ pcm: pcmBase64(pcm), modell: $('modell').value, threads: 6, hinweis: woerter() });
+  if (r.text && nurWortliste(r.text, woerter())) return { ...r, text: '(unklar)', unklar: 'nur Wörter der Liste', pruefung: p };
+  return { ...r, pruefung: p };
+}
 import { zeichneFahrt, trefferKnopf, rueckmeldung, layoutText, STANDARD_KNOEPFE } from './fahrtseite.js';
 import { zeichneHome, zeichneZiffern } from './homeseite.js';
 import { BESTELL_STANDARD, zettel, zeichneZettel } from './bestellung.js';
-import { Aufnahme, wav } from './audio.js';
+import { Aufnahme, wav, sprachPruefung, nurWortliste } from './audio.js';
 import * as notizen from './notizen.js';
 import * as bb from './bordbuch.js';
+import { tabsEinrichten } from './tabs.js';
 import { BREITE, HOEHE, rgbaZu1bpp, crc32 } from './protokoll.js';
 import { BleVerbindung, SimVerbindung } from './verbindung.js';
 import { Zwilling } from './zwilling.js';
@@ -204,19 +213,19 @@ async function zeigeAufnahme(a) {
   if (!nativ) zeile.append(link);
   const modell = $('modell').value;
   const tErk = performance.now();
-  Spracherkennung.erkennen({ pcm: pcmBase64(a.pcm), modell, threads: 6, hinweis: woerter() }).then((r) => {
+  erkenne(a.pcm).then((r) => {
     const gesamt = Math.round(performance.now() - a.tLos);
     text.className = 'text';
     text.textContent = r.text || '(nichts erkannt)';
-    kopieren.disabled = !r.text;
+    kopieren.disabled = !r.text || !!r.unklar;
     kopieren.onclick = async () => {
       try { await Clipboard.write({ string: r.text }); kopieren.textContent = 'Kopiert ✓'; } catch (e) { eintrag(`Kopieren fehlgeschlagen: ${e.message}`, true); }
     };
-    const zusatz = ` · Text nach ${gesamt} ms (Erkennung ${r.ms} ms${r.ladeMs ? `, Laden ${r.ladeMs} ms` : ''}${r.zweiterLauf ? ', 2. Lauf wegen Wiederholung' : ''}, ${r.modell.replace('ggml-', '').replace('.bin', '')})`;
+    const zusatz = r.unklar ? ` · nicht erkannt: ${r.unklar} (${r.pruefung?.dauerMs} ms, Spitze ${r.pruefung?.spitzeDb} dBFS, Grund ${r.pruefung?.grundDb} dBFS)` : ` · Text nach ${gesamt} ms (Erkennung ${r.ms} ms${r.ladeMs ? `, Laden ${r.ladeMs} ms` : ''}${r.zweiterLauf ? ', 2. Lauf wegen Wiederholung' : ''}, ${r.modell.replace('ggml-', '').replace('.bin', '')})`;
     werte.textContent += zusatz;
     console.info('[sticky] sprache', JSON.stringify({ dauer: a.dauerMs, gesamt, erkennung: r.ms, laden: r.ladeMs, modell: r.modell, zweiter: r.zweiterLauf, text: r.text, umweg: Math.round(tErk - a.tLos) }));
     const spaet = Date.now() - a.start - a.dauerMs > VERSPAETET_MS;
-    neueNotiz({ t: a.start, art: 'diktat', text: r.text || '', audio: nativ ? `aufnahmen/${name}` : name, dauerMs: a.dauerMs, ...(spaet ? { offline: true } : {}) },
+    neueNotiz({ t: a.start, art: 'diktat', text: r.text || '', ...(r.unklar ? { unklar: r.unklar } : {}), audio: nativ ? `aufnahmen/${name}` : name, dauerMs: a.dauerMs, ...(spaet ? { offline: true } : {}) },
       spaet ? null : a.ort, 'Diktat');
   }).catch((e) => {
     text.className = 'text';
@@ -520,7 +529,7 @@ async function pufferAbholen() {
         const e = a.ergebnis();
         dauerMs = e.dauerMs;
         pfad = await speichern(`sticky-${dateiZeit(t)}-offline.wav`, wav(e.pcm));
-        text = (await Spracherkennung.erkennen({ pcm: pcmBase64(e.pcm), modell: $('modell').value, threads: 6, hinweis: woerter() })).text || '';
+        text = (await erkenne(e.pcm)).text || '';
         await zwilling.pufferLoeschen(z.audio);
       } catch (e) { eintrag(`Diktat ${z.audio}: ${e.message}`, true); }
       n = await notizen.notiere({ t, art: 'diktat', text, audio: pfad ?? z.audio, dauerMs, offline: true });
@@ -630,10 +639,11 @@ $('bbAufspielen').onclick = async () => {
   }
 };
 $('bbZeigen').onclick = () => zwilling.modusSetzen(1).catch((e) => eintrag(e.message, true));
-window.__sticky = { ladePdf, zwilling, pufferAbholen };   // zum Prüfen per WebView-Fernsteuerung (adb)
+window.__sticky = { ladePdf, zwilling, pufferAbholen, erkenne, sprachPruefung };   // zum Prüfen per WebView-Fernsteuerung (adb)
 
 try { $('woerter').value = localStorage.getItem('sticky.woerter') ?? WOERTER_STANDARD; } catch { $('woerter').value = WOERTER_STANDARD; }
 $('woerter').onchange = () => { try { localStorage.setItem('sticky.woerter', $('woerter').value); } catch { /* egal */ } };
 
+tabsEinrichten();
 muster();
 zeigeVerbindung();

@@ -14,109 +14,142 @@
   </header>
 
   <main>
-    <section class="leiste">
-      <button id="verbinden" class="haupt">Verbinden</button>
-      <label id="simWahl" class="schalter" hidden><input type="checkbox" id="sim"> Simulator</label>
-      <span id="geraet" class="klein"></span>
-    </section>
+    <!-- ======================= Sticky ======================= -->
+    <div class="tab" data-tab="sticky">
+      <section class="leiste">
+        <button id="verbinden" class="haupt">Verbinden</button>
+        <label id="simWahl" class="schalter" hidden><input type="checkbox" id="sim"> Simulator</label>
+        <span id="geraet" class="klein"></span>
+      </section>
 
-    <section id="fahrt">
-      <h2>Sticky · Modus und Notizen</h2>
-      <div class="leiste">
-        <button id="homeZeigen" disabled>Home</button>
-        <button id="fahrtZeigen" disabled>Notiz</button>
-        <button id="bbZeigen" disabled>Bordbuch</button>
-        <button id="notizenTeilen">Notizen teilen</button>
-      </div>
-      <div class="leiste">
-        <input id="knoepfe" placeholder="Schnellknöpfe, durch Komma getrennt">
-      </div>
-      <ol id="notizen"></ol>
-    </section>
+      <section>
+        <h2>Modus am Sticky</h2>
+        <div class="leiste">
+          <button id="homeZeigen" disabled>Home</button>
+          <button id="fahrtZeigen" disabled>Notiz</button>
+          <button id="bbZeigen" disabled>Bordbuch</button>
+        </div>
+        <p id="aufnahmeStatus" class="klein" hidden>● Aufnahme läuft …</p>
+      </section>
 
-    <section id="bestellung">
-      <h2>Bestellzettel <span class="klein" style="text-transform:none;letter-spacing:0">– am Sticky ▼ auf Home</span></h2>
-      <div class="leiste">
-        <button id="bestellZeigen" disabled>Bestellzettel zeigen</button>
-      </div>
-      <details>
-        <summary class="klein">Bestellzettel bearbeiten (bis zu 3, „## Titel“ beginnt einen Zettel)</summary>
-        <textarea id="bestellText" rows="12" spellcheck="false"></textarea>
+      <section class="vorschau">
+        <h2>Vorschau</h2>
+        <div class="rahmen">
+          <canvas id="bild" width="800" height="480"></canvas>
+          <canvas id="ueber" width="800" height="480"></canvas>
+        </div>
+        <div class="unter">
+          <span id="abgleich" class="pille">Entwurf</span>
+          <div id="balken"><div></div></div>
+        </div>
+      </section>
+
+      <section id="simTasten" class="werkzeuge" hidden>
+        <span class="klein">Simulierter Sticky:</span>
+        <button data-taste="up">▲</button>
+        <button data-taste="down">▼</button>
+        <button data-taste="ki">KI</button>
+      </section>
+
+      <details class="werkstatt">
+        <summary class="klein">Werkstatt: auf die Vorschau zeichnen und senden</summary>
+        <section class="werkzeuge">
+          <button data-werkzeug="stift" class="an">Stift</button>
+          <button data-werkzeug="radierer">Radierer</button>
+          <button id="muster">Muster</button>
+          <button id="leeren">Leeren</button>
+        </section>
+        <section class="werkzeuge">
+          <input id="text" placeholder="Text für den Sticky" maxlength="60">
+          <button id="textSetzen">Text</button>
+        </section>
+        <section class="leiste">
+          <button id="senden" class="haupt" disabled>Senden</button>
+          <label class="schalter"><input type="checkbox" id="schnell"> schnell</label>
+          <button id="karte" disabled>Visitenkarte</button>
+        </section>
+      </details>
+    </div>
+
+    <!-- ======================= Notizen ======================= -->
+    <div class="tab" data-tab="notizen" hidden>
+      <section id="fahrt">
+        <div class="leiste">
+          <button id="notizenTeilen" class="haupt">Notizen teilen</button>
+        </div>
+        <details>
+          <summary class="klein">Schnellknöpfe der Notiz-Seite</summary>
+          <div class="leiste">
+            <input id="knoepfe" placeholder="Schnellknöpfe, durch Komma getrennt">
+          </div>
+        </details>
+        <h2>Heute</h2>
+        <ol id="notizen"></ol>
+      </section>
+      <section>
+        <h2>Aufnahmen <span class="klein" style="text-transform:none;letter-spacing:0">– KI-Taste am Sticky halten</span></h2>
+        <ol id="aufnahmen"></ol>
+      </section>
+    </div>
+
+    <!-- ======================= Bordbuch ======================= -->
+    <div class="tab" data-tab="bordbuch" hidden>
+      <section id="bordbuch">
+        <div class="leiste">
+          <label class="dateiwahl"><input type="file" id="pdfDatei" accept="application/pdf" hidden><span>Handbuch-PDF wählen</span></label>
+          <span id="pdfName" class="klein">kein Handbuch</span>
+        </div>
+        <div class="leiste">
+          <button id="bbAufspielen" disabled>Bordbuch aufspielen</button>
+        </div>
+        <p id="bbStatus" class="klein"></p>
+        <details>
+          <summary class="klein">Spickzettel bearbeiten</summary>
+          <textarea id="spickzettel" rows="18" spellcheck="false"></textarea>
+          <button id="spickStandard">Standard wiederherstellen</button>
+        </details>
+      </section>
+    </div>
+
+    <!-- ======================= Bestellen ======================= -->
+    <div class="tab" data-tab="bestellen" hidden>
+      <section id="bestellung">
+        <p class="klein">Am Sticky: ▼ auf Home, dann ▼/▲ blättern, KI zurück.</p>
+        <div class="leiste">
+          <button id="bestellZeigen" disabled>Bestellzettel zeigen</button>
+        </div>
+        <h2>Zettel (bis zu 3, „## Titel“ beginnt einen)</h2>
+        <textarea id="bestellText" rows="14" spellcheck="false"></textarea>
         <button id="bestellStandard">Standard wiederherstellen</button>
-      </details>
-    </section>
+      </section>
+    </div>
 
-    <section id="bordbuch">
-      <h2>Bordbuch</h2>
-      <div class="leiste">
-        <label class="dateiwahl"><input type="file" id="pdfDatei" accept="application/pdf" hidden><span>Handbuch-PDF wählen</span></label>
-        <span id="pdfName" class="klein">kein Handbuch</span>
-      </div>
-      <div class="leiste">
-        <button id="bbAufspielen" disabled>Bordbuch aufspielen</button>
-      </div>
-      <p id="bbStatus" class="klein"></p>
-      <details>
-        <summary class="klein">Spickzettel bearbeiten</summary>
-        <textarea id="spickzettel" rows="18" spellcheck="false"></textarea>
-        <button id="spickStandard">Standard wiederherstellen</button>
-      </details>
-    </section>
-
-    <section class="vorschau">
-      <div class="rahmen">
-        <canvas id="bild" width="800" height="480"></canvas>
-        <canvas id="ueber" width="800" height="480"></canvas>
-      </div>
-      <div class="unter">
-        <span id="abgleich" class="pille">Entwurf</span>
-        <div id="balken"><div></div></div>
-      </div>
-    </section>
-
-    <section class="werkzeuge">
-      <button data-werkzeug="stift" class="an">Stift</button>
-      <button data-werkzeug="radierer">Radierer</button>
-      <button id="muster">Muster</button>
-      <button id="leeren">Leeren</button>
-    </section>
-    <section class="werkzeuge">
-      <input id="text" placeholder="Text für den Sticky" maxlength="60">
-      <button id="textSetzen">Text</button>
-    </section>
-
-    <section class="leiste">
-      <button id="senden" class="haupt" disabled>Senden</button>
-      <label class="schalter"><input type="checkbox" id="schnell"> schnell</label>
-      <button id="karte" disabled>Visitenkarte</button>
-    </section>
-
-    <section id="simTasten" class="werkzeuge" hidden>
-      <span class="klein">Simulierter Sticky:</span>
-      <button data-taste="up">▲</button>
-      <button data-taste="down">▼</button>
-      <button data-taste="ki">KI</button>
-    </section>
-
-    <section>
-      <h2>Aufnahmen <span class="klein" style="text-transform:none;letter-spacing:0">– KI-Taste am Sticky halten</span></h2>
-      <div class="leiste">
-        <label class="schalter">Erkennung <select id="modell"></select></label>
-      </div>
-      <div class="leiste">
-        <input id="woerter" placeholder="Wortliste für die Erkennung (Eigennamen, durch Komma getrennt)">
-      </div>
-      <p id="aufnahmeStatus" class="klein" hidden>● Aufnahme läuft …</p>
-      <ol id="aufnahmen"></ol>
-    </section>
-
-    <section>
-      <h2>Ereignisse vom Sticky</h2>
-      <ol id="ereignisse"></ol>
-    </section>
+    <!-- ======================= Mehr ======================= -->
+    <div class="tab" data-tab="mehr" hidden>
+      <section>
+        <h2>Spracherkennung</h2>
+        <div class="leiste">
+          <label class="schalter">Modell <select id="modell"></select></label>
+        </div>
+        <div class="leiste">
+          <input id="woerter" placeholder="Wortliste für die Erkennung (Eigennamen, durch Komma getrennt)">
+        </div>
+      </section>
+      <section>
+        <h2>Ereignisse vom Sticky</h2>
+        <ol id="ereignisse"></ol>
+      </section>
+      <footer><span id="messung"></span><span id="version"></span></footer>
+    </div>
   </main>
 
-  <footer><span id="messung"></span><span id="version"></span></footer>
+  <nav id="tabs">
+    <button data-ziel="sticky" class="an"><span>◧</span>Sticky</button>
+    <button data-ziel="notizen"><span>✎</span>Notizen</button>
+    <button data-ziel="bordbuch"><span>☰</span>Bordbuch</button>
+    <button data-ziel="bestellen"><span>☕</span>Bestellen</button>
+    <button data-ziel="mehr"><span>⋯</span>Mehr</button>
+  </nav>
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>

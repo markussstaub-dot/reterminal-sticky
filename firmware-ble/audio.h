@@ -22,7 +22,8 @@ static volatile bool audioLaeuft = false, audioStopp = false, audioFertig = fals
 static volatile uint32_t audioPakete = 0, audioVerworfen = 0, audioMs = 0;
 static volatile int audioSpitze = 0;
 static int micKanal = 0;      // 0 = links, 1 = rechts (Selbsttest)
-static int micVerstaerkung = 4;
+// ×2 statt ×4: nah am Mund übersteuerten 6 von 16 Fahrt-Aufnahmen (0 dBFS); dazu weicher Begrenzer unten
+static int micVerstaerkung = 2;
 static volatile int indikator = 0;  // 1 = einblenden, 2 = ausblenden (erledigt loop())
 
 // ---- IMA-ADPCM ---------------------------------------------------------------------------
@@ -114,7 +115,9 @@ static void audioTask(void*) {
     static uint8_t paket[AUDIO_PAKET];
     AdpcmZustand z;
     uint16_t seq = 0;
-    float dcX = 0, dcY = 0;   // Gleichanteil-Filter (Hochpass ~20 Hz)
+    // Hochpass ~120 Hz, zweistufig (12 dB/Oktave): Gleichanteil weg und Fahrgeräusch-Brummen gedämpft
+    const float HP = 0.954f;   // exp(-2π·120/16000)
+    float dcX = 0, dcY = 0, hpX = 0, hpY = 0;
     bool erstes = true;
     int vorlauf = 4;          // erste 120 ms verwerfen: Mikro und Filter schwingen ein (Knacks, gemessen 11.11.2026)
     uint32_t t0 = millis();
@@ -127,10 +130,16 @@ static void audioTask(void*) {
         paket[2] = z.pred & 0xFF; paket[3] = (z.pred >> 8) & 0xFF; paket[4] = z.index;
         for (int i = 0; i < AUDIO_SAMPLES; i++) {
             float x = roh[2 * i + micKanal];
-            if (erstes) { dcX = x; erstes = false; }
-            dcY = x - dcX + 0.992f * dcY;
+            if (erstes) { dcX = x; hpX = 0; erstes = false; }
+            dcY = x - dcX + HP * dcY;
             dcX = x;
-            int s = (int)(dcY * micVerstaerkung);
+            hpY = dcY - hpX + HP * hpY;
+            hpX = dcY;
+            float v = hpY * micVerstaerkung;
+            // weicher Begrenzer: oberhalb von 20000 nur noch ein Viertel der Steigung, dann hart bei ±32767
+            float a = fabsf(v);
+            if (a > 20000.0f) v = copysignf(20000.0f + (a - 20000.0f) * 0.25f, v);
+            int s = (int)v;
             if (s > 32767) s = 32767;
             if (s < -32768) s = -32768;
             if (!vorlauf && abs(s) > audioSpitze) audioSpitze = abs(s);
