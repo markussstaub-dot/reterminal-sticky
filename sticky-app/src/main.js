@@ -26,6 +26,7 @@ import { Aufnahme, wav, sprachPruefung, nurWortliste } from './audio.js';
 import * as notizen from './notizen.js';
 import * as bb from './bordbuch.js';
 import { tabsEinrichten } from './tabs.js';
+import { spiegelEinrichten } from './spiegel.js';
 import { BREITE, HOEHE, rgbaZu1bpp, crc32 } from './protokoll.js';
 import { BleVerbindung, SimVerbindung } from './verbindung.js';
 import { Zwilling } from './zwilling.js';
@@ -248,11 +249,12 @@ async function zeigeAufnahme(a) {
 zwilling.beobachte((art, d) => {
   if (art === 'aufnahmeLaeuft') { $('aufnahmeStatus').hidden = false; ortBeiAufnahme = notizen.standort(); }
   if (art === 'aufnahme') { $('aufnahmeStatus').hidden = true; d.ort = ortBeiAufnahme; zeigeAufnahme(d); }
-  if (art === 'zustand') zeigeZustand(d);
+  if (art === 'zustand') { zeigeZustand(d); if (d.modus) spiegelSetze({ modus: d.modus, bb: d.bb ?? 0, zettel: d.zettel ?? 0, verbunden: true }); }
   else if (art === 'log') eintrag(d);
   else if (art === 'getrennt') {
     eintrag(autoVerbinden ? 'Verbindung weg – versuche alle 15 s neu' : 'Verbindung getrennt', true);
     console.info('[sticky] getrennt');
+    spiegelSetze({ verbunden: false, aufnahme: false });
     zeigeVerbindung();
     if (autoVerbinden && !wiederTimer) wiederTimer = setTimeout(wiederverbinden, 3000);
   }
@@ -260,8 +262,9 @@ zwilling.beobachte((art, d) => {
     if (d.t === 'key' && d.a === 'down') eintrag(`Taste ${TASTEN[d.k] || d.k} gedrückt`);
     else if (d.t === 'touch' && d.a === 'down') { eintrag(`Touch bei ${d.x}, ${d.y}`); touchMarke(d.x, d.y); fahrtTouch(d.x, d.y, d.ms); }
     else if (d.t === 'pong') eintrag('Pong');
-    else if (d.t === 'modus') { stickyModus = d.m; imBordbuch = d.m === 'bordbuch'; eintrag(`Modus: ${{ home: 'Home', notiz: 'Notiz', bordbuch: 'Bordbuch', bestell: `Bestellzettel ${(d.zettel ?? 0) + 1}` }[d.m] ?? d.m}`); }
-    else if (d.t === 'seite') $('bbStatus').textContent = `Sticky zeigt Bordbuch-Seite ${d.n + 1} von ${d.von}`;
+    else if (d.t === 'modus') { spiegelSetze({ modus: d.m, ...(d.zettel != null ? { zettel: d.zettel } : {}), verbunden: true }); stickyModus = d.m; imBordbuch = d.m === 'bordbuch'; eintrag(`Modus: ${{ home: 'Home', notiz: 'Notiz', bordbuch: 'Bordbuch', bestell: `Bestellzettel ${(d.zettel ?? 0) + 1}` }[d.m] ?? d.m}`); }
+    else if (d.t === 'seite') { $('bbStatus').textContent = `Sticky zeigt Bordbuch-Seite ${d.n + 1} von ${d.von}`; spiegelSetze({ bb: d.n }); }
+    else if (d.t === 'audio' && (d.a === 'start' || d.a === 'stop')) spiegelSetze({ aufnahme: d.a === 'start' });
     else if (d.t === 'bordbuch') eintrag(`Bordbuch im Flash: ${d.seiten} Seiten, ${d.belegtKB} KB`);
     else if (d.t === 'audio' && d.a === 'fehler') { eintrag(`Aufnahme nicht möglich: ${d.err}`, true); $('aufnahmeStatus').hidden = true; }
   }
@@ -444,6 +447,7 @@ async function neueNotiz(teile, ortPromise, kurz) {
   if (stickyModus === 'notiz' || stickyModus === 'home') {   // Rückmeldefeld gibt es auf beiden Seiten
     const zeit = new Date(n.t).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
     const r = rueckmeldung(`✓ ${kurz} ${zeit}`);
+    spiegel.meldung(`✓ ${kurz} ${zeit}`);
     zwilling.sendeBild(r.bytes, { bereich: r.bereich }).catch((e) => eintrag(`Rückmeldung: ${e.message}`, true));
   }
 }
@@ -593,7 +597,7 @@ async function bordbuchBauen(status) {
       const teile = await bb.pdfAusschnitte(pdf, p);
       teile.forEach((t, i) => {
         ersteVon[p] ??= hb.length;
-        hb.push({ bytes: bb.dithern(bb.marke(t.daten, `S. ${p} · ${i + 1}/${teile.length}`).data), pdfSeite: p });
+        hb.push({ bytes: bb.dithern(bb.marke(t.daten, `S. ${p} · ${i + 1}/${teile.length}`).data), pdfSeite: p, teil: i, von: teile.length });
       });
     }
   }
@@ -609,6 +613,9 @@ async function bordbuchBauen(status) {
   spick.forEach((s, i) => { bb.zeichneTextseite(g, s, `Spickzettel ${i + 1}/${nSpick} · ${2 + i}/${gesamt}`); seiten.push(bildBytes()); });
   for (const h of hb) seiten.push(h.bytes);
   const index = [`seiten=${seiten.length}`, 'toc=0', ...felder.map((f) => `e ${f.x0} ${f.y0} ${f.x1} ${f.y1} ${f.seite}`)].join('\n') + '\n';
+  // Plan für die Vorschau merken: welche Seite ist was (die Bilder rendert der Spiegel bei Bedarf neu)
+  const plan = { links, rechts, felder, seiten: [{ a: 'inhalt' }, ...spick.map((_, i) => ({ a: 'spick', i, n: nSpick, von: gesamt })), ...hb.map((h) => ({ a: 'pdf', p: h.pdfSeite, t: h.teil, n: h.von }))] };
+  try { localStorage.setItem('sticky.bbplan', JSON.stringify(plan)); } catch { /* egal */ }
   bb.zeichneInhalt(g, links, rechts);   // Vorschau zeigt am Ende das Inhaltsverzeichnis
   pruefeAbgleich();
   return { seiten, index };
@@ -643,6 +650,50 @@ window.__sticky = { ladePdf, zwilling, pufferAbholen, erkenne, sprachPruefung };
 
 try { $('woerter').value = localStorage.getItem('sticky.woerter') ?? WOERTER_STANDARD; } catch { $('woerter').value = WOERTER_STANDARD; }
 $('woerter').onchange = () => { try { localStorage.setItem('sticky.woerter', $('woerter').value); } catch { /* egal */ } };
+
+// ---- Spiegel: Vorschau folgt dem Sticky, Tipps und ▲▼ steuern ihn ----------------------
+const bbCache = new Map();
+async function bordbuchSeite(n) {
+  let plan = null;
+  try { plan = JSON.parse(localStorage.getItem('sticky.bbplan') || 'null'); } catch { /* egal */ }
+  const e = plan?.seiten?.[n];
+  if (!e) return null;
+  if (bbCache.has(n)) return bbCache.get(n);
+  const c = document.createElement('canvas');
+  c.width = BREITE; c.height = HOEHE;
+  const h = c.getContext('2d', { willReadFrequently: true });
+  let bild = null;
+  if (e.a === 'inhalt') { bb.zeichneInhalt(h, plan.links, plan.rechts); bild = h.getImageData(0, 0, BREITE, HOEHE); }
+  else if (e.a === 'spick') {
+    const s = bb.spickzettelSeiten($('spickzettel').value)[e.i];
+    if (s) { bb.zeichneTextseite(h, s, `Spickzettel ${e.i + 1}/${e.n} · ${n + 1}/${e.von}`); bild = h.getImageData(0, 0, BREITE, HOEHE); }
+  } else if (e.a === 'pdf' && pdf) {
+    const teile = await bb.pdfAusschnitte(pdf, e.p);
+    if (teile[e.t]) bild = bb.marke(teile[e.t].daten, `S. ${e.p} · ${e.t + 1}/${teile.length}`);
+  }
+  if (bild) { bbCache.set(n, bild); if (bbCache.size > 12) bbCache.delete(bbCache.keys().next().value); }
+  return bild;
+}
+const spiegel = spiegelEinrichten({
+  canvas: $('spiegel'),
+  hinweisEl: $('spiegelHinweis'),
+  quelle: {
+    knoepfe,
+    bestellText: () => $('bestellText').value,
+    bordbuchSeite,
+    inhaltsFelder: () => { try { return JSON.parse(localStorage.getItem('sticky.bbplan') || 'null')?.felder ?? []; } catch { return []; } },
+  },
+  befehl: (m, seite) => { if (zwilling.verbunden) zwilling.modusSetzen(m, seite).catch((e) => eintrag(e.message, true)); },
+  notizTipp: (x, y) => fahrtTouch(x, y),
+});
+/** Spiegel-Zustand setzen und merken (nach dem App-Start zeigt die Vorschau den letzten Stand) */
+function spiegelSetze(teile) {
+  spiegel.setze(teile);
+  try { const { modus, bb: s, zettel } = spiegel.zustand(); localStorage.setItem('sticky.spiegel', JSON.stringify({ modus, bb: s, zettel })); } catch { /* egal */ }
+}
+try { const alt = JSON.parse(localStorage.getItem('sticky.spiegel') || 'null'); if (alt) spiegel.setze({ ...alt, verbunden: false }); else spiegel.setze({}); } catch { spiegel.setze({}); }
+$('fernAuf').onclick = () => spiegel.taste('up');
+$('fernAb').onclick = () => spiegel.taste('down');
 
 tabsEinrichten();
 muster();

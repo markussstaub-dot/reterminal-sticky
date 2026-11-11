@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.7.3";
+static const char* FW_VERSION = "0.7.4";
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "Markus";
@@ -274,9 +274,12 @@ static void touchPoll() {
 }
 
 // ---- Tasten ------------------------------------------------------------------
-struct Taste { int pin; const char* name; int ruhe; int stand; uint32_t seit; };
+// Tasten: Abfrage in loop() plus Interrupt, der einen Druck festhält. Während eines E-Paper-Refreshs (bis 2,3 s)
+// steht loop(); ein kurzer Druck in dieser Zeit ging sonst verloren („Navigation hakt“, 11.11.2026).
+struct Taste { int pin; const char* name; int ruhe; int stand; uint32_t seit; volatile bool gedrueckt; };
 static Taste tasten[] = { {PIN_BTN_PWR, "ki"}, {PIN_BTN_UP, "up"}, {PIN_BTN_DOWN, "down"} };
 
+static void IRAM_ATTR tasteIsr(void* arg) { ((Taste*)arg)->gedrueckt = true; }
 static void tastenInit() {
     for (auto& t : tasten) pinMode(t.pin, INPUT_PULLUP);
     delay(5);
@@ -286,6 +289,8 @@ static void tastenInit() {
         t.stand = t.ruhe;
         t.seit = millis();
         Serial.printf("Taste %s GPIO%d Ruhepegel %d\n", t.name, t.pin, t.ruhe);
+        t.gedrueckt = false;
+        attachInterruptArg(digitalPinToInterrupt(t.pin), tasteIsr, &t, t.ruhe == HIGH ? FALLING : RISING);
     }
 }
 static void startAdvertising(bool schnell);
@@ -293,11 +298,27 @@ static void tasteAktion(const char* name, bool gedrueckt);
 static void tastenPoll() {
     for (auto& t : tasten) {
         int v = digitalRead(t.pin);
+        // Druck, der komplett in eine Blockade fiel (gedrückt und wieder los, ohne dass loop() lief): nachholen
+        if (t.gedrueckt && v == t.ruhe && t.stand == t.ruhe) {
+            t.gedrueckt = false;
+            char j[80];
+            snprintf(j, sizeof j, "{\"t\":\"key\",\"k\":\"%s\",\"a\":\"down\",\"nachgeholt\":true}", t.name);
+            sendEvt(j);
+            tone(PIN_BUZZER, 2700, 30);
+            if (!connected) startAdvertising(true);
+            tasteAktion(t.name, true);
+            snprintf(j, sizeof j, "{\"t\":\"key\",\"k\":\"%s\",\"a\":\"up\"}", t.name);
+            sendEvt(j);
+            tasteAktion(t.name, false);
+            t.seit = millis();
+            continue;
+        }
         if (v == t.stand) continue;
         if (millis() - t.seit < 30) continue;  // entprellen
         t.stand = v;
         t.seit = millis();
         bool gedrueckt = v != t.ruhe;
+        t.gedrueckt = false;   // regulär erkannt, nicht noch einmal nachholen
         char j[64];
         snprintf(j, sizeof j, "{\"t\":\"key\",\"k\":\"%s\",\"a\":\"%s\"}", t.name, gedrueckt ? "down" : "up");
         sendEvt(j);

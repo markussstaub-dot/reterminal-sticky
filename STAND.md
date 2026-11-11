@@ -101,6 +101,13 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   ein anderer whisper (z. B. whisper-cli-Tests) oder ist das Fold heiß (Thermal Status ≥ 2), dauert jede Erkennung bis
   zur 15-s-Notbremse und liefert leeren Text
 - **App in Tabs** (unten: Sticky, Notizen, Bordbuch, Bestellen, Mehr; letzter Tab wird gemerkt), Logik unverändert
+- **Vorschau = Spiegel des Sticky + Fernbedienung** (Firmware 0.7.3/0.7.4, `sticky-app/src/spiegel.js`): Der Sticky meldet
+  nur Modus, Bordbuch-Seite und Zettel (Ereignisse `modus`/`seite`, Zustand `bb`/`zettel`); die App zeichnet das Bild
+  selbst (Home/Notiz hochkant mit laufender Uhr, Bestellzettel, Bordbuch aus dem gemerkten Plan `sticky.bbplan`,
+  der beim Aufspielen entsteht). Ohne Verbindung: letzter Stand + „nicht verbunden“. Fernbedienung: ▲/▼ und
+  Modus-Knöpfe senden `MODUS m [seite]`, Tipp auf Notiz-Streifen = Notiz, Tipp im Bordbuch-Inhalt = Kapitel
+- **Navigation hakte**: Während eines E-Paper-Refreshs (bis 2,3 s) steht loop(), kurze Drücke gingen verloren. Jetzt
+  hält ein Interrupt je Taste den Druck fest und loop() holt ihn nach; Moduswechsel quittiert ein heller Doppelklick
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

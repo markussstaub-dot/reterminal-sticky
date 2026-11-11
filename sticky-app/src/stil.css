@@ -107,3 +107,10 @@ main { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 .werkstatt { border: 1px solid var(--linie); border-radius: 12px; padding: 8px 12px; display: grid; gap: 10px; }
 .werkstatt[open] summary { margin-bottom: 6px; }
 footer { padding: 0; }
+
+/* ---- Spiegel des Sticky ---- */
+.spiegelrahmen { background: #111; padding: 10px; border-radius: 14px; border: 1px solid var(--linie); display: grid; place-items: center; }
+#spiegel { width: 100%; height: auto; background: var(--papier); border-radius: 4px; image-rendering: auto; cursor: pointer; }
+#spiegel.hochkant { width: auto; max-width: 100%; height: min(62vh, 560px); }
+.spiegel .unter button { min-width: 56px; }
+.spiegel .unter .pille { flex: 1; text-align: center; }

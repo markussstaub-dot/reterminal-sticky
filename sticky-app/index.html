@@ -32,15 +32,13 @@
         <p id="aufnahmeStatus" class="klein" hidden>● Aufnahme läuft …</p>
       </section>
 
-      <section class="vorschau">
-        <h2>Vorschau</h2>
-        <div class="rahmen">
-          <canvas id="bild" width="800" height="480"></canvas>
-          <canvas id="ueber" width="800" height="480"></canvas>
-        </div>
+      <section class="spiegel">
+        <h2>Am Sticky <span class="klein" style="text-transform:none;letter-spacing:0">– tippen und ▲▼ steuern den Sticky</span></h2>
+        <div class="spiegelrahmen"><canvas id="spiegel" width="800" height="480"></canvas></div>
         <div class="unter">
-          <span id="abgleich" class="pille">Entwurf</span>
-          <div id="balken"><div></div></div>
+          <span id="spiegelHinweis" class="pille">nicht verbunden</span>
+          <button id="fernAuf" aria-label="hoch">▲</button>
+          <button id="fernAb" aria-label="runter">▼</button>
         </div>
       </section>
 
@@ -52,7 +50,17 @@
       </section>
 
       <details class="werkstatt">
-        <summary class="klein">Werkstatt: auf die Vorschau zeichnen und senden</summary>
+        <summary class="klein">Werkstatt: frei zeichnen und senden</summary>
+        <section class="vorschau">
+          <div class="rahmen">
+            <canvas id="bild" width="800" height="480"></canvas>
+            <canvas id="ueber" width="800" height="480"></canvas>
+          </div>
+          <div class="unter">
+            <span id="abgleich" class="pille">Entwurf</span>
+            <div id="balken"><div></div></div>
+          </div>
+        </section>
         <section class="werkzeuge">
           <button data-werkzeug="stift" class="an">Stift</button>
           <button data-werkzeug="radierer">Radierer</button>

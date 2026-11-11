@@ -146,7 +146,7 @@ export class SimVerbindung extends Basis {
   async schnell() {}
 
   #zustand() {
-    this.onZustand({ fw: 'sim', seite: this.seite, bat: 87, mv: 3990, ma: -12, chg: false, mtu: this.mtu, phy: 2, itvl: 128, tp: `${BREITE}x${HOEHE}` });
+    this.onZustand({ fw: 'sim', modus: this.modus ?? 'home', bb: this.bb ?? 0, zettel: this.zettel ?? 0, seite: this.seite, bat: 87, mv: 3990, ma: -12, chg: false, mtu: this.mtu, phy: 2, itvl: 128, tp: `${BREITE}x${HOEHE}` });
   }
 
   async schreiben(rahmen) {
@@ -184,8 +184,13 @@ export class SimVerbindung extends Basis {
       this.bbAnzahl = +(r.text.match(/seiten=(\d+)/)?.[1] ?? 0);
       this.onEreignis({ t: 'bordbuch', seiten: this.bbAnzahl, belegtKB: this.bbAnzahl * 47 });
     } else if (r.op === 'bbModus') {
-      this.onEreignis({ t: 'modus', m: r.an ? 'bordbuch' : 'fahrt' });
-      if (r.an) this.onEreignis({ t: 'seite', n: r.seite ?? 0, von: this.bbAnzahl ?? 0 });
+      // Fernbedienung: 0 Home, 1 Bordbuch, 2 Notiz, 3 Bestellzettel
+      const m = ['home', 'bordbuch', 'notiz', 'bestell'][r.m] ?? 'home';
+      if (m === 'bestell') this.zettel = r.seite ?? 0;
+      if (m === 'bordbuch' && r.seite != null) this.bb = r.seite;
+      this.modus = m;
+      this.onEreignis({ t: 'modus', m, zettel: this.zettel ?? 0 });
+      if (m === 'bordbuch') this.onEreignis({ t: 'seite', n: this.bb ?? 0, von: this.bbAnzahl ?? 150 });
     } else if (r.op === 'karte') {
       this.seite = 'karte';
       this.bild = null;

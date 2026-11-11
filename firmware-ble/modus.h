@@ -123,6 +123,9 @@ static void setzeModus(Modus m) {
     modus = m;
     bordbuch = m == M_BORDBUCH;
     letzteBedienung = millis();
+    tone(PIN_BUZZER, 3300, 25);   // heller Doppelklick: Wechsel angenommen, das Bild kommt gleich
+    delay(60);
+    tone(PIN_BUZZER, 3300, 25);
     if (m == M_BESTELL && homeLaden(3 + bestellAktuell, imgBuf)) {
         display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
         display.update();

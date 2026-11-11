@@ -89,7 +89,7 @@ const textRahmen = (op, text) => { const t = new TextEncoder().encode(text); con
 export const rahmenHome = (n) => Uint8Array.of(OP.BILD_ENDE, 5, n);
 export const rahmenHomeVersion = (text) => textRahmen(OP.HOME_VERSION, text);
 /** Modus am Sticky: 0 Home, 1 Bordbuch, 2 Notiz */
-export const rahmenModus = (m) => Uint8Array.of(OP.BB_MODUS, m);
+export const rahmenModus = (m, seite = null) => (seite == null ? Uint8Array.of(OP.BB_MODUS, m) : Uint8Array.of(OP.BB_MODUS, m, seite));
 export const rahmenZeit = (ms = Date.now()) => { const r = new Uint8Array(9); r[0] = OP.ZEIT; let v = BigInt(ms); for (let i = 0; i < 8; i++) { r[1 + i] = Number(v & 0xffn); v >>= 8n; } return r; };
 export const rahmenFahrtLayout = (text) => textRahmen(OP.FAHRT_LAYOUT, text);
 export const rahmenPufferListe = () => Uint8Array.of(OP.PUFFER_LISTE);
@@ -120,7 +120,7 @@ export function lies(rahmen) {
     case OP.BILD_ENDE: return rahmen[1] === 3 ? { op: 'ende', schnell: false, speichern: rahmen[2] } : { op: 'ende', schnell: rahmen[1] === 1 };
     case OP.BB_INDEX: return { op: 'bbIndex', text: new TextDecoder().decode(rahmen.subarray(1)) };
     case OP.PUFFER_LISTE: return { op: 'pufferListe' };
-    case OP.BB_MODUS: return { op: 'bbModus', an: rahmen[1] === 1, seite: rahmen.length > 2 ? rahmen[2] : null };
+    case OP.BB_MODUS: return { op: 'bbModus', m: rahmen[1], an: rahmen[1] === 1, seite: rahmen.length > 2 ? rahmen[2] : null };
     case OP.PING: return { op: 'ping' };
     case OP.KARTE: return { op: 'karte' };
     default: return { op: 'unbekannt' };

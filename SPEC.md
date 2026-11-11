@@ -167,6 +167,35 @@ Gesichtet: 38 Firmwares. Passend zu unserer Rolle (Handy-Erweiterung, Microlino)
 - **EPUB-Leser** (CrossPoint/CrossInk, quelloffen): für E-Books allgemein; Lizenz prüfen, eher Ideen übernehmen
 - **Smart Home** (Voice Companion, OpenDisplay, ESPHome): erst mit Home Assistant, eher Sache des EE05
 
+### Teilen: „Beiboot“ verallgemeinert (Idee Markus, 11.11.2026, geparkt)
+- Vorschlag: frühestens nach ~1 Monat im Alltag; „wie es ist“, kein Support-Versprechen, Forks willkommen
+- Verallgemeinern: Visitenkarte und Knopf-Sätze als Vorlagen, Bubble Log optional, Bordbuch = „beliebiges
+  PDF“. Microlino-Handbuch nie mitliefern (fremdes Urheberrecht)
+- **Playground-Einreichung** (Registry github.com/Seeed-Projects/reterminal-sticky-playground-registry,
+  Leitfaden `docs/contributing-firmware.md`): Formular → öffentlicher PR, Prüfung durch Seeed. Pflicht: Name,
+  Kategorie, Satz ≤ 140 Zeichen, Version, Autor, Projektseite (öffentlicher Quellcode/Release), Foto am Sticky
+  (1200×900), **Lizenz aus MIT, Apache-2.0, GPL-3.0, LGPL-2.1, BSD-3-Clause, CC-BY-4.0** (keine Empfehlung)
+- Firmware: einzelne .bin je Offset (Bootloader 0x0, Partitionen 0x8000, otadata 0xE000, App 0x10000), je
+  ≤ 16 MB, zusammen ≤ 32 MB → unser 32-MB-Image nicht als Ganzes, LittleFS-Inhalt nicht mitliefern (die App
+  spielt die Seiten auf). Die APK kommt als GitHub-Release, auf der Projektseite verlinkt
+- Vorschlag Lizenz: **MIT**. Steht in Seeeds Liste, ist am einfachsten und passt zu den Bausteinen
+  (whisper.cpp MIT, NimBLE und pdf.js Apache-2.0). Anders als bei der Uhrenbox (bewusst ohne Lizenz), weil
+  Teilen hier heißt: andere dürfen es nutzen. offen: Entscheidung Markus
+- Leitfaden gelesen (11.11.2026), das Wichtigste:
+  - Zwei Wege: **Quellcode** (`source/` mit LICENSE; Seeeds GitHub Actions bauen, Arduino wird unterstützt,
+    Versionen festnageln: esp32-Core 3.3.12, Seeed_GFX2-Commit, NimBLE) oder **fertige .bin** mit `manifest.json`
+    (Offset, Größe, SHA-256, `npm run create:manifest`). Je .bin ≤ 32 MB laut Leitfaden (Formular sagt 16 MB)
+  - `firmware.json` streng (unbekannte Felder = Fehler), id in kebab-case, z. B. `sticky-beiboot`;
+    `compatibility.devices` = `["reterminal-sticky"]`; Kategorie z. B. `productivity`
+  - **Widerspruch:** Leitfaden nennt `flashSize` 16 MB, unser Gerät hat 32 MB und wir nutzen eine
+    32-MB-Partitionierung. Vor dem Einreichen klären (Variante mit 16-MB-Tabelle, oder bei Seeed nachfragen)
+  - Pflichttest am echten Sticky: erster Start, Hauptablauf, Touch + Tasten, Neustart + gespeicherter Zustand,
+    USB neu verbinden, Installation wiederholen; Hardware-Revision, Versionen und Ergebnis in den PR
+  - Keine Zugangsdaten im Image (haben wir nicht: kein WLAN, BLE ohne Schlüssel)
+  - **Companion-App deckt der Leitfaden nicht ab.** Für die APK ggf. zusätzlich eine Karte als
+    „External project“ (eigene Richtlinie: Ablauf erklären, Berechtigungen und Datenfluss offenlegen)
+- Forum/Ankündigung nicht ins Repo, sondern nach `uhrenbox/Vermarktung/`
+
 ## Zusammenhang mit dem Microlino-Knopf
 Beide Geräte sind ESP32-S3 mit BLE, beide folgen dem Muster „Handy rechnet, Gerät zeigt“.
 - Vorschlag **Rollen im Microlino**: Der **Knopf** (rundes AMOLED, schnell, leuchtet) zeigt live, was beim

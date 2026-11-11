@@ -107,7 +107,7 @@ export class Zwilling {
   async zeigeKarte() { await this.verbindung.schreiben(rahmenKarte()); this.gesendetCrc = null; }
   async ping() { await this.verbindung.schreiben(rahmenPing()); }
   async homeVersion(text) { await this.verbindung.schreiben(rahmenHomeVersion(text)); }
-  async modusSetzen(m) { await this.verbindung.schreiben(rahmenModus(m)); }
+  async modusSetzen(m, seite = null) { await this.verbindung.schreiben(rahmenModus(m, seite)); }
   async zeitSetzen() { await this.verbindung.schreiben(rahmenZeit()); }
   async fahrtLayout(text) { await this.verbindung.schreiben(rahmenFahrtLayout(text)); }
 

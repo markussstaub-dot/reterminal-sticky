@@ -26,7 +26,7 @@ Gedacht auch für den Microlino-Knopf: gleiche Rahmen, nur andere Bildgröße im
 | `17` | PUFFER_LISTE | Antwort `{"t":"puffer","dateien":[{"n","b"}]}` |
 | `18` | PUFFER_HOLEN | `18 offset:u32 Name` → ein Stück auf DATEI (Anfrage/Antwort, App wiederholt bei Verlust) |
 | `19` | PUFFER_LOESCHEN | `19 Name` |
-| `14` | MODUS | `14 m [seite]` – 0 Home, 1 Bordbuch, 2 Notiz, 3 Bestellzettel; optional Bordbuch-Seite |
+| `14` | MODUS | `14 m [seite]` – 0 Home, 1 Bordbuch, 2 Notiz, 3 Bestellzettel; `seite` = Bordbuch-Seite bzw. Zettel (Fernbedienung aus der App) |
 | `1A` | HOME_VERSION | Text „crc;Anzahl Zettel“ nach dem Aufspielen der Home-Bilder |
 
 Bild: Zeilen à 100 Byte, MSB = linkes Pixel, Bit 1 = schwarz. CRC-32 wie zlib.
@@ -42,7 +42,7 @@ Bild: Zeilen à 100 Byte, MSB = linkes Pixel, Bit 1 = schwarz. CRC-32 wie zlib.
   `{"t":"audio","a":"fehler","err":"mtu|mikro"}`
 
 ## Zustand (JSON)
-`{"fw","seite":"karte|bild","bat":%,"mv","ma","chg","mtu","phy","itvl":×1,25 ms,"tp":"BxH","fahrtv":CRC des Layouts,"offen":Notizen im Puffer,"uhr":bool}` – bei Verbindung,
+`{"fw","modus","bb":Bordbuch-Seite,"zettel":Bestellzettel,"usb","seite":"karte|bild","bat":%,"mv","ma","chg","mtu","phy","itvl":×1,25 ms,"tp":"BxH","fahrtv":CRC des Layouts,"offen":Notizen im Puffer,"uhr":bool}` – bei Verbindung,
 nach jedem Bild und alle 30 s.
 
 ## Funkverhalten (rücksichtsvoll)
@@ -59,3 +59,10 @@ nach jedem Bild und alle 30 s.
 - Ablauf: Taste runter → `audio start` → Pakete → Taste hoch → `audio stop`. Höchstens 60 s
 - Funk: während der Aufnahme 15–30 ms, 1,5 s nach dem Ende wieder Ruhetakt
 - Display: „● Aufnahme“ oben rechts per Teil-Refresh, danach wird die Stelle aus der Seite neu gezeichnet
+
+## Spiegel und Fernbedienung (11.11.2026)
+- Sticky → App: keine Bilder, nur `modus` (`{"t":"modus","m","zettel"}`), `seite` (Bordbuch) und `audio` start/stop;
+  beim Verbinden einmal der Zustand mit `modus`, `bb`, `zettel`. Die App rendert das Bild aus ihrem eigenen Vorrat
+- App → Sticky: `MODUS m [seite]` (siehe oben); Tipps auf die Vorschau rechnet die App selbst um (Notiz-Streifen,
+  Inhaltsverzeichnis) – kein eigener Touch-Befehl, kein zusätzlicher Schnellmodus
+- Ereignisse tragen `ms` (Sticky-Uhr), Tasten nachgeholt nach einer Display-Blockade zusätzlich `"nachgeholt":true`
