@@ -16,7 +16,6 @@ static BbEintrag bbEintraege[32];
 static int bbAnzahl = 0;
 static uint8_t* bbBuf;
 static volatile int bbWunsch = -1;        // Seite, die loop() anzeigen soll
-static volatile int bbModusWunsch = -1;   // 0/1 von App oder Taste, setzt loop() um
 static char bbIndexNeu[520];
 static volatile bool bbIndexDa = false;
 
@@ -74,6 +73,7 @@ static void bbZeige(int n) {
     if (!f || f.read(bbBuf, IMG_BYTES) != IMG_BYTES) { if (f) f.close(); Serial.printf("Bordbuch: Seite %d fehlt\n", n); return; }
     f.close();
     bbAktuell = n;
+    memcpy(imgBuf, bbBuf, IMG_BYTES);   // imgBuf = was gerade zu sehen ist (für Hinweise und Wiederherstellen)
     display.drawBitmap(0, 0, bbBuf, W, H, TFT_BLACK, TFT_WHITE);
     // update() statt updateFast(): der schnelle Modus gab am Gerät eine falsche Anzeige (11.11.2026);
     // update() ist nach dem ersten Bild ohnehin nur ~0,4 s
@@ -81,24 +81,6 @@ static void bbZeige(int n) {
     display.update();
     Serial.printf("Bordbuch: Seite %d in %lu ms\n", n, (unsigned long)(millis() - t0));
     bbMeldeSeite();
-}
-
-static void bbModus(bool an) {
-    if (an && bbSeiten == 0) {
-        sendEvt("{\"t\":\"modus\",\"m\":\"fahrt\",\"err\":\"leer\"}");
-        tone(PIN_BUZZER, 900, 120);           // tiefer Ton: kein Bordbuch aufgespielt
-        return;
-    }
-    bordbuch = an;
-    sendEvt(an ? "{\"t\":\"modus\",\"m\":\"bordbuch\"}" : "{\"t\":\"modus\",\"m\":\"fahrt\"}");
-    if (an) {
-        bbZeige(bbAktuell);
-    } else if (strcmp(seite, "bild") == 0) {
-        display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
-        display.update();
-    } else {
-        zeigeKarte();
-    }
 }
 
 /** Touch im Bordbuch: auf der Inhaltsseite zum Kapitel springen */
@@ -121,11 +103,6 @@ static void bbLoop() {
         char j[96];
         snprintf(j, sizeof j, "{\"t\":\"bordbuch\",\"seiten\":%d,\"belegtKB\":%u}", bbSeiten, (unsigned)(LittleFS.usedBytes() / 1024));
         sendEvt(j);
-    }
-    if (bbModusWunsch >= 0) {
-        bool an = bbModusWunsch == 1;
-        bbModusWunsch = -1;
-        if (an != bordbuch) bbModus(an);
     }
     if (bbWunsch >= 0) {
         int n = bbWunsch;

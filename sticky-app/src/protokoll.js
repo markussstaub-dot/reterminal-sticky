@@ -11,7 +11,7 @@ export const UUID = {
 };
 
 export const OP = { BILD_START: 0x01, BILD_DATEN: 0x02, BILD_ENDE: 0x03, PING: 0x10, KARTE: 0x11, BB_INDEX: 0x13, BB_MODUS: 0x14,
-  ZEIT: 0x15, FAHRT_LAYOUT: 0x16, PUFFER_LISTE: 0x17, PUFFER_HOLEN: 0x18, PUFFER_LOESCHEN: 0x19 };
+  ZEIT: 0x15, FAHRT_LAYOUT: 0x16, PUFFER_LISTE: 0x17, PUFFER_HOLEN: 0x18, PUFFER_LOESCHEN: 0x19, HOME_VERSION: 0x1a };
 
 export const BREITE = 800, HOEHE = 480;
 export const BILD_BYTES = BREITE / 8 * HOEHE; // 48000
@@ -85,6 +85,11 @@ export const rahmenBbIndex = (text) => { const t = new TextEncoder().encode(text
 /** BILD_ENDE Modus 4: Teilbild als Offline-Rückmeldung slot speichern (0–4 Knöpfe, 5 Diktat, 6 Aufnahme läuft) */
 export const rahmenRueck = (slot) => Uint8Array.of(OP.BILD_ENDE, 4, slot);
 const textRahmen = (op, text) => { const t = new TextEncoder().encode(text); const r = new Uint8Array(1 + t.length); r[0] = op; r.set(t, 1); return r; };
+/** BILD_ENDE Modus 5: als Home-Bild n speichern (0 Karte, 1 Notiz-Seite, 2 Ziffernblatt) */
+export const rahmenHome = (n) => Uint8Array.of(OP.BILD_ENDE, 5, n);
+export const rahmenHomeVersion = (text) => textRahmen(OP.HOME_VERSION, text);
+/** Modus am Sticky: 0 Home, 1 Bordbuch, 2 Notiz */
+export const rahmenModus = (m) => Uint8Array.of(OP.BB_MODUS, m);
 export const rahmenZeit = (ms = Date.now()) => { const r = new Uint8Array(9); r[0] = OP.ZEIT; let v = BigInt(ms); for (let i = 0; i < 8; i++) { r[1 + i] = Number(v & 0xffn); v >>= 8n; } return r; };
 export const rahmenFahrtLayout = (text) => textRahmen(OP.FAHRT_LAYOUT, text);
 export const rahmenPufferListe = () => Uint8Array.of(OP.PUFFER_LISTE);

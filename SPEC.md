@@ -7,6 +7,8 @@ Papier-Display, das man auf den Tisch legt oder irgendwo ranpappt.
 Legende: **fest** = entschieden · **Vorschlag** = Claudes Idee, Markus entscheidet · **offen** = Frage
 
 ## Rolle
+- Spitzname (Markus, 11.11.2026): **Bordcomputer-Beiboot**. Sitzt per Magnet im Microlino, wird für Theke,
+  Werkstatt oder Sofa abgedockt
 - fest: Handy-Erweiterung zuerst; Smart-Home-Anzeige nur nebenbei (siehe `../homeserver/SPEC.md`)
 - fest: Werks-Firmware kann KI-Notizen, ist aber träge → eigene Firmware auf dem Bastel-Sticky
 - Vorschlag: das zweite Gerät bleibt in Folie, bis klar ist, ob es gebraucht wird
@@ -18,6 +20,17 @@ fest: Das MVP sind **zwei Funktionen für den Microlino**, alles andere wartet:
 ### 1. Testnotizen für Bubble-Log-Testfahrten
 - fest: Notiz per **Schnellknopf** (ein Tipp) oder **Diktat** (Taste halten), App stempelt Zeit + GPS
 - Vorschlag Schnellknöpfe (5, groß, per App änderbar): „Bug“, „Erkennung falsch“, „Ampel“, „holprig“, „Merken“
+- gemerkt (Markus, 11.11.2026): Knöpfe sollen **frei editierbar** sein, damit der Notizmodus nicht nur für
+  Testfahrten taugt. Texte ändern geht in der App schon. Vorschlag: **Knopf-Sätze** wie „Testfahrt“,
+  „Alltag“ (Tanken/Laden, Parkplatz, Merken …) oder „Werkstatt“, in der App gewählt; im JSONL steht dann
+  der Satzname mit
+  - Beispiel (Markus): Satz **„Reichweite“** für die Bubble-Log-Schätzung: „zu niedrig“, „passt“, „zu hoch“.
+    Jeder Tipp ist eine Bewertung mit Zeit, GPS und Akkustand und lässt sich später mit der Prognose im
+    Bubble-Log-Log vergleichen
+  - fest (Markus, 11.11.2026): **Akkustand des Microlino gehört zur Notiz**, vorerst **Stufe 1**: bei der
+    Auswertung über den Zeitstempel aus dem Bubble-Log-Log holen (kein Umbau). Stufe 2 (geparkt), falls er live in der
+    JSONL stehen soll: Bubble Log gibt Akku/Prognose ans Handy weiter (Broadcast), Sticky-App schreibt `akku`
+    und `prognose_km` mit. Das ist ein kleiner Eingriff in Bubble Log
 - Vorschlag Diktat: whisper Stufe 1 (läuft schon); Audio zusätzlich aufheben, falls der Text danebenliegt
 - Vorschlag **Übergabe ohne Umbau von Bubble Log**: Die Sticky-App schreibt die Notizen als JSONL
   (gleiches Format wie das Entwickler-Log: Zeit, Lage, Typ, Text) und teilt sie wie die Bubble-Log-Logs.
@@ -122,8 +135,12 @@ Rechenarbeit im Handy, KI und Cloud nur als zuschaltbare Zusatzstufe.
   - Spickzettel: Warnleuchten, Sicherungen, Reifendruck, Laden (Typ 2/Schuko, 8 A), Pannenhilfe, Notfallnummern
   - Bordbuch-Seiten aus Bubble Log: letzte Fahrten, Akku, Ladepunkte, offene Wartung/TÜV
   - passt zu den Testnotizen: gleiches Gerät, gleicher Platz im Auto
-  - offen: Gehört der Sticky dann fest in den Microlino (Halterung drucken, Strom per USB-C) – und wie
-    teilt er sich die Rolle mit dem Knopf-Display?
+  - fest (Markus, 11.11.2026): Der Sticky bekommt **vorläufig einen festen Platz im Microlino**, Strom per
+    USB-Spiralkabel (zwei Kabel vorhanden)
+  - Magnetring liegt bei → Vorschlag: statt eigener Halterung nur eine Gegenplatte bzw. ein MagSafe-Halter am
+    Armaturenbrett (Stahlplatte aufkleben oder flache Aufnahme auf dem X1C drucken); USB im Auto ist meist nur mit Zündung an → der Akku überbrückt die
+    Standzeit, Stromsparen nur ohne USB (CHARGE_STATE GPIO40 bzw. BQ27220 zeigt, ob Strom da ist)
+  - offen: wie teilt er sich die Rolle mit dem Knopf-Display?
 - offen: Reihenfolge nach der Visitenkarte (eine Baustelle zur Zeit)
 
 ### Ideensammlung (11.11.2026, alles geparkt, sortiert wird später)
@@ -135,6 +152,7 @@ Rechenarbeit im Handy, KI und Cloud nur als zuschaltbare Zusatzstufe.
   (Stufe Zuhause oder Cloud)
 - **Uhrenbox-Begleiter**: Gangwerte aus dem Zeitwaage-Labor neben der Uhr
 - **„Bitte nicht stören“-Schild**: an der Tür, per Handy oder Kalender umgeschaltet
+- ~~Bestellzettel zum Vorzeigen~~ → umgesetzt, siehe „Home, Modi und Bestellzettel“ unten
 
 ## Zusammenhang mit dem Microlino-Knopf
 Beide Geräte sind ESP32-S3 mit BLE, beide folgen dem Muster „Handy rechnet, Gerät zeigt“.
@@ -245,3 +263,17 @@ Flash (7,2 MB von 23,9 MB), Aufspielen 290 s, Blättern 2,2 s. Am Fahrzeug zu pr
 **3. Notizen puffern** (11.11.2026) – läuft. Ohne Handy sammelt der Sticky Knopf-Notizen und Diktate im Flash
 (Zeit aus der eingebauten Uhr, kein GPS), die App holt sie beim nächsten Verbinden ab und erkennt die Diktate.
 GPS für diese Notizen kommt bei der Auswertung über den Zeitstempel aus der Bubble-Log-Spur.
+
+## Home, Modi und Bestellzettel (11.11.2026)
+Markus: „Visitenkarte quasi als Standardbild (inkl. Uhrzeit), KI-Button → Note-Mode, Up-Button → Bordbuch-Mode“.
+- **Home** = Visitenkarte hochkant (Name, Hinweis, große Uhr, QR) – gleiche Lage wie die Notiz-Seite. Die App
+  rendert Karte und Ziffernblatt einmalig in den Flash; der Sticky setzt die Uhr jede Minute selbst aus den Ziffern
+  zusammen (Teil-Refresh nur des Uhrfelds, zur vollen Stunde ein Voll-Refresh) – ohne Handy, Zeit aus der PCF8563
+- **Tasten**: KI kurz = Home ↔ Notiz (aus Bordbuch/Bestellzettel: Home) · KI halten (½ s) = Diktat überall ·
+  ▲ = Bordbuch (dort zurückblättern, ▲ 1 s = Inhalt) · ▼ auf Home = Bestellzettel (dort ▼/▲ blättern) ·
+  5 min ohne Bedienung → Home
+- **Bestellzettel**: bis zu 3 feste Zettel, quer und so groß wie möglich, Text in der App („## Titel“ je Zettel),
+  im Flash, ohne Handy vorzeigbar. Bezahlen bleibt außen vor
+- **Strom**: CPU 80 MHz; am USB (fester Platz im Microlino, Spiralkabel, vermutlich nur bei Zündung an) wirbt der
+  Sticky dauerhaft schnell, am Akku sparsam. Tiefschlaf noch nicht – Akkulaufzeit erst messen
+- Vorschlag: Tiefschlaf am Akku mit Wecken per Taste und Minutentakt für die Uhr (BLE dann nur nach Tastendruck)

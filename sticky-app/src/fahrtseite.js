@@ -18,7 +18,7 @@ export const zuHochkant = (x, y) => ({ x: PB - 1 - y, y: x });
 const leinwand = (b, h) => (typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(b, h) : Object.assign(document.createElement('canvas'), { width: b, height: h }));
 
 /** Hochkant gezeichnete Fläche gegen den Uhrzeigersinn drehen, damit sie auf dem quer eingebauten Display richtig steht */
-function drehe(quelle, ziel, b, h) {
+export function drehe(quelle, ziel, b, h) {
   ziel.save();
   ziel.translate(0, b);
   ziel.rotate(-Math.PI / 2);

@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.5.0";
+static const char* FW_VERSION = "0.7.0";
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "Markus";
@@ -43,6 +43,8 @@ static const int PIN_TP_SCL = 2, PIN_TP_SDA = 3, PIN_TP_INT = 21, PIN_TP_RST = 4
 static const int PIN_BFG_SCL = 0, PIN_BFG_SDA = 1;
 static const int PIN_CHG_STATE = 40;
 static const int PIN_BUZZER = 48;
+static const int PIN_USB = 9;   // PWR_IN_VOLT laut Schaltplan: HIGH = USB-Strom (am Gerät noch zu bestätigen)
+static bool usbDa() { return digitalRead(PIN_USB) == HIGH; }
 
 // ---- BLE ---------------------------------------------------------------------
 #define UUID_SVC   "b1e50001-7374-6963-6b79-7465726d6e6c"
@@ -53,7 +55,7 @@ static const int PIN_BUZZER = 48;
 
 enum : uint8_t { OP_IMG_BEGIN = 0x01, OP_IMG_DATA = 0x02, OP_IMG_END = 0x03, OP_PING = 0x10, OP_KARTE = 0x11,
                  OP_BB_INDEX = 0x13, OP_BB_MODUS = 0x14, OP_ZEIT = 0x15, OP_FAHRT_LAYOUT = 0x16,
-                 OP_PUFFER_LISTE = 0x17, OP_PUFFER_HOLEN = 0x18, OP_PUFFER_LOESCHEN = 0x19 };
+                 OP_PUFFER_LISTE = 0x17, OP_PUFFER_HOLEN = 0x18, OP_PUFFER_LOESCHEN = 0x19, OP_HOME_VERSION = 0x1A };
 
 // Verbindungsintervalle in 1,25-ms-Schritten
 // Ruhe ohne Latenz: sonst dauert der Wechsel auf schnell mehrere Sekunden (gemessen 11.11.2026)
@@ -87,10 +89,15 @@ static volatile uint16_t dleTx = 27, dleRx = 27;
 static volatile bool imgActive = false, imgReady = false, imgFast = false;
 static volatile int imgSpeichern = -1;   // >= 0: Bild als Bordbuch-Seite n speichern statt zeigen
 static volatile int imgRueckSlot = -1;   // >= 0: Teilbild als Rückmeldung für den Offline-Betrieb speichern
+static volatile int imgHome = -1;        // >= 0: Bild als Home-Bild n speichern (0 Karte, 1 Notiz-Seite, 2 Ziffern)
+static char homeVersionNeu[24];
+static volatile bool homeVersionDa = false;
 static volatile bool wantFast = false, wantSlow = false, wantKarte = false, wantState = false;
 static volatile uint32_t slowAt = 0;
 static uint32_t advFastUntil = 0;
 static const char* seite = "karte";
+enum Modus { M_HOME = 0, M_BORDBUCH = 1, M_NOTIZ = 2, M_BESTELL = 3 };
+static Modus modus = M_HOME;
 
 // ---- Hilfen ------------------------------------------------------------------
 static uint32_t crc32(const uint8_t* d, size_t n) {
@@ -341,43 +348,17 @@ static void zeigeKarte() {
 #include "bordbuch.h"
 #include "puffer.h"
 #include "audio.h"
-
-// ---- Tasten-Aktionen je Modus ------------------------------------------------------
-static uint32_t upSeit = 0;
-static bool upLang = false;
-static void tasteAktion(const char* name, bool gedrueckt) {
-    if (strcmp(name, "up") == 0) {
-        if (gedrueckt) { upSeit = millis(); upLang = false; }
-        else if (!upLang && bordbuch) bbWunsch = bbAktuell - 1;   // kurz: zurückblättern
-        return;
-    }
-    if (strcmp(name, "down") == 0) {
-        if (gedrueckt && bordbuch) bbWunsch = bbAktuell + 1;
-        return;
-    }
-    if (strcmp(name, "ki") == 0) {
-        if (bordbuch) { if (gedrueckt) bbWunsch = bbToc; return; }
-        if (gedrueckt) aufnahmeStart(); else aufnahmeStopp();   // Fahrt: KI halten = Diktat (ohne Handy in den Puffer)
-    }
-}
-/** ▲ eine Sekunde halten = Modus wechseln (schon beim Halten, mit Piep) */
-static void tastenLang() {
-    if (upSeit && !upLang && digitalRead(PIN_BTN_UP) == LOW && millis() - upSeit > 1000) {
-        upLang = true;
-        tone(PIN_BUZZER, 2000, 60);
-        bbModusWunsch = bordbuch ? 0 : 1;
-    }
-    if (digitalRead(PIN_BTN_UP) == HIGH) upSeit = upLang ? 0 : upSeit;
-}
+#include "modus.h"
 
 // ---- Zustand -------------------------------------------------------------------
 static void sendState() {
     readBattery();
     char j[260];
     snprintf(j, sizeof j,
-             "{\"fw\":\"%s\",\"seite\":\"%s\",\"bat\":%d,\"mv\":%d,\"ma\":%d,\"chg\":%s,\"mtu\":%u,\"phy\":%u,\"itvl\":%u,\"tp\":\"%ux%u\",\"fahrtv\":\"%08lx\",\"offen\":%d,\"uhr\":%s}",
+             "{\"fw\":\"%s\",\"seite\":\"%s\",\"bat\":%d,\"mv\":%d,\"ma\":%d,\"chg\":%s,\"mtu\":%u,\"phy\":%u,\"itvl\":%u,\"tp\":\"%ux%u\",\"fahrtv\":\"%08lx\",\"offen\":%d,\"uhr\":%s,\"modus\":\"%s\",\"homev\":\"%s\",\"usb\":%s}",
              FW_VERSION, seite, batPct, batMv, batMa, laedt ? "true" : "false", mtu, phy, connItvl, tpResX, tpResY,
-             (unsigned long)fahrtVersion, offeneNotizen, rtcDa ? "true" : "false");
+             (unsigned long)fahrtVersion, offeneNotizen, rtcDa ? "true" : "false",
+             modusName(), homeVersion, usbDa() ? "true" : "false");
     chState->setValue((const uint8_t*)j, strlen(j));
     if (connected) chState->notify();
     Serial.printf("STATE %s\n", j);
@@ -464,6 +445,7 @@ class CmdCb : public NimBLECharacteristicCallbacks {
             imgFast = n > 1 && d[1] == 1;
             imgSpeichern = (n > 2 && d[1] == 3) ? d[2] : -1;   // Modus 3: als Bordbuch-Seite d[2] speichern
             imgRueckSlot = (n > 2 && d[1] == 4) ? d[2] : -1;   // Modus 4: Teilbild als Rückmeldung d[2] speichern
+            imgHome = (n > 2 && d[1] == 5) ? d[2] : -1;        // Modus 5: Home-Bild d[2] speichern (3–5 Bestellzettel)
             imgReady = true;
             break;
         case OP_PING:
@@ -498,8 +480,11 @@ class CmdCb : public NimBLECharacteristicCallbacks {
                 if (!strchr(loeschName, '/')) loeschWunsch = true;
             }
             break;
-        case OP_BB_MODUS:    // 14 0|1 [seite]
-            if (n > 1) { bbModusWunsch = d[1] ? 1 : 0; if (n > 2) bbWunsch = d[2]; }
+        case OP_BB_MODUS:    // 14 modus [seite] – 0 Home, 1 Bordbuch, 2 Notiz
+            if (n > 1 && d[1] <= 3) { modusWunsch = d[1]; if (n > 2) bbWunsch = d[2]; }
+            break;
+        case OP_HOME_VERSION: // 1A Text
+            if (n > 1 && n - 1 < sizeof homeVersionNeu) { memcpy(homeVersionNeu, d + 1, n - 1); homeVersionNeu[n - 1] = 0; homeVersionDa = true; }
             break;
         }
     }
@@ -508,7 +493,8 @@ class CmdCb : public NimBLECharacteristicCallbacks {
 static void startAdvertising(bool schnell) {
     NimBLEAdvertising* adv = NimBLEDevice::getAdvertising();
     adv->stop();
-    uint16_t i = schnell ? ADV_FAST : ADV_SLOW;
+    // Am USB-Kabel (fester Platz im Microlino) ist Strom da: dann immer schnell erreichbar
+    uint16_t i = (schnell || usbDa()) ? ADV_FAST : ADV_SLOW;
     adv->setMinInterval(i);
     adv->setMaxInterval(i + 32);
     adv->start();
@@ -558,6 +544,7 @@ static void bleInit() {
 
 // ---- Ablauf ----------------------------------------------------------------------
 void setup() {
+    setCpuFrequencyMhz(80);                    // reicht für BLE, Display und ADPCM; spart Strom gegenüber 240 MHz
     pinMode(PIN_PWR_HOLD, OUTPUT);
     digitalWrite(PIN_PWR_HOLD, HIGH);          // Selbsthaltung, sonst geht er im Akkubetrieb aus
     Serial.begin(115200);
@@ -565,6 +552,7 @@ void setup() {
     Serial.printf("\nSticky BLE-Durchstich %s\n", FW_VERSION);
 
     pinMode(PIN_CHG_STATE, INPUT_PULLUP);
+    pinMode(PIN_USB, INPUT);
     Wire.begin(PIN_BFG_SDA, PIN_BFG_SCL, 100000);
     readBattery();
     zeitInit();
@@ -580,15 +568,16 @@ void setup() {
         display.fillScreen(TFT_WHITE);
         display.refresh();
         delay(300);
-        zeigeKarte();
     }
     // Tasten und Touch erst nach display.begin(): vorher eingerichtet, kamen keine Tastendrücke an (11.11.2026)
     bbInit();
     pufferInit();
+    homeInit();
     tastenInit();
     touchInit();
     micSelbsttest();
     bleInit();
+    setzeModus(M_HOME);
 }
 
 void loop() {
@@ -620,6 +609,14 @@ void loop() {
                 sendEvt(j);
                 goto fertig;
             }
+            if (imgHome >= 0) {
+                bool gut = !teil && imgHome <= 5 && homeSpeichern(imgHome, rxBuf);
+                char j[96];
+                snprintf(j, sizeof j, "{\"t\":\"img\",\"ok\":%s,\"home\":%d}", gut ? "true" : "false", imgHome);
+                imgHome = -1;
+                sendEvt(j);
+                goto fertig;
+            }
             if (imgSpeichern >= 0) {
                 bool gut = !teil && bbSpeichern(imgSpeichern, rxBuf);
                 char j[96];
@@ -629,9 +626,7 @@ void loop() {
                 goto fertig;
             }
             if (bordbuch) {
-                // Im Bordbuch nichts überzeichnen: nur die Fahrt-Seite im Speicher aktualisieren
-                if (teil) for (int r = 0; r < imgH; r++) memcpy(imgBuf + (imgY + r) * (W / 8) + imgX / 8, rxBuf + r * (imgW / 8), imgW / 8);
-                else { memcpy(imgBuf, rxBuf, IMG_BYTES); seite = "bild"; }
+                // Im Bordbuch nichts überzeichnen (Rückmeldungen gehören zu Home/Notiz)
             } else if (teil) {
                 // Teilbild in die gemerkte Seite einsetzen (zeilenweise, x und w sind Byte-genau) und nur den Bereich auffrischen
                 for (int r = 0; r < imgH; r++) memcpy(imgBuf + (imgY + r) * (W / 8) + imgX / 8, rxBuf + r * (imgW / 8), imgW / 8);
@@ -653,8 +648,15 @@ void loop() {
     }
     if (wantKarte) {
         wantKarte = false;
-        if (bordbuch) bbModus(false);
-        zeigeKarte();
+        modusWunsch = M_HOME;
+    }
+    if (homeVersionDa) {
+        homeVersionDa = false;
+        File f = LittleFS.open("/home/version.txt", "w");
+        if (f) { f.print(homeVersionNeu); f.close(); }
+        strlcpy(homeVersion, homeVersionNeu, sizeof homeVersion);
+        bestellZaehlen();
+        if (modus == M_HOME) setzeModus(M_HOME);     // neue Karte gleich zeigen
         wantState = true;
     }
     static uint32_t lastState = 0;
@@ -666,7 +668,7 @@ void loop() {
     if (advFastUntil && millis() > advFastUntil && !connected) startAdvertising(false);
 
     tastenPoll();
-    tastenLang();
+    modusLoop();
     audioLoop();
     bbLoop();
     pufferLoop();

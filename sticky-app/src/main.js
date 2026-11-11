@@ -3,6 +3,8 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Clipboard } from '@capacitor/clipboard';
 import { Spracherkennung, MODELLE, pcmBase64 } from './sprache.js';
 import { zeichneFahrt, trefferKnopf, rueckmeldung, layoutText, STANDARD_KNOEPFE } from './fahrtseite.js';
+import { zeichneHome, zeichneZiffern } from './homeseite.js';
+import { BESTELL_STANDARD, zettel, zeichneZettel } from './bestellung.js';
 import { Aufnahme, wav } from './audio.js';
 import * as notizen from './notizen.js';
 import * as bb from './bordbuch.js';
@@ -233,7 +235,7 @@ zwilling.beobachte((art, d) => {
     if (d.t === 'key' && d.a === 'down') eintrag(`Taste ${TASTEN[d.k] || d.k} gedrückt`);
     else if (d.t === 'touch' && d.a === 'down') { eintrag(`Touch bei ${d.x}, ${d.y}`); touchMarke(d.x, d.y); fahrtTouch(d.x, d.y); }
     else if (d.t === 'pong') eintrag('Pong');
-    else if (d.t === 'modus') { imBordbuch = d.m === 'bordbuch'; eintrag(d.err === 'leer' ? 'Bordbuch ist noch leer – erst aufspielen' : `Modus: ${d.m === 'bordbuch' ? 'Bordbuch' : 'Fahrt'}`, !!d.err); }
+    else if (d.t === 'modus') { stickyModus = d.m; imBordbuch = d.m === 'bordbuch'; eintrag(`Modus: ${{ home: 'Home', notiz: 'Notiz', bordbuch: 'Bordbuch', bestell: `Bestellzettel ${(d.zettel ?? 0) + 1}` }[d.m] ?? d.m}`); }
     else if (d.t === 'seite') $('bbStatus').textContent = `Sticky zeigt Bordbuch-Seite ${d.n + 1} von ${d.von}`;
     else if (d.t === 'bordbuch') eintrag(`Bordbuch im Flash: ${d.seiten} Seiten, ${d.belegtKB} KB`);
     else if (d.t === 'audio' && d.a === 'fehler') { eintrag(`Aufnahme nicht möglich: ${d.err}`, true); $('aufnahmeStatus').hidden = true; }
@@ -259,7 +261,9 @@ function zeigeVerbindung() {
   $('verbinden').classList.toggle('haupt', !an);
   $('senden').disabled = !an;
   $('fahrtZeigen').disabled = !an;
-  for (const id of ['bbAufspielen', 'bbZeigen', 'bbFahrt']) $(id).disabled = !an;
+  $('homeZeigen').disabled = !an;
+  $('bestellZeigen').disabled = !an;
+  for (const id of ['bbAufspielen', 'bbZeigen']) $(id).disabled = !an;
   if (an) $('bbAufspielen').disabled = !pdf && !$('spickzettel').value.trim();
   $('karte').disabled = !an;
   $('simTasten').hidden = !(an && verbindung instanceof SimVerbindung);
@@ -281,7 +285,6 @@ $('verbinden').onclick = async () => {
     zwilling.anbinden(verbindung);
     await verbindung.verbinden();
     eintrag(`Verbunden mit ${verbindung.name} (MTU ${verbindung.mtu})`);
-    if ($('fahrtAuto').checked) await zeigeFahrtSeite().catch((e) => eintrag(e.message, true));
     abgleich().catch((e) => eintrag(`Abgleich: ${e.message}`, true));
   } catch (e) {
     eintrag(`Verbinden fehlgeschlagen: ${e.message || e}`, true);
@@ -339,20 +342,20 @@ vorladen();
 
 // ---- Fahrt: Testnotizen (SPEC „MVP 1“) -----------------------------------------------
 let ortBeiAufnahme = null;
+let stickyModus = null;
 let fahrtCrc = null;
 const knoepfe = () => {
   const l = $('knoepfe').value.split(',').map((t) => t.trim()).filter(Boolean).slice(0, 5);
   return l.length ? l : STANDARD_KNOEPFE;
 };
 try { $('knoepfe').value = localStorage.getItem('sticky.knoepfe') || STANDARD_KNOEPFE.join(', '); } catch { $('knoepfe').value = STANDARD_KNOEPFE.join(', '); }
-try { $('fahrtAuto').checked = localStorage.getItem('sticky.fahrtAuto') !== 'nein'; } catch { /* egal */ }
-$('fahrtAuto').onchange = () => { try { localStorage.setItem('sticky.fahrtAuto', $('fahrtAuto').checked ? 'ja' : 'nein'); } catch { /* egal */ } };
 $('knoepfe').onchange = () => {
   try { localStorage.setItem('sticky.knoepfe', knoepfe().join(', ')); } catch { /* egal */ }
-  if (fahrtAktiv()) zeigeFahrtSeite().catch((e) => eintrag(e.message, true));
+  if (zwilling.verbunden) abgleich().catch((e) => eintrag(e.message, true));
 };
 
-const fahrtAktiv = () => !imBordbuch && fahrtCrc != null && zwilling.gesendetCrc === fahrtCrc && zwilling.geraet.seite !== 'karte';
+// Notizen per Touch nur, wenn der Sticky die Notiz-Seite zeigt (Modus meldet die Firmware)
+const fahrtAktiv = () => stickyModus === 'notiz';
 
 async function zeigeFahrtSeite() {
   zeichneFahrt(g, knoepfe());
@@ -363,7 +366,15 @@ async function zeigeFahrtSeite() {
   eintrag(`Fahrt-Seite gezeigt (${m.gesamt} ms)`);
   pruefeAbgleich();
 }
-$('fahrtZeigen').onclick = () => zeigeFahrtSeite().catch((e) => eintrag(e.message, true));
+$('fahrtZeigen').onclick = () => zwilling.modusSetzen(2).catch((e) => eintrag(e.message, true));
+$('homeZeigen').onclick = () => zwilling.modusSetzen(0).catch((e) => eintrag(e.message, true));
+$('bestellZeigen').onclick = () => zwilling.modusSetzen(3).catch((e) => eintrag(e.message, true));
+try { $('bestellText').value = localStorage.getItem('sticky.bestellung') || BESTELL_STANDARD; } catch { $('bestellText').value = BESTELL_STANDARD; }
+$('bestellText').onchange = () => {
+  try { localStorage.setItem('sticky.bestellung', $('bestellText').value); } catch { /* egal */ }
+  if (zwilling.verbunden) abgleich().catch((e) => eintrag(e.message, true));   // geänderte Zettel gleich aufspielen
+};
+$('bestellStandard').onclick = () => { $('bestellText').value = BESTELL_STANDARD; $('bestellText').onchange(); };
 
 async function fahrtTouch(x, y) {
   if (!fahrtAktiv()) return;
@@ -407,6 +418,25 @@ async function abgleich() {
   await zwilling.zeitSetzen();
   const text = layoutText(knoepfe());
   const version = crc32(new TextEncoder().encode(text)).toString(16).padStart(8, '0');
+  // Home-Karte, Notiz-Seite und Ziffernblatt (einmalig, wenn sich etwas geändert hat)
+  zeichneHome(g);
+  const home = bildBytes();
+  zeichneFahrt(g, knoepfe());
+  const notiz = bildBytes();
+  zeichneZiffern(g);
+  const ziffern = bildBytes();
+  const zettelListe = zettel($('bestellText').value);
+  const zettelBilder = zettelListe.map((z, i) => { zeichneZettel(g, z, i + 1, zettelListe.length); return bildBytes(); });
+  const alle = [home, notiz, ziffern, ...zettelBilder];
+  const homeV = crc32(new Uint8Array(alle.flatMap((b) => [...b]))).toString(16).padStart(8, '0') + ';' + zettelBilder.length;
+  if (zwilling.geraet.homev !== homeV) {
+    for (let i = 0; i < alle.length; i++) await zwilling.sendeBild(alle[i], { home: i });
+    await zwilling.homeVersion(homeV);
+    eintrag(`Home-Karte, Notiz-Seite, Uhr und ${zettelBilder.length} Bestellzettel aufgespielt`);
+  }
+  zeichneHome(g, undefined, new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }));
+  pruefeAbgleich();
+  if (zwilling.geraet.modus) stickyModus = zwilling.geraet.modus;
   if (zwilling.geraet.fahrtv !== version) {
     await zwilling.fahrtLayout(text);
     const k = knoepfe();
@@ -557,8 +587,7 @@ $('bbAufspielen').onclick = async () => {
     knopf.disabled = !zwilling.verbunden;
   }
 };
-$('bbZeigen').onclick = () => zwilling.bordbuchModus(true).catch((e) => eintrag(e.message, true));
-$('bbFahrt').onclick = () => zwilling.bordbuchModus(false).catch((e) => eintrag(e.message, true));
+$('bbZeigen').onclick = () => zwilling.modusSetzen(1).catch((e) => eintrag(e.message, true));
 window.__sticky = { ladePdf, zwilling, pufferAbholen };   // zum Prüfen per WebView-Fernsteuerung (adb)
 
 muster();

@@ -139,7 +139,7 @@ static void notizAnhaengen(const char* json) {
 
 /** Touch ohne Verbindung auf der Fahrt-Seite */
 static void pufferTouch(int x, int y) {
-    if (connected || bordbuch || strcmp(seite, "bild") != 0) return;
+    if (connected || modus != M_NOTIZ) return;
     for (int i = 0; i < streifenAnzahl; i++)
         if (x >= streifen[i].x0 && x < streifen[i].x1 && y >= streifen[i].y0 && y < streifen[i].y1) { offlineKnopf = i; return; }
 }

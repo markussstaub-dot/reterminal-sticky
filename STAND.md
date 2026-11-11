@@ -3,8 +3,8 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: MVP läuft – Testnotizen (auch ohne Handy, gepuffert) und Bordbuch offline (11.11.2026)
-wartet: Markus prüft die Spickzettel (Felgen des Pioneer, Pannenhilfe-Nummer) und testet im Auto
+version: Home mit Uhr, Modi per Taste, Bestellzettel; Notizen (auch offline) und Bordbuch (11.11.2026)
+wartet: Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Akkulaufzeit ohne USB messen; USB-Pin beim Abziehen bestätigen
 ---
 
 Repo: github.com/markussstaub-dot/reterminal-sticky (privat, seit 11.11.2026). `backup/`, Modelle und
@@ -72,6 +72,14 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   Anfrage/Antwort je 480 Byte mit Wiederholung; `sendEvt` wartet bei vollem Sendepuffer, statt Meldungen zu verwerfen
 - SD-Karte: Slot vorhanden (CS 8, EN 10, DETECT 11, SPI geteilt mit dem Display), noch nicht genutzt; der Puffer liegt
   im internen Flash (~16 MB frei ≈ 30 min Diktat)
+- **Home, Modi, Bestellzettel** (Firmware 0.7.0, `firmware-ble/modus.h`): Start im Modus Home (Visitenkarte
+  hochkant + Uhr). KI kurz = Home ↔ Notiz, KI halten = Diktat, ▲ = Bordbuch, ▼ auf Home = Bestellzettel, 5 min → Home.
+  Bilder im Flash `/home/0–5.bin` (Karte, Notiz-Seite, Ziffernblatt, 3 Zettel), Kennung in `/home/version.txt`
+  („crc;Anzahl Zettel“), die App spielt nur bei Änderung neu auf. Uhr: Ziffern aus dem Ziffernblatt ins Uhrfeld
+  (Display x 352, y 40, 112 × 400), Teil-Refresh jede Minute, Voll-Refresh zur vollen Stunde; Ortszeit CET/CEST
+- **Fester Platz im Microlino** mit USB-Spiralkabel (vermutlich nur Strom bei Zündung). Firmware liest GPIO9
+  (PWR_IN_VOLT) als „USB da“ und meldet `usb` im Zustand – am Kabel stand `true`, **beim Abziehen noch bestätigen**.
+  Mit USB wirbt der Sticky dauerhaft schnell, ohne sparsam; CPU läuft auf 80 MHz. Tiefschlaf gibt es noch nicht
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

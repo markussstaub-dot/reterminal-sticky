@@ -229,7 +229,7 @@ static void audioLoop() {
         indikator = 0;
         slotAktiv = false;
         // Stelle aus der gemerkten Seite wiederherstellen
-        if (strcmp(seite, "bild") == 0) display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+        if (strcmp(seite, "karte") != 0) display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
         else zeichneKarte();
         display.updatePartial(sk[0], sk[1], sk[2], sk[3]);
     } else if (indikator == 1) {

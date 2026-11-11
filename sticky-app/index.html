@@ -21,16 +21,29 @@
     </section>
 
     <section id="fahrt">
-      <h2>Fahrt · Testnotizen</h2>
+      <h2>Sticky · Modus und Notizen</h2>
       <div class="leiste">
-        <button id="fahrtZeigen" disabled>Fahrt-Seite zeigen</button>
-        <label class="schalter"><input type="checkbox" id="fahrtAuto" checked> beim Verbinden</label>
+        <button id="homeZeigen" disabled>Home</button>
+        <button id="fahrtZeigen" disabled>Notiz</button>
+        <button id="bbZeigen" disabled>Bordbuch</button>
         <button id="notizenTeilen">Notizen teilen</button>
       </div>
       <div class="leiste">
         <input id="knoepfe" placeholder="Schnellknöpfe, durch Komma getrennt">
       </div>
       <ol id="notizen"></ol>
+    </section>
+
+    <section id="bestellung">
+      <h2>Bestellzettel <span class="klein" style="text-transform:none;letter-spacing:0">– am Sticky ▼ auf Home</span></h2>
+      <div class="leiste">
+        <button id="bestellZeigen" disabled>Bestellzettel zeigen</button>
+      </div>
+      <details>
+        <summary class="klein">Bestellzettel bearbeiten (bis zu 3, „## Titel“ beginnt einen Zettel)</summary>
+        <textarea id="bestellText" rows="12" spellcheck="false"></textarea>
+        <button id="bestellStandard">Standard wiederherstellen</button>
+      </details>
     </section>
 
     <section id="bordbuch">
@@ -41,8 +54,6 @@
       </div>
       <div class="leiste">
         <button id="bbAufspielen" disabled>Bordbuch aufspielen</button>
-        <button id="bbZeigen" disabled>Bordbuch zeigen</button>
-        <button id="bbFahrt" disabled>Fahrt zeigen</button>
       </div>
       <p id="bbStatus" class="klein"></p>
       <details>
