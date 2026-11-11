@@ -49,6 +49,10 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   temperature_inc 0, max_tokens nach Länge, Abbruch nach 15 s, Rand 128 Frames; erkennt die App eine Schleife, rechnet
   sie mit vollem Fenster nach (~4 s). Danach 3 Diktate in 0,6–0,7 s, kurze Sätze teils schwach erkannt
 - Moduswechsel Fahrt/Bordbuch per **▲ lang** (nicht KI lang: KI halten ist schon Diktat)
+- **Fahrt-Seite hochkant** (seit 11.11.2026 abends): Sticky aus der Querlage im Uhrzeigersinn gedreht → Tasten oben
+  rechts, USB unten. Die App zeichnet 480×800 und dreht fürs Display, Touch rechnet sie zurück
+  (`src/fahrtseite.js`, Firmware unverändert). Bordbuch bleibt quer (Handbuch A4 quer). Kein Autorotate
+  (Lagesensor LSM6DS3 wäre da, falls später gewünscht)
 - Offen: Läuft die App im Hintergrund weiter (BLE, Notizen), wenn Bubble Log/Android Auto vorne ist? Bei der
   ersten Testfahrt prüfen
 - **MVP 2 Bordbuch** (Firmware 0.4.0): **32 MB Flash** mit eigener `firmware-ble/partitions.csv` (app0/app1 je 4 MB,
