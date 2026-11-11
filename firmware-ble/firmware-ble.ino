@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.7.5";
+static const char* FW_VERSION = "0.7.6";
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "Markus";
@@ -468,7 +468,7 @@ class CmdCb : public NimBLECharacteristicCallbacks {
             imgFast = n > 1 && d[1] == 1;
             imgSpeichern = (n > 2 && d[1] == 3) ? d[2] : -1;   // Modus 3: als Bordbuch-Seite d[2] speichern
             imgRueckSlot = (n > 2 && d[1] == 4) ? d[2] : -1;   // Modus 4: Teilbild als Rückmeldung d[2] speichern
-            imgHome = (n > 2 && d[1] == 5) ? d[2] : -1;        // Modus 5: Home-Bild d[2] speichern (3–5 Bestellzettel)
+            imgHome = (n > 2 && d[1] == 5) ? d[2] : -1;        // Modus 5: Home-Bild d[2] speichern (3–8 Bestellzettel und Karten)
             imgReady = true;
             break;
         case OP_PING:
@@ -638,7 +638,7 @@ void loop() {
                 goto fertig;
             }
             if (imgHome >= 0) {
-                bool gut = !teil && imgHome <= 5 && homeSpeichern(imgHome, rxBuf);
+                bool gut = !teil && imgHome <= 8 && homeSpeichern(imgHome, rxBuf);
                 char j[96];
                 snprintf(j, sizeof j, "{\"t\":\"img\",\"ok\":%s,\"home\":%d}", gut ? "true" : "false", imgHome);
                 imgHome = -1;

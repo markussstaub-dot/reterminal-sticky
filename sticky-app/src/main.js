@@ -23,6 +23,7 @@ import { zeichneFahrt, trefferKnopf, rueckmeldung, layoutText, STANDARD_KNOEPFE 
 import { zeichneHome, zeichneZiffern } from './homeseite.js';
 import { holeWetter, letztesWetter } from './wetter.js';
 import { BESTELL_STANDARD, zettel, zeichneZettel } from './bestellung.js';
+import { KARTEN_STANDARD, karten, zeichneKarte } from './karten.js';
 import { Aufnahme, wav, sprachPruefung, nurWortliste } from './audio.js';
 import * as notizen from './notizen.js';
 import * as bb from './bordbuch.js';
@@ -428,6 +429,22 @@ $('bestellText').onchange = () => {
   if (zwilling.verbunden) abgleich().catch((e) => eintrag(e.message, true));   // geänderte Zettel gleich aufspielen
 };
 $('bestellStandard').onclick = () => { $('bestellText').value = BESTELL_STANDARD; $('bestellText').onchange(); };
+try { $('kartenText').value = localStorage.getItem('sticky.karten') ?? KARTEN_STANDARD; } catch { $('kartenText').value = KARTEN_STANDARD; }
+$('kartenText').onchange = () => {
+  try { localStorage.setItem('sticky.karten', $('kartenText').value); } catch { /* egal */ }
+  if (zwilling.verbunden) abgleich().catch((e) => eintrag(e.message, true));
+};
+$('kartenStandard').onclick = () => { $('kartenText').value = KARTEN_STANDARD; $('kartenText').onchange(); };
+/** Alle Zettel in der Reihenfolge am Sticky: Bestellzettel, dann Karten (zusammen höchstens 6) */
+function alleZettel() {
+  const z = zettel($('bestellText').value);
+  const k = karten($('kartenText').value);
+  const liste = [
+    ...z.map((x, i) => ({ zeichne: (g) => zeichneZettel(g, x, i + 1, z.length) })),
+    ...k.map((x, i) => ({ zeichne: (g) => zeichneKarte(g, x, i + 1, k.length) })),
+  ];
+  return liste.slice(0, 6);
+}
 
 async function fahrtTouch(x, y, ms) {
   if (!fahrtAktiv()) return;
@@ -484,8 +501,8 @@ async function abgleich() {
   const notiz = bildBytes();
   zeichneZiffern(g);
   const ziffern = bildBytes();
-  const zettelListe = zettel($('bestellText').value);
-  const zettelBilder = zettelListe.map((z, i) => { zeichneZettel(g, z, i + 1, zettelListe.length); return bildBytes(); });
+  // Bestellzettel und Karten in einer Reihe (▼ auf Home): erst die Zettel, dann die Karten
+  const zettelBilder = alleZettel().map((z) => { z.zeichne(g); return bildBytes(); });
   const alle = [home, notiz, ziffern, ...zettelBilder];
   const homeV = crc32(new Uint8Array(alle.flatMap((b) => [...b]))).toString(16).padStart(8, '0') + ';' + zettelBilder.length;
   if (zwilling.geraet.homev !== homeV) {
@@ -497,7 +514,7 @@ async function abgleich() {
     for (let i = 0; i < alle.length; i++) if (vollstaendig || alt.crcs[i] !== crcs[i]) await zwilling.sendeBild(alle[i], { home: i });
     await zwilling.homeVersion(homeV);
     try { localStorage.setItem('sticky.homecrcs', JSON.stringify({ version: homeV, crcs })); } catch { /* egal */ }
-    eintrag(`Home-Karte, Notiz-Seite, Uhr und ${zettelBilder.length} Bestellzettel aufgespielt`);
+    eintrag(`Home-Karte, Notiz-Seite, Uhr und ${zettelBilder.length} Zettel/Karten aufgespielt`);
   }
   zeichneHome(g, undefined, new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }), wetter);
   pruefeAbgleich();
@@ -691,6 +708,7 @@ const spiegel = spiegelEinrichten({
     knoepfe,
     wetter: letztesWetter,
     bestellText: () => $('bestellText').value,
+    alleZettel,
     bordbuchSeite,
     inhaltsFelder: () => { try { return JSON.parse(localStorage.getItem('sticky.bbplan') || 'null')?.felder ?? []; } catch { return []; } },
   },

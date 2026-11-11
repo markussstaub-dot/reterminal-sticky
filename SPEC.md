@@ -177,6 +177,9 @@ nehmen, die im Auto wirklich gefehlt hat, statt zu sammeln (Pflege!).
 - **Abfahrtszeiten** ÖPNV an der nächsten Haltestelle (offene API nötig)
 - **Erinnerungen aus Diktat**, **Makro-Tasten**, **Zitat des Tages** (siehe Playground-Anregungen oben)
 - **Einkaufszettel** mit Abhaken per Tipp (siehe Ideensammlung)
+- ~~Kundenkarten (Lidl Plus u. Ä.)~~ → als Dummy umgesetzt 12.11.2026 (Karten in der Zettel-Reihe)
+- **„Teilen → Sticky“** (Anregung zweite Meinung): aus jeder App über das Android-Teilen-Menü Bild, QR, Ticket oder
+  Text als Zettel aufs E-Paper
 - Technik dafür: ein Seiten-Register in der App (Name, Renderfunktion, Aktualisierungstakt, braucht Internet ja/nein),
   ein Modus „Seiten“ am Sticky mit ▲/▼ – erst bauen, wenn mehr als eine Seite gebraucht wird
 

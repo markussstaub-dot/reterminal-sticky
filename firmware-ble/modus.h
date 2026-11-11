@@ -10,7 +10,7 @@
  *
  * Bilder von der App (BILD_ENDE Modus 5 + Nummer), im Flash unter /home/:
  *   0.bin Home-Karte (Uhrfeld leer) · 1.bin Notiz-Seite · 2.bin Ziffernblatt (Ziffern 0–9 und „:“, schon gedreht)
- *   3.bin–5.bin Bestellzettel; ihre Anzahl steht in version.txt hinter „;“
+ *   3.bin–8.bin Bestellzettel und Karten (Lidl Plus u. Ä.); ihre Anzahl steht in version.txt hinter „;“
  *   version.txt  Kennung, die die App vergleicht (OP_HOME_VERSION)
  * Uhr: hochkant ab x = 40, y = 352, 5 Felder à 80 × 112 („HH:MM“); auf dem Display x = 352, w = 112, y = 40, h = 400.
  * Jede Minute nur dieses Feld per Teil-Refresh, zur vollen Stunde einmal voll (gegen Geisterbilder).
@@ -31,7 +31,7 @@ static void bestellZaehlen() {
     const char* semi = strchr(homeVersion, ';');
     int n = semi ? atoi(semi + 1) : 0;
     bestellAnzahl = 0;
-    for (int i = 0; i < n && i < 3; i++) {
+    for (int i = 0; i < n && i < 6; i++) {
         char pfad[20];
         snprintf(pfad, sizeof pfad, "/home/%d.bin", 3 + i);
         if (LittleFS.exists(pfad)) bestellAnzahl++;

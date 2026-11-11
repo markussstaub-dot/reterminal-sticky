@@ -111,6 +111,13 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
 - **Wetter auf der Home-Karte** (12.11.2026, nur App): Open-Meteo (frei, ohne Konto), Standort vom Handy auf ~1 km
   gerundet, sonst letzter bekannter Ort. Zeile „bewölkt 11° · 4–12° · Regen 22 %“ + „Stand hh:mm“ zwischen Hinweis und
   Uhr; beim Verbinden und stündlich, es wird nur das geänderte Home-Bild aufgespielt (CRCs in `sticky.homecrcs`)
+- **Karten zum Vorzeigen** (Firmware 0.7.6, `sticky-app/src/karten.js`): Kundenkarten wie Lidl Plus als QR, in der
+  Reihe nach den Bestellzetteln (▼ auf Home), zusammen höchstens 6 (`/home/3–8.bin`). QR mit ganzen Pixeln je Modul,
+  keine Rasterung, Ruhezone 4 Module. Eintrag im Tab „Bestellen“ („## Titel“, „qr: Inhalt“); im Repo nur Platzhalter.
+  **Offen:** echten Lidl-Code eintragen und an der Kasse testen (ist der Code statisch?)
+- Zweite Meinung (Google KI, 12.11.2026) zur Aufgabenteilung: bestätigt. Neu notiert: **Winter** – E-Paper wird bei
+  Frost träge, Teil-Refreshes (Uhr) können Schatten lassen → beobachten, ggf. bei Kälte öfter voll auffrischen
+  (Temperatur liefert der Display-Chip); **„Teilen → Sticky“** aus jeder Android-App als Idee (SPEC)
 - Bordbuch öffnet immer mit dem **Inhaltsverzeichnis** (Firmware 0.7.5); gezielte Sprünge aus der App bleiben; im
   Bordbuch ▲ 1 s = zurück zum Inhalt
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft

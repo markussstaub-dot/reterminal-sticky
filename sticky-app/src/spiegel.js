@@ -4,7 +4,6 @@
 import { BREITE, HOEHE } from './protokoll.js';
 import { homeHochkant, KARTE } from './homeseite.js';
 import { fahrtHochkant, vonHochkant, PB, PH, RUECK_HOCH } from './fahrtseite.js';
-import { zettel as zettelListe, zeichneZettel } from './bestellung.js';
 
 export function spiegelEinrichten({ canvas, hinweisEl, quelle, befehl, notizTipp }) {
   const z = { modus: null, bb: 0, zettel: 0, verbunden: false, aufnahme: false, meldung: null };
@@ -39,9 +38,8 @@ export function spiegelEinrichten({ canvas, hinweisEl, quelle, befehl, notizTipp
       }
     } else if (m === 'bestell') {
       const g = ziel(BREITE, HOEHE);
-      const liste = zettelListe(quelle.bestellText());
-      const zt = liste[z.zettel] ?? liste[0];
-      if (zt) zeichneZettel(g, zt, z.zettel + 1, liste.length);
+      const liste = quelle.alleZettel();
+      (liste[z.zettel] ?? liste[0])?.zeichne(g);
     } else if (m === 'bordbuch') {
       const g = ziel(BREITE, HOEHE);
       const bild = await quelle.bordbuchSeite(z.bb);   // ImageData oder null
@@ -66,7 +64,7 @@ export function spiegelEinrichten({ canvas, hinweisEl, quelle, befehl, notizTipp
       g.textAlign = 'center';
       g.fillText('Sticky noch nicht verbunden', BREITE / 2, HOEHE / 2);
     }
-    hinweisEl.textContent = z.verbunden ? `Sticky zeigt: ${{ home: 'Home', notiz: 'Notiz', bordbuch: `Bordbuch, Seite ${z.bb + 1}`, bestell: `Bestellzettel ${z.zettel + 1}` }[m] ?? '–'}` : 'nicht verbunden (letzter Stand)';
+    hinweisEl.textContent = z.verbunden ? `Sticky zeigt: ${{ home: 'Home', notiz: 'Notiz', bordbuch: `Bordbuch, Seite ${z.bb + 1}`, bestell: `Zettel ${z.zettel + 1}` }[m] ?? '–'}` : 'nicht verbunden (letzter Stand)';
     hinweisEl.classList.toggle('gleich', z.verbunden);
   }
 
@@ -98,7 +96,7 @@ export function spiegelEinrichten({ canvas, hinweisEl, quelle, befehl, notizTipp
     taste(k) {
       if (z.modus === 'bordbuch') befehl(1, Math.max(0, z.bb + (k === 'down' ? 1 : -1)));
       else if (z.modus === 'bestell') {
-        const n = Math.max(1, zettelListe(quelle.bestellText()).length);
+        const n = Math.max(1, quelle.alleZettel().length);
         befehl(3, (z.zettel + (k === 'down' ? 1 : n - 1)) % n);
       } else if (k === 'down') befehl(3, 0);
       else befehl(1);
