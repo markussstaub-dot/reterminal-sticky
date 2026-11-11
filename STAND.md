@@ -3,7 +3,7 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: Testfahrt-Fixes: läuft im Hintergrund weiter, verbindet neu, richtige Zeiten, Wortliste (11.11.2026)
+version: FW 0.7.5 – Home mit Uhr, Notizen (auch offline), Bordbuch, Bestellzettel, App in Tabs mit Spiegel/Fernbedienung (12.11.2026)
 wartet: Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Akkulaufzeit ohne USB messen; USB-Pin beim Abziehen bestätigen
 ---
 
