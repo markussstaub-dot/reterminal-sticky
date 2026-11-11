@@ -18,6 +18,7 @@ class Basis {
     this.onGetrennt = () => {};
     this.onLog = () => {};
     this.onAudio = () => {};
+    this.onDatei = () => {};
   }
 }
 
@@ -90,6 +91,8 @@ export class BleVerbindung extends Basis {
     await BleClient.startNotifications(g.id, UUID.dienst, UUID.zustand, (v) => this.#json(v, this.onZustand));
     await BleClient.startNotifications(g.id, UUID.dienst, UUID.audio, (v) => this.onAudio(new Uint8Array(v.buffer, v.byteOffset, v.byteLength)))
       .catch((e) => this.onLog(`Audio nicht verfügbar (alte Firmware?): ${e.message}`));
+    await BleClient.startNotifications(g.id, UUID.dienst, UUID.datei, (v) => this.onDatei(new Uint8Array(v.buffer, v.byteOffset, v.byteLength)))
+      .catch(() => this.onLog('Puffer-Abholung braucht Firmware 0.5'));
     const z = await BleClient.read(g.id, UUID.dienst, UUID.zustand);
     this.#json(z, this.onZustand);
   }
@@ -173,6 +176,8 @@ export class SimVerbindung extends Basis {
     } else if (r.op === 'ping') {
       this.onEreignis({ t: 'pong' });
       this.#zustand();
+    } else if (r.op === 'pufferListe') {
+      this.onEreignis({ t: 'puffer', dateien: [] });
     } else if (r.op === 'bbIndex') {
       this.bbAnzahl = +(r.text.match(/seiten=(\d+)/)?.[1] ?? 0);
       this.onEreignis({ t: 'bordbuch', seiten: this.bbAnzahl, belegtKB: this.bbAnzahl * 47 });

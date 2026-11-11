@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.4.0";
+static const char* FW_VERSION = "0.5.0";
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "Markus";
@@ -52,7 +52,8 @@ static const int PIN_BUZZER = 48;
 #define UUID_AUDIO "b1e50005-7374-6963-6b79-7465726d6e6c"
 
 enum : uint8_t { OP_IMG_BEGIN = 0x01, OP_IMG_DATA = 0x02, OP_IMG_END = 0x03, OP_PING = 0x10, OP_KARTE = 0x11,
-                 OP_BB_INDEX = 0x13, OP_BB_MODUS = 0x14 };
+                 OP_BB_INDEX = 0x13, OP_BB_MODUS = 0x14, OP_ZEIT = 0x15, OP_FAHRT_LAYOUT = 0x16,
+                 OP_PUFFER_LISTE = 0x17, OP_PUFFER_HOLEN = 0x18, OP_PUFFER_LOESCHEN = 0x19 };
 
 // Verbindungsintervalle in 1,25-ms-Schritten
 // Ruhe ohne Latenz: sonst dauert der Wechsel auf schnell mehrere Sekunden (gemessen 11.11.2026)
@@ -85,6 +86,7 @@ static volatile uint32_t imgLen = 0, imgCrc = 0, imgGot = 0, imgT0 = 0, imgT1 = 
 static volatile uint16_t dleTx = 27, dleRx = 27;
 static volatile bool imgActive = false, imgReady = false, imgFast = false;
 static volatile int imgSpeichern = -1;   // >= 0: Bild als Bordbuch-Seite n speichern statt zeigen
+static volatile int imgRueckSlot = -1;   // >= 0: Teilbild als Rückmeldung für den Offline-Betrieb speichern
 static volatile bool wantFast = false, wantSlow = false, wantKarte = false, wantState = false;
 static volatile uint32_t slowAt = 0;
 static uint32_t advFastUntil = 0;
@@ -106,7 +108,9 @@ static void sendEvt(const char* json) {
     Serial.printf("EVT %s\n", json);
     if (!connected) return;
     chEvt->setValue((const uint8_t*)json, strlen(json));
-    chEvt->notify();
+    // Nach vielen Datenpaketen (Puffer-Abholung) ist der Sendepuffer voll: dann kurz warten statt die Meldung zu
+    // verlieren (11.11.2026: „datei“-Abschluss kam nie an, die App wartete 60 s)
+    for (int i = 0; i < 40 && !chEvt->notify(); i++) delay(10);
 }
 
 // ---- Akku (BQ27220) --------------------------------------------------------------
@@ -227,9 +231,10 @@ static void touchInit() {
 }
 // GT911 liefert hochkant (480x800); x/y im Querformat des Displays (am Gerät geprüft 11.11.2026), rx/ry = roh
 static void bbTouch(int x, int y);
+static void pufferTouch(int x, int y);
 static void sendTouch(const char* a, int x, int y) {
     int dx = 799 - y, dy = 479 - x;
-    if (a[0] == 'd') bbTouch(dx, dy);
+    if (a[0] == 'd') { bbTouch(dx, dy); pufferTouch(dx, dy); }
     char j[96];
     snprintf(j, sizeof j, "{\"t\":\"touch\",\"a\":\"%s\",\"x\":%d,\"y\":%d,\"rx\":%d,\"ry\":%d}", a, dx, dy, x, y);
     sendEvt(j);
@@ -333,8 +338,9 @@ static void zeigeKarte() {
     seite = "karte";
 }
 
-#include "audio.h"
 #include "bordbuch.h"
+#include "puffer.h"
+#include "audio.h"
 
 // ---- Tasten-Aktionen je Modus ------------------------------------------------------
 static uint32_t upSeit = 0;
@@ -351,8 +357,7 @@ static void tasteAktion(const char* name, bool gedrueckt) {
     }
     if (strcmp(name, "ki") == 0) {
         if (bordbuch) { if (gedrueckt) bbWunsch = bbToc; return; }
-        if (!connected) return;
-        if (gedrueckt) aufnahmeStart(); else aufnahmeStopp();   // Fahrt: KI halten = Diktat
+        if (gedrueckt) aufnahmeStart(); else aufnahmeStopp();   // Fahrt: KI halten = Diktat (ohne Handy in den Puffer)
     }
 }
 /** ▲ eine Sekunde halten = Modus wechseln (schon beim Halten, mit Piep) */
@@ -368,10 +373,11 @@ static void tastenLang() {
 // ---- Zustand -------------------------------------------------------------------
 static void sendState() {
     readBattery();
-    char j[200];
+    char j[260];
     snprintf(j, sizeof j,
-             "{\"fw\":\"%s\",\"seite\":\"%s\",\"bat\":%d,\"mv\":%d,\"ma\":%d,\"chg\":%s,\"mtu\":%u,\"phy\":%u,\"itvl\":%u,\"tp\":\"%ux%u\"}",
-             FW_VERSION, seite, batPct, batMv, batMa, laedt ? "true" : "false", mtu, phy, connItvl, tpResX, tpResY);
+             "{\"fw\":\"%s\",\"seite\":\"%s\",\"bat\":%d,\"mv\":%d,\"ma\":%d,\"chg\":%s,\"mtu\":%u,\"phy\":%u,\"itvl\":%u,\"tp\":\"%ux%u\",\"fahrtv\":\"%08lx\",\"offen\":%d,\"uhr\":%s}",
+             FW_VERSION, seite, batPct, batMv, batMa, laedt ? "true" : "false", mtu, phy, connItvl, tpResX, tpResY,
+             (unsigned long)fahrtVersion, offeneNotizen, rtcDa ? "true" : "false");
     chState->setValue((const uint8_t*)j, strlen(j));
     if (connected) chState->notify();
     Serial.printf("STATE %s\n", j);
@@ -457,6 +463,7 @@ class CmdCb : public NimBLECharacteristicCallbacks {
             imgT1 = millis();
             imgFast = n > 1 && d[1] == 1;
             imgSpeichern = (n > 2 && d[1] == 3) ? d[2] : -1;   // Modus 3: als Bordbuch-Seite d[2] speichern
+            imgRueckSlot = (n > 2 && d[1] == 4) ? d[2] : -1;   // Modus 4: Teilbild als Rückmeldung d[2] speichern
             imgReady = true;
             break;
         case OP_PING:
@@ -468,6 +475,28 @@ class CmdCb : public NimBLECharacteristicCallbacks {
             break;
         case OP_BB_INDEX:    // 13 Text (Zeilen „seiten=N“, „toc=K“, „e y0 y1 seite“)
             if (n - 1 < sizeof bbIndexNeu) { memcpy(bbIndexNeu, d + 1, n - 1); bbIndexNeu[n - 1] = 0; bbIndexDa = true; }
+            break;
+        case OP_ZEIT:        // 15 unix-ms:u64
+            if (n >= 9) { uint64_t ms = 0; for (int i = 7; i >= 0; i--) ms = ms << 8 | d[1 + i]; zeitSetzen(ms); }
+            break;
+        case OP_FAHRT_LAYOUT: // 16 Text „e x0 y0 x1 y1 Name“ je Streifen
+            if (n - 1 < sizeof fahrtLayoutNeu) { memcpy(fahrtLayoutNeu, d + 1, n - 1); fahrtLayoutNeu[n - 1] = 0; fahrtLayoutDa = true; }
+            break;
+        case OP_PUFFER_LISTE:
+            listeWunsch = true;
+            break;
+        case OP_PUFFER_HOLEN:      // 18 offset:u32 Name → ein Stück auf DATEI
+            if (n > 5 && n - 5 < 40) {
+                holOffset = rd32(d + 1);
+                memcpy(holName, d + 5, n - 5); holName[n - 5] = 0;
+                if (!strchr(holName, '/')) holWunsch = true;
+            }
+            break;
+        case OP_PUFFER_LOESCHEN:   // 19 Name
+            if (n > 1 && n - 1 < 40) {
+                memcpy(loeschName, d + 1, n - 1); loeschName[n - 1] = 0;
+                if (!strchr(loeschName, '/')) loeschWunsch = true;
+            }
             break;
         case OP_BB_MODUS:    // 14 0|1 [seite]
             if (n > 1) { bbModusWunsch = d[1] ? 1 : 0; if (n > 2) bbWunsch = d[2]; }
@@ -517,6 +546,7 @@ static void bleInit() {
     chEvt = svc->createCharacteristic(UUID_EVT, NIMBLE_PROPERTY::NOTIFY);
     chState = svc->createCharacteristic(UUID_STATE, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
     chAudio = svc->createCharacteristic(UUID_AUDIO, NIMBLE_PROPERTY::NOTIFY);
+    chDatei = svc->createCharacteristic(UUID_DATEI, NIMBLE_PROPERTY::NOTIFY);
     svc->start();
     NimBLEAdvertising* adv = NimBLEDevice::getAdvertising();
     adv->addServiceUUID(UUID_SVC);
@@ -537,6 +567,7 @@ void setup() {
     pinMode(PIN_CHG_STATE, INPUT_PULLUP);
     Wire.begin(PIN_BFG_SDA, PIN_BFG_SCL, 100000);
     readBattery();
+    zeitInit();
     Serial.printf("Akku: %s %d %% %d mV %d mA %s\n", bfgOk ? "BQ27220" : "nicht gefunden", batPct, batMv, batMa, laedt ? "lädt" : "");
 
     imgBuf = (uint8_t*)ps_malloc(IMG_BYTES);
@@ -553,6 +584,7 @@ void setup() {
     }
     // Tasten und Touch erst nach display.begin(): vorher eingerichtet, kamen keine Tastendrücke an (11.11.2026)
     bbInit();
+    pufferInit();
     tastenInit();
     touchInit();
     micSelbsttest();
@@ -580,6 +612,14 @@ void loop() {
             sendEvt(j);
         } else {
             uint32_t t0 = millis();
+            if (imgRueckSlot >= 0) {
+                bool gut = teil && rueckSpeichern(imgRueckSlot, rxBuf, imgX, imgY, imgW, imgH);
+                char j[96];
+                snprintf(j, sizeof j, "{\"t\":\"img\",\"ok\":%s,\"rueck\":%d}", gut ? "true" : "false", imgRueckSlot);
+                imgRueckSlot = -1;
+                sendEvt(j);
+                goto fertig;
+            }
             if (imgSpeichern >= 0) {
                 bool gut = !teil && bbSpeichern(imgSpeichern, rxBuf);
                 char j[96];
@@ -629,6 +669,7 @@ void loop() {
     tastenLang();
     audioLoop();
     bbLoop();
+    pufferLoop();
     static uint32_t lastTp = 0;
     if (millis() - lastTp > 25) { lastTp = millis(); touchPoll(); }
     delay(5);

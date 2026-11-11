@@ -14,3 +14,13 @@ test('Streifen werden von oben nach unten getroffen', () => {
   assert.equal(trefferKnopf(30, 239), -1);    // Kopfzeile
   assert.equal(trefferKnopf(750, 239), -1);   // Rückmeldefeld
 });
+
+test('Layout für den Sticky trifft dieselben Streifen wie die App', async () => {
+  const { layoutText } = await import('../src/fahrtseite.js');
+  const zeilen = layoutText().trim().split('\n').map((z) => z.split(' '));
+  assert.equal(zeilen.length, 5);
+  zeilen.forEach(([, x0, y0, x1, y1], i) => {
+    const mx = (+x0 + +x1) / 2, my = (+y0 + +y1) / 2;
+    assert.equal(trefferKnopf(mx, my), i);
+  });
+});

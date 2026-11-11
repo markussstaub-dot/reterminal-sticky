@@ -97,3 +97,13 @@ export function rueckmeldung(text) {
   const bereich = { x: RUECK_HOCH.y, y: HOEHE - RUECK_HOCH.x - w, w: h, h: w };
   return { bytes: rgbaZu1bpp(q.getImageData(0, 0, h, w).data, h, w), bereich };
 }
+
+/** Streifen als Text für den Offline-Betrieb („e x0 y0 x1 y1 Name“ in Display-Koordinaten) */
+export function layoutText(knoepfe = STANDARD_KNOEPFE) {
+  return STREIFEN.map((k, i) => {
+    if (!knoepfe[i]) return null;
+    // hochkant (x, y, w, h) → Display: x = hochkant-y, y = 480 − hochkant-x
+    const name = knoepfe[i].replace(/["\\\r\n]/g, "'").slice(0, 23);
+    return `e ${k.y} ${HOEHE - (k.x + k.w)} ${k.y + k.h} ${HOEHE - k.x} ${name}`;
+  }).filter(Boolean).join('\n') + '\n';
+}

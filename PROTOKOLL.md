@@ -10,16 +10,22 @@ Gedacht auch für den Microlino-Knopf: gleiche Rahmen, nur andere Bildgröße im
 | EREIGNIS | `b1e50003-…` | Gerät → App, notify | JSON |
 | ZUSTAND | `b1e50004-…` | Gerät → App, read / notify | JSON |
 | AUDIO | `b1e50005-…` | Gerät → App, notify | ADPCM-Pakete (unten) |
+| DATEI | `b1e50006-…` | Gerät → App, notify | Puffer-Stück: `offset:u32` + bis 480 Byte (0 Byte = Ende) |
 
 ## Rahmen auf BEFEHL (Little Endian)
 | Op | Name | Aufbau |
 |---|---|---|
 | `01` | BILD_START | `01 fmt w:u16 h:u16 len:u32 crc32:u32 [x:u16 y:u16]` – fmt 0 = 1 bpp; 800×480 → len 48000. Mit x/y ein **Teilbild** (x, w Vielfache von 8, Teil-Refresh; unter 4 KB ohne Umschalten auf schnell) |
 | `02` | BILD_DATEN | `02 offset:u32 daten…` – Nutzlast = min(MTU−3, 512) − 5, write-no-response |
-| `03` | BILD_ENDE | `03 modus [seite]` – 0 = Vollbild-Refresh, 1 = schnell, **3 = nicht zeigen, als Bordbuch-Seite `seite` speichern** |
+| `03` | BILD_ENDE | `03 modus [seite]` – 0 = Vollbild-Refresh, 1 = schnell, **3 = nicht zeigen, als Bordbuch-Seite `seite` speichern**, **4 = Teilbild als Offline-Rückmeldung `seite` (0–4 Knöpfe, 5 Diktat, 6 Aufnahme) speichern** |
 | `10` | PING | Gerät antwortet `{"t":"pong"}` und schickt den Zustand |
 | `11` | KARTE | Gerät zeigt die eingebaute Visitenkarte |
 | `13` | BB_INDEX | Text: `seiten=N`, `toc=K`, `e x0 y0 x1 y1 seite` je Eintrag im Inhaltsverzeichnis (≤ 512 Byte) |
+| `15` | ZEIT | `15 unix-ms:u64` – stellt Systemzeit und Uhr (PCF8563) |
+| `16` | FAHRT_LAYOUT | Text `e x0 y0 x1 y1 Name` je Streifen (Display-Koordinaten) für Notizen ohne Handy |
+| `17` | PUFFER_LISTE | Antwort `{"t":"puffer","dateien":[{"n","b"}]}` |
+| `18` | PUFFER_HOLEN | `18 offset:u32 Name` → ein Stück auf DATEI (Anfrage/Antwort, App wiederholt bei Verlust) |
+| `19` | PUFFER_LOESCHEN | `19 Name` |
 | `14` | BB_MODUS | `14 0|1 [seite]` – Fahrt/Bordbuch, optional gleich zu einer Seite |
 
 Bild: Zeilen à 100 Byte, MSB = linkes Pixel, Bit 1 = schwarz. CRC-32 wie zlib.
@@ -35,7 +41,7 @@ Bild: Zeilen à 100 Byte, MSB = linkes Pixel, Bit 1 = schwarz. CRC-32 wie zlib.
   `{"t":"audio","a":"fehler","err":"mtu|mikro"}`
 
 ## Zustand (JSON)
-`{"fw","seite":"karte|bild","bat":%,"mv","ma","chg","mtu","phy","itvl":×1,25 ms,"tp":"BxH"}` – bei Verbindung,
+`{"fw","seite":"karte|bild","bat":%,"mv","ma","chg","mtu","phy","itvl":×1,25 ms,"tp":"BxH","fahrtv":CRC des Layouts,"offen":Notizen im Puffer,"uhr":bool}` – bei Verbindung,
 nach jedem Bild und alle 30 s.
 
 ## Funkverhalten (rücksichtsvoll)

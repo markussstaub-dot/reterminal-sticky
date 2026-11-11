@@ -7,9 +7,11 @@ export const UUID = {
   ereignis:'b1e50003-7374-6963-6b79-7465726d6e6c', // notify, JSON
   zustand: 'b1e50004-7374-6963-6b79-7465726d6e6c', // read / notify, JSON
   audio:   'b1e50005-7374-6963-6b79-7465726d6e6c', // notify, IMA-ADPCM-Pakete (audio.js)
+  datei:   'b1e50006-7374-6963-6b79-7465726d6e6c', // notify, Puffer-Dateien in Stücken (seq:u16 + Daten)
 };
 
-export const OP = { BILD_START: 0x01, BILD_DATEN: 0x02, BILD_ENDE: 0x03, PING: 0x10, KARTE: 0x11, BB_INDEX: 0x13, BB_MODUS: 0x14 };
+export const OP = { BILD_START: 0x01, BILD_DATEN: 0x02, BILD_ENDE: 0x03, PING: 0x10, KARTE: 0x11, BB_INDEX: 0x13, BB_MODUS: 0x14,
+  ZEIT: 0x15, FAHRT_LAYOUT: 0x16, PUFFER_LISTE: 0x17, PUFFER_HOLEN: 0x18, PUFFER_LOESCHEN: 0x19 };
 
 export const BREITE = 800, HOEHE = 480;
 export const BILD_BYTES = BREITE / 8 * HOEHE; // 48000
@@ -80,6 +82,22 @@ export const rahmenEnde = (schnell) => Uint8Array.of(OP.BILD_ENDE, schnell ? 1 :
 export const rahmenSpeichern = (n) => Uint8Array.of(OP.BILD_ENDE, 3, n);
 /** Bordbuch-Index als Text: „seiten=N“, „toc=K“, „e x0 y0 x1 y1 seite“ */
 export const rahmenBbIndex = (text) => { const t = new TextEncoder().encode(text); const r = new Uint8Array(1 + t.length); r[0] = OP.BB_INDEX; r.set(t, 1); return r; };
+/** BILD_ENDE Modus 4: Teilbild als Offline-Rückmeldung slot speichern (0–4 Knöpfe, 5 Diktat, 6 Aufnahme läuft) */
+export const rahmenRueck = (slot) => Uint8Array.of(OP.BILD_ENDE, 4, slot);
+const textRahmen = (op, text) => { const t = new TextEncoder().encode(text); const r = new Uint8Array(1 + t.length); r[0] = op; r.set(t, 1); return r; };
+export const rahmenZeit = (ms = Date.now()) => { const r = new Uint8Array(9); r[0] = OP.ZEIT; let v = BigInt(ms); for (let i = 0; i < 8; i++) { r[1 + i] = Number(v & 0xffn); v >>= 8n; } return r; };
+export const rahmenFahrtLayout = (text) => textRahmen(OP.FAHRT_LAYOUT, text);
+export const rahmenPufferListe = () => Uint8Array.of(OP.PUFFER_LISTE);
+/** Ein Stück (bis 480 Byte) der Puffer-Datei ab offset anfordern */
+export const rahmenPufferHolen = (name, offset = 0) => {
+  const t = new TextEncoder().encode(name);
+  const r = new Uint8Array(5 + t.length);
+  r[0] = OP.PUFFER_HOLEN;
+  le(r, 1, offset, 4);
+  r.set(t, 5);
+  return r;
+};
+export const rahmenPufferLoeschen = (name) => textRahmen(OP.PUFFER_LOESCHEN, name);
 export const rahmenBbModus = (an, seite = null) => (seite == null ? Uint8Array.of(OP.BB_MODUS, an ? 1 : 0) : Uint8Array.of(OP.BB_MODUS, an ? 1 : 0, seite));
 export const rahmenPing = () => Uint8Array.of(OP.PING);
 export const rahmenKarte = () => Uint8Array.of(OP.KARTE);
@@ -96,6 +114,7 @@ export function lies(rahmen) {
     case OP.BILD_DATEN: return { op: 'daten', offset: r32(1), daten: rahmen.subarray(5) };
     case OP.BILD_ENDE: return rahmen[1] === 3 ? { op: 'ende', schnell: false, speichern: rahmen[2] } : { op: 'ende', schnell: rahmen[1] === 1 };
     case OP.BB_INDEX: return { op: 'bbIndex', text: new TextDecoder().decode(rahmen.subarray(1)) };
+    case OP.PUFFER_LISTE: return { op: 'pufferListe' };
     case OP.BB_MODUS: return { op: 'bbModus', an: rahmen[1] === 1, seite: rahmen.length > 2 ? rahmen[2] : null };
     case OP.PING: return { op: 'ping' };
     case OP.KARTE: return { op: 'karte' };

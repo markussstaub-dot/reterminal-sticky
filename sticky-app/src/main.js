@@ -2,7 +2,8 @@ import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Clipboard } from '@capacitor/clipboard';
 import { Spracherkennung, MODELLE, pcmBase64 } from './sprache.js';
-import { zeichneFahrt, trefferKnopf, rueckmeldung, STANDARD_KNOEPFE } from './fahrtseite.js';
+import { zeichneFahrt, trefferKnopf, rueckmeldung, layoutText, STANDARD_KNOEPFE } from './fahrtseite.js';
+import { Aufnahme, wav } from './audio.js';
 import * as notizen from './notizen.js';
 import * as bb from './bordbuch.js';
 import { BREITE, HOEHE, rgbaZu1bpp, crc32 } from './protokoll.js';
@@ -280,7 +281,8 @@ $('verbinden').onclick = async () => {
     zwilling.anbinden(verbindung);
     await verbindung.verbinden();
     eintrag(`Verbunden mit ${verbindung.name} (MTU ${verbindung.mtu})`);
-    if ($('fahrtAuto').checked) zeigeFahrtSeite().catch((e) => eintrag(e.message, true));
+    if ($('fahrtAuto').checked) await zeigeFahrtSeite().catch((e) => eintrag(e.message, true));
+    abgleich().catch((e) => eintrag(`Abgleich: ${e.message}`, true));
   } catch (e) {
     eintrag(`Verbinden fehlgeschlagen: ${e.message || e}`, true);
   } finally {
@@ -389,13 +391,75 @@ function zeigeNotiz(n, neu = false) {
   li.className = `${n.art}${neu ? ' neu' : ''}`;
   const kopf = document.createElement('div');
   kopf.className = 'kopf';
-  const ort = n.lat != null ? `${n.lat.toFixed(5)}, ${n.lon.toFixed(5)} (±${n.gen} m)` : 'ohne GPS';
+  const ort = n.lat != null ? `${n.lat.toFixed(5)}, ${n.lon.toFixed(5)} (±${n.gen} m)` : n.offline ? 'ohne Handy aufgenommen' : 'ohne GPS';
   kopf.textContent = `${new Date(n.t).toLocaleTimeString('de-DE')} · ${ort}`;
   const was = document.createElement('div');
   was.className = 'was';
   was.textContent = n.art === 'diktat' ? `🎙 ${n.text || '(nichts erkannt)'}` : n.knopf;
   li.append(kopf, was);
   $('notizen').prepend(li);
+}
+
+// ---- Ohne Handy: Abgleich und Puffer abholen ------------------------------------------------
+/** Nach dem Verbinden: Uhr stellen, Fahrt-Layout + Rückmeldungen für den Offline-Betrieb aufspielen, Puffer abholen */
+async function abgleich() {
+  if (!zwilling.geraet.fw || zwilling.geraet.fw === 'sim' || zwilling.geraet.fahrtv == null) return;   // braucht Firmware 0.5
+  await zwilling.zeitSetzen();
+  const text = layoutText(knoepfe());
+  const version = crc32(new TextEncoder().encode(text)).toString(16).padStart(8, '0');
+  if (zwilling.geraet.fahrtv !== version) {
+    await zwilling.fahrtLayout(text);
+    const k = knoepfe();
+    const texte = [0, 1, 2, 3, 4].map((i) => (k[i] ? `✓ ${k[i]}` : null)).concat(['✓ Diktat gespeichert', '● Aufnahme']);
+    for (let i = 0; i < texte.length; i++) {
+      if (!texte[i]) continue;
+      const r = rueckmeldung(texte[i]);
+      await zwilling.sendeBild(r.bytes, { bereich: r.bereich, rueck: i });
+    }
+    eintrag('Sticky kann jetzt auch ohne Handy Notizen sammeln');
+  }
+  await pufferAbholen();
+}
+
+async function pufferAbholen() {
+  const liste = await zwilling.pufferListe();
+  if (!liste.length) return;
+  eintrag(`Hole Notizen vom Sticky (${liste.length} Dateien) …`);
+  const groesse = Object.fromEntries(liste.map((d) => [d.n, d.b]));
+  const roh = groesse['notizen.jsonl'] ? new TextDecoder().decode(await zwilling.pufferHolen('notizen.jsonl', groesse['notizen.jsonl'])) : '';
+  const zeilen = roh.split('\n').map((z) => { try { return JSON.parse(z); } catch { return null; } }).filter(Boolean);
+  // Aufnahmen ohne Notiz-Zeile (z. B. nach einem abgebrochenen Abholen) trotzdem mitnehmen
+  for (const d of liste) {
+    if (d.n.endsWith('.adp') && !zeilen.some((z) => z.audio === d.n)) zeilen.push({ t: 0, art: 'diktat', audio: d.n });
+  }
+  let anzahl = 0;
+  for (const z of zeilen) {
+    const t = z.t > 1.7e12 ? z.t : Date.now();   // 0 = Sticky kannte die Uhrzeit nicht
+    let n;
+    if (z.art === 'diktat' && z.audio) {
+      let text = '', pfad = null, dauerMs = z.dauerMs;
+      try {
+        if (groesse[z.audio] == null) throw new Error('Audiodatei fehlt auf dem Sticky');
+        const t0 = performance.now();
+        const daten = await zwilling.pufferHolen(z.audio, groesse[z.audio]);
+        console.info('[sticky] abgeholt', z.audio, daten.length, Math.round(performance.now() - t0));
+        const a = new Aufnahme();
+        for (let o = 0; o + 245 <= daten.length; o += 245) a.paket(daten.subarray(o, o + 245));
+        const e = a.ergebnis();
+        dauerMs = e.dauerMs;
+        pfad = await speichern(`sticky-offline-${new Date(t).toISOString().slice(0, 19).replace(/[:T]/g, '-')}.wav`, wav(e.pcm));
+        text = (await Spracherkennung.erkennen({ pcm: pcmBase64(e.pcm), modell: $('modell').value, threads: 6 })).text || '';
+        await zwilling.pufferLoeschen(z.audio);
+      } catch (e) { eintrag(`Diktat ${z.audio}: ${e.message}`, true); }
+      n = await notizen.notiere({ t, art: 'diktat', text, audio: pfad ?? z.audio, dauerMs, offline: true });
+    } else {
+      n = await notizen.notiere({ t, art: 'knopf', knopf: z.knopf, offline: true });
+    }
+    zeigeNotiz(n, true);
+    anzahl++;
+  }
+  if (groesse['notizen.jsonl']) await zwilling.pufferLoeschen('notizen.jsonl');
+  eintrag(`${anzahl} Notizen vom Sticky abgeholt`);
 }
 
 $('notizenTeilen').onclick = async () => {
@@ -495,7 +559,7 @@ $('bbAufspielen').onclick = async () => {
 };
 $('bbZeigen').onclick = () => zwilling.bordbuchModus(true).catch((e) => eintrag(e.message, true));
 $('bbFahrt').onclick = () => zwilling.bordbuchModus(false).catch((e) => eintrag(e.message, true));
-if (import.meta.env.DEV) window.__sticky = { ladePdf };
+window.__sticky = { ladePdf, zwilling, pufferAbholen };   // zum Prüfen per WebView-Fernsteuerung (adb)
 
 muster();
 zeigeVerbindung();

@@ -1,5 +1,6 @@
 // Der Zwilling: Soll-Zustand des Sticky in der App (Quelle der Wahrheit) plus Übertragung.
-import { rahmenStart, rahmenDaten, rahmenEnde, rahmenKarte, rahmenPing, nutzlastFuer, crc32, rahmenSpeichern, rahmenBbIndex, rahmenBbModus } from './protokoll.js';
+import { rahmenStart, rahmenDaten, rahmenEnde, rahmenKarte, rahmenPing, nutzlastFuer, crc32, rahmenSpeichern, rahmenBbIndex, rahmenBbModus,
+  rahmenRueck, rahmenZeit, rahmenFahrtLayout, rahmenPufferListe, rahmenPufferHolen, rahmenPufferLoeschen } from './protokoll.js';
 import { Aufnahme, wav } from './audio.js';
 
 export class Zwilling {
@@ -19,6 +20,7 @@ export class Zwilling {
     v.onZustand = (z) => { this.geraet = z; if (z.itvl) this.intervall = z.itvl; this.#melde('zustand', z); };
     v.onEreignis = (e) => {
       if (e.t === 'img' && this.warteBild) { this.warteBild(e); this.warteBild = null; }
+      if (e.t === 'puffer' && this.wartePuffer) { this.wartePuffer(e); this.wartePuffer = null; }
       if (e.t === 'itvl') { this.intervall = e.v; this.warteSchnell?.(); }
       if (e.t === 'key' && e.k === 'ki' && e.a === 'up') this.tLos = performance.now();
       if (e.t === 'audio' && e.a === 'start') { this.aufnahme = new Aufnahme(); this.tLos = null; this.#melde('aufnahmeLaeuft'); }
@@ -31,6 +33,11 @@ export class Zwilling {
       this.#melde('ereignis', e);
     };
     v.onAudio = (p) => this.aufnahme?.paket(p);
+    v.onDatei = (p) => {
+      // Stück: offset:u32 + Daten; nur das gerade erwartete annehmen
+      const off = (p[0] | p[1] << 8 | p[2] << 16 | p[3] << 24) >>> 0;
+      if (this.datei && off === this.datei.warte) this.datei.fertig(p.slice(4));
+    };
     v.onGetrennt = () => this.#melde('getrennt');
     v.onLog = (t) => this.#melde('log', t);
   }
@@ -44,7 +51,7 @@ export class Zwilling {
     return lauf;
   }
 
-  async #sende(bild, { schnell = false, fortschritt = () => {}, bereich = null, speichern = null } = {}) {
+  async #sende(bild, { schnell = false, fortschritt = () => {}, bereich = null, speichern = null, rueck = null } = {}) {
     const v = this.verbindung;
     const t0 = performance.now();
     const nutzlast = nutzlastFuer(v.mtu);
@@ -72,10 +79,10 @@ export class Zwilling {
       const zeit = setTimeout(() => { this.warteBild = null; fehler(new Error('Sticky hat das Bild nicht bestätigt (20 s).')); }, 20000);
       this.warteBild = (e) => { clearTimeout(zeit); ok(e); };
     });
-    await v.schreiben(speichern != null ? rahmenSpeichern(speichern) : rahmenEnde(schnell));
+    await v.schreiben(speichern != null ? rahmenSpeichern(speichern) : rueck != null ? rahmenRueck(rueck) : rahmenEnde(schnell));
     const e = await antwort;
     if (!e.ok) throw new Error(`Sticky meldet Fehler: ${e.err}${e.got != null ? ` (${e.got} Byte angekommen)` : ''}`);
-    if (!bereich && speichern == null) this.gesendetCrc = crc32(bild);
+    if (!bereich && speichern == null && rueck == null) this.gesendetCrc = crc32(bild);
     return {
       gesamt: Math.round(performance.now() - t0),
       funk: Math.round(tFunk),
@@ -93,6 +100,43 @@ export class Zwilling {
 
   async zeigeKarte() { await this.verbindung.schreiben(rahmenKarte()); this.gesendetCrc = null; }
   async ping() { await this.verbindung.schreiben(rahmenPing()); }
+  async zeitSetzen() { await this.verbindung.schreiben(rahmenZeit()); }
+  async fahrtLayout(text) { await this.verbindung.schreiben(rahmenFahrtLayout(text)); }
+
+  /** Liste der gepufferten Dateien auf dem Sticky: [{ n, b }] */
+  async pufferListe() {
+    const e = await new Promise((ok, fehler) => {
+      const zeit = setTimeout(() => { this.wartePuffer = null; fehler(new Error('Sticky antwortet nicht auf die Puffer-Liste')); }, 5000);
+      this.wartePuffer = (x) => { clearTimeout(zeit); ok(x); };
+      this.verbindung.schreiben(rahmenPufferListe()).catch(fehler);
+    });
+    return e.dateien ?? [];
+  }
+
+  /** Eine Puffer-Datei Stück für Stück abholen (Anfrage → Antwort, bei Verlust wiederholen) → Uint8Array */
+  async pufferHolen(name, groesse) {
+    const daten = new Uint8Array(groesse);
+    await this.verbindung.schnell();
+    let off = 0;
+    while (off < groesse) {
+      let stueck = null;
+      for (let versuch = 0; versuch < 4 && !stueck; versuch++) {
+        stueck = await new Promise((ok) => {
+          const zeit = setTimeout(() => { this.datei = null; ok(null); }, 1500);
+          this.datei = { warte: off, fertig: (p) => { clearTimeout(zeit); this.datei = null; ok(p); } };
+          this.verbindung.schreiben(rahmenPufferHolen(name, off)).catch(() => ok(null));
+        });
+      }
+      if (!stueck) throw new Error(`${name}: bei Byte ${off} keine Antwort`);
+      if (!stueck.length) break;   // Ende der Datei
+      daten.set(stueck.subarray(0, Math.min(stueck.length, groesse - off)), off);
+      off += stueck.length;
+    }
+    if (off < groesse) throw new Error(`${name}: unvollständig (${off}/${groesse} Byte)`);
+    return daten;
+  }
+
+  async pufferLoeschen(name) { await this.verbindung.schreiben(rahmenPufferLoeschen(name)); }
   async bordbuchIndex(text) { await this.verbindung.schreiben(rahmenBbIndex(text)); }
   async bordbuchModus(an, seite = null) { await this.verbindung.schreiben(rahmenBbModus(an, seite)); }
 }

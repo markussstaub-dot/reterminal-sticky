@@ -241,3 +241,7 @@ dazu 5 Spickzettel aus dem Handbuch (Laden, Warnleuchten, Reifen, Sicherungen, N
 Flash (7,2 MB von 23,9 MB), Aufspielen 290 s, Blättern 2,2 s. Am Fahrzeug zu prüfen: Felgen des Pioneer
 (1,8 bar Stahl 13″ / 2,0 bar Alu 14″), Pannenhilfe-Nummer eintragen.
 - Vorschlag: Blättern beschleunigen (Teil-Refresh mit richtigem Vorbild statt Voll-Refresh)
+
+**3. Notizen puffern** (11.11.2026) – läuft. Ohne Handy sammelt der Sticky Knopf-Notizen und Diktate im Flash
+(Zeit aus der eingebauten Uhr, kein GPS), die App holt sie beim nächsten Verbinden ab und erkennt die Diktate.
+GPS für diese Notizen kommt bei der Auswertung über den Zeitstempel aus der Bubble-Log-Spur.

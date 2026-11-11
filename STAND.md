@@ -3,7 +3,7 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: MVP läuft – Testnotizen (Knopf/Diktat mit GPS) und Bordbuch (150 Seiten im Flash, offline) (11.11.2026)
+version: MVP läuft – Testnotizen (auch ohne Handy, gepuffert) und Bordbuch offline (11.11.2026)
 wartet: Markus prüft die Spickzettel (Felgen des Pioneer, Pannenhilfe-Nummer) und testet im Auto
 ---
 
@@ -63,6 +63,15 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   gab eine falsche Anzeige). Das Handbuch-PDF bleibt privat: PC `%LOCALAPPDATA%\sticky-bordbuch\handbuch.pdf`,
   Fold `files/bordbuch/handbuch.pdf` (per adb oder „Handbuch-PDF wählen“), nicht im Repo
 - Im ausgeblendeten Browser-Fenster läuft pdf.js nicht (Animationstakt steht) → zum Testen das Fenster einblenden
+- **Notizen puffern** (Firmware 0.5.0): Ohne Verbindung legt der Sticky Knopf-Notizen und Diktate selbst ab
+  (`firmware-ble/puffer.h`, LittleFS `/puffer/`), mit Zeit aus der eingebauten Uhr **PCF8563 (0x51, am Akku-Bus
+  GPIO0/1)**, die App stellt sie bei jedem Verbinden. Fahrt-Layout und Rückmeldebilder („✓ Bug“, „● Aufnahme“,
+  „✓ Diktat gespeichert“) rendert die App und spielt sie einmalig auf (Version über CRC im Zustand). Beim Verbinden
+  holt die App alles ab, erkennt die Diktate und löscht den Puffer. Gemessen: Diktat 2,9 s (21 KB) in 3,1 s abgeholt
+- **Lehre:** Viele Notifications am Stück kommen am Fold nur zu einem Fünftel an (15 von 84). Abholen deshalb als
+  Anfrage/Antwort je 480 Byte mit Wiederholung; `sendEvt` wartet bei vollem Sendepuffer, statt Meldungen zu verwerfen
+- SD-Karte: Slot vorhanden (CS 8, EN 10, DETECT 11, SPI geteilt mit dem Display), noch nicht genutzt; der Puffer liegt
+  im internen Flash (~16 MB frei ≈ 30 min Diktat)
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

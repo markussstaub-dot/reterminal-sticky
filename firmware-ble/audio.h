@@ -120,7 +120,7 @@ static void audioTask(void*) {
     uint32_t t0 = millis();
     audioPakete = audioVerworfen = 0;
     audioSpitze = 0;
-    while (!audioStopp && millis() - t0 < AUDIO_MAX_MS && connected) {
+    while (!audioStopp && millis() - t0 < AUDIO_MAX_MS && (connected || audioOffline)) {
         size_t b = i2s.readBytes((char*)roh, sizeof roh);
         if (b < sizeof roh) continue;
         paket[0] = seq & 0xFF; paket[1] = seq >> 8;
@@ -139,6 +139,10 @@ static void audioTask(void*) {
         }
         if (vorlauf) { vorlauf--; continue; }
         seq++;
+        if (audioOffline) {
+            if (audioDatei.write(paket, AUDIO_PAKET) == AUDIO_PAKET) audioPakete++; else audioVerworfen++;
+            continue;
+        }
         chAudio->setValue(paket, AUDIO_PAKET);
         if (chAudio->notify()) audioPakete++; else audioVerworfen++;
     }
@@ -150,7 +154,19 @@ static void audioTask(void*) {
 }
 
 static void aufnahmeStart() {
-    if (audioLaeuft || !connected) return;
+    if (audioLaeuft) return;
+    if (!connected) {
+        // Ohne Handy: in den Puffer aufnehmen, die App holt es später ab
+        if (!offlineAufnahmeOeffnen()) return;
+        if (!micAn()) { audioDatei.close(); return; }
+        audioOffline = true;
+        audioStopp = false;
+        audioLaeuft = true;
+        xTaskCreatePinnedToCore(audioTask, "audio", 6144, nullptr, 5, nullptr, 1);
+        indikator = 1;
+        return;
+    }
+    audioOffline = false;
     if (mtu < AUDIO_PAKET + 3) { sendEvt("{\"t\":\"audio\",\"a\":\"fehler\",\"err\":\"mtu\"}"); return; }
     if (!micAn()) { sendEvt("{\"t\":\"audio\",\"a\":\"fehler\",\"err\":\"mikro\"}"); return; }
     audioStopp = false;
@@ -170,6 +186,17 @@ static void aufnahmeStopp() {
 
 /** Aus loop(): Abschluss melden und Anzeige pflegen. */
 static void audioLoop() {
+    if (audioFertig && audioOffline) {
+        audioFertig = false;
+        audioOffline = false;
+        audioDatei.close();
+        char j[200];
+        snprintf(j, sizeof j, "{\"t\":%llu,\"typ\":\"notiz\",\"quelle\":\"sticky\",\"art\":\"diktat\",\"audio\":\"%s\",\"dauerMs\":%lu,\"offline\":true}",
+                 (unsigned long long)jetztMs(), audioName, (unsigned long)audioMs);
+        notizAnhaengen(j);
+        Serial.printf("Offline-Diktat: %s\n", j);
+        indikator = 3;   // Rückmeldung „Diktat gespeichert“
+    }
     if (audioFertig) {
         audioFertig = false;
         char j[140];
@@ -181,7 +208,31 @@ static void audioLoop() {
     }
     // Hinweis oben rechts per Teil-Refresh; Ausblenden zeichnet die Seite darunter neu
     static const int IX = 560, IY = 12, IW = 228, IH = 52;
-    if (indikator == 1) {
+    static bool slotAktiv = false;
+    static uint16_t sk[4];
+    if (indikator == 1 && LittleFS.exists("/fahrt/r06.bin")) {
+        indikator = 0;
+        File f = LittleFS.open("/fahrt/r06.bin", "r");
+        f.read((uint8_t*)sk, 8);
+        size_t n = (size_t)sk[2] / 8 * sk[3];
+        if (n <= IMG_BYTES && f.read(rxBuf, n) == n) {
+            display.drawBitmap(sk[0], sk[1], rxBuf, sk[2], sk[3], TFT_BLACK, TFT_WHITE);
+            display.updatePartial(sk[0], sk[1], sk[2], sk[3]);
+            slotAktiv = true;
+        }
+        f.close();
+    } else if (indikator == 3) {
+        indikator = 0;
+        slotAktiv = false;
+        rueckZeigen(5);   // „✓ Diktat“ an derselben Stelle wie die Knopf-Rückmeldungen
+    } else if (indikator == 2 && slotAktiv) {
+        indikator = 0;
+        slotAktiv = false;
+        // Stelle aus der gemerkten Seite wiederherstellen
+        if (strcmp(seite, "bild") == 0) display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+        else zeichneKarte();
+        display.updatePartial(sk[0], sk[1], sk[2], sk[3]);
+    } else if (indikator == 1) {
         indikator = 0;
         display.fillRoundRect(IX, IY, IW, IH, 10, TFT_BLACK);
         display.fillCircle(IX + 30, IY + IH / 2, 10, TFT_WHITE);
