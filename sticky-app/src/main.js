@@ -21,6 +21,7 @@ async function erkenne(pcm) {
 }
 import { zeichneFahrt, trefferKnopf, rueckmeldung, layoutText, STANDARD_KNOEPFE } from './fahrtseite.js';
 import { zeichneHome, zeichneZiffern } from './homeseite.js';
+import { holeWetter, letztesWetter } from './wetter.js';
 import { BESTELL_STANDARD, zettel, zeichneZettel } from './bestellung.js';
 import { Aufnahme, wav, sprachPruefung, nurWortliste } from './audio.js';
 import * as notizen from './notizen.js';
@@ -474,7 +475,10 @@ async function abgleich() {
   const text = layoutText(knoepfe());
   const version = crc32(new TextEncoder().encode(text)).toString(16).padStart(8, '0');
   // Home-Karte, Notiz-Seite und Ziffernblatt (einmalig, wenn sich etwas geändert hat)
-  zeichneHome(g);
+  // Wetter für die Home-Karte (bei Fehler bleibt die letzte Vorhersage)
+  const ort = await notizen.standort();
+  const wetter = (await holeWetter(ort)) ?? letztesWetter();
+  zeichneHome(g, undefined, null, wetter);
   const home = bildBytes();
   zeichneFahrt(g, knoepfe());
   const notiz = bildBytes();
@@ -485,11 +489,17 @@ async function abgleich() {
   const alle = [home, notiz, ziffern, ...zettelBilder];
   const homeV = crc32(new Uint8Array(alle.flatMap((b) => [...b]))).toString(16).padStart(8, '0') + ';' + zettelBilder.length;
   if (zwilling.geraet.homev !== homeV) {
-    for (let i = 0; i < alle.length; i++) await zwilling.sendeBild(alle[i], { home: i });
+    // Nur geänderte Bilder senden (das Wetter ändert meist nur die Karte); unbekannt → alle
+    let alt = null;
+    try { alt = JSON.parse(localStorage.getItem('sticky.homecrcs') || 'null'); } catch { /* egal */ }
+    const crcs = alle.map((b) => crc32(b));
+    const vollstaendig = !alt || alt.version !== zwilling.geraet.homev || alt.crcs.length !== crcs.length;
+    for (let i = 0; i < alle.length; i++) if (vollstaendig || alt.crcs[i] !== crcs[i]) await zwilling.sendeBild(alle[i], { home: i });
     await zwilling.homeVersion(homeV);
+    try { localStorage.setItem('sticky.homecrcs', JSON.stringify({ version: homeV, crcs })); } catch { /* egal */ }
     eintrag(`Home-Karte, Notiz-Seite, Uhr und ${zettelBilder.length} Bestellzettel aufgespielt`);
   }
-  zeichneHome(g, undefined, new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }));
+  zeichneHome(g, undefined, new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }), wetter);
   pruefeAbgleich();
   if (zwilling.geraet.modus) stickyModus = zwilling.geraet.modus;
   if (zwilling.geraet.fahrtv !== version) {
@@ -679,6 +689,7 @@ const spiegel = spiegelEinrichten({
   hinweisEl: $('spiegelHinweis'),
   quelle: {
     knoepfe,
+    wetter: letztesWetter,
     bestellText: () => $('bestellText').value,
     bordbuchSeite,
     inhaltsFelder: () => { try { return JSON.parse(localStorage.getItem('sticky.bbplan') || 'null')?.felder ?? []; } catch { return []; } },
@@ -694,6 +705,9 @@ function spiegelSetze(teile) {
 try { const alt = JSON.parse(localStorage.getItem('sticky.spiegel') || 'null'); if (alt) spiegel.setze({ ...alt, verbunden: false }); else spiegel.setze({}); } catch { spiegel.setze({}); }
 $('fernAuf').onclick = () => spiegel.taste('up');
 $('fernAb').onclick = () => spiegel.taste('down');
+
+// Wetter stündlich nachziehen, solange verbunden (Abgleich schickt nur die geänderte Karte)
+setInterval(() => { if (zwilling.verbunden) abgleich().catch(() => {}); }, 60 * 60 * 1000);
 
 tabsEinrichten();
 muster();

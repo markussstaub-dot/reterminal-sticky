@@ -22,7 +22,7 @@ export function spiegelEinrichten({ canvas, hinweisEl, quelle, befehl, notizTipp
     if (m === 'home' || m === 'notiz') {
       const g = ziel(PB, PH);
       const jetzt = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-      g.drawImage(m === 'home' ? homeHochkant(KARTE, jetzt) : fahrtHochkant(quelle.knoepfe()), 0, 0);
+      g.drawImage(m === 'home' ? homeHochkant(KARTE, jetzt, quelle.wetter?.()) : fahrtHochkant(quelle.knoepfe()), 0, 0);
       // Überlagerungen unten im Rückmeldefeld, wie am Sticky
       const text = z.aufnahme ? '● Aufnahme' : z.meldung;
       if (text) {

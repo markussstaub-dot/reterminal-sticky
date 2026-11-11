@@ -108,6 +108,9 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   Modus-Knöpfe senden `MODUS m [seite]`, Tipp auf Notiz-Streifen = Notiz, Tipp im Bordbuch-Inhalt = Kapitel
 - **Navigation hakte**: Während eines E-Paper-Refreshs (bis 2,3 s) steht loop(), kurze Drücke gingen verloren. Jetzt
   hält ein Interrupt je Taste den Druck fest und loop() holt ihn nach; Moduswechsel quittiert ein heller Doppelklick
+- **Wetter auf der Home-Karte** (12.11.2026, nur App): Open-Meteo (frei, ohne Konto), Standort vom Handy auf ~1 km
+  gerundet, sonst letzter bekannter Ort. Zeile „bewölkt 11° · 4–12° · Regen 22 %“ + „Stand hh:mm“ zwischen Hinweis und
+  Uhr; beim Verbinden und stündlich, es wird nur das geänderte Home-Bild aufgespielt (CRCs in `sticky.homecrcs`)
 - Bordbuch öffnet immer mit dem **Inhaltsverzeichnis** (Firmware 0.7.5); gezielte Sprünge aus der App bleiben; im
   Bordbuch ▲ 1 s = zurück zum Inhalt
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft

@@ -167,6 +167,19 @@ Gesichtet: 38 Firmwares. Passend zu unserer Rolle (Handy-Erweiterung, Microlino)
 - **EPUB-Leser** (CrossPoint/CrossInk, quelloffen): für E-Books allgemein; Lizenz prüfen, eher Ideen übernehmen
 - **Smart Home** (Voice Companion, OpenDisplay, ESPHome): erst mit Home Assistant, eher Sache des EE05
 
+### „App-Store“: Seitentypen aus der App (Markus, 12.11.2026, geparkt bis nach den Testwochen)
+Grundgedanke: Jede „App“ für den Sticky ist nur ein Seitentyp, den das Handy rendert und aufspielt – die Firmware
+zeigt Bilder und meldet Tasten. Neue „Apps“ = App-Update, kein Flashen. Vorschlag: nach 2–3 Wochen Alltag die eine
+nehmen, die im Auto wirklich gefehlt hat, statt zu sammeln (Pflege!).
+- ~~Wetter~~ → umgesetzt als Zeile auf der Home-Karte (12.11.2026, siehe unten)
+- **Kalender/Tagesansicht**: nächste Termine aus dem Android-Kalender (Berechtigung nötig)
+- **Microlino-Akku und Reichweite** aus Bubble Log (vgl. Ideensammlung „Microlino-Status beim Parken“)
+- **Abfahrtszeiten** ÖPNV an der nächsten Haltestelle (offene API nötig)
+- **Erinnerungen aus Diktat**, **Makro-Tasten**, **Zitat des Tages** (siehe Playground-Anregungen oben)
+- **Einkaufszettel** mit Abhaken per Tipp (siehe Ideensammlung)
+- Technik dafür: ein Seiten-Register in der App (Name, Renderfunktion, Aktualisierungstakt, braucht Internet ja/nein),
+  ein Modus „Seiten“ am Sticky mit ▲/▼ – erst bauen, wenn mehr als eine Seite gebraucht wird
+
 ### Teilen: „Beiboot“ verallgemeinert (Idee Markus, 11.11.2026, geparkt)
 - Vorschlag: frühestens nach ~1 Monat im Alltag; „wie es ist“, kein Support-Versprechen, Forks willkommen
 - Verallgemeinern: Visitenkarte und Knopf-Sätze als Vorlagen, Bubble Log optional, Bordbuch = „beliebiges
