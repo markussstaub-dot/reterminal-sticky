@@ -59,7 +59,8 @@ export class BleVerbindung extends Basis {
     });
   }
 
-  async verbinden() {
+  /** nurGemerkt: beim automatischen Wiederverbinden nur den bekannten Sticky ansprechen, nicht scannen (schont Akku/Funk) */
+  async verbinden({ nurGemerkt = false } = {}) {
     await this.init();
     let gemerkt = null;
     try { gemerkt = JSON.parse(localStorage.getItem(SPEICHER_ID) || 'null'); } catch { /* egal */ }
@@ -69,6 +70,7 @@ export class BleVerbindung extends Basis {
         await this.#verbindeMit(gemerkt);
         return;
       } catch (e) {
+        if (nurGemerkt) throw e;
         this.onLog(`Gemerkter Sticky nicht erreichbar (${e.message}), suche neu …`);
       }
     }

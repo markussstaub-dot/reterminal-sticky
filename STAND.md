@@ -3,7 +3,7 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: Home mit Uhr, Modi per Taste, Bestellzettel; Notizen (auch offline) und Bordbuch (11.11.2026)
+version: Testfahrt-Fixes: läuft im Hintergrund weiter, verbindet neu, richtige Zeiten, Wortliste (11.11.2026)
 wartet: Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Akkulaufzeit ohne USB messen; USB-Pin beim Abziehen bestätigen
 ---
 
@@ -80,6 +80,19 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
 - **Fester Platz im Microlino** mit USB-Spiralkabel (vermutlich nur Strom bei Zündung). Firmware liest GPIO9
   (PWR_IN_VOLT) als „USB da“ und meldet `usb` im Zustand – am Kabel stand `true`, **beim Abziehen noch bestätigen**.
   Mit USB wirbt der Sticky dauerhaft schnell, ohne sparsam; CPU läuft auf 80 MHz. Tiefschlaf gibt es noch nicht
+- **Erste echte Testfahrt (11.11.2026 abends) und Fixes** (Firmware 0.7.1):
+  - Fahrt 1 lief live auch mit Bubble Log im Hintergrund und Fold-Bildschirm aus; Puffern griff bei Abbrüchen
+  - Fahrt 2: Bubble Log im Vordergrund (Wakelock) → Android hat die Sticky-App **eingefroren**, BLE-Meldungen stauten
+    sich 8 min und kamen beim Öffnen auf einmal (mit falscher Zeit und Heim-GPS). Fix: **Vordergrund-Dienst**
+    `StickyDienst` (connectedDevice|location, Benachrichtigung „Sticky verbunden“) solange verbunden, plus
+    **Wiederverbinden** alle 15 s nur zum gemerkten Sticky (kein Scan). Am Tisch geprüft: Bubble Log vorne, Sticky
+    neu gestartet → nach 5 s wieder verbunden
+  - Ereignisse tragen jetzt die **Sticky-Zeit** (`ms`); Notizen bekommen Aufnahme- statt Ankunftszeit, und was > 60 s
+    zu spät ankommt, bekommt kein GPS, sondern `offline:true`
+  - WAV-Namen waren sekundengenau in UTC → 3 bzw. 5 Diktate teilten sich eine Datei; die „doppelte Notiz“ (gelbe Tonne)
+    waren zwei Aufnahmen mit demselben Dateinamen. Jetzt Aufnahmezeit Ortszeit mit ms (`sticky-JJJJ-MM-TT-hh-mm-ss-mmm.wav`)
+  - **Wortliste** als whisper-`initial_prompt` (in der App änderbar): Bexbach, Homburg, Tanke, Bubble Log werden mit
+    den Testfahrt-Aufnahmen richtig erkannt; kostet +0,1–0,3 s
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

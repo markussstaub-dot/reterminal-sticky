@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.7.0";
+static const char* FW_VERSION = "0.7.1";
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "Markus";
@@ -239,11 +239,12 @@ static void touchInit() {
 // GT911 liefert hochkant (480x800); x/y im Querformat des Displays (am Gerät geprüft 11.11.2026), rx/ry = roh
 static void bbTouch(int x, int y);
 static void pufferTouch(int x, int y);
+static uint64_t jetztMs();
 static void sendTouch(const char* a, int x, int y) {
     int dx = 799 - y, dy = 479 - x;
     if (a[0] == 'd') { bbTouch(dx, dy); pufferTouch(dx, dy); }
-    char j[96];
-    snprintf(j, sizeof j, "{\"t\":\"touch\",\"a\":\"%s\",\"x\":%d,\"y\":%d,\"rx\":%d,\"ry\":%d}", a, dx, dy, x, y);
+    char j[128];
+    snprintf(j, sizeof j, "{\"t\":\"touch\",\"a\":\"%s\",\"x\":%d,\"y\":%d,\"rx\":%d,\"ry\":%d,\"ms\":%llu}", a, dx, dy, x, y, (unsigned long long)jetztMs());
     sendEvt(j);
 }
 static bool tpDown = false;

@@ -1,7 +1,16 @@
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Clipboard } from '@capacitor/clipboard';
-import { Spracherkennung, MODELLE, pcmBase64 } from './sprache.js';
+import { Spracherkennung, MODELLE, WOERTER_STANDARD, pcmBase64 } from './sprache.js';
+import { registerPlugin } from '@capacitor/core';
+// Vordergrund-Dienst (Android), damit die App bei verbundenem Sticky nicht eingefroren wird
+const Hintergrund = registerPlugin('Hintergrund', { web: { async start() {}, async stop() {} } });
+const p2 = (n, l = 2) => String(n).padStart(l, '0');
+/** Ortszeit mit Millisekunden für Dateinamen: 2026-11-11-22-27-50-123 */
+const dateiZeit = (t) => { const d = new Date(t); return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}-${p2(d.getHours())}-${p2(d.getMinutes())}-${p2(d.getSeconds())}-${p2(d.getMilliseconds(), 3)}`; };
+/** GPS nur, wenn das Ereignis frisch ist; was mehr als 60 s zu spät ankommt, bekommt keinen (falschen) Ort */
+const VERSPAETET_MS = 60000;
+const woerter = () => $('woerter').value.trim();
 import { zeichneFahrt, trefferKnopf, rueckmeldung, layoutText, STANDARD_KNOEPFE } from './fahrtseite.js';
 import { zeichneHome, zeichneZiffern } from './homeseite.js';
 import { BESTELL_STANDARD, zettel, zeichneZettel } from './bestellung.js';
@@ -163,7 +172,7 @@ async function speichern(name, bytes) {
 }
 
 async function zeigeAufnahme(a) {
-  const name = `sticky-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.wav`;
+  const name = `sticky-${dateiZeit(a.start)}.wav`;   // Aufnahmezeit, ms-genau (vorher sekundengenau in UTC → überschrieben)
   const url = URL.createObjectURL(new Blob([a.wav], { type: 'audio/wav' }));
   const li = document.createElement('li');
   const kopf = document.createElement('div');
@@ -195,7 +204,7 @@ async function zeigeAufnahme(a) {
   if (!nativ) zeile.append(link);
   const modell = $('modell').value;
   const tErk = performance.now();
-  Spracherkennung.erkennen({ pcm: pcmBase64(a.pcm), modell, threads: 6 }).then((r) => {
+  Spracherkennung.erkennen({ pcm: pcmBase64(a.pcm), modell, threads: 6, hinweis: woerter() }).then((r) => {
     const gesamt = Math.round(performance.now() - a.tLos);
     text.className = 'text';
     text.textContent = r.text || '(nichts erkannt)';
@@ -206,7 +215,9 @@ async function zeigeAufnahme(a) {
     const zusatz = ` · Text nach ${gesamt} ms (Erkennung ${r.ms} ms${r.ladeMs ? `, Laden ${r.ladeMs} ms` : ''}${r.zweiterLauf ? ', 2. Lauf wegen Wiederholung' : ''}, ${r.modell.replace('ggml-', '').replace('.bin', '')})`;
     werte.textContent += zusatz;
     console.info('[sticky] sprache', JSON.stringify({ dauer: a.dauerMs, gesamt, erkennung: r.ms, laden: r.ladeMs, modell: r.modell, zweiter: r.zweiterLauf, text: r.text, umweg: Math.round(tErk - a.tLos) }));
-    neueNotiz({ art: 'diktat', text: r.text || '', audio: nativ ? `aufnahmen/${name}` : name, dauerMs: a.dauerMs }, a.ort, 'Diktat');
+    const spaet = Date.now() - a.start - a.dauerMs > VERSPAETET_MS;
+    neueNotiz({ t: a.start, art: 'diktat', text: r.text || '', audio: nativ ? `aufnahmen/${name}` : name, dauerMs: a.dauerMs, ...(spaet ? { offline: true } : {}) },
+      spaet ? null : a.ort, 'Diktat');
   }).catch((e) => {
     text.className = 'text';
     text.textContent = `Erkennung fehlgeschlagen: ${e.message}`;
@@ -230,10 +241,15 @@ zwilling.beobachte((art, d) => {
   if (art === 'aufnahme') { $('aufnahmeStatus').hidden = true; d.ort = ortBeiAufnahme; zeigeAufnahme(d); }
   if (art === 'zustand') zeigeZustand(d);
   else if (art === 'log') eintrag(d);
-  else if (art === 'getrennt') { eintrag('Verbindung getrennt', true); zeigeVerbindung(); }
+  else if (art === 'getrennt') {
+    eintrag(autoVerbinden ? 'Verbindung weg – versuche alle 15 s neu' : 'Verbindung getrennt', true);
+    console.info('[sticky] getrennt');
+    zeigeVerbindung();
+    if (autoVerbinden && !wiederTimer) wiederTimer = setTimeout(wiederverbinden, 3000);
+  }
   else if (art === 'ereignis') {
     if (d.t === 'key' && d.a === 'down') eintrag(`Taste ${TASTEN[d.k] || d.k} gedrückt`);
-    else if (d.t === 'touch' && d.a === 'down') { eintrag(`Touch bei ${d.x}, ${d.y}`); touchMarke(d.x, d.y); fahrtTouch(d.x, d.y); }
+    else if (d.t === 'touch' && d.a === 'down') { eintrag(`Touch bei ${d.x}, ${d.y}`); touchMarke(d.x, d.y); fahrtTouch(d.x, d.y, d.ms); }
     else if (d.t === 'pong') eintrag('Pong');
     else if (d.t === 'modus') { stickyModus = d.m; imBordbuch = d.m === 'bordbuch'; eintrag(`Modus: ${{ home: 'Home', notiz: 'Notiz', bordbuch: 'Bordbuch', bestell: `Bestellzettel ${(d.zettel ?? 0) + 1}` }[d.m] ?? d.m}`); }
     else if (d.t === 'seite') $('bbStatus').textContent = `Sticky zeigt Bordbuch-Seite ${d.n + 1} von ${d.von}`;
@@ -257,7 +273,7 @@ function zeigeVerbindung() {
   const an = zwilling.verbunden;
   $('status').textContent = an ? verbindung.name : 'getrennt';
   $('status').className = `pille ${an ? 'ein' : 'aus'}`;
-  $('verbinden').textContent = an ? 'Trennen' : 'Verbinden';
+  $('verbinden').textContent = an ? 'Trennen' : wiederTimer ? 'Wiederverbinden stoppen' : 'Verbinden';
   $('verbinden').classList.toggle('haupt', !an);
   $('senden').disabled = !an;
   $('fahrtZeigen').disabled = !an;
@@ -271,10 +287,32 @@ function zeigeVerbindung() {
 }
 
 // ---- Bedienung ----------------------------------------------------------------------
+// Wiederverbinden: Reißt die Verbindung ab (Funkloch, Fold zu weit weg), versucht die App es alle 15 s erneut,
+// bis der Nutzer selbst „Trennen“ tippt. Der Vordergrund-Dienst hält sie dabei am Leben.
+let autoVerbinden = false;
+let wiederTimer = 0;
+async function wiederverbinden() {
+  wiederTimer = 0;
+  if (!autoVerbinden || zwilling.verbunden || !(verbindung instanceof BleVerbindung)) return;
+  try {
+    await verbindung.verbinden({ nurGemerkt: true });
+    eintrag(`Wieder verbunden mit ${verbindung.name}`);
+    console.info('[sticky] wieder verbunden');
+    zeigeVerbindung();
+    abgleich().catch((e) => eintrag(`Abgleich: ${e.message}`, true));
+  } catch {
+    wiederTimer = setTimeout(wiederverbinden, 15000);
+  }
+}
+
 $('verbinden').onclick = async () => {
   const knopf = $('verbinden');
-  if (zwilling.verbunden) {
-    await verbindung.trennen();
+  if (zwilling.verbunden || wiederTimer) {
+    autoVerbinden = false;
+    clearTimeout(wiederTimer);
+    wiederTimer = 0;
+    Hintergrund.stop().catch(() => {});
+    if (zwilling.verbunden) await verbindung.trennen();
     zeigeVerbindung();
     return;
   }
@@ -285,6 +323,8 @@ $('verbinden').onclick = async () => {
     zwilling.anbinden(verbindung);
     await verbindung.verbinden();
     eintrag(`Verbunden mit ${verbindung.name} (MTU ${verbindung.mtu})`);
+    autoVerbinden = true;
+    Hintergrund.start({ text: 'Notizen und Diktate kommen an' }).catch((e) => eintrag(`Hintergrund-Dienst: ${e.message}`, true));
     abgleich().catch((e) => eintrag(`Abgleich: ${e.message}`, true));
   } catch (e) {
     eintrag(`Verbinden fehlgeschlagen: ${e.message || e}`, true);
@@ -376,12 +416,14 @@ $('bestellText').onchange = () => {
 };
 $('bestellStandard').onclick = () => { $('bestellText').value = BESTELL_STANDARD; $('bestellText').onchange(); };
 
-async function fahrtTouch(x, y) {
+async function fahrtTouch(x, y, ms) {
   if (!fahrtAktiv()) return;
   const i = trefferKnopf(x, y, knoepfe());
   if (i < 0) return;
   const k = knoepfe()[i];
-  await neueNotiz({ art: 'knopf', knopf: k }, notizen.standort(), k);
+  const t = ms > 1.7e12 ? ms : Date.now();
+  const spaet = Date.now() - t > VERSPAETET_MS;
+  await neueNotiz({ t, art: 'knopf', knopf: k, ...(spaet ? { offline: true } : {}) }, spaet ? null : notizen.standort(), k);
 }
 
 /** Notiz speichern, in der Liste zeigen und am Sticky kurz bestätigen */
@@ -390,7 +432,7 @@ async function neueNotiz(teile, ortPromise, kurz) {
   let n;
   try { n = await notizen.notiere(teile, ort); } catch (e) { eintrag(`Notiz nicht gespeichert: ${e.message}`, true); return; }
   zeigeNotiz(n, true);
-  if (fahrtAktiv()) {
+  if (stickyModus === 'notiz' || stickyModus === 'home') {   // Rückmeldefeld gibt es auf beiden Seiten
     const zeit = new Date(n.t).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
     const r = rueckmeldung(`✓ ${kurz} ${zeit}`);
     zwilling.sendeBild(r.bytes, { bereich: r.bereich }).catch((e) => eintrag(`Rückmeldung: ${e.message}`, true));
@@ -477,8 +519,8 @@ async function pufferAbholen() {
         for (let o = 0; o + 245 <= daten.length; o += 245) a.paket(daten.subarray(o, o + 245));
         const e = a.ergebnis();
         dauerMs = e.dauerMs;
-        pfad = await speichern(`sticky-offline-${new Date(t).toISOString().slice(0, 19).replace(/[:T]/g, '-')}.wav`, wav(e.pcm));
-        text = (await Spracherkennung.erkennen({ pcm: pcmBase64(e.pcm), modell: $('modell').value, threads: 6 })).text || '';
+        pfad = await speichern(`sticky-${dateiZeit(t)}-offline.wav`, wav(e.pcm));
+        text = (await Spracherkennung.erkennen({ pcm: pcmBase64(e.pcm), modell: $('modell').value, threads: 6, hinweis: woerter() })).text || '';
         await zwilling.pufferLoeschen(z.audio);
       } catch (e) { eintrag(`Diktat ${z.audio}: ${e.message}`, true); }
       n = await notizen.notiere({ t, art: 'diktat', text, audio: pfad ?? z.audio, dauerMs, offline: true });
@@ -589,6 +631,9 @@ $('bbAufspielen').onclick = async () => {
 };
 $('bbZeigen').onclick = () => zwilling.modusSetzen(1).catch((e) => eintrag(e.message, true));
 window.__sticky = { ladePdf, zwilling, pufferAbholen };   // zum Prüfen per WebView-Fernsteuerung (adb)
+
+try { $('woerter').value = localStorage.getItem('sticky.woerter') ?? WOERTER_STANDARD; } catch { $('woerter').value = WOERTER_STANDARD; }
+$('woerter').onchange = () => { try { localStorage.setItem('sticky.woerter', $('woerter').value); } catch { /* egal */ } };
 
 muster();
 zeigeVerbindung();

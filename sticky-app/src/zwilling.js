@@ -23,12 +23,18 @@ export class Zwilling {
       if (e.t === 'puffer' && this.wartePuffer) { this.wartePuffer(e); this.wartePuffer = null; }
       if (e.t === 'itvl') { this.intervall = e.v; this.warteSchnell?.(); }
       if (e.t === 'key' && e.k === 'ki' && e.a === 'up') this.tLos = performance.now();
-      if (e.t === 'audio' && e.a === 'start') { this.aufnahme = new Aufnahme(); this.tLos = null; this.#melde('aufnahmeLaeuft'); }
+      if (e.t === 'audio' && e.a === 'start') {
+        this.aufnahme = new Aufnahme();
+        this.tLos = null;
+        // Aufnahmezeit vom Sticky (Uhr), sonst Ankunft – zählt für Notiz, Dateiname und GPS-Entscheidung
+        this.aufnahmeStart = e.ms > 1.7e12 ? e.ms : Date.now();
+        this.#melde('aufnahmeLaeuft', { start: this.aufnahmeStart });
+      }
       if (e.t === 'audio' && e.a === 'stop' && this.aufnahme) {
         const r = this.aufnahme.ergebnis();
         this.aufnahme = null;
         const tStop = performance.now();
-        this.#melde('aufnahme', { ...r, wav: wav(r.pcm), geraet: e, tLos: this.tLos ?? tStop, tStop });
+        this.#melde('aufnahme', { ...r, wav: wav(r.pcm), geraet: e, tLos: this.tLos ?? tStop, tStop, start: this.aufnahmeStart ?? Date.now() });
       }
       this.#melde('ereignis', e);
     };

@@ -36,12 +36,13 @@ static bool abbrechen(void* u) { return frist_ms && jetzt_ms() > frist_ms; }
 
 JNIEXPORT jstring JNICALL
 Java_app_sticky_zwilling_Spracherkennung_nativeErkennen(JNIEnv* env, jclass cls, jlong ctxPtr, jfloatArray samples,
-                                                        jint threads, jstring sprache, jint audioCtx) {
+                                                        jint threads, jstring sprache, jint audioCtx, jstring hinweis) {
     struct whisper_context* ctx = (struct whisper_context*)(intptr_t)ctxPtr;
     if (!ctx) return (*env)->NewStringUTF(env, "");
     jsize n = (*env)->GetArrayLength(env, samples);
     jfloat* daten = (*env)->GetFloatArrayElements(env, samples, NULL);
     const char* lang = (*env)->GetStringUTFChars(env, sprache, NULL);
+    const char* prompt = hinweis ? (*env)->GetStringUTFChars(env, hinweis, NULL) : NULL;
 
     struct whisper_full_params wp = whisper_full_default_params(WHISPER_SAMPLING_GREEDY);
     wp.n_threads = threads;
@@ -56,6 +57,8 @@ Java_app_sticky_zwilling_Spracherkennung_nativeErkennen(JNIEnv* env, jclass cls,
     wp.single_segment = false;
     // Kurze Aufnahmen: Encoder-Fenster auf die Audiolänge kürzen statt immer 30 s (50 Frames je Sekunde)
     if (audioCtx > 0) wp.audio_ctx = audioCtx;
+    // Wortliste (Eigennamen wie Bexbach, Microlino, Bubble Log) als Vorgabe für den Decoder
+    if (prompt && prompt[0]) wp.initial_prompt = prompt;
     // Gegen Endlosschleifen beim Dekodieren (11.11.2026: 1,9-s-Diktat hing minutenlang bei 355 % CPU):
     // keine Wiederholung mit höherer Temperatur, Wortzahl passend zur Länge begrenzen, nach 15 s abbrechen
     wp.temperature_inc = 0.0f;
@@ -85,6 +88,7 @@ Java_app_sticky_zwilling_Spracherkennung_nativeErkennen(JNIEnv* env, jclass cls,
         LOG("whisper_full Fehler %d", rc);
     }
     (*env)->ReleaseStringUTFChars(env, sprache, lang);
+    if (prompt) (*env)->ReleaseStringUTFChars(env, hinweis, prompt);
     jstring out = (*env)->NewStringUTF(env, text ? text : "");
     free(text);
     return out;

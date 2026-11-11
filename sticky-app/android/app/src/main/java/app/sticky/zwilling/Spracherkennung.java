@@ -24,7 +24,7 @@ public class Spracherkennung extends Plugin {
 
     static native long nativeLaden(String pfad);
     static native void nativeFreigeben(long ctx);
-    static native String nativeErkennen(long ctx, float[] samples, int threads, String sprache, int audioCtx);
+    static native String nativeErkennen(long ctx, float[] samples, int threads, String sprache, int audioCtx, String hinweis);
     static native String nativeSystem();
 
     // Zusätzliche Encoder-Frames über die Audiolänge hinaus (50 je Sekunde). Zu knapp → Wiederholschleifen
@@ -62,6 +62,7 @@ public class Spracherkennung extends Plugin {
         String modell = call.getString("modell", "ggml-small-q5_1.bin");
         int threads = call.getInt("threads", 6);
         String sprache = call.getString("sprache", "de");
+        String hinweis = call.getString("hinweis", "");
         boolean kurz = call.getBoolean("kurz", true);   // Encoder-Fenster kürzen (schneller bei kurzen Aufnahmen)
         if (pcm == null) { call.reject("pcm fehlt"); return; }
         arbeiter.execute(() -> {
@@ -84,12 +85,12 @@ public class Spracherkennung extends Plugin {
                 long t0 = System.currentTimeMillis();
                 int audioCtx = kurz ? Math.min(1500, samples.length / 320 + RAND) : 0;
                 if (call.getInt("audioCtx") != null) audioCtx = call.getInt("audioCtx");   // zum Messen
-                String text = nativeErkennen(ctx, samples, threads, sprache, audioCtx);
+                String text = nativeErkennen(ctx, samples, threads, sprache, audioCtx, hinweis);
                 // Gekürztes Fenster kann in eine Wiederholschleife kippen („Einfach so ein Test Einfach so ein Test …“,
                 // 11.11.2026). Dann einmal mit vollem 30-s-Fenster nachrechnen – langsamer, aber sauber
                 boolean zweiter = false;
                 if (audioCtx > 0 && schleife(text)) {
-                    text = nativeErkennen(ctx, samples, threads, sprache, 0);
+                    text = nativeErkennen(ctx, samples, threads, sprache, 0, hinweis);
                     zweiter = true;
                 }
                 JSObject r = new JSObject();

@@ -173,8 +173,8 @@ static void aufnahmeStart() {
     audioLaeuft = true;
     slowAt = 0;
     server->updateConnParams(connHandle, AUDIO_MIN, AUDIO_MAX, 0, 400);
-    char j[96];
-    snprintf(j, sizeof j, "{\"t\":\"audio\",\"a\":\"start\",\"rate\":%d,\"codec\":\"ima-adpcm\",\"n\":%d}", AUDIO_RATE, AUDIO_SAMPLES);
+    char j[140];
+    snprintf(j, sizeof j, "{\"t\":\"audio\",\"a\":\"start\",\"rate\":%d,\"codec\":\"ima-adpcm\",\"n\":%d,\"ms\":%llu}", AUDIO_RATE, AUDIO_SAMPLES, (unsigned long long)jetztMs());
     sendEvt(j);
     xTaskCreatePinnedToCore(audioTask, "audio", 6144, nullptr, 5, nullptr, 1);
     indikator = 1;

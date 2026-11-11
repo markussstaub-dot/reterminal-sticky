@@ -25,6 +25,11 @@
 
         </activity>
 
+        <service
+            android:name=".StickyDienst"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice|location" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -39,6 +44,11 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Vordergrund-Dienst, damit Android die App bei verbundenem Sticky nicht einfriert (Testfahrt 11.11.2026) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- BLE ohne Standort (Android 12+) -->
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" tools:targetApi="s" />
     <!-- Standort für die Testnotizen (Zeit + GPS), nur im Vordergrund -->
