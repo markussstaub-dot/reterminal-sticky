@@ -1,0 +1,50 @@
+# Sticky-BLE v1 (Durchstich, 11.11.2026)
+
+Ein GATT-Dienst, drei Kennlinien. Gerät = dünnes Terminal (Peripheral), App = Zwilling (Central).
+Gedacht auch für den Microlino-Knopf: gleiche Rahmen, nur andere Bildgröße im START-Rahmen.
+
+| Kennlinie | UUID | Richtung | Inhalt |
+|---|---|---|---|
+| Dienst | `b1e50001-7374-6963-6b79-7465726d6e6c` | | |
+| BEFEHL | `b1e50002-…` | App → Gerät, write / write-no-response | binäre Rahmen (unten) |
+| EREIGNIS | `b1e50003-…` | Gerät → App, notify | JSON |
+| ZUSTAND | `b1e50004-…` | Gerät → App, read / notify | JSON |
+| AUDIO | `b1e50005-…` | Gerät → App, notify | ADPCM-Pakete (unten) |
+
+## Rahmen auf BEFEHL (Little Endian)
+| Op | Name | Aufbau |
+|---|---|---|
+| `01` | BILD_START | `01 fmt w:u16 h:u16 len:u32 crc32:u32` – fmt 0 = 1 bpp; 800×480 → len 48000 |
+| `02` | BILD_DATEN | `02 offset:u32 daten…` – Nutzlast = min(MTU−3, 512) − 5, write-no-response |
+| `03` | BILD_ENDE | `03 modus` – 0 = Vollbild-Refresh, 1 = schnell |
+| `10` | PING | Gerät antwortet `{"t":"pong"}` und schickt den Zustand |
+| `11` | KARTE | Gerät zeigt die eingebaute Visitenkarte |
+
+Bild: Zeilen à 100 Byte, MSB = linkes Pixel, Bit 1 = schwarz. CRC-32 wie zlib.
+
+## Ereignisse (JSON)
+- `{"t":"key","k":"up|down|ki","a":"down|up"}`
+- `{"t":"touch","a":"down|up","x":…,"y":…,"rx":…,"ry":…}`: x/y in Display-Koordinaten 800×480 (Querformat, USB oben rechts), rx/ry roh vom GT911
+- `{"t":"img","ok":true,"ms":Empfang,"show":Anzeige,"mtu":…,"phy":1|2,"n":Rahmen,"dle":Byte}` bzw. `{"t":"img","ok":false,"err":"crc|format"}`
+- `{"t":"itvl","v":Intervall×1,25 ms,"lat":…}` bei jedem Wechsel der Verbindungsparameter
+- `{"t":"audio","a":"start","rate":16000,"codec":"ima-adpcm","n":480}`, `{"t":"audio","a":"stop","pakete","verworfen","ms","spitze"}`,
+  `{"t":"audio","a":"fehler","err":"mtu|mikro"}`
+
+## Zustand (JSON)
+`{"fw","seite":"karte|bild","bat":%,"mv","ma","chg","mtu","phy","itvl":×1,25 ms,"tp":"BxH"}` – bei Verbindung,
+nach jedem Bild und alle 30 s.
+
+## Funkverhalten (rücksichtsvoll)
+- Getrennt: Werbung alle ~600 ms; nach Tastendruck 30 s lang alle 100 ms
+- Verbunden, Ruhe: Intervall 100–125 ms, Latenz 0. (Mit Latenz 4 dauerte der Wechsel auf schnell mehrere Sekunden)
+- Bildübertragung: BILD_START lässt das Gerät 7,5–15 ms anfordern, es meldet jeden Wechsel als
+  `{"t":"itvl","v":…}`. Die App streamt erst, wenn `v ≤ 16` (spätestens nach 2,5 s). 2M PHY, Data Length 251;
+  1,5 s nach dem Bild wieder träge
+
+## Audio (KI-Taste halten, nur mit Verbindung)
+- 16 kHz mono, IMA-ADPCM (4 bit, wie im WAV-Format: erstes Sample im unteren Nibble), ~65 kbit/s
+- Paket auf AUDIO: `seq:u16 prädiktor:i16 index:u8` + 240 Byte = 480 Samples (30 ms), 245 Byte, braucht MTU ≥ 248
+- Jedes Paket trägt den Decoder-Zustand vom Paketanfang. Fehlende `seq` werden zu Stille, die folgenden Pakete bleiben heil
+- Ablauf: Taste runter → `audio start` → Pakete → Taste hoch → `audio stop`. Höchstens 60 s
+- Funk: während der Aufnahme 15–30 ms, 1,5 s nach dem Ende wieder Ruhetakt
+- Display: „● Aufnahme“ oben rechts per Teil-Refresh, danach wird die Stelle aus der Seite neu gezeichnet

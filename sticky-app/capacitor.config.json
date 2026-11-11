@@ -1,0 +1,15 @@
+{
+  "appId": "app.sticky.zwilling",
+  "appName": "Sticky",
+  "webDir": "dist",
+  "plugins": {
+    "BluetoothLe": {
+      "displayStrings": {
+        "scanning": "Suche Sticky …",
+        "cancel": "Abbrechen",
+        "availableDevices": "Gefundene Geräte",
+        "noDeviceFound": "Kein Sticky gefunden"
+      }
+    }
+  }
+}

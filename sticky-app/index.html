@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1d1f21">
+  <title>Sticky</title>
+  <link rel="stylesheet" href="./src/stil.css">
+</head>
+<body>
+  <header>
+    <h1>Sticky</h1>
+    <span id="status" class="pille aus">getrennt</span>
+  </header>
+
+  <main>
+    <section class="leiste">
+      <button id="verbinden" class="haupt">Verbinden</button>
+      <label id="simWahl" class="schalter" hidden><input type="checkbox" id="sim"> Simulator</label>
+      <span id="geraet" class="klein"></span>
+    </section>
+
+    <section class="vorschau">
+      <div class="rahmen">
+        <canvas id="bild" width="800" height="480"></canvas>
+        <canvas id="ueber" width="800" height="480"></canvas>
+      </div>
+      <div class="unter">
+        <span id="abgleich" class="pille">Entwurf</span>
+        <div id="balken"><div></div></div>
+      </div>
+    </section>
+
+    <section class="werkzeuge">
+      <button data-werkzeug="stift" class="an">Stift</button>
+      <button data-werkzeug="radierer">Radierer</button>
+      <button id="muster">Muster</button>
+      <button id="leeren">Leeren</button>
+    </section>
+    <section class="werkzeuge">
+      <input id="text" placeholder="Text für den Sticky" maxlength="60">
+      <button id="textSetzen">Text</button>
+    </section>
+
+    <section class="leiste">
+      <button id="senden" class="haupt" disabled>Senden</button>
+      <label class="schalter"><input type="checkbox" id="schnell"> schnell</label>
+      <button id="karte" disabled>Visitenkarte</button>
+    </section>
+
+    <section id="simTasten" class="werkzeuge" hidden>
+      <span class="klein">Simulierter Sticky:</span>
+      <button data-taste="up">▲</button>
+      <button data-taste="down">▼</button>
+      <button data-taste="ki">KI</button>
+    </section>
+
+    <section>
+      <h2>Aufnahmen <span class="klein" style="text-transform:none;letter-spacing:0">– KI-Taste am Sticky halten</span></h2>
+      <div class="leiste">
+        <label class="schalter">Erkennung <select id="modell"></select></label>
+      </div>
+      <p id="aufnahmeStatus" class="klein" hidden>● Aufnahme läuft …</p>
+      <ol id="aufnahmen"></ol>
+    </section>
+
+    <section>
+      <h2>Ereignisse vom Sticky</h2>
+      <ol id="ereignisse"></ol>
+    </section>
+  </main>
+
+  <footer><span id="messung"></span><span id="version"></span></footer>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+# Werks-Firmware-Sicherungen: gerätespezifisch (WLAN, Kalibrierung) – nie ins Repo
+backup/
+
+# Arduino-Builds
+build/
+*.elf
+*.map
+*.bin
+
+# App: Abhängigkeiten und Build-Ausgaben (Rest regelt sticky-app/.gitignore)
+node_modules/
+dist/
+.gradle/
+.cxx/
+android/app/build/
+android/build/
+local.properties
+
+# Sprachmodelle (whisper) und große Medien
+*.gguf
+models/
+*.pdf
+
+# System
+desktop.ini
+Thumbs.db
+.DS_Store

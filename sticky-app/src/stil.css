@@ -1,0 +1,81 @@
+:root {
+  --grund: #1d1f21;
+  --flaeche: #2a2d30;
+  --linie: #3b3f44;
+  --text: #e8e6e1;
+  --leise: #9a9fa6;
+  --akzent: #e0b34a;
+  --gut: #6cc08a;
+  --schlecht: #e07a6a;
+  --papier: #f4f1ea;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--grund);
+  color: var(--text);
+  font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+}
+header, footer {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 16px;
+}
+header h1 { margin: 0; font-size: 22px; letter-spacing: .02em; }
+footer { color: var(--leise); font-size: 13px; flex-wrap: wrap; }
+main { max-width: 900px; margin: 0 auto; padding: 0 16px; display: grid; gap: 14px; }
+h2 { font-size: 14px; color: var(--leise); font-weight: 600; margin: 6px 0; text-transform: uppercase; letter-spacing: .06em; }
+
+.leiste, .werkzeuge { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+button {
+  font: inherit; color: var(--text); background: var(--flaeche);
+  border: 1px solid var(--linie); border-radius: 10px; padding: 10px 14px; min-height: 44px;
+}
+button.an { border-color: var(--akzent); color: var(--akzent); }
+button.haupt { background: var(--akzent); color: #1d1f21; border-color: var(--akzent); font-weight: 600; padding: 10px 22px; }
+button:disabled { opacity: .4; }
+input:not([type]) , input[type=text] {
+  font: inherit; color: var(--text); background: var(--flaeche);
+  border: 1px solid var(--linie); border-radius: 10px; padding: 10px 12px; min-height: 44px; flex: 1; min-width: 0;
+}
+.schalter { display: inline-flex; align-items: center; gap: 6px; color: var(--leise); }
+.schalter input { width: 20px; height: 20px; accent-color: var(--akzent); }
+.klein { color: var(--leise); font-size: 13px; }
+
+.pille { font-size: 13px; padding: 4px 10px; border-radius: 999px; background: var(--flaeche); border: 1px solid var(--linie); color: var(--leise); }
+.pille.ein { color: var(--gut); border-color: var(--gut); }
+.pille.aus { color: var(--leise); }
+.pille.gleich { color: var(--gut); border-color: var(--gut); }
+
+.vorschau .rahmen {
+  position: relative; width: 100%; aspect-ratio: 800 / 480;
+  background: #111; padding: 10px; border-radius: 14px; border: 1px solid var(--linie);
+}
+.vorschau canvas {
+  position: absolute; inset: 10px; width: calc(100% - 20px); height: calc(100% - 20px);
+  border-radius: 4px; touch-action: none; image-rendering: pixelated;
+}
+#bild { background: var(--papier); }
+#ueber { pointer-events: none; }
+.unter { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+#balken { flex: 1; height: 6px; background: var(--flaeche); border-radius: 3px; overflow: hidden; }
+#balken div { height: 100%; width: 0; background: var(--akzent); transition: width .1s; }
+
+#aufnahmen { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+#aufnahmen li { background: var(--flaeche); border-radius: 10px; padding: 10px; display: grid; gap: 6px; font-size: 14px; }
+#aufnahmen audio { width: 100%; }
+#aufnahmen .werte { color: var(--leise); }
+#aufnahmen .text { font-size: 17px; color: var(--text); white-space: pre-wrap; }
+#aufnahmen .text.warte { color: var(--leise); font-style: italic; }
+#aufnahmen .zeile { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+select { font: inherit; color: var(--text); background: var(--flaeche); border: 1px solid var(--linie); border-radius: 8px; padding: 6px 8px; min-height: 40px; }
+#aufnahmeStatus { color: var(--schlecht); margin: 0 0 6px; }
+#ereignisse { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 40vh; overflow: auto; }
+#ereignisse li {
+  display: flex; gap: 10px; padding: 8px 10px; background: var(--flaeche); border-radius: 8px; font-size: 14px;
+}
+#ereignisse li time { color: var(--leise); font-variant-numeric: tabular-nums; }
+#ereignisse li.neu { animation: blitz 1s; }
+#ereignisse li.fehler { color: var(--schlecht); }
+@keyframes blitz { from { background: #5a4a1f; } }
