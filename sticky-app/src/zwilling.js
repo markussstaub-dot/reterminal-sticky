@@ -1,5 +1,5 @@
 // Der Zwilling: Soll-Zustand des Sticky in der App (Quelle der Wahrheit) plus Übertragung.
-import { rahmenStart, rahmenDaten, rahmenEnde, rahmenKarte, rahmenPing, nutzlastFuer, crc32 } from './protokoll.js';
+import { rahmenStart, rahmenDaten, rahmenEnde, rahmenKarte, rahmenPing, nutzlastFuer, crc32, rahmenSpeichern, rahmenBbIndex, rahmenBbModus } from './protokoll.js';
 import { Aufnahme, wav } from './audio.js';
 
 export class Zwilling {
@@ -44,7 +44,7 @@ export class Zwilling {
     return lauf;
   }
 
-  async #sende(bild, { schnell = false, fortschritt = () => {}, bereich = null } = {}) {
+  async #sende(bild, { schnell = false, fortschritt = () => {}, bereich = null, speichern = null } = {}) {
     const v = this.verbindung;
     const t0 = performance.now();
     const nutzlast = nutzlastFuer(v.mtu);
@@ -72,10 +72,10 @@ export class Zwilling {
       const zeit = setTimeout(() => { this.warteBild = null; fehler(new Error('Sticky hat das Bild nicht bestätigt (20 s).')); }, 20000);
       this.warteBild = (e) => { clearTimeout(zeit); ok(e); };
     });
-    await v.schreiben(rahmenEnde(schnell));
+    await v.schreiben(speichern != null ? rahmenSpeichern(speichern) : rahmenEnde(schnell));
     const e = await antwort;
     if (!e.ok) throw new Error(`Sticky meldet Fehler: ${e.err}${e.got != null ? ` (${e.got} Byte angekommen)` : ''}`);
-    if (!bereich) this.gesendetCrc = crc32(bild);
+    if (!bereich && speichern == null) this.gesendetCrc = crc32(bild);
     return {
       gesamt: Math.round(performance.now() - t0),
       funk: Math.round(tFunk),
@@ -93,4 +93,6 @@ export class Zwilling {
 
   async zeigeKarte() { await this.verbindung.schreiben(rahmenKarte()); this.gesendetCrc = null; }
   async ping() { await this.verbindung.schreiben(rahmenPing()); }
+  async bordbuchIndex(text) { await this.verbindung.schreiben(rahmenBbIndex(text)); }
+  async bordbuchModus(an, seite = null) { await this.verbindung.schreiben(rahmenBbModus(an, seite)); }
 }

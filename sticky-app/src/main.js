@@ -4,6 +4,7 @@ import { Clipboard } from '@capacitor/clipboard';
 import { Spracherkennung, MODELLE, pcmBase64 } from './sprache.js';
 import { zeichneFahrt, trefferKnopf, rueckmeldung, STANDARD_KNOEPFE } from './fahrtseite.js';
 import * as notizen from './notizen.js';
+import * as bb from './bordbuch.js';
 import { BREITE, HOEHE, rgbaZu1bpp, crc32 } from './protokoll.js';
 import { BleVerbindung, SimVerbindung } from './verbindung.js';
 import { Zwilling } from './zwilling.js';
@@ -231,6 +232,9 @@ zwilling.beobachte((art, d) => {
     if (d.t === 'key' && d.a === 'down') eintrag(`Taste ${TASTEN[d.k] || d.k} gedrückt`);
     else if (d.t === 'touch' && d.a === 'down') { eintrag(`Touch bei ${d.x}, ${d.y}`); touchMarke(d.x, d.y); fahrtTouch(d.x, d.y); }
     else if (d.t === 'pong') eintrag('Pong');
+    else if (d.t === 'modus') { imBordbuch = d.m === 'bordbuch'; eintrag(d.err === 'leer' ? 'Bordbuch ist noch leer – erst aufspielen' : `Modus: ${d.m === 'bordbuch' ? 'Bordbuch' : 'Fahrt'}`, !!d.err); }
+    else if (d.t === 'seite') $('bbStatus').textContent = `Sticky zeigt Bordbuch-Seite ${d.n + 1} von ${d.von}`;
+    else if (d.t === 'bordbuch') eintrag(`Bordbuch im Flash: ${d.seiten} Seiten, ${d.belegtKB} KB`);
     else if (d.t === 'audio' && d.a === 'fehler') { eintrag(`Aufnahme nicht möglich: ${d.err}`, true); $('aufnahmeStatus').hidden = true; }
   }
 });
@@ -254,6 +258,8 @@ function zeigeVerbindung() {
   $('verbinden').classList.toggle('haupt', !an);
   $('senden').disabled = !an;
   $('fahrtZeigen').disabled = !an;
+  for (const id of ['bbAufspielen', 'bbZeigen', 'bbFahrt']) $(id).disabled = !an;
+  if (an) $('bbAufspielen').disabled = !pdf && !$('spickzettel').value.trim();
   $('karte').disabled = !an;
   $('simTasten').hidden = !(an && verbindung instanceof SimVerbindung);
   if (!an) $('geraet').textContent = '';
@@ -344,7 +350,7 @@ $('knoepfe').onchange = () => {
   if (fahrtAktiv()) zeigeFahrtSeite().catch((e) => eintrag(e.message, true));
 };
 
-const fahrtAktiv = () => fahrtCrc != null && zwilling.gesendetCrc === fahrtCrc && zwilling.geraet.seite !== 'karte';
+const fahrtAktiv = () => !imBordbuch && fahrtCrc != null && zwilling.gesendetCrc === fahrtCrc && zwilling.geraet.seite !== 'karte';
 
 async function zeigeFahrtSeite() {
   zeichneFahrt(g, knoepfe());
@@ -399,6 +405,97 @@ $('notizenTeilen').onclick = async () => {
   } catch (e) { eintrag(`Teilen fehlgeschlagen: ${e.message}`, true); }
 };
 notizen.heute().then((l) => l.reverse().forEach((n) => zeigeNotiz(n)));
+
+// ---- Bordbuch (SPEC „MVP 2“) --------------------------------------------------------
+let imBordbuch = false;
+let pdf = null;
+try { $('spickzettel').value = localStorage.getItem('sticky.spickzettel') || bb.SPICKZETTEL_STANDARD; } catch { $('spickzettel').value = bb.SPICKZETTEL_STANDARD; }
+$('spickzettel').onchange = () => { try { localStorage.setItem('sticky.spickzettel', $('spickzettel').value); } catch { /* egal */ } };
+$('spickStandard').onclick = () => { $('spickzettel').value = bb.SPICKZETTEL_STANDARD; $('spickzettel').onchange(); };
+
+async function ladePdf(bytes, name) {
+  pdf = await bb.oeffnePdf(bytes);
+  $('pdfName').textContent = `${name} · ${pdf.numPages} Seiten`;
+  zeigeVerbindung();
+}
+$('pdfDatei').onchange = async (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const bytes = new Uint8Array(await f.arrayBuffer());
+  await ladePdf(bytes, f.name);
+  // Für den nächsten Start merken (App-Speicher, nicht im Repo)
+  if (nativ) {
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    Filesystem.writeFile({ path: 'bordbuch/handbuch.pdf', data: btoa(bin), directory: Directory.Data, recursive: true }).catch(() => {});
+  }
+};
+// Gemerktes Handbuch laden (bzw. per adb nach files/bordbuch/handbuch.pdf gelegt)
+if (nativ) {
+  Filesystem.readFile({ path: 'bordbuch/handbuch.pdf', directory: Directory.Data })
+    .then((d) => ladePdf(Uint8Array.from(atob(d.data), (c) => c.charCodeAt(0)), 'handbuch.pdf'))
+    .catch(() => {});
+}
+
+/** Alle Bildschirme erzeugen: [Inhalt, Spickzettel…, Handbuch-Ausschnitte…] → { seiten: Uint8Array[], index } */
+async function bordbuchBauen(status) {
+  const spick = bb.spickzettelSeiten($('spickzettel').value);
+  const hb = [];        // { bytes, pdfSeite }
+  const ersteVon = {};  // PDF-Seite → Bildschirm-Index (relativ)
+  if (pdf) {
+    for (let p = 1; p <= pdf.numPages; p++) {
+      status(`Handbuch rendern: Seite ${p} von ${pdf.numPages}`);
+      const teile = await bb.pdfAusschnitte(pdf, p);
+      teile.forEach((t, i) => {
+        ersteVon[p] ??= hb.length;
+        hb.push({ bytes: bb.dithern(bb.marke(t.daten, `S. ${p} · ${i + 1}/${teile.length}`).data), pdfSeite: p });
+      });
+    }
+  }
+  const nSpick = spick.length;
+  const start = 1 + nSpick;   // erster Handbuch-Bildschirm
+  const gesamt = start + hb.length;
+  const kap = pdf ? (await bb.kapitel(pdf)).filter((k) => ersteVon[k.seite] != null).slice(0, 14) : [];
+  const links = spick.map((s, i) => ({ titel: s.titel, seite: 1 + i }));
+  const rechts = kap.map((k) => ({ titel: k.titel, seite: start + ersteVon[k.seite], anzeige: k.seite }));
+  const seiten = [];
+  const felder = bb.zeichneInhalt(g, links, rechts);
+  seiten.push(bildBytes());
+  spick.forEach((s, i) => { bb.zeichneTextseite(g, s, `Spickzettel ${i + 1}/${nSpick} · ${2 + i}/${gesamt}`); seiten.push(bildBytes()); });
+  for (const h of hb) seiten.push(h.bytes);
+  const index = [`seiten=${seiten.length}`, 'toc=0', ...felder.map((f) => `e ${f.x0} ${f.y0} ${f.x1} ${f.y1} ${f.seite}`)].join('\n') + '\n';
+  bb.zeichneInhalt(g, links, rechts);   // Vorschau zeigt am Ende das Inhaltsverzeichnis
+  pruefeAbgleich();
+  return { seiten, index };
+}
+
+$('bbAufspielen').onclick = async () => {
+  const knopf = $('bbAufspielen');
+  knopf.disabled = true;
+  const status = (t) => { $('bbStatus').textContent = t; };
+  const t0 = performance.now();
+  try {
+    const { seiten, index } = await bordbuchBauen(status);
+    if (seiten.length > 255) throw new Error(`Zu viele Seiten (${seiten.length}, höchstens 255)`);
+    for (let i = 0; i < seiten.length; i++) {
+      status(`Aufspielen: Seite ${i + 1} von ${seiten.length} …`);
+      await zwilling.sendeBild(seiten[i], { speichern: i });
+    }
+    await zwilling.bordbuchIndex(index);
+    const s = Math.round((performance.now() - t0) / 1000);
+    status(`Bordbuch aufgespielt: ${seiten.length} Seiten in ${s} s`);
+    eintrag(`Bordbuch aufgespielt (${seiten.length} Seiten, ${s} s)`);
+    console.info('[sticky] bordbuch', JSON.stringify({ seiten: seiten.length, sekunden: s }));
+  } catch (e) {
+    status(`Fehler: ${e.message}`);
+    eintrag(`Bordbuch: ${e.message}`, true);
+  } finally {
+    knopf.disabled = !zwilling.verbunden;
+  }
+};
+$('bbZeigen').onclick = () => zwilling.bordbuchModus(true).catch((e) => eintrag(e.message, true));
+$('bbFahrt').onclick = () => zwilling.bordbuchModus(false).catch((e) => eintrag(e.message, true));
+if (import.meta.env.DEV) window.__sticky = { ladePdf };
 
 muster();
 zeigeVerbindung();

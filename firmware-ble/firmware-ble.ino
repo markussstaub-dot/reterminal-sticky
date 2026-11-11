@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.3.0";
+static const char* FW_VERSION = "0.4.0";
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "Markus";
@@ -51,7 +51,8 @@ static const int PIN_BUZZER = 48;
 #define UUID_STATE "b1e50004-7374-6963-6b79-7465726d6e6c"
 #define UUID_AUDIO "b1e50005-7374-6963-6b79-7465726d6e6c"
 
-enum : uint8_t { OP_IMG_BEGIN = 0x01, OP_IMG_DATA = 0x02, OP_IMG_END = 0x03, OP_PING = 0x10, OP_KARTE = 0x11 };
+enum : uint8_t { OP_IMG_BEGIN = 0x01, OP_IMG_DATA = 0x02, OP_IMG_END = 0x03, OP_PING = 0x10, OP_KARTE = 0x11,
+                 OP_BB_INDEX = 0x13, OP_BB_MODUS = 0x14 };
 
 // Verbindungsintervalle in 1,25-ms-Schritten
 // Ruhe ohne Latenz: sonst dauert der Wechsel auf schnell mehrere Sekunden (gemessen 11.11.2026)
@@ -83,6 +84,7 @@ static volatile uint16_t imgX = 0, imgY = 0, imgW = 800, imgH = 480;
 static volatile uint32_t imgLen = 0, imgCrc = 0, imgGot = 0, imgT0 = 0, imgT1 = 0, imgFrames = 0;
 static volatile uint16_t dleTx = 27, dleRx = 27;
 static volatile bool imgActive = false, imgReady = false, imgFast = false;
+static volatile int imgSpeichern = -1;   // >= 0: Bild als Bordbuch-Seite n speichern statt zeigen
 static volatile bool wantFast = false, wantSlow = false, wantKarte = false, wantState = false;
 static volatile uint32_t slowAt = 0;
 static uint32_t advFastUntil = 0;
@@ -224,8 +226,10 @@ static void touchInit() {
     Serial.printf("Touch: GT%c%c%c%c an 0x%02X, %ux%u\n", id[0], id[1], id[2], id[3] ? id[3] : ' ', tpAddr, tpResX, tpResY);
 }
 // GT911 liefert hochkant (480x800); x/y im Querformat des Displays (am Gerät geprüft 11.11.2026), rx/ry = roh
+static void bbTouch(int x, int y);
 static void sendTouch(const char* a, int x, int y) {
     int dx = 799 - y, dy = 479 - x;
+    if (a[0] == 'd') bbTouch(dx, dy);
     char j[96];
     snprintf(j, sizeof j, "{\"t\":\"touch\",\"a\":\"%s\",\"x\":%d,\"y\":%d,\"rx\":%d,\"ry\":%d}", a, dx, dy, x, y);
     sendEvt(j);
@@ -271,8 +275,7 @@ static void tastenInit() {
     }
 }
 static void startAdvertising(bool schnell);
-static void aufnahmeStart();
-static void aufnahmeStopp();
+static void tasteAktion(const char* name, bool gedrueckt);
 static void tastenPoll() {
     for (auto& t : tasten) {
         int v = digitalRead(t.pin);
@@ -286,8 +289,7 @@ static void tastenPoll() {
         sendEvt(j);
         if (gedrueckt) tone(PIN_BUZZER, 2700, 30);   // kurzer Klick als Rückmeldung am Gerät
         if (gedrueckt && !connected) startAdvertising(true);
-        // KI-Taste halten = Aufnahme (nur mit Verbindung)
-        if (t.pin == PIN_BTN_PWR && connected) { if (gedrueckt) aufnahmeStart(); else aufnahmeStopp(); }
+        tasteAktion(t.name, gedrueckt);
     }
 }
 
@@ -332,6 +334,36 @@ static void zeigeKarte() {
 }
 
 #include "audio.h"
+#include "bordbuch.h"
+
+// ---- Tasten-Aktionen je Modus ------------------------------------------------------
+static uint32_t upSeit = 0;
+static bool upLang = false;
+static void tasteAktion(const char* name, bool gedrueckt) {
+    if (strcmp(name, "up") == 0) {
+        if (gedrueckt) { upSeit = millis(); upLang = false; }
+        else if (!upLang && bordbuch) bbWunsch = bbAktuell - 1;   // kurz: zurückblättern
+        return;
+    }
+    if (strcmp(name, "down") == 0) {
+        if (gedrueckt && bordbuch) bbWunsch = bbAktuell + 1;
+        return;
+    }
+    if (strcmp(name, "ki") == 0) {
+        if (bordbuch) { if (gedrueckt) bbWunsch = bbToc; return; }
+        if (!connected) return;
+        if (gedrueckt) aufnahmeStart(); else aufnahmeStopp();   // Fahrt: KI halten = Diktat
+    }
+}
+/** ▲ eine Sekunde halten = Modus wechseln (schon beim Halten, mit Piep) */
+static void tastenLang() {
+    if (upSeit && !upLang && digitalRead(PIN_BTN_UP) == LOW && millis() - upSeit > 1000) {
+        upLang = true;
+        tone(PIN_BUZZER, 2000, 60);
+        bbModusWunsch = bordbuch ? 0 : 1;
+    }
+    if (digitalRead(PIN_BTN_UP) == HIGH) upSeit = upLang ? 0 : upSeit;
+}
 
 // ---- Zustand -------------------------------------------------------------------
 static void sendState() {
@@ -424,6 +456,7 @@ class CmdCb : public NimBLECharacteristicCallbacks {
             imgActive = false;
             imgT1 = millis();
             imgFast = n > 1 && d[1] == 1;
+            imgSpeichern = (n > 2 && d[1] == 3) ? d[2] : -1;   // Modus 3: als Bordbuch-Seite d[2] speichern
             imgReady = true;
             break;
         case OP_PING:
@@ -432,6 +465,12 @@ class CmdCb : public NimBLECharacteristicCallbacks {
             break;
         case OP_KARTE:
             wantKarte = true;
+            break;
+        case OP_BB_INDEX:    // 13 Text (Zeilen „seiten=N“, „toc=K“, „e y0 y1 seite“)
+            if (n - 1 < sizeof bbIndexNeu) { memcpy(bbIndexNeu, d + 1, n - 1); bbIndexNeu[n - 1] = 0; bbIndexDa = true; }
+            break;
+        case OP_BB_MODUS:    // 14 0|1 [seite]
+            if (n > 1) { bbModusWunsch = d[1] ? 1 : 0; if (n > 2) bbWunsch = d[2]; }
             break;
         }
     }
@@ -513,6 +552,7 @@ void setup() {
         zeigeKarte();
     }
     // Tasten und Touch erst nach display.begin(): vorher eingerichtet, kamen keine Tastendrücke an (11.11.2026)
+    bbInit();
     tastenInit();
     touchInit();
     micSelbsttest();
@@ -540,7 +580,19 @@ void loop() {
             sendEvt(j);
         } else {
             uint32_t t0 = millis();
-            if (teil) {
+            if (imgSpeichern >= 0) {
+                bool gut = !teil && bbSpeichern(imgSpeichern, rxBuf);
+                char j[96];
+                snprintf(j, sizeof j, "{\"t\":\"img\",\"ok\":%s,\"gespeichert\":%d,\"ms\":%lu}", gut ? "true" : "false", imgSpeichern, (unsigned long)empfang);
+                imgSpeichern = -1;
+                sendEvt(j);
+                goto fertig;
+            }
+            if (bordbuch) {
+                // Im Bordbuch nichts überzeichnen: nur die Fahrt-Seite im Speicher aktualisieren
+                if (teil) for (int r = 0; r < imgH; r++) memcpy(imgBuf + (imgY + r) * (W / 8) + imgX / 8, rxBuf + r * (imgW / 8), imgW / 8);
+                else { memcpy(imgBuf, rxBuf, IMG_BYTES); seite = "bild"; }
+            } else if (teil) {
                 // Teilbild in die gemerkte Seite einsetzen (zeilenweise, x und w sind Byte-genau) und nur den Bereich auffrischen
                 for (int r = 0; r < imgH; r++) memcpy(imgBuf + (imgY + r) * (W / 8) + imgX / 8, rxBuf + r * (imgW / 8), imgW / 8);
                 display.drawBitmap(imgX, imgY, rxBuf, imgW, imgH, TFT_BLACK, TFT_WHITE);
@@ -557,9 +609,11 @@ void loop() {
             sendEvt(j);
             wantState = true;
         }
+        fertig:;
     }
     if (wantKarte) {
         wantKarte = false;
+        if (bordbuch) bbModus(false);
         zeigeKarte();
         wantState = true;
     }
@@ -572,7 +626,9 @@ void loop() {
     if (advFastUntil && millis() > advFastUntil && !connected) startAdvertising(false);
 
     tastenPoll();
+    tastenLang();
     audioLoop();
+    bbLoop();
     static uint32_t lastTp = 0;
     if (millis() - lastTp > 25) { lastTp = millis(); touchPoll(); }
     delay(5);

@@ -227,3 +227,17 @@ Modell gerade noch lud). Trefferqualität: Sinn immer richtig, kleine Fehler
 - Satz mit Datum: Zahlen richtig, Monatsname verhört
 → Vorschlag: Eigennamen per `initial_prompt` vorgeben (z. B. „Microlino, Fold“); für Diktat ausreichend,
 Feinschliff optional über Stufe 3 („Aufräumen“ per KI)
+
+## MVP umgesetzt (11.11.2026)
+**1. Testnotizen** – läuft. Fahrt-Seite mit 5 Kacheln (in der App änderbar), Tipp = Notiz, KI halten = Diktat;
+Zeit + GPS (±4–5 m) gestempelt, Rückmeldung „✓ Bug 14:32“ als Teilbild. JSONL im Format des
+Bubble-Log-Entwickler-Logs (`typ: "notiz"`, `quelle: "sticky"`), Teilen über Android. Diktat nach dem
+Loslassen ~0,6–0,7 s.
+- Abweichung vom Vorschlag: Moduswechsel per **▲ lang** statt KI lang (KI halten ist schon Diktat)
+- Offen: Läuft die App im Hintergrund weiter, wenn Bubble Log/Android Auto vorne ist? → erste Testfahrt
+
+**2. Bordbuch** – läuft. Offizielle Bedienungsanleitung DE 2026 (36 Seiten A4 quer; von Markus geladen, privat),
+dazu 5 Spickzettel aus dem Handbuch (Laden, Warnleuchten, Reifen, Sicherungen, Notfall). 150 Bildschirme im
+Flash (7,2 MB von 23,9 MB), Aufspielen 290 s, Blättern 2,2 s. Am Fahrzeug zu prüfen: Felgen des Pioneer
+(1,8 bar Stahl 13″ / 2,0 bar Alu 14″), Pannenhilfe-Nummer eintragen.
+- Vorschlag: Blättern beschleunigen (Teil-Refresh mit richtigem Vorbild statt Voll-Refresh)

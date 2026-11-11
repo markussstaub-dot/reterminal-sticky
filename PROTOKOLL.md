@@ -16,9 +16,11 @@ Gedacht auch für den Microlino-Knopf: gleiche Rahmen, nur andere Bildgröße im
 |---|---|---|
 | `01` | BILD_START | `01 fmt w:u16 h:u16 len:u32 crc32:u32 [x:u16 y:u16]` – fmt 0 = 1 bpp; 800×480 → len 48000. Mit x/y ein **Teilbild** (x, w Vielfache von 8, Teil-Refresh; unter 4 KB ohne Umschalten auf schnell) |
 | `02` | BILD_DATEN | `02 offset:u32 daten…` – Nutzlast = min(MTU−3, 512) − 5, write-no-response |
-| `03` | BILD_ENDE | `03 modus` – 0 = Vollbild-Refresh, 1 = schnell |
+| `03` | BILD_ENDE | `03 modus [seite]` – 0 = Vollbild-Refresh, 1 = schnell, **3 = nicht zeigen, als Bordbuch-Seite `seite` speichern** |
 | `10` | PING | Gerät antwortet `{"t":"pong"}` und schickt den Zustand |
 | `11` | KARTE | Gerät zeigt die eingebaute Visitenkarte |
+| `13` | BB_INDEX | Text: `seiten=N`, `toc=K`, `e x0 y0 x1 y1 seite` je Eintrag im Inhaltsverzeichnis (≤ 512 Byte) |
+| `14` | BB_MODUS | `14 0|1 [seite]` – Fahrt/Bordbuch, optional gleich zu einer Seite |
 
 Bild: Zeilen à 100 Byte, MSB = linkes Pixel, Bit 1 = schwarz. CRC-32 wie zlib.
 
@@ -27,6 +29,8 @@ Bild: Zeilen à 100 Byte, MSB = linkes Pixel, Bit 1 = schwarz. CRC-32 wie zlib.
 - `{"t":"touch","a":"down|up","x":…,"y":…,"rx":…,"ry":…}`: x/y in Display-Koordinaten 800×480 (Querformat, USB oben rechts), rx/ry roh vom GT911
 - `{"t":"img","ok":true,"ms":Empfang,"show":Anzeige,"mtu":…,"phy":1|2,"n":Rahmen,"dle":Byte}` bzw. `{"t":"img","ok":false,"err":"crc|format"}`
 - `{"t":"itvl","v":Intervall×1,25 ms,"lat":…}` bei jedem Wechsel der Verbindungsparameter
+- `{"t":"modus","m":"fahrt|bordbuch"[,"err":"leer"]}`, `{"t":"seite","n":…,"von":…}`, `{"t":"bordbuch","seiten","belegtKB"}`,
+  `{"t":"img","ok":…,"gespeichert":n}` nach BILD_ENDE Modus 3
 - `{"t":"audio","a":"start","rate":16000,"codec":"ima-adpcm","n":480}`, `{"t":"audio","a":"stop","pakete","verworfen","ms","spitze"}`,
   `{"t":"audio","a":"fehler","err":"mtu|mikro"}`
 

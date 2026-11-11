@@ -158,6 +158,12 @@ export class SimVerbindung extends Basis {
     } else if (r.op === 'ende' && this.erwartet) {
       const ms = Math.round(performance.now() - this.t0);
       const ok = crc32(this.puffer) === this.erwartet.crc;
+      if (r.speichern != null) {
+        this.erwartet = null;
+        (this.bbSeiten ??= [])[r.speichern] = this.puffer.slice();
+        this.onEreignis({ t: 'img', ok, gespeichert: r.speichern, ms });
+        return;
+      }
       this.erwartet = null;
       await warte(r.schnell ? 400 : 1500); // E-Paper-Refresh
       if (ok && this.erwartetTeil) { /* Teilbild: der Simulator merkt sich nur die ganze Seite */ }
@@ -167,6 +173,12 @@ export class SimVerbindung extends Basis {
     } else if (r.op === 'ping') {
       this.onEreignis({ t: 'pong' });
       this.#zustand();
+    } else if (r.op === 'bbIndex') {
+      this.bbAnzahl = +(r.text.match(/seiten=(\d+)/)?.[1] ?? 0);
+      this.onEreignis({ t: 'bordbuch', seiten: this.bbAnzahl, belegtKB: this.bbAnzahl * 47 });
+    } else if (r.op === 'bbModus') {
+      this.onEreignis({ t: 'modus', m: r.an ? 'bordbuch' : 'fahrt' });
+      if (r.an) this.onEreignis({ t: 'seite', n: r.seite ?? 0, von: this.bbAnzahl ?? 0 });
     } else if (r.op === 'karte') {
       this.seite = 'karte';
       this.bild = null;

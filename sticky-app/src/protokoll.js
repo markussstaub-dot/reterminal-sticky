@@ -9,7 +9,7 @@ export const UUID = {
   audio:   'b1e50005-7374-6963-6b79-7465726d6e6c', // notify, IMA-ADPCM-Pakete (audio.js)
 };
 
-export const OP = { BILD_START: 0x01, BILD_DATEN: 0x02, BILD_ENDE: 0x03, PING: 0x10, KARTE: 0x11 };
+export const OP = { BILD_START: 0x01, BILD_DATEN: 0x02, BILD_ENDE: 0x03, PING: 0x10, KARTE: 0x11, BB_INDEX: 0x13, BB_MODUS: 0x14 };
 
 export const BREITE = 800, HOEHE = 480;
 export const BILD_BYTES = BREITE / 8 * HOEHE; // 48000
@@ -76,6 +76,11 @@ export function rahmenDaten(bild, nutzlast) {
 }
 
 export const rahmenEnde = (schnell) => Uint8Array.of(OP.BILD_ENDE, schnell ? 1 : 0);
+/** BILD_ENDE Modus 3: nicht zeigen, als Bordbuch-Seite n im Flash speichern */
+export const rahmenSpeichern = (n) => Uint8Array.of(OP.BILD_ENDE, 3, n);
+/** Bordbuch-Index als Text: „seiten=N“, „toc=K“, „e x0 y0 x1 y1 seite“ */
+export const rahmenBbIndex = (text) => { const t = new TextEncoder().encode(text); const r = new Uint8Array(1 + t.length); r[0] = OP.BB_INDEX; r.set(t, 1); return r; };
+export const rahmenBbModus = (an, seite = null) => (seite == null ? Uint8Array.of(OP.BB_MODUS, an ? 1 : 0) : Uint8Array.of(OP.BB_MODUS, an ? 1 : 0, seite));
 export const rahmenPing = () => Uint8Array.of(OP.PING);
 export const rahmenKarte = () => Uint8Array.of(OP.KARTE);
 
@@ -89,7 +94,9 @@ export function lies(rahmen) {
     case OP.BILD_START: return { op: 'start', breite: rahmen[2] | rahmen[3] << 8, hoehe: rahmen[4] | rahmen[5] << 8, laenge: r32(6), crc: r32(10),
       x: rahmen.length >= 18 ? rahmen[14] | rahmen[15] << 8 : 0, y: rahmen.length >= 18 ? rahmen[16] | rahmen[17] << 8 : 0 };
     case OP.BILD_DATEN: return { op: 'daten', offset: r32(1), daten: rahmen.subarray(5) };
-    case OP.BILD_ENDE: return { op: 'ende', schnell: rahmen[1] === 1 };
+    case OP.BILD_ENDE: return rahmen[1] === 3 ? { op: 'ende', schnell: false, speichern: rahmen[2] } : { op: 'ende', schnell: rahmen[1] === 1 };
+    case OP.BB_INDEX: return { op: 'bbIndex', text: new TextDecoder().decode(rahmen.subarray(1)) };
+    case OP.BB_MODUS: return { op: 'bbModus', an: rahmen[1] === 1, seite: rahmen.length > 2 ? rahmen[2] : null };
     case OP.PING: return { op: 'ping' };
     case OP.KARTE: return { op: 'karte' };
     default: return { op: 'unbekannt' };

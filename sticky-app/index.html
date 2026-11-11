@@ -33,6 +33,25 @@
       <ol id="notizen"></ol>
     </section>
 
+    <section id="bordbuch">
+      <h2>Bordbuch</h2>
+      <div class="leiste">
+        <label class="dateiwahl"><input type="file" id="pdfDatei" accept="application/pdf" hidden><span>Handbuch-PDF wählen</span></label>
+        <span id="pdfName" class="klein">kein Handbuch</span>
+      </div>
+      <div class="leiste">
+        <button id="bbAufspielen" disabled>Bordbuch aufspielen</button>
+        <button id="bbZeigen" disabled>Bordbuch zeigen</button>
+        <button id="bbFahrt" disabled>Fahrt zeigen</button>
+      </div>
+      <p id="bbStatus" class="klein"></p>
+      <details>
+        <summary class="klein">Spickzettel bearbeiten</summary>
+        <textarea id="spickzettel" rows="18" spellcheck="false"></textarea>
+        <button id="spickStandard">Standard wiederherstellen</button>
+      </details>
+    </section>
+
     <section class="vorschau">
       <div class="rahmen">
         <canvas id="bild" width="800" height="480"></canvas>

@@ -3,8 +3,8 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: MVP Runde 1 läuft – Testnotizen per Schnellknopf und Diktat mit GPS, JSONL zum Teilen (11.11.2026)
-wartet: MVP Runde 2 (Bordbuch): Markus gibt die Quelle der Betriebsanleitung frei
+version: MVP läuft – Testnotizen (Knopf/Diktat mit GPS) und Bordbuch (150 Seiten im Flash, offline) (11.11.2026)
+wartet: Markus prüft die Spickzettel (Felgen des Pioneer, Pannenhilfe-Nummer) und testet im Auto
 ---
 
 Repo: github.com/markussstaub-dot/reterminal-sticky (privat, seit 11.11.2026). `backup/`, Modelle und
@@ -51,12 +51,21 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
 - Moduswechsel Fahrt/Bordbuch per **▲ lang** (nicht KI lang: KI halten ist schon Diktat)
 - Offen: Läuft die App im Hintergrund weiter (BLE, Notizen), wenn Bubble Log/Android Auto vorne ist? Bei der
   ersten Testfahrt prüfen
+- **MVP 2 Bordbuch** (Firmware 0.4.0): **32 MB Flash** mit eigener `firmware-ble/partitions.csv` (app0/app1 je 4 MB,
+  LittleFS „spiffs“ 23,9 MB). Die App rendert Inhalt + 5 Spickzettel (Text in der App, aus dem Handbuch vorbefüllt)
+  + das Handbuch-PDF mit pdf.js (jede A4-Querseite in 4 Ausschnitten, ~1,6-fach, Floyd-Steinberg) und spielt sie
+  einmalig auf: 150 Seiten, 7,2 MB, **290 s**. Bedienung am Sticky ohne Handy: ▲ 1 s = Modus Fahrt/Bordbuch,
+  ▼/▲ blättern, KI = Inhalt, Tipp im Inhalt = Kapitel. Blättern **2,2 s** je Seite (normaler Refresh; `updateFast`
+  gab eine falsche Anzeige). Das Handbuch-PDF bleibt privat: PC `%LOCALAPPDATA%\sticky-bordbuch\handbuch.pdf`,
+  Fold `files/bordbuch/handbuch.pdf` (per adb oder „Handbuch-PDF wählen“), nicht im Repo
+- Im ausgeblendeten Browser-Fenster läuft pdf.js nicht (Animationstakt steht) → zum Testen das Fenster einblenden
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik
-- Bauen: `arduino-cli compile -b "esp32:esp32:XIAO_ESP32S3:PSRAM=opi,CDCOnBoot=cdc" --build-path
-  "%LOCALAPPDATA%\sticky-build\firmware-ble" firmware-ble`, aufspielen mit
-  `-p COM7 --upload-property upload.speed=460800 --input-dir …` (921600 bricht ab)
+- Bauen und aufspielen (seit 0.4.0 mit 32 MB): `arduino-cli compile -u -p COM7 -b
+  "esp32:esp32:XIAO_ESP32S3:PSRAM=opi,CDCOnBoot=cdc" --build-property build.flash_size=32MB --build-path
+  "%LOCALAPPDATA%\sticky-build\firmware-ble" firmware-ble` (lief mit 921600 durch; bei Abbrüchen 460800).
+  Neue Firmware lässt die Bordbuch-Seiten im Flash stehen
 - App: `sticky-app\apk.ps1` (Tests → Build → Gradle → `adb install -r` → App starten). OneDrive vorher anhalten
   (`OneDrive.exe /shutdown`, danach `/background`), Build-Ausgaben liegen in `%LOCALAPPDATA%\sticky-app-build`
 - Pins (Schaltplan `reTerminal_Sticky_Schematic_diagram_260609.pdf`, Blatt SCH_TOP; Tasten am Gerät bestätigt):

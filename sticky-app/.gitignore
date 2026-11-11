@@ -6,3 +6,6 @@ android/app/src/main/assets/capacitor.plugins.json
 android/capacitor-cordova-android-plugins/
 desktop.ini
 Thumbs.db
+
+# pdf.js-Decoder, kopiert npm run wasm aus node_modules
+public/pdfjs-wasm/
