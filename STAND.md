@@ -152,6 +152,11 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   `\0"…` trotzdem, Wiederverbinden alle ~13 s statt ~23 s (8 s Versuch + 5 s Pause). Logcat reichte nur bis 10:34;
   davor war die App im Hintergrund offenbar eingefroren (10:34:32 kamen alle Meldungen auf einmal). **Offen:**
   nächste Fahrt beobachten
+- **Abgleich mit Bubble Log (12.11.)**: Rückfahrt 11:05–11:20 komplett offline, weil die App im Doze stillstand
+  (keine Zeitgeber, kein Verbindungsversuch, obwohl der Vordergrund-Dienst lief). Behoben mit einem **Wecker** im
+  `StickyDienst`: eigene GATT-Verbindung mit `autoConnect = true`, der Bluetooth-Stack verbindet von selbst, sobald
+  der Sticky funkt, dann 60 s Wakelock und Ereignis `sticky` an die App → sofort verbinden. Getestet per Neustart des
+  Sticky (nach 4 s wieder verbunden). **Offen:** echter Doze-Fall (Bildschirm lange aus, Sticky per Taste wecken)
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

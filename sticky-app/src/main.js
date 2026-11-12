@@ -310,9 +310,25 @@ function zeigeVerbindung() {
 // bis der Nutzer selbst „Trennen“ tippt. Der Vordergrund-Dienst hält sie dabei am Leben.
 let autoVerbinden = false;
 let wiederTimer = 0;
+/** Bluetooth-Adresse des gemerkten Sticky für den nativen Wecker (StickyDienst) */
+function stickyAdresse() {
+  try { return JSON.parse(localStorage.getItem('sticky.geraet') || 'null')?.id ?? null; } catch { return null; }
+}
+
+// Wecker: Der Dienst merkt per autoConnect, dass der Sticky wieder funkt, und weckt die App (12.11.2026: im Doze
+// standen die Zeitgeber 15 min still, die ganze Rückfahrt lief offline)
+Promise.resolve().then(() => Hintergrund.addListener('sticky', (e) => {
+  if (!e.da || !autoVerbinden || zwilling.verbunden) return;
+  console.info('[sticky] Wecker: Sticky funkt wieder');
+  clearTimeout(wiederTimer);
+  wiederverbinden();
+})).catch(() => {});   // im Browser gibt es den Dienst nicht
+
+let verbindeGerade = false;
 async function wiederverbinden() {
   wiederTimer = 0;
-  if (!autoVerbinden || zwilling.verbunden || !(verbindung instanceof BleVerbindung)) return;
+  if (!autoVerbinden || zwilling.verbunden || verbindeGerade || !(verbindung instanceof BleVerbindung)) return;
+  verbindeGerade = true;
   try {
     await verbindung.verbinden({ nurGemerkt: true });
     eintrag(`Wieder verbunden mit ${verbindung.name}`);
@@ -320,7 +336,10 @@ async function wiederverbinden() {
     zeigeVerbindung();
     abgleich().catch((e) => eintrag(`Abgleich: ${e.message}`, true));
   } catch {
+    clearTimeout(wiederTimer);
     wiederTimer = setTimeout(wiederverbinden, 5000);   // 12.11.2026: 15 s Pause ließ einen per Taste geweckten Sticky bis ~20 s warten
+  } finally {
+    verbindeGerade = false;
   }
 }
 
@@ -343,7 +362,7 @@ $('verbinden').onclick = async () => {
     await verbindung.verbinden();
     eintrag(`Verbunden mit ${verbindung.name} (MTU ${verbindung.mtu})`);
     autoVerbinden = true;
-    Hintergrund.start({ text: 'Notizen und Diktate kommen an' }).catch((e) => eintrag(`Hintergrund-Dienst: ${e.message}`, true));
+    Hintergrund.start({ text: 'Notizen und Diktate kommen an', adresse: stickyAdresse() }).catch((e) => eintrag(`Hintergrund-Dienst: ${e.message}`, true));
     abgleich().catch((e) => eintrag(`Abgleich: ${e.message}`, true));
   } catch (e) {
     eintrag(`Verbinden fehlgeschlagen: ${e.message || e}`, true);
@@ -776,7 +795,7 @@ try {
     verbindung = new BleVerbindung();
     zwilling.anbinden(verbindung);
     autoVerbinden = true;
-    Hintergrund.start({ text: 'Notizen und Diktate kommen an' }).catch(() => {});
+    Hintergrund.start({ text: 'Notizen und Diktate kommen an', adresse: stickyAdresse() }).catch(() => {});
     wiederverbinden();
   }
 } catch { /* dann eben per Knopf */ }
