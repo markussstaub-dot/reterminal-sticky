@@ -251,7 +251,7 @@ async function zeigeAufnahme(a) {
 zwilling.beobachte((art, d) => {
   if (art === 'aufnahmeLaeuft') { $('aufnahmeStatus').hidden = false; ortBeiAufnahme = notizen.standort(); }
   if (art === 'aufnahme') { $('aufnahmeStatus').hidden = true; d.ort = ortBeiAufnahme; zeigeAufnahme(d); }
-  if (art === 'zustand') { zeigeZustand(d); if (d.modus) spiegelSetze({ modus: d.modus, bb: d.bb ?? 0, zettel: d.zettel ?? 0, verbunden: true }); }
+  if (art === 'zustand') { zeigeZustand(d); if (d.modus) spiegelSetze({ modus: d.modus, bb: d.bb ?? 0, zettel: d.zettel ?? 0, bat: d.bat, usb: !!d.usb, verbunden: true }); }
   else if (art === 'log') eintrag(d);
   else if (art === 'getrennt') {
     eintrag(autoVerbinden ? 'Verbindung weg – versuche alle 15 s neu' : 'Verbindung getrennt', true);

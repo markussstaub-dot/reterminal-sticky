@@ -1,9 +1,9 @@
----
+﻿---
 name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.7.5 – Home mit Uhr, Notizen (auch offline), Bordbuch, Bestellzettel, App in Tabs mit Spiegel/Fernbedienung (12.11.2026)
+version: FW 0.7.7 – Home mit Uhr, Akku, Wetter, Karten, Notizen (auch offline), Bordbuch, Bestellzettel, App in Tabs mit Spiegel/Fernbedienung (12.11.2026)
 wartet: Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Akkulaufzeit ohne USB messen; USB-Pin beim Abziehen bestätigen
 ---
 
@@ -115,6 +115,9 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   Reihe nach den Bestellzetteln (▼ auf Home), zusammen höchstens 6 (`/home/3–8.bin`). QR mit ganzen Pixeln je Modul,
   keine Rasterung, Ruhezone 4 Module. Eintrag im Tab „Bestellen“ („## Titel“, „qr: Inhalt“); im Repo nur Platzhalter.
   **Offen:** echten Lidl-Code eintragen und an der Kasse testen (ist der Code statisch?)
+- **Akkusymbol auf Home** (Firmware 0.7.7, `firmware-ble/modus.h`): oben rechts, 4 Balken à 25 %, Blitz bei USB. Der
+  Sticky zeichnet es selbst (offline), prüft minütlich und frischt nur das Feld auf, wenn sich Stufe oder USB ändern;
+  der App-Spiegel zeigt es gleich. **Offen:** Blitz verschwindet beim Abstecken (USB-Erkennung GPIO9)?
 - Zweite Meinung (Google KI, 12.11.2026) zur Aufgabenteilung: bestätigt. Neu notiert: **Winter** – E-Paper wird bei
   Frost träge, Teil-Refreshes (Uhr) können Schatten lassen → beobachten, ggf. bei Kälte öfter voll auffrischen
   (Temperatur liefert der Display-Chip); **„Teilen → Sticky“** aus jeder Android-App als Idee (SPEC)

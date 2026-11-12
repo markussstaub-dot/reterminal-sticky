@@ -102,6 +102,59 @@ static bool uhrZeichnen() {
     return true;
 }
 
+// ---- Akkusymbol auf Home (Markus, 12.11.2026) -------------------------------------------------
+// Hochkant oben rechts: Batterie mit 4 Balken (je 25 %), Blitz bei USB. Der Sticky zeichnet es selbst in imgBuf
+// (damit es auch Voll-Refreshes übersteht) und frischt nur dieses Feld auf, wenn sich Stufe oder USB ändern.
+// Feld hochkant x 400–468, y 8–40 → Display x 8, w 32 (Vielfache von 8), y 12, h 68.
+static const int AKKU_X = 8, AKKU_Y = 12, AKKU_W = 32, AKKU_H = 68;
+static int akkuStufe = -1;
+static bool akkuUsb = false;
+
+/** Rechteck in imgBuf (Display-Koordinaten), Bit 1 = schwarz */
+static void bildRechteck(int x, int y, int w, int h, bool schwarz) {
+    for (int r = y; r < y + h; r++) {
+        if (r < 0 || r >= H) continue;
+        for (int c = x; c < x + w; c++) {
+            if (c < 0 || c >= W) continue;
+            uint8_t& b = imgBuf[r * (W / 8) + c / 8];
+            uint8_t m = 0x80 >> (c & 7);
+            if (schwarz) b |= m; else b &= ~m;
+        }
+    }
+}
+/** Rechteck in Hochkant-Koordinaten (wie die App die Karte zeichnet) */
+static void hochRechteck(int px, int py, int w, int h, bool schwarz) { bildRechteck(py, H - (px + w), h, w, schwarz); }
+
+static void akkuZeichnen(int stufe, bool usb) {
+    hochRechteck(400, 8, 68, 32, false);              // Feld leeren
+    hochRechteck(404, 12, 52, 24, true);              // Gehäuse
+    hochRechteck(407, 15, 46, 18, false);
+    hochRechteck(456, 18, 6, 12, true);               // Pluspol
+    for (int i = 0; i < stufe && i < 4; i++) hochRechteck(409 + i * 11, 17, 9, 14, true);
+    if (usb) {                                        // Blitz: weißer Rand, schwarzer Zickzack
+        hochRechteck(423, 13, 14, 22, false);
+        hochRechteck(429, 14, 5, 9, true);
+        hochRechteck(426, 21, 8, 3, true);
+        hochRechteck(426, 23, 5, 10, true);
+    }
+}
+
+/** Liest den Akku und zeichnet neu, wenn sich etwas geändert hat; teil = gleich auffrischen */
+static void akkuPruefen(bool teil) {
+    readBattery();
+    if (batPct < 0) return;                           // kein Akku-Chip
+    int stufe = (batPct + 12) / 25;                   // 0–4
+    bool usb = usbDa();
+    if (stufe == akkuStufe && usb == akkuUsb) return;
+    akkuStufe = stufe;
+    akkuUsb = usb;
+    akkuZeichnen(stufe, usb);
+    if (teil) {
+        display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+        display.updatePartial(AKKU_X, AKKU_Y, AKKU_W, AKKU_H);
+    }
+}
+
 static void uhrAuffrischen(bool voll) {
     display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
     if (voll) display.update();
@@ -144,6 +197,8 @@ static void setzeModus(Modus m) {
     } else if (m == M_HOME && homeDa && homeLaden(0, imgBuf)) {
         uhrMinute = -1;
         uhrZeichnen();
+        akkuStufe = -1;
+        akkuPruefen(false);   // ins Bild, kommt mit dem Voll-Refresh
         uhrAuffrischen(true);
         seite = "home";
     } else if (m != M_NOTIZ || !notizDa) {
@@ -203,4 +258,6 @@ static void modusLoop() {
     }
     if (modus != M_HOME && !audioLaeuft && millis() - letzteBedienung > ZURUECK_MS) setzeModus(M_HOME);
     if (modus == M_HOME && homeDa && !audioLaeuft && uhrZeichnen()) uhrAuffrischen(uhrMinute == 0);
+    static uint32_t akkuZuletzt = 0;
+    if (modus == M_HOME && homeDa && !audioLaeuft && millis() - akkuZuletzt > 60000) { akkuZuletzt = millis(); akkuPruefen(true); }
 }

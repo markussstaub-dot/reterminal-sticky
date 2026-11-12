@@ -5,6 +5,17 @@ import { BREITE, HOEHE } from './protokoll.js';
 import { homeHochkant, KARTE } from './homeseite.js';
 import { fahrtHochkant, vonHochkant, PB, PH, RUECK_HOCH } from './fahrtseite.js';
 
+/** Akkusymbol wie am Sticky (firmware-ble/modus.h, gleiche Hochkant-Maße) */
+function akkuSymbol(g, stufe, usb) {
+  const r = (x, y, w, h, schwarz) => { g.fillStyle = schwarz ? '#000' : '#fff'; g.fillRect(x, y, w, h); };
+  r(400, 8, 68, 32, false);
+  r(404, 12, 52, 24, true);
+  r(407, 15, 46, 18, false);
+  r(456, 18, 6, 12, true);
+  for (let i = 0; i < Math.min(stufe, 4); i++) r(409 + i * 11, 17, 9, 14, true);
+  if (usb) { r(423, 13, 14, 22, false); r(429, 14, 5, 9, true); r(426, 21, 8, 3, true); r(426, 23, 5, 10, true); }
+}
+
 export function spiegelEinrichten({ canvas, hinweisEl, quelle, befehl, notizTipp }) {
   const z = { modus: null, bb: 0, zettel: 0, verbunden: false, aufnahme: false, meldung: null };
   let meldungTimer = 0, uhrTimer = 0, zeichnet = 0;
@@ -22,6 +33,7 @@ export function spiegelEinrichten({ canvas, hinweisEl, quelle, befehl, notizTipp
       const g = ziel(PB, PH);
       const jetzt = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
       g.drawImage(m === 'home' ? homeHochkant(KARTE, jetzt, quelle.wetter?.()) : fahrtHochkant(quelle.knoepfe()), 0, 0);
+      if (m === 'home' && z.bat >= 0) akkuSymbol(g, Math.floor((z.bat + 12) / 25), z.usb);
       // Überlagerungen unten im Rückmeldefeld, wie am Sticky
       const text = z.aufnahme ? '● Aufnahme' : z.meldung;
       if (text) {
