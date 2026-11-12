@@ -320,7 +320,7 @@ async function wiederverbinden() {
     zeigeVerbindung();
     abgleich().catch((e) => eintrag(`Abgleich: ${e.message}`, true));
   } catch {
-    wiederTimer = setTimeout(wiederverbinden, 15000);
+    wiederTimer = setTimeout(wiederverbinden, 5000);   // 12.11.2026: 15 s Pause ließ einen per Taste geweckten Sticky bis ~20 s warten
   }
 }
 
@@ -729,7 +729,7 @@ try { const alt = JSON.parse(localStorage.getItem('sticky.spiegel') || 'null'); 
 $('fernAuf').onclick = () => spiegel.taste('up');
 $('fernAb').onclick = () => spiegel.taste('down');
 
-// Fahrt erkennen und den Sticky wach halten (13.11.2026: im Auto schlummerte er zwischen zwei Diktaten ein, das
+// Fahrt erkennen und den Sticky wach halten (12.11.2026: im Auto schlummerte er zwischen zwei Diktaten ein, das
 // nächste landete offline und die App blieb stumm). Solange verbunden: jede Minute Standort; fährt das Fold (GPS-
 // Tempo oder Strecke > 2 m/s), bis 10 min danach jede Minute „wach“ an den Sticky.
 let fahrtBis = 0, letzterOrt = null;
@@ -762,7 +762,7 @@ tabsEinrichten();
 muster();
 zeigeVerbindung();
 
-// Beim Start gleich den bekannten Sticky suchen (13.11.2026: nach Neustart der App blieb sie sonst getrennt, bis
+// Beim Start gleich den bekannten Sticky suchen (12.11.2026: nach Neustart der App blieb sie sonst getrennt, bis
 // jemand „Verbinden“ tippte – mit dem Schlummermodus wichtig, damit der geweckte Sticky die App wiederfindet)
 try {
   if (nativ && localStorage.getItem('sticky.geraet')) {

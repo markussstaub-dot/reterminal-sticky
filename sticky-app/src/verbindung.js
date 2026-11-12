@@ -100,7 +100,8 @@ export class BleVerbindung extends Basis {
   }
 
   #json(view, ziel) {
-    const t = text(view);
+    let t = text(view);
+    if (t.startsWith('\0"')) t = '{' + t.slice(1);   // erstes Byte beim Aufwachen schon mal verloren (12.11.2026)
     try { ziel(JSON.parse(t)); } catch { this.onLog(`Unlesbar: ${t}`); }
   }
 

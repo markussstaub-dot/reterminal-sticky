@@ -120,7 +120,7 @@ export function wav(pcm, rate = RATE) {
  * z. B. „Bexbach. Bexbach.“ aus 0,9 s Rauschen (Messung 11.11.2026). Rahmen à 30 ms, Pegel in dBFS.
  * → { ok, grund, dauerMs, spitzeDb, grundDb }
  */
-/** Leise Diktate anheben (13.11.2026: Sticky weiter weg, Sprache bei −30…−38 dBFS): Spitze auf ~−6 dBFS, höchstens ×8 */
+/** Leise Diktate anheben (12.11.2026: Sticky weiter weg, Sprache bei −30…−38 dBFS): Spitze auf ~−6 dBFS, höchstens ×8 */
 export function angehoben(pcm) {
   let spitze = 0;
   for (let i = 0; i < pcm.length; i++) { const a = Math.abs(pcm[i]); if (a > spitze) spitze = a; }

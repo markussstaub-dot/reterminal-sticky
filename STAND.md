@@ -3,7 +3,7 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.8.0 – Schlummermodus, Home mit Uhr, Akku, Wetter, Karten, Notizen (auch offline), Bordbuch, Bestellzettel, App in Tabs mit Spiegel/Fernbedienung (12.11.2026)
+version: FW 0.8.1 – Schlummermodus, Home mit Uhr, Akku, Wetter, Karten, Notizen (auch offline), Bordbuch, Bestellzettel, App in Tabs mit Spiegel/Fernbedienung (12.11.2026)
 wartet: Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Schlummermodus auf Akku testen, Nachtverbrauch messen
 ---
 
@@ -123,7 +123,7 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   (Temperatur liefert der Display-Chip); **„Teilen → Sticky“** aus jeder Android-App als Idee (SPEC)
 - Bordbuch öffnet immer mit dem **Inhaltsverzeichnis** (Firmware 0.7.5); gezielte Sprünge aus der App bleiben; im
   Bordbuch ▲ 1 s = zurück zum Inhalt
-- **Akku zieht zu viel** (Markus, 13.11.2026): über Nacht ohne USB ca. **50 %** weg (FW 0.7.7, mit dem Fold verbunden).
+- **Akku zieht zu viel** (Markus, 12.11.2026): über Nacht ohne USB ca. **50 %** weg (FW 0.7.7, mit dem Fold verbunden).
   Verdacht: kein Light-Sleep (CPU läuft durch), Ruhe-Verbindung 100–125 ms ohne Latenz, Mikro-Versorgung (GPIO38)
   evtl. dauernd an, minütliche Uhr-Teil-Refreshes. Ziel: Nacht < 5 %. Zuerst Strom je Zustand messen (BQ27220), dann
   Light-Sleep, Latenz in Ruhe hoch (schnell wecken bei Bild/Taste), Mikro nur bei Aufnahme an, nachts Uhr seltener
@@ -132,11 +132,11 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   Refresh, Mikro ist aus. Darum im Akkubetrieb nach **2 min ohne Bedienung**: Ereignis „schlaf“ an die App, BLE ganz
   aus (deinit), Touch stromlos, Leichtschlaf bis zur nächsten Minute (Uhr, Akkusymbol) oder bis eine **Taste** weckt
   (Druck wird festgehalten, Touch weckt nicht). **Zur vollen Stunde 60 s Funk** für den Abgleich der App. Am USB nie.
-  App zeigt „Sticky schlummert“ statt Fehler. Getestet 13.11. auf Akku: schlummert genau 2 min nach der letzten
+  App zeigt „Sticky schlummert“ statt Fehler. Getestet 12.11. auf Akku: schlummert genau 2 min nach der letzten
   Berührung, Taste weckt sofort (Druck kommt an), App nach 4 s verbunden, Touch wieder da. App verbindet sich jetzt
   auch beim Start selbst mit dem bekannten Sticky. Stundenfenster klappt (09:00:10 verbunden, Abgleich, danach wieder Schlummern). **Offen:** Verbrauch über Nacht; einmal kam eine
   Meldung mit kaputtem erstem Byte („Unlesbar“) gleich nach dem Wecken
-- **Testfahrt 13.11. vormittags** (Sticky auf Akku): bis 09:17 Diktate live, danach nur offline, App stumm. Ursache:
+- **Testfahrt 12.11. vormittags** (Sticky auf Akku): bis 09:17 Diktate live, danach nur offline, App stumm. Ursache:
   Schlummermodus – zwischen zwei Diktaten > 2 min, der Druck auf KI weckte den Sticky, die Aufnahme lief aber, bevor
   das Fold verbunden war. Dazu um 09:44 WebView-Renderer von Android beendet (Speicher), App tot bis zum Öffnen.
   Diktate 10–15 dB leiser als gestern (Sticky lag vermutlich weiter weg). Behoben in der App: **Fahrt erkennen** (GPS,
@@ -144,6 +144,14 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   Diktate anheben** (bis ×8) vor der Erkennung; **Renderer weg → Activity neu**, App verbindet selbst wieder (getestet
   mit Page.crash: nach 3 s wieder verbunden). **Offen:** nächste Testfahrt; einmal „Puffer-Liste antwortet nicht“
   direkt nach dem Neuaufbau
+- **Testfahrt 2, 12.11. ~10–11 Uhr**: deutlich besser, hakte aber beim Wiederverbinden. Logs: Wer den Sticky per KI
+  weckt und gleich diktiert, überschrieb mit der Einblendung „Aufnahme läuft“ (und den Knopf-Rückmeldungen) den
+  Empfangspuffer `rxBuf`, während die App gerade das Abgleich-Bild schickte → „crc (48000 Byte angekommen)“, Bild
+  nicht aktualisiert (10:57 und 11:21). Dazu wieder eine Meldung mit erstem Byte `\0`. Behoben in **FW 0.8.1**:
+  eigener Puffer `hinweisBuf` für Einblendungen, Sperre um `sendEvt` (loop und BLE-Task senden beide); App liest
+  `\0"…` trotzdem, Wiederverbinden alle ~13 s statt ~23 s (8 s Versuch + 5 s Pause). Logcat reichte nur bis 10:34;
+  davor war die App im Hintergrund offenbar eingefroren (10:34:32 kamen alle Meldungen auf einmal). **Offen:**
+  nächste Fahrt beobachten
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

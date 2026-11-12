@@ -1,4 +1,4 @@
-// ---- Schlummern im Akkubetrieb (Markus, 13.11.2026: über Nacht ~50 % Akku weg) -----------------
+// ---- Schlummern im Akkubetrieb (Markus, 12.11.2026: über Nacht ~50 % Akku weg) -----------------
 // Der Arduino-Kern hat kein automatisches Light-Sleep (CONFIG_PM_ENABLE fehlt): solange BLE läuft, läuft die CPU
 // durch. Darum nach SCHLAF_NACH ohne Bedienung: Ereignis „schlaf“ an die App, Funk und Touch aus, dann Leichtschlaf
 // bis zur nächsten vollen Minute (Uhr, Akkusymbol) oder bis eine Taste gedrückt wird. Zur vollen Stunde geht der

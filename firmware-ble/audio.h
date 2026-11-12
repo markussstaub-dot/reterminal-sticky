@@ -224,8 +224,8 @@ static void audioLoop() {
         File f = LittleFS.open("/fahrt/r06.bin", "r");
         f.read((uint8_t*)sk, 8);
         size_t n = (size_t)sk[2] / 8 * sk[3];
-        if (n <= IMG_BYTES && f.read(rxBuf, n) == n) {
-            display.drawBitmap(sk[0], sk[1], rxBuf, sk[2], sk[3], TFT_BLACK, TFT_WHITE);
+        if (n <= IMG_BYTES && f.read(hinweisBuf, n) == n) {
+            display.drawBitmap(sk[0], sk[1], hinweisBuf, sk[2], sk[3], TFT_BLACK, TFT_WHITE);
             display.updatePartial(sk[0], sk[1], sk[2], sk[3]);
             slotAktiv = true;
         }

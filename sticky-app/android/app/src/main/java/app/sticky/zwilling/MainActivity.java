@@ -17,7 +17,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(Spracherkennung.class);
         registerPlugin(Hintergrund.class);   // eigenes Plugin (whisper.cpp), kommt nicht über npm
         super.onCreate(savedInstanceState);
-        // 13.11.2026: Android beendete auf der Testfahrt den WebView-Renderer (Speicher knapp, Bubble Log vorne).
+        // 12.11.2026: Android beendete auf der Testfahrt den WebView-Renderer (Speicher knapp, Bubble Log vorne).
         // Ohne Renderer stand die App still, bis man sie öffnete. Jetzt: Activity neu aufbauen, die App verbindet
         // sich beim Start selbst wieder (höchstens einmal pro Minute, damit es keine Schleife wird).
         bridge.setWebViewClient(new BridgeWebViewClient(bridge) {

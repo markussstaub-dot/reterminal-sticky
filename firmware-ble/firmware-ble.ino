@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.8.0";
+static const char* FW_VERSION = "0.8.1";
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "Markus";
@@ -86,6 +86,7 @@ static volatile uint16_t connItvl = 0;
 // rxBuf = Empfang, imgBuf = was die Seite gerade zeigt (für Teilbilder und zum Wiederherstellen nach Hinweisen)
 static uint8_t* imgBuf;
 static uint8_t* rxBuf;
+static uint8_t* hinweisBuf;   // eigener Puffer für Einblendungen, damit sie kein ankommendes Bild in rxBuf zerschießen
 static volatile uint16_t imgX = 0, imgY = 0, imgW = 800, imgH = 480;
 static volatile uint32_t imgLen = 0, imgCrc = 0, imgGot = 0, imgT0 = 0, imgT1 = 0, imgFrames = 0;
 static volatile uint16_t dleTx = 27, dleRx = 27;
@@ -118,10 +119,15 @@ static uint16_t rd16(const uint8_t* p) { return p[0] | p[1] << 8; }
 static void sendEvt(const char* json) {
     Serial.printf("EVT %s\n", json);
     if (!connected) return;
+    // loop() und der BLE-Task senden beide: ohne Sperre überschreibt einer den Wert, während der andere ihn
+    // verschickt (12.11.2026: „\0"t":"seite"…“ kam nach dem Aufwachen in der App an)
+    static SemaphoreHandle_t sperre = xSemaphoreCreateMutex();
+    xSemaphoreTake(sperre, portMAX_DELAY);
     chEvt->setValue((const uint8_t*)json, strlen(json));
     // Nach vielen Datenpaketen (Puffer-Abholung) ist der Sendepuffer voll: dann kurz warten statt die Meldung zu
     // verlieren (11.11.2026: „datei“-Abschluss kam nie an, die App wartete 60 s)
     for (int i = 0; i < 40 && !chEvt->notify(); i++) delay(10);
+    xSemaphoreGive(sperre);
 }
 
 // ---- Akku (BQ27220) --------------------------------------------------------------
@@ -598,7 +604,8 @@ void setup() {
 
     imgBuf = (uint8_t*)ps_malloc(IMG_BYTES);
     rxBuf = (uint8_t*)ps_malloc(IMG_BYTES);
-    if (!imgBuf || !rxBuf) Serial.println("Kein PSRAM!");
+    hinweisBuf = (uint8_t*)ps_malloc(IMG_BYTES);
+    if (!imgBuf || !rxBuf || !hinweisBuf) Serial.println("Kein PSRAM!");
 
     if (!display.begin()) {
         Serial.println(display.lastResult().message);
