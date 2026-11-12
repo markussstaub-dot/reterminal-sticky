@@ -115,6 +115,8 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   Reihe nach den Bestellzetteln (▼ auf Home), zusammen höchstens 6 (`/home/3–8.bin`). QR mit ganzen Pixeln je Modul,
   keine Rasterung, Ruhezone 4 Module. Eintrag im Tab „Bestellen“ („## Titel“, „qr: Inhalt“); im Repo nur Platzhalter.
   **Offen:** echten Lidl-Code eintragen und an der Kasse testen (ist der Code statisch?)
+  Bäckerei-Karte (Zettel 6, 12.11.): QR vom Sticky an der Kasse **nicht erkannt**, die Filiale liest offenbar per
+  NFC, obwohl die Originalkarte auch einen QR hat. Erst mal so lassen, in anderen Filialen probieren
 - **Akkusymbol auf Home** (Firmware 0.7.7, `firmware-ble/modus.h`): oben rechts, 4 Balken à 25 %, Blitz bei USB. Der
   Sticky zeichnet es selbst (offline), prüft minütlich und frischt nur das Feld auf, wenn sich Stufe oder USB ändern;
   der App-Spiegel zeigt es gleich. **Offen:** Blitz verschwindet beim Abstecken (USB-Erkennung GPIO9)?
