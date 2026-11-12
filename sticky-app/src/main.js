@@ -248,13 +248,17 @@ async function zeigeAufnahme(a) {
   } catch (e) { eintrag(`Speichern fehlgeschlagen: ${e.message}`, true); }
 }
 
+// Der Sticky schlummert im Akkubetrieb nach 2 min ohne Bedienung (Firmware 0.8.0, schlaf.h) und meldet das vorher
+let stickySchlaeft = false;
 zwilling.beobachte((art, d) => {
+  if (art === 'zustand') stickySchlaeft = false;
   if (art === 'aufnahmeLaeuft') { $('aufnahmeStatus').hidden = false; ortBeiAufnahme = notizen.standort(); }
   if (art === 'aufnahme') { $('aufnahmeStatus').hidden = true; d.ort = ortBeiAufnahme; zeigeAufnahme(d); }
   if (art === 'zustand') { zeigeZustand(d); if (d.modus) spiegelSetze({ modus: d.modus, bb: d.bb ?? 0, zettel: d.zettel ?? 0, bat: d.bat, usb: !!d.usb, verbunden: true }); }
   else if (art === 'log') eintrag(d);
   else if (art === 'getrennt') {
-    eintrag(autoVerbinden ? 'Verbindung weg – versuche alle 15 s neu' : 'Verbindung getrennt', true);
+    if (stickySchlaeft) eintrag('Sticky schlummert (spart Akku) – Taste weckt ihn, sonst meldet er sich zur vollen Stunde');
+    else eintrag(autoVerbinden ? 'Verbindung weg – versuche alle 15 s neu' : 'Verbindung getrennt', true);
     console.info('[sticky] getrennt');
     spiegelSetze({ verbunden: false, aufnahme: false });
     zeigeVerbindung();
@@ -264,6 +268,7 @@ zwilling.beobachte((art, d) => {
     if (d.t === 'key' && d.a === 'down') eintrag(`Taste ${TASTEN[d.k] || d.k} gedrückt`);
     else if (d.t === 'touch' && d.a === 'down') { eintrag(`Touch bei ${d.x}, ${d.y}`); touchMarke(d.x, d.y); fahrtTouch(d.x, d.y, d.ms); }
     else if (d.t === 'pong') eintrag('Pong');
+    else if (d.t === 'schlaf') stickySchlaeft = true;
     else if (d.t === 'modus') { spiegelSetze({ modus: d.m, ...(d.zettel != null ? { zettel: d.zettel } : {}), verbunden: true }); stickyModus = d.m; imBordbuch = d.m === 'bordbuch'; eintrag(`Modus: ${{ home: 'Home', notiz: 'Notiz', bordbuch: 'Bordbuch', bestell: `Bestellzettel ${(d.zettel ?? 0) + 1}` }[d.m] ?? d.m}`); }
     else if (d.t === 'seite') { $('bbStatus').textContent = `Sticky zeigt Bordbuch-Seite ${d.n + 1} von ${d.von}`; spiegelSetze({ bb: d.n }); }
     else if (d.t === 'audio' && (d.a === 'start' || d.a === 'stop')) spiegelSetze({ aufnahme: d.a === 'start' });

@@ -3,8 +3,8 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.7.7 – Home mit Uhr, Akku, Wetter, Karten, Notizen (auch offline), Bordbuch, Bestellzettel, App in Tabs mit Spiegel/Fernbedienung (12.11.2026)
-wartet: Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Akkuverbrauch senken (Nacht ~50 %)
+version: FW 0.8.0 – Schlummermodus, Home mit Uhr, Akku, Wetter, Karten, Notizen (auch offline), Bordbuch, Bestellzettel, App in Tabs mit Spiegel/Fernbedienung (12.11.2026)
+wartet: Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Schlummermodus auf Akku testen, Nachtverbrauch messen
 ---
 
 Repo: github.com/markussstaub-dot/reterminal-sticky (privat, seit 11.11.2026). `backup/`, Modelle und
@@ -127,6 +127,13 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   Verdacht: kein Light-Sleep (CPU läuft durch), Ruhe-Verbindung 100–125 ms ohne Latenz, Mikro-Versorgung (GPIO38)
   evtl. dauernd an, minütliche Uhr-Teil-Refreshes. Ziel: Nacht < 5 %. Zuerst Strom je Zustand messen (BQ27220), dann
   Light-Sleep, Latenz in Ruhe hoch (schnell wecken bei Bild/Taste), Mikro nur bei Aufnahme an, nachts Uhr seltener
+- **Schlummermodus** (Firmware 0.8.0, `firmware-ble/schlaf.h`): Befund: der Arduino-Kern hat kein automatisches
+  Light-Sleep (CONFIG_PM_ENABLE aus), mit BLE-Verbindung läuft die CPU also immer; Display schläft schon nach jedem
+  Refresh, Mikro ist aus. Darum im Akkubetrieb nach **2 min ohne Bedienung**: Ereignis „schlaf“ an die App, BLE ganz
+  aus (deinit), Touch stromlos, Leichtschlaf bis zur nächsten Minute (Uhr, Akkusymbol) oder bis eine **Taste** weckt
+  (Druck wird festgehalten, Touch weckt nicht). **Zur vollen Stunde 60 s Funk** für den Abgleich der App. Am USB nie.
+  App zeigt „Sticky schlummert“ statt Fehler. **Offen:** auf Akku testen (Schlummern, Wecken, Stundenfenster) und
+  Verbrauch über Nacht messen
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

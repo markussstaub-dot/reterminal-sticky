@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.7.7";
+static const char* FW_VERSION = "0.8.0";
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "Markus";
@@ -45,6 +45,9 @@ static const int PIN_CHG_STATE = 40;
 static const int PIN_BUZZER = 48;
 static const int PIN_USB = 9;   // PWR_IN_VOLT laut Schaltplan: HIGH = USB-Strom (am Gerät noch zu bestätigen)
 static bool usbDa() { return digitalRead(PIN_USB) == HIGH; }
+// Letzte Bedienung (Taste, Touch, Befehl der App außer Ping) – danach zählt die Schlummer-Frist (schlaf.h)
+static volatile uint32_t letzteAktivitaet = 0, letzteTaste = 0;
+static void aktiv() { letzteAktivitaet = millis(); }
 
 // ---- BLE ---------------------------------------------------------------------
 #define UUID_SVC   "b1e50001-7374-6963-6b79-7465726d6e6c"
@@ -242,6 +245,7 @@ static void bbTouch(int x, int y);
 static void pufferTouch(int x, int y);
 static uint64_t jetztMs();
 static void sendTouch(const char* a, int x, int y) {
+    aktiv();
     int dx = 799 - y, dy = 479 - x;
     if (a[0] == 'd') { bbTouch(dx, dy); pufferTouch(dx, dy); }
     char j[128];
@@ -298,6 +302,7 @@ static void tasteAktion(const char* name, bool gedrueckt);
 static void tastenPoll() {
     for (auto& t : tasten) {
         int v = digitalRead(t.pin);
+        if (v != t.ruhe || t.gedrueckt) { aktiv(); letzteTaste = millis(); }
         // Druck, der komplett in eine Blockade fiel (gedrückt und wieder los, ohne dass loop() lief): nachholen
         if (t.gedrueckt && v == t.ruhe && t.stand == t.ruhe) {
             t.gedrueckt = false;
@@ -382,8 +387,10 @@ static void sendState() {
              FW_VERSION, seite, batPct, batMv, batMa, laedt ? "true" : "false", mtu, phy, connItvl, tpResX, tpResY,
              (unsigned long)fahrtVersion, offeneNotizen, rtcDa ? "true" : "false",
              modusName(), homeVersion, usbDa() ? "true" : "false", bbAktuell, bestellAktuell);
-    chState->setValue((const uint8_t*)j, strlen(j));
-    if (connected) chState->notify();
+    if (connected && chState) {
+        chState->setValue((const uint8_t*)j, strlen(j));
+        chState->notify();
+    }
     Serial.printf("STATE %s\n", j);
 }
 
@@ -432,6 +439,7 @@ class CmdCb : public NimBLECharacteristicCallbacks {
         const uint8_t* d = v.data();
         size_t n = v.length();
         if (n < 1) return;
+        if (d[0] != OP_PING) aktiv();
         switch (d[0]) {
         case OP_IMG_BEGIN: { // 01 fmt w16 h16 len32 crc32 [x16 y16] – mit x/y ein Teilbild (x, w Vielfache von 8)
             if (n < 14) return;
@@ -570,6 +578,8 @@ static void bleInit() {
     startAdvertising(false);
 }
 
+#include "schlaf.h"
+
 // ---- Ablauf ----------------------------------------------------------------------
 void setup() {
     setCpuFrequencyMhz(80);                    // reicht für BLE, Display und ADPCM; spart Strom gegenüber 240 MHz
@@ -606,6 +616,7 @@ void setup() {
     micSelbsttest();
     bleInit();
     setzeModus(M_HOME);
+    aktiv();
 }
 
 void loop() {
@@ -701,6 +712,7 @@ void loop() {
     bbLoop();
     pufferLoop();
     static uint32_t lastTp = 0;
-    if (millis() - lastTp > 25) { lastTp = millis(); touchPoll(); }
+    if (touchAn && millis() - lastTp > 25) { lastTp = millis(); touchPoll(); }
+    schlafPruefen();
     delay(5);
 }
