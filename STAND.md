@@ -165,6 +165,12 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   Danach 30 → 34 % in ~6 min am PC. Dazu die USB-Erkennung: GPIO9 hängt an einem 5,1k/5,1k-Teiler (~2,4 V am PC),
   digital genau an der Schwelle, darum misst sie jetzt per ADC (> 1,5 V = USB). Ladetemperatur laut Schaltplan 0–45 °C
   (NTC), im kalten Auto im Winter lädt er also evtl. nicht
+- **Testfahrt 3 (12.11. nachmittags), Sticky nur auf Akku**: Mit Bubble Log im Vordergrund landeten fast alle Diktate
+  während der Fahrt offline (ohne Ort). Ursache: Die WebView pausiert im Hintergrund (14:41–15:08 nicht einmal ein
+  Verbindungsversuch), ihr „wach“-Zeitgeber lief nicht, der Sticky schlummerte nach 2 min ein. Jetzt sendet der
+  `StickyDienst` WACH: liest GPS passiv mit (was Bubble Log ohnehin anfordert), bei > 2 m/s bis 10 min danach alle
+  45 s über die Wecker-Verbindung (App 2026.11.12-1612). **Offen:** auf der nächsten Fahrt prüfen (Log „Wach an
+  Sticky: ok“); fährt man ohne Bubble Log, greift nur der alte Weg mit der App vorne
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

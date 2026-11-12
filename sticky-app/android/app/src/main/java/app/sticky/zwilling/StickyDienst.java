@@ -9,6 +9,14 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattService;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.os.Bundle;
+import android.os.Looper;
+import java.util.UUID;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.content.Intent;
@@ -41,13 +49,87 @@ public class StickyDienst extends Service {
         wach.acquire(ms);
     }
 
+    // ---- Während der Fahrt wach halten (Testfahrt 12.11.2026 nachmittags) ----------------------------------------
+    // Mit Bubble Log im Vordergrund pausierte die WebView, ihr „wach“-Zeitgeber lief nicht, der Sticky schlummerte nach
+    // 2 min ein und jedes Diktat landete offline (ohne Ort). Jetzt macht das der Dienst: liest GPS passiv mit (der Dienst
+    // ist vom Typ location, darf also im Hintergrund), bei Tempo > 2 m/s bis 10 min danach höchstens alle 45 s WACH
+    // (0x1B) über die eigene GATT-Verbindung des Weckers.
+    private static final UUID DIENST = UUID.fromString("b1e50001-7374-6963-6b79-7465726d6e6c");
+    private static final UUID BEFEHL = UUID.fromString("b1e50002-7374-6963-6b79-7465726d6e6c");
+    private static final byte OP_WACH = 0x1b;
+    private BluetoothGattCharacteristic befehl;
+    private boolean weckerVerbunden;
+    private long fahrtBis = 0, letztesWach = 0;
+    private LocationManager orte;
+
+    private final LocationListener ortRuf = new LocationListener() {
+        @Override
+        public void onLocationChanged(Location o) {
+            if (o.hasSpeed() && o.getSpeed() > 2) {
+                if (System.currentTimeMillis() >= fahrtBis) Log.i(TAG, "Fahrt erkannt (" + o.getSpeed() + " m/s), halte Sticky wach");
+                fahrtBis = System.currentTimeMillis() + 10 * 60 * 1000;
+            }
+            if (System.currentTimeMillis() < fahrtBis) wachSenden();
+        }
+        @Override public void onStatusChanged(String p, int s, Bundle b) { }
+        @Override public void onProviderEnabled(String p) { }
+        @Override public void onProviderDisabled(String p) { }
+    };
+
+    private void wachSenden() {
+        long jetzt = System.currentTimeMillis();
+        if (!weckerVerbunden || befehl == null || jetzt - letztesWach < 45000) return;
+        try {
+            boolean ok;
+            if (Build.VERSION.SDK_INT >= 33) {
+                ok = wecker.writeCharacteristic(befehl, new byte[]{OP_WACH}, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE) == 0;
+            } else {
+                befehl.setValue(new byte[]{OP_WACH});
+                befehl.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
+                ok = wecker.writeCharacteristic(befehl);
+            }
+            if (ok) letztesWach = jetzt;
+            Log.i(TAG, "Wach an Sticky: " + (ok ? "ok" : "fehlgeschlagen"));
+        } catch (SecurityException e) {
+            Log.w(TAG, "Wach nicht möglich: " + e.getMessage());
+        }
+    }
+
+    private void orteEin() {
+        if (orte != null) return;
+        try {
+            orte = getSystemService(LocationManager.class);
+            // passiv: liest nur mit, was andere (Bubble Log während der Fahrt) ohnehin anfordern, kostet keinen Strom extra
+            orte.requestLocationUpdates(LocationManager.PASSIVE_PROVIDER, 10000, 0, ortRuf, Looper.getMainLooper());
+        } catch (SecurityException | IllegalArgumentException e) {
+            Log.w(TAG, "Kein GPS im Dienst: " + e.getMessage());
+            orte = null;
+        }
+    }
+
+    private void orteAus() {
+        if (orte != null) { orte.removeUpdates(ortRuf); orte = null; }
+    }
+
     private final BluetoothGattCallback weckerRuf = new BluetoothGattCallback() {
         @Override
         public void onConnectionStateChange(BluetoothGatt g, int status, int neu) {
             boolean da = neu == BluetoothProfile.STATE_CONNECTED;
             Log.i(TAG, "Wecker: Sticky " + (da ? "funkt" : "weg") + " (status " + status + ")");
             wachHalten(da ? 60000 : 20000);   // Zeit, damit die WebView verbindet bzw. die Trennung verarbeitet
+            weckerVerbunden = da;
+            befehl = null;
+            if (da) {
+                try { g.discoverServices(); } catch (SecurityException e) { /* egal */ }
+            }
             Hintergrund.melde(da);
+        }
+
+        @Override
+        public void onServicesDiscovered(BluetoothGatt g, int status) {
+            BluetoothGattService s = g.getService(DIENST);
+            befehl = s != null ? s.getCharacteristic(BEFEHL) : null;
+            if (befehl != null && System.currentTimeMillis() < fahrtBis) wachSenden();
         }
     };
 
@@ -71,10 +153,13 @@ public class StickyDienst extends Service {
             wecker = null;
         }
         weckerAdresse = null;
+        weckerVerbunden = false;
+        befehl = null;
     }
 
     @Override
     public void onDestroy() {
+        orteAus();
         weckerAus();
         if (wach != null && wach.isHeld()) wach.release();
         super.onDestroy();
@@ -104,6 +189,7 @@ public class StickyDienst extends Service {
             startForeground(1, n);
         }
         if (intent != null) weckerStellen(intent.getStringExtra("adresse"));
+        orteEin();
         return START_STICKY;
     }
 
