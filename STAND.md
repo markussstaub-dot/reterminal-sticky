@@ -1,9 +1,9 @@
-﻿---
+---
 name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.8.1 – Schlummermodus, Home mit Uhr, Datum, Akku, Wetter, Karten, Notizen (auch offline), Bordbuch, Bestellzettel, App in Tabs mit Spiegel/Fernbedienung (12.11.2026)
+version: FW 0.8.2 – Akku lädt jetzt, Schlummermodus, Home mit Uhr, Datum, Akku, Wetter, Karten, Notizen (auch offline), Bordbuch, Bestellzettel, App in Tabs mit Spiegel/Fernbedienung (12.11.2026)
 wartet: Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Schlummermodus auf Akku testen, Nachtverbrauch messen
 ---
 
@@ -159,6 +159,12 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   `StickyDienst`: eigene GATT-Verbindung mit `autoConnect = true`, der Bluetooth-Stack verbindet von selbst, sobald
   der Sticky funkt, dann 60 s Wakelock und Ereignis `sticky` an die App → sofort verbinden. Getestet per Neustart des
   Sticky (nach 4 s wieder verbunden). **Offen:** echter Doze-Fall (Bildschirm lange aus, Sticky per Taste wecken)
+- **Akku lud nie (12.11., FW 0.8.2)**: Markus' Eindruck „lädt nicht“ stimmte, am Kabel 0 mA. Ursache laut Schaltplan:
+  `EN_BAT_CHGn` (GPIO39) geht an /CE des Laders BQ25616, der hat 100k nach GND, aber GPIO39 ist MTCK mit internem
+  Pull-up (beim Start gelesen: 1 = Laden gesperrt). Jetzt treibt die Firmware GPIO39 LOW, im Schlaf per `gpio_hold`.
+  Danach 30 → 34 % in ~6 min am PC. Dazu die USB-Erkennung: GPIO9 hängt an einem 5,1k/5,1k-Teiler (~2,4 V am PC),
+  digital genau an der Schwelle, darum misst sie jetzt per ADC (> 1,5 V = USB). Ladetemperatur laut Schaltplan 0–45 °C
+  (NTC), im kalten Auto im Winter lädt er also evtl. nicht
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

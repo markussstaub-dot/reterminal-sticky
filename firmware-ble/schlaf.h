@@ -63,7 +63,9 @@ static bool leichtSchlaf() {
     esp_sleep_enable_timer_wakeup(ms * 1000ULL);
     Serial.flush();
     gpio_hold_en((gpio_num_t)PIN_PWR_HOLD);        // Selbsthaltung, sonst geht er aus
+    gpio_hold_en((gpio_num_t)PIN_CHG_EN_N);        // Laden bleibt erlaubt
     esp_light_sleep_start();
+    gpio_hold_dis((gpio_num_t)PIN_CHG_EN_N);
     gpio_hold_dis((gpio_num_t)PIN_PWR_HOLD);
     bool taste = esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_GPIO;
     for (auto& x : tasten) {

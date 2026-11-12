@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.8.1";
+static const char* FW_VERSION = "0.8.2";
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "Markus";
@@ -43,8 +43,13 @@ static const int PIN_TP_SCL = 2, PIN_TP_SDA = 3, PIN_TP_INT = 21, PIN_TP_RST = 4
 static const int PIN_BFG_SCL = 0, PIN_BFG_SDA = 1;
 static const int PIN_CHG_STATE = 40;
 static const int PIN_BUZZER = 48;
-static const int PIN_USB = 9;   // PWR_IN_VOLT laut Schaltplan: HIGH = USB-Strom (am Gerät noch zu bestätigen)
-static bool usbDa() { return digitalRead(PIN_USB) == HIGH; }
+// PWR_IN_VOLT = VIN_5V über Teiler 5,1k/5,1k, also ~2,5 V bei USB. Digital lag das genau an der Schwelle des ESP32-S3
+// (0,75 × 3,3 V = 2,48 V) und las am PC-Port LOW. Darum per ADC (12.11.2026).
+static const int PIN_USB = 9;
+static bool usbDa() { return analogReadMilliVolts(PIN_USB) > 1500; }
+// EN_BAT_CHGn → /CE des Laders BQ25616 (100k nach GND = lädt). GPIO39 ist aber MTCK mit internem Pull-up, das hob /CE
+// an und der Akku lud nie (Markus, 12.11.2026: „lädt nicht“, 0 mA am Kabel). Darum aktiv LOW treiben, auch im Schlaf.
+static const int PIN_CHG_EN_N = 39;
 // Letzte Bedienung (Taste, Touch, Befehl der App außer Ping) – danach zählt die Schlummer-Frist (schlaf.h)
 static volatile uint32_t letzteAktivitaet = 0, letzteTaste = 0;
 static void aktiv() { letzteAktivitaet = millis(); }
@@ -595,8 +600,14 @@ void setup() {
     delay(300);
     Serial.printf("\nSticky BLE-Durchstich %s\n", FW_VERSION);
 
+    int ceVorher = digitalRead(PIN_CHG_EN_N);
+    pinMode(PIN_CHG_EN_N, OUTPUT);
+    digitalWrite(PIN_CHG_EN_N, LOW);           // Laden erlauben
     pinMode(PIN_CHG_STATE, INPUT_PULLUP);
     pinMode(PIN_USB, INPUT);
+    analogSetPinAttenuation(PIN_USB, ADC_11db);
+    delay(50);
+    Serial.printf("Laden: /CE vorher %d, jetzt 0 · USB %d mV\n", ceVorher, analogReadMilliVolts(PIN_USB));
     Wire.begin(PIN_BFG_SDA, PIN_BFG_SCL, 100000);
     readBattery();
     zeitInit();
