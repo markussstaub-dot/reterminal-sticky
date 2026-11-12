@@ -255,7 +255,7 @@ zwilling.beobachte((art, d) => {
   if (art === 'aufnahmeLaeuft') { $('aufnahmeStatus').hidden = false; ortBeiAufnahme = notizen.standort(); }
   if (art === 'aufnahme') { $('aufnahmeStatus').hidden = true; d.ort = ortBeiAufnahme; zeigeAufnahme(d); }
   if (art === 'zustand') { zeigeZustand(d); if (d.modus) spiegelSetze({ modus: d.modus, bb: d.bb ?? 0, zettel: d.zettel ?? 0, bat: d.bat, usb: !!d.usb, verbunden: true }); }
-  else if (art === 'log') eintrag(d);
+  else if (art === 'log') { if (!(stickySchlaeft && /^Verbinde mit/.test(d))) eintrag(d); }   // schlummert: Versuche nicht mitschreiben
   else if (art === 'getrennt') {
     if (stickySchlaeft) eintrag('Sticky schlummert (spart Akku) – Taste weckt ihn, sonst meldet er sich zur vollen Stunde');
     else eintrag(autoVerbinden ? 'Verbindung weg – versuche alle 15 s neu' : 'Verbindung getrennt', true);
@@ -735,3 +735,15 @@ setInterval(() => { if (zwilling.verbunden) abgleich().catch(() => {}); }, 60 * 
 tabsEinrichten();
 muster();
 zeigeVerbindung();
+
+// Beim Start gleich den bekannten Sticky suchen (13.11.2026: nach Neustart der App blieb sie sonst getrennt, bis
+// jemand „Verbinden“ tippte – mit dem Schlummermodus wichtig, damit der geweckte Sticky die App wiederfindet)
+try {
+  if (nativ && localStorage.getItem('sticky.geraet')) {
+    verbindung = new BleVerbindung();
+    zwilling.anbinden(verbindung);
+    autoVerbinden = true;
+    Hintergrund.start({ text: 'Notizen und Diktate kommen an' }).catch(() => {});
+    wiederverbinden();
+  }
+} catch { /* dann eben per Knopf */ }
