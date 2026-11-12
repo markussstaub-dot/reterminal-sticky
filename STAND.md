@@ -4,7 +4,7 @@ tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
 version: FW 0.7.7 – Home mit Uhr, Akku, Wetter, Karten, Notizen (auch offline), Bordbuch, Bestellzettel, App in Tabs mit Spiegel/Fernbedienung (12.11.2026)
-wartet: Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Akkulaufzeit ohne USB messen; USB-Pin beim Abziehen bestätigen
+wartet: Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Akkuverbrauch senken (Nacht ~50 %)
 ---
 
 Repo: github.com/markussstaub-dot/reterminal-sticky (privat, seit 11.11.2026). `backup/`, Modelle und
@@ -123,6 +123,10 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   (Temperatur liefert der Display-Chip); **„Teilen → Sticky“** aus jeder Android-App als Idee (SPEC)
 - Bordbuch öffnet immer mit dem **Inhaltsverzeichnis** (Firmware 0.7.5); gezielte Sprünge aus der App bleiben; im
   Bordbuch ▲ 1 s = zurück zum Inhalt
+- **Akku zieht zu viel** (Markus, 13.11.2026): über Nacht ohne USB ca. **50 %** weg (FW 0.7.7, mit dem Fold verbunden).
+  Verdacht: kein Light-Sleep (CPU läuft durch), Ruhe-Verbindung 100–125 ms ohne Latenz, Mikro-Versorgung (GPIO38)
+  evtl. dauernd an, minütliche Uhr-Teil-Refreshes. Ziel: Nacht < 5 %. Zuerst Strom je Zustand messen (BQ27220), dann
+  Light-Sleep, Latenz in Ruhe hoch (schnell wecken bei Bild/Taste), Mikro nur bei Aufnahme an, nachts Uhr seltener
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik
