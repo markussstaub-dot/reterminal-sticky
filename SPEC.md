@@ -152,6 +152,9 @@ Rechenarbeit im Handy, KI und Cloud nur als zuschaltbare Zusatzstufe.
   (Stufe Zuhause oder Cloud)
 - **Uhrenbox-Begleiter**: Gangwerte aus dem Zeitwaage-Labor neben der Uhr
 - **„Bitte nicht stören“-Schild**: an der Tür, per Handy oder Kalender umgeschaltet
+- **Handbuch verschlanken** (Markus, 12.11.2026): statt 150 gerenderter PDF-Bildschirme nur das Nötige fürs
+  Fahren, knapper umformuliert; Bilder ggf. als **Vektorgrafiken** neu (gestochen scharf in 1 bpp, kein
+  Rastermatsch, kleiner im Flash)
 - ~~Bestellzettel zum Vorzeigen~~ → umgesetzt, siehe „Home, Modi und Bestellzettel“ unten
 
 ### Anregungen aus dem Seeed-Playground (11.11.2026, seeedstudio.com/sticky/playground/firmware/)
