@@ -134,7 +134,7 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   (Druck wird festgehalten, Touch weckt nicht). **Zur vollen Stunde 60 s Funk** für den Abgleich der App. Am USB nie.
   App zeigt „Sticky schlummert“ statt Fehler. Getestet 13.11. auf Akku: schlummert genau 2 min nach der letzten
   Berührung, Taste weckt sofort (Druck kommt an), App nach 4 s verbunden, Touch wieder da. App verbindet sich jetzt
-  auch beim Start selbst mit dem bekannten Sticky. **Offen:** Stundenfenster, Verbrauch über Nacht; einmal kam eine
+  auch beim Start selbst mit dem bekannten Sticky. Stundenfenster klappt (09:00:10 verbunden, Abgleich, danach wieder Schlummern). **Offen:** Verbrauch über Nacht; einmal kam eine
   Meldung mit kaputtem erstem Byte („Unlesbar“) gleich nach dem Wecken
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
