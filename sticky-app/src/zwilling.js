@@ -1,5 +1,5 @@
 // Der Zwilling: Soll-Zustand des Sticky in der App (Quelle der Wahrheit) plus Übertragung.
-import { rahmenStart, rahmenDaten, rahmenEnde, rahmenKarte, rahmenPing, nutzlastFuer, crc32, rahmenSpeichern, rahmenBbIndex, rahmenBbModus,
+import { rahmenStart, rahmenDaten, rahmenEnde, rahmenKarte, rahmenPing, rahmenWach, nutzlastFuer, crc32, rahmenSpeichern, rahmenBbIndex, rahmenBbModus,
   rahmenRueck, rahmenHome, rahmenHomeVersion, rahmenModus, rahmenZeit, rahmenFahrtLayout, rahmenPufferListe, rahmenPufferHolen, rahmenPufferLoeschen } from './protokoll.js';
 import { Aufnahme, wav } from './audio.js';
 
@@ -106,6 +106,7 @@ export class Zwilling {
 
   async zeigeKarte() { await this.verbindung.schreiben(rahmenKarte()); this.gesendetCrc = null; }
   async ping() { await this.verbindung.schreiben(rahmenPing()); }
+  async wach() { await this.verbindung.schreiben(rahmenWach()); }
   async homeVersion(text) { await this.verbindung.schreiben(rahmenHomeVersion(text)); }
   async modusSetzen(m, seite = null) { await this.verbindung.schreiben(rahmenModus(m, seite)); }
   async zeitSetzen() { await this.verbindung.schreiben(rahmenZeit()); }

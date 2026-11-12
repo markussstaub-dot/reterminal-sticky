@@ -136,6 +136,14 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   Berührung, Taste weckt sofort (Druck kommt an), App nach 4 s verbunden, Touch wieder da. App verbindet sich jetzt
   auch beim Start selbst mit dem bekannten Sticky. Stundenfenster klappt (09:00:10 verbunden, Abgleich, danach wieder Schlummern). **Offen:** Verbrauch über Nacht; einmal kam eine
   Meldung mit kaputtem erstem Byte („Unlesbar“) gleich nach dem Wecken
+- **Testfahrt 13.11. vormittags** (Sticky auf Akku): bis 09:17 Diktate live, danach nur offline, App stumm. Ursache:
+  Schlummermodus – zwischen zwei Diktaten > 2 min, der Druck auf KI weckte den Sticky, die Aufnahme lief aber, bevor
+  das Fold verbunden war. Dazu um 09:44 WebView-Renderer von Android beendet (Speicher), App tot bis zum Öffnen.
+  Diktate 10–15 dB leiser als gestern (Sticky lag vermutlich weiter weg). Behoben in der App: **Fahrt erkennen** (GPS,
+  > 2 m/s) → jede Minute „wach“ (Op 0x1B, zählt am Sticky als Bedienung) bis 10 min nach dem Fahren; **leise
+  Diktate anheben** (bis ×8) vor der Erkennung; **Renderer weg → Activity neu**, App verbindet selbst wieder (getestet
+  mit Page.crash: nach 3 s wieder verbunden). **Offen:** nächste Testfahrt; einmal „Puffer-Liste antwortet nicht“
+  direkt nach dem Neuaufbau
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

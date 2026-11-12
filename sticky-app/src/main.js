@@ -15,7 +15,7 @@ const woerter = () => $('woerter').value.trim();
 async function erkenne(pcm) {
   const p = sprachPruefung(pcm);
   if (!p.ok) return { text: '(unklar)', unklar: p.grund, ms: 0, ladeMs: 0, modell: $('modell').value, pruefung: p };
-  const r = await Spracherkennung.erkennen({ pcm: pcmBase64(pcm), modell: $('modell').value, threads: 6, hinweis: woerter() });
+  const r = await Spracherkennung.erkennen({ pcm: pcmBase64(angehoben(pcm)), modell: $('modell').value, threads: 6, hinweis: woerter() });
   if (r.text && nurWortliste(r.text, woerter())) return { ...r, text: '(unklar)', unklar: 'nur Wörter der Liste', pruefung: p };
   return { ...r, pruefung: p };
 }
@@ -24,7 +24,7 @@ import { zeichneHome, zeichneZiffern } from './homeseite.js';
 import { holeWetter, letztesWetter } from './wetter.js';
 import { BESTELL_STANDARD, zettel, zeichneZettel } from './bestellung.js';
 import { KARTEN_STANDARD, karten, zeichneKarte } from './karten.js';
-import { Aufnahme, wav, sprachPruefung, nurWortliste } from './audio.js';
+import { Aufnahme, wav, sprachPruefung, nurWortliste, angehoben } from './audio.js';
 import * as notizen from './notizen.js';
 import * as bb from './bordbuch.js';
 import { tabsEinrichten } from './tabs.js';
@@ -728,6 +728,32 @@ function spiegelSetze(teile) {
 try { const alt = JSON.parse(localStorage.getItem('sticky.spiegel') || 'null'); if (alt) spiegel.setze({ ...alt, verbunden: false }); else spiegel.setze({}); } catch { spiegel.setze({}); }
 $('fernAuf').onclick = () => spiegel.taste('up');
 $('fernAb').onclick = () => spiegel.taste('down');
+
+// Fahrt erkennen und den Sticky wach halten (13.11.2026: im Auto schlummerte er zwischen zwei Diktaten ein, das
+// nächste landete offline und die App blieb stumm). Solange verbunden: jede Minute Standort; fährt das Fold (GPS-
+// Tempo oder Strecke > 2 m/s), bis 10 min danach jede Minute „wach“ an den Sticky.
+let fahrtBis = 0, letzterOrt = null;
+function abstandM(a, b) {
+  const r = Math.PI / 180, x = (b.lon - a.lon) * r * Math.cos(((a.lat + b.lat) / 2) * r), y = (b.lat - a.lat) * r;
+  return Math.sqrt(x * x + y * y) * 6371000;
+}
+setInterval(async () => {
+  if (!zwilling.verbunden) return;
+  const o = await notizen.standort();
+  if (o) {
+    let v = o.tempo;
+    if (v == null && letzterOrt) {
+      const d = abstandM(letzterOrt, o), s = (Date.now() - letzterOrt.zeit) / 1000;
+      if (s > 0 && d > o.gen + letzterOrt.gen) v = d / s;
+    }
+    letzterOrt = { ...o, zeit: Date.now() };
+    if (v != null && v > 2 && o.gen < 100) {
+      if (Date.now() >= fahrtBis) eintrag('Fahrt erkannt – Sticky bleibt wach');
+      fahrtBis = Date.now() + 10 * 60 * 1000;
+    }
+  }
+  if (Date.now() < fahrtBis && zwilling.verbunden) zwilling.wach().catch(() => {});
+}, 60 * 1000);
 
 // Wetter stündlich nachziehen, solange verbunden (Abgleich schickt nur die geänderte Karte)
 setInterval(() => { if (zwilling.verbunden) abgleich().catch(() => {}); }, 60 * 60 * 1000);

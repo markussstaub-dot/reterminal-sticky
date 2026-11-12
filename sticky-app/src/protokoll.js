@@ -11,7 +11,7 @@ export const UUID = {
 };
 
 export const OP = { BILD_START: 0x01, BILD_DATEN: 0x02, BILD_ENDE: 0x03, PING: 0x10, KARTE: 0x11, BB_INDEX: 0x13, BB_MODUS: 0x14,
-  ZEIT: 0x15, FAHRT_LAYOUT: 0x16, PUFFER_LISTE: 0x17, PUFFER_HOLEN: 0x18, PUFFER_LOESCHEN: 0x19, HOME_VERSION: 0x1a };
+  ZEIT: 0x15, FAHRT_LAYOUT: 0x16, PUFFER_LISTE: 0x17, PUFFER_HOLEN: 0x18, PUFFER_LOESCHEN: 0x19, HOME_VERSION: 0x1a, WACH: 0x1b };
 
 export const BREITE = 800, HOEHE = 480;
 export const BILD_BYTES = BREITE / 8 * HOEHE; // 48000
@@ -105,6 +105,8 @@ export const rahmenPufferHolen = (name, offset = 0) => {
 export const rahmenPufferLoeschen = (name) => textRahmen(OP.PUFFER_LOESCHEN, name);
 export const rahmenBbModus = (an, seite = null) => (seite == null ? Uint8Array.of(OP.BB_MODUS, an ? 1 : 0) : Uint8Array.of(OP.BB_MODUS, an ? 1 : 0, seite));
 export const rahmenPing = () => Uint8Array.of(OP.PING);
+/** „Bleib wach“: zählt am Sticky als Bedienung, er schlummert nicht ein (während der Fahrt, Firmware ≥ 0.8.0) */
+export const rahmenWach = () => Uint8Array.of(OP.WACH);
 export const rahmenKarte = () => Uint8Array.of(OP.KARTE);
 
 /** Nutzlast pro DATEN-Rahmen aus der ATT-MTU (Kennlinie max. 512 Byte). */
