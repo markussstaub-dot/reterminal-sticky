@@ -757,6 +757,13 @@ setInterval(async () => {
 
 // Wetter stündlich nachziehen, solange verbunden (Abgleich schickt nur die geänderte Karte)
 setInterval(() => { if (zwilling.verbunden) abgleich().catch(() => {}); }, 60 * 60 * 1000);
+// Neuer Tag → Home-Karte mit neuem Datum gleich aufspielen (bei Dauerverbindung sonst bis zu einer Stunde zu spät)
+let heute = new Date().toDateString();
+setInterval(() => {
+  if (new Date().toDateString() === heute) return;
+  heute = new Date().toDateString();
+  if (zwilling.verbunden) abgleich().catch(() => {});
+}, 60 * 1000);
 
 tabsEinrichten();
 muster();

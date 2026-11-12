@@ -38,14 +38,17 @@ export function homeHochkant(karte = KARTE, beispielZeit = null, wetter = null) 
   p.font = '22px system-ui, sans-serif';
   p.fillText('KI = Notiz · ▲ = Bordbuch · ▼ = Bestellen', PB / 2, 192);
   p.fillText('KI halten = Diktat', PB / 2, 220);
-  // Wetter zwischen Hinweis und Uhr (Uhrfeld beginnt bei y = 352)
+  // Datum (Markus, 12.11.2026); um Mitternacht schickt der Abgleich im Stundenfenster die neue Karte
+  p.font = 'bold 30px system-ui, sans-serif';
+  p.fillText(new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }), PB / 2, 260);
+  // Wetter zwischen Datum und Uhr (Uhrfeld beginnt bei y = 352)
   const zeile = wetterZeile(wetter);
   if (zeile) {
-    let gr = 30;
-    do { p.font = `bold ${gr}px system-ui, sans-serif`; gr -= 2; } while (p.measureText(zeile).width > PB - 30 && gr > 16);
-    p.fillText(zeile, PB / 2, 276);
-    p.font = '18px system-ui, sans-serif';
-    p.fillText(`Wetter, Stand ${new Date(wetter.zeit).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`, PB / 2, 312);
+    let gr = 26;
+    do { p.font = `${gr}px system-ui, sans-serif`; gr -= 2; } while (p.measureText(zeile).width > PB - 30 && gr > 16);
+    p.fillText(zeile, PB / 2, 300);
+    p.font = '16px system-ui, sans-serif';
+    p.fillText(`Wetter, Stand ${new Date(wetter.zeit).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`, PB / 2, 330);
   }
   // QR-Code unter der Uhr
   const qr = qrcode(0, 'M');
