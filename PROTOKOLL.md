@@ -28,7 +28,7 @@ Gedacht auch für den Microlino-Knopf: gleiche Rahmen, nur andere Bildgröße im
 | `19` | PUFFER_LOESCHEN | `19 Name` |
 | `14` | MODUS | `14 m [seite]` – 0 Home, 1 Bordbuch, 2 Notiz, 3 Bestellzettel; `seite` = Bordbuch-Seite bzw. Zettel (Fernbedienung aus der App) |
 | `1A` | HOME_VERSION | Text „crc;Anzahl Zettel“ nach dem Aufspielen der Home-Bilder |
-| `20` | LISTE | `20 pfad` (nur unter `/ist`) → `{"t":"liste","p","d":[{"n","b","ordner"?}],"mehr":bool}` (ab FW 0.10.0) |
+| `20` | LISTE | `20 pfad[|ab]` (unter `/ist` und `/soll`; mit `|ab` ab dem n-ten Eintrag weiterblättern) → `{"t":"liste","p","d":[{"n","b","ordner"?}],"mehr":bool}` (ab FW 0.10.0) |
 | `21` | HOLEN | `21 offset:u32 pfad` → ein Stück auf DATEI wie PUFFER_HOLEN |
 | `22` | LOESCHEN | `22 pfad` → `{"t":"geloescht","p","ok"}`; falscher Pfad: `{"t":"abgleich","ok":false,"err":"pfad"}` |
 | `23` | SCHREIBEN_START | `23 größe:u32 crc32:u32 pfad` – nur unter `/soll/`, bis 1 MB (FW 0.11.0) |
@@ -42,7 +42,7 @@ Bild: Zeilen à 100 Byte, MSB = linkes Pixel, Bit 1 = schwarz. CRC-32 wie zlib.
 - `{"t":"touch","a":"down|up","x":…,"y":…,"rx":…,"ry":…}`: x/y in Display-Koordinaten 800×480 (Querformat, USB oben rechts), rx/ry roh vom GT911
 - `{"t":"img","ok":true,"ms":Empfang,"show":Anzeige,"mtu":…,"phy":1|2,"n":Rahmen,"dle":Byte}` bzw. `{"t":"img","ok":false,"err":"crc|format"}`
 - `{"t":"itvl","v":Intervall×1,25 ms,"lat":…}` bei jedem Wechsel der Verbindungsparameter
-- `{"t":"modus","m":"home|notiz|bordbuch|bestell","zettel":n}`, `{"t":"seite","n":…,"von":…}`, `{"t":"bordbuch","seiten","belegtKB"}`,
+- `{"t":"modus","m":"home|notiz|bordbuch|bestell|kritzel|app|widget","zettel":n,"hoch":0|1}` (hoch = Lage der App-Seite, ab FW 0.22.0), `{"t":"seite","n":…,"von":…}`, `{"t":"bordbuch","seiten","belegtKB"}`,
   `{"t":"img","ok":…,"gespeichert":n}` nach BILD_ENDE Modus 3
 - `{"t":"audio","a":"start","rate":16000,"codec":"ima-adpcm","n":480}`, `{"t":"audio","a":"stop","pakete","verworfen","ms","spitze"}`,
   `{"t":"audio","a":"fehler","err":"mtu|mikro"}`
@@ -83,3 +83,6 @@ nach jedem Bild und alle 30 s.
 - App → Sticky: `MODUS m [seite]` (siehe oben); Tipps auf die Vorschau rechnet die App selbst um (Notiz-Streifen,
   Inhaltsverzeichnis) – kein eigener Touch-Befehl, kein zusätzlicher Schnellmodus
 - Ereignisse tragen `ms` (Sticky-Uhr), Tasten nachgeholt nach einer Display-Blockade zusätzlich `"nachgeholt":true`
+
+## Für Fremd-Apps
+Überblick, Dateien auf der Karte und was fest ist: SPEC.md, Abschnitt „Für Fremd-Apps“ (13.11.2026).

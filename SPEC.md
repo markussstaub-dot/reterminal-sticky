@@ -467,6 +467,61 @@ Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzu
   ein paar echte Fahrten gut gelaufen sind
 - Vorschlag **Firmware von der Karte** (`/soll/firmware.bin`): eigener Schritt nach den Sensoren
 
+## Für Fremd-Apps: eigene App für den Sticky bauen (Markus, 13.11.2026)
+
+Für alle, die eine eigene App bauen wollen (Anlass: der zweite Sticky geht an Markus' Angehörige, die mit ihrem
+KI-Helfer eine iOS-App bauen kann). Ziel: **mit diesem Abschnitt und `PROTOKOLL.md` auskommen, ohne Rückfragen und ohne
+unseren App-Code lesen zu müssen.** Die Firmware bleibt dieselbe, Bluetooth LE ist auf iPhone und Android gleich.
+
+### Was fest ist (darauf kann man bauen)
+- **Ein GATT-Dienst** `b1e50001-7374-6963-6b79-7465726d6e6c` mit fünf Kennlinien (Endziffer 2–6, sonst gleiche UUID):
+  BEFEHL (App → Sticky, write / write-no-response), EREIGNIS (JSON, notify), ZUSTAND (JSON, read / notify),
+  AUDIO (Diktat, notify), DATEI (Datei-Stücke, notify). Der Sticky wirbt als `Sticky-XXXX`. Bytes in `PROTOKOLL.md`
+- **Bildformat** überall gleich: 800 × 480 quer, 1 bpp, Zeilen à 100 Byte, MSB = linkes Pixel, **Bit 1 = schwarz**.
+  CRC-32 wie zlib. Hochkant zeichnet man logisch 480 × 800 und dreht vor dem Senden (logisch (lx, ly) → Display (ly, 479 − lx))
+- **Die SD-Karte ist der Vertrag:** Neue Funktionen sind neue Dateien, keine neuen Befehle. Vier Befehle reichen für fast alles:
+  LISTE `20`, HOLEN `21`, LOESCHEN `22`, SCHREIBEN `23`/`24`/`25`
+  - `/soll/…` schreibt **nur die App**, `/ist/…` schreibt **nur der Sticky**. Die App holt aus `/ist` ab und quittiert mit LOESCHEN
+  - Jeder Soll-Ordner hat `stand.txt` („name crc“ je Zeile). Beim Abgleich immer den **ganzen Ordner** schicken:
+    Was in der Liste fehlt, gilt als weg (13.11.2026 gelernt: nur `lage.txt` geschickt, `karussell.txt` war weg)
+  - `stand.txt` zuletzt schreiben; die Auslöser-Dateien (unten) lassen den Sticky neu laden
+- **Uhr stellen:** gleich nach dem Verbinden `15 unix-ms:u64`. Ohne gestellte Uhr schreibt der Sticky Logs ohne Datum
+- **Touch und Tasten** kommen als Ereignis (`key`, `touch` in Display-Koordinaten 800 × 480)
+
+### Dateien auf der Karte (Stand FW 0.23.1)
+| Pfad | Wer | Inhalt |
+|---|---|---|
+| `/soll/home/0–8.bin`, `version.txt` | App | Home-Bilder (hochkant gezeichnet, gedreht gespeichert); `version.txt` = Auslöser |
+| `/soll/notiz/layout.txt`, `rNN.bin` | App | Notiz-Seite: Streifen „e x0 y0 x1 y1 Name“, Rückmeldungen (x,y,w,h je u16 + 1 bpp) |
+| `/soll/bordbuch/NN.bin`, `index.txt` | App | Bordbuch-Seiten, Inhaltsverzeichnis (Auslöser) |
+| `/soll/einstellungen/karussell.txt` | App | Reihenfolge für ▲/▼: `home`, `notiz`, `bordbuch`, `zettel`, `kritzel`, `app`, `widget <name>` |
+| `/soll/einstellungen/lage.txt` | App | je Seite `<seite> hoch\|quer\|auto`, dazu `dreh 0\|180` |
+| `/soll/widgets/<name>/bild.bin`, `ziffern.bin`, `felder.txt` | App | eigene Seiten ohne Handy (Timer, Waage, Menü); Format im Kopf von `firmware-ble/widget.h`. Bei Lage `auto` zusätzlich `<name>-h/` hochkant |
+| `/soll/hilfe/<modus>.bin`, `w-<name>.bin` | App | Tastenhilfe (▲+▼) je Seite |
+| `/ist/log/JJJJ-MM-TT.txt` | Sticky | Fahrtenschreiber, „HH:MM:SS Text“ |
+| `/ist/mess/…` | Sticky | Messreihen (Klima) |
+| `/ist/puffer/…` | Sticky | Diktate ohne Handy (ADPCM), Knopf-Notizen |
+| `/ist/kritzel/…bin` | Sticky | Kritzelblätter 1 bpp, `-h` am Namen = hochkant gemalt |
+
+### Was sich noch ändern darf
+- Neue Dateien und neue Felder in `felder.txt` kommen dazu; **unbekannte Zeilen ignoriert der Sticky**, eine Fremd-App
+  sollte unbekannte JSON-Felder ebenfalls ignorieren
+- Die alten Spezialbefehle (`13`, `14`, `16`–`19`, `1A`, BILD_ENDE 3–5) bleiben, sind aber Altlast. Neue Apps nehmen
+  besser den Datei-Abgleich
+- Die App-Seite (Modus `app`) ist **Thin Client**: Der Sticky zeigt, was die App schickt, und meldet Tipps. Ohne eigene
+  App-Seite einfach `app` aus dem Karussell lassen
+- Der Sticky braucht keine App für den Alltag: Uhr, Timer, Waage, Kritzel, Fahrtenschreiber und Diktat-Puffer laufen allein
+
+### Für eine iOS-App (Vorschlag)
+- **Einfachster Weg:** unsere App (Capacitor + Vite, `sticky-app/`) mit `npx cap add ios` auf iOS bringen. Seiten,
+  Widgets, Rechner, Protokoll und Abgleich sind Webcode und laufen dort. Neu zu bauen: Hintergrund/Wachhalten (bei uns
+  Android-Java) und Spracherkennung (bei uns lokales Whisper; am iPhone besser Apples eigene Erkennung)
+- **iOS-Eigenheiten:** Hintergrundmodus „bluetooth-central“ eintragen, sonst kommen keine Ereignisse, wenn die App
+  nicht vorn ist. iOS sucht Geräte nach Dienst-UUID, nicht nach Name
+- **Voraussetzungen:** Mac mit Xcode. Mit kostenloser Apple-ID läuft die App 7 Tage, dauerhaft nur mit dem
+  Entwicklerkonto (99 $ im Jahr)
+- **Unser Repo ist öffentlich, aber ohne Lizenz** (mitgucken ja). Für die Familie klärt Markus das direkt
+
 ## Zusammenhang mit dem Microlino-Knopf
 Beide Geräte sind ESP32-S3 mit BLE, beide folgen dem Muster „Handy rechnet, Gerät zeigt“.
 - Vorschlag **Rollen im Microlino**: Der **Knopf** (rundes AMOLED, schnell, leuchtet) zeigt live, was beim
