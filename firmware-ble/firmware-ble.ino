@@ -27,12 +27,12 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.31.0";
+static const char* FW_VERSION = "0.31.1";
 
 // ---- Visitenkarte -----------------------------------------------------------
-static const char* NAME     = "Markus";
-static const char* QR_TEXT  = "https://github.com/markussstaub-dot";
-static const char* QR_LABEL = "github.com/markussstaub-dot";
+static const char* NAME     = "EDC Sticky";   // Startbild ohne App (Playground: neutral, nicht der Autor)
+static const char* QR_TEXT  = "https://github.com/markussstaub-dot/reterminal-sticky";
+static const char* QR_LABEL = "App + Anleitung auf GitHub";
 
 // ---- Pins ------------------------------------------------------------------
 static const int PIN_BTN_PWR  = 4;
@@ -425,6 +425,7 @@ static void zeichneKarte() {   // nur in den Bildpuffer, ohne Refresh
     display.setTextDatum(MC_DATUM);
     display.setFreeFont(&FreeSansBold24pt7b);
     display.setTextSize(2);
+    if (display.textWidth(NAME) > leftW - 20) display.setTextSize(1);   // langer Name: einfache Größe
     display.drawString(NAME, leftW / 2 + 10, H / 2 - 30);
     display.setTextSize(1);
     display.fillRect(40, H / 2 + 40, leftW - 60, 4, TFT_BLACK);
