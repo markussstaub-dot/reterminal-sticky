@@ -358,6 +358,8 @@ Was der Sticky als Immer-dabei-Helfer noch können könnte, sortiert nach Aufwan
     13.11.2026, FW 0.25.1; offen: im Schlummer findbar, kostet Akku)
   - **Schrittzähler** über den Hardware-Schrittzähler im LSM6DS3 (stromsparend), Werte in den Fahrtenschreiber
   - **Parkplatz merken**: ein Tipp merkt den GPS-Ort vom Handy, optional Parkuhr-Timer
+- Kaffee (Markus, 13.11.2026): **Timer-Vorlage „Kaffee“** mit fester Zieh-/Rührzeit, ein Tipp startet; passt zur
+  USB-Rührtasse im EDC. Ohne Flashen machbar (Timer-Widget mit Vorgabe)
 
 ### Sprachnotizen 2.0 (Markus, 13.11.2026, abgenommen)
 Heute: KI halten = Diktat, live an die App bzw. offline gepuffert, das Fold tippt offline ab, Ort und Zeit dran, alles
