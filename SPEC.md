@@ -277,6 +277,21 @@ Vorbild: Device Shadow / Device Twin aus der Industrie (AWS IoT, Azure).
   nicht in einem Topf landen
 - offen: Halterung/Hülle zum Mitnehmen (Druckteil Bambu: Clip für Microlino, Gürtel, Magnet für die Werkstatt)
 
+### EDC-Ideen (Markus, 13.11.2026, geparkt)
+Was der Sticky als Immer-dabei-Helfer noch können könnte, sortiert nach Aufwand. Favorit: „gegenseitig suchen“.
+- Ohne Flashen (App-Seiten, Zettel):
+  - **Lineal** am Displayrand (mm-Skala, einmal kalibrieren): Schrauben, Kabel, Uhrbänder
+  - **QR-Seiten**: Gast-WLAN, Visitenkarte, Abholcodes; E-Ink zeigt QR gestochen scharf
+  - **Notfallkarte** (Kontakt, Blutgruppe, Medikamente) als Zettel, nur auf dem Gerät
+- Kleiner Flash (neuer Widget-Typ für die Widget-Maschine):
+  - **Weltzeit** (z. B. Tokio und zwei weitere Städte)
+  - **Strichliste** (Tippen zählt hoch)
+  - **Würfel/Münze** durch Schütteln (Lagesensor)
+- Etwas mehr:
+  - **Gegenseitig suchen**: App „Sticky suchen“ lässt ihn piepen; KI 3× schnell lässt das Handy klingeln
+  - **Schrittzähler** über den Hardware-Schrittzähler im LSM6DS3 (stromsparend), Werte in den Fahrtenschreiber
+  - **Parkplatz merken**: ein Tipp merkt den GPS-Ort vom Handy, optional Parkuhr-Timer
+
 ### Sprachnotizen 2.0 (Markus, 13.11.2026, abgenommen)
 Heute: KI halten = Diktat, live an die App bzw. offline gepuffert, das Fold tippt offline ab, Ort und Zeit dran, alles
 in eine Tagesdatei zum Teilen. Funktioniert, ist aber ein einziger Topf.
