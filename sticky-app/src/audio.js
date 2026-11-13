@@ -117,7 +117,7 @@ export function wav(pcm, rate = RATE) {
 
 /**
  * Lohnt sich die Erkennung? Kurze oder kaum hörbare Aufnahmen lässt whisper sonst Wörter erfinden – mit Wortliste
- * z. B. „Bexbach. Bexbach.“ aus 0,9 s Rauschen (Messung 11.11.2026). Rahmen à 30 ms, Pegel in dBFS.
+ * z. B. ein Ortsname zweimal („X. X.“) aus 0,9 s Rauschen (Messung 11.11.2026). Rahmen à 30 ms, Pegel in dBFS.
  * → { ok, grund, dauerMs, spitzeDb, grundDb }
  */
 /** Leise Diktate anheben (12.11.2026: Sticky weiter weg, Sprache bei −30…−38 dBFS): Spitze auf ~−6 dBFS, höchstens ×8 */

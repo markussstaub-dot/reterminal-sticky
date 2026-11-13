@@ -54,6 +54,6 @@ test('Wächter: kurz, leise, Rauschen, Sprache', async () => {
   const sprache = rauschen(32000, 1500);                                                 // Grundrauschen …
   for (let i = 8000; i < 24000; i++) sprache[i] = Math.round(12000 * Math.sin(i / 7)); // … plus lauter Abschnitt
   assert.equal(sprachPruefung(sprache).ok, true);
-  assert.equal(nurWortliste('Bexbach. Bexbach.', 'Microlino, Bexbach, Homburg'), true);
-  assert.equal(nurWortliste('Tanke in Bexbach hat zu', 'Microlino, Bexbach, Tanke'), false);
+  assert.equal(nurWortliste('Kreisel. Kreisel.', 'Microlino, Kreisel, Ampel'), true);
+  assert.equal(nurWortliste('Tanke am Kreisel hat zu', 'Microlino, Kreisel, Tanke'), false);
 });

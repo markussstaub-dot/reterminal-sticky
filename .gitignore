@@ -26,3 +26,6 @@ desktop.ini
 Thumbs.db
 .DS_Store
 auswertungen/
+
+# Veröffentlichung vorbereiten (Entwürfe, Release-Dateien) – nicht ins Repo
+vermarktung/

@@ -18,7 +18,7 @@ export const Spracherkennung = registerPlugin('Spracherkennung', {
 });
 
 // Wortliste als Vorgabe für whisper (initial_prompt): Eigennamen, die sonst verhört werden (Testfahrt 11.11.2026)
-export const WOERTER_STANDARD = 'Microlino, Bubble Log, Fold, Sticky, Bexbach, Homburg, Tanke, Akku, Ladesäule, Ampel, Kreisel';
+export const WOERTER_STANDARD = 'Microlino, Bubble Log, Fold, Sticky, Tanke, Akku, Ladesäule, Ampel, Kreisel';
 
 export const MODELLE = [
   { datei: 'ggml-small-q5_1.bin', name: 'small (190 MB)' },

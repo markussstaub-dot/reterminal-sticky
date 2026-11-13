@@ -91,7 +91,7 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
     zu spät ankommt, bekommt kein GPS, sondern `offline:true`
   - WAV-Namen waren sekundengenau in UTC → 3 bzw. 5 Diktate teilten sich eine Datei; die „doppelte Notiz“ (gelbe Tonne)
     waren zwei Aufnahmen mit demselben Dateinamen. Jetzt Aufnahmezeit Ortszeit mit ms (`sticky-JJJJ-MM-TT-hh-mm-ss-mmm.wav`)
-  - **Wortliste** als whisper-`initial_prompt` (in der App änderbar): Bexbach, Homburg, Tanke, Bubble Log werden mit
+  - **Wortliste** als whisper-`initial_prompt` (in der App änderbar): Ortsnamen, Tanke, Bubble Log werden mit
     den Testfahrt-Aufnahmen richtig erkannt; kostet +0,1–0,3 s
 - **Wächter und Mikro** (Firmware 0.7.2): Aufnahmen unter 1 s, zu leise (Spitze < −38 dBFS) oder ohne Pegelabstand
   (< 8 dB zwischen 90 %- und 20 %-Quantil) gehen nicht an whisper, Text „(unklar)“, Ton bleibt; Text nur aus
@@ -337,6 +337,11 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   ~4 cm, Null links unten. 9,25 px/mm aus 3,97″ bei 800 × 480; Kalibrierung „8-cm-Marke misst in echt …“ unter
   Mehr → Lage der Seiten. Karussell in der Firmware jetzt bis 12 Einträge (Standard mit Lineal hat 9). Am Gerät
   angezeigt, **noch nicht mit einem echten Lineal nachgemessen**
+- **Veröffentlichung vorbereitet (13.11.2026):** MIT-Lizenz (`LICENSE`), englische README mit Bauanleitung. Ganze
+  Git-Historie geprüft: keine Kundennummern (gegen die echten QR-Inhalte abgeglichen), keine PDFs/Aufnahmen/Koordinaten,
+  Autor nur mit GitHub-noreply-Adresse; Ortsnamen aus Wortliste, Tests und Doku neutralisiert (in alten Commits noch
+  sichtbar). Entwurf, APK und Firmware-Dateien liegen in `vermarktung/` (per .gitignore draußen). Einreichen auf dem
+  Seeed Playground um den 20.11. nach Markus' Go
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

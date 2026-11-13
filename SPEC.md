@@ -648,7 +648,7 @@ Modell gerade noch lud). Trefferqualität: Sinn immer richtig, kleine Fehler
 Feinschliff optional über Stufe 3 („Aufräumen“ per KI)
 
 **Modellvergleich mit echten Fahrt-Aufnahmen** (11.11.2026, 16 Diktate, whisper-cli am Fold, 6 Threads):
-| Variante | Namen (Bexbach/Homburg/Tanke) | Zeit je Diktat* |
+| Variante | Namen (Ortsnamen, Tanke) | Zeit je Diktat* |
 |---|---|---|
 | small-q5_1, kurzes Fenster (wie App) | falsch | ~1,5–2 s |
 | small-q5_1, volles Fenster | kaum besser | +4 s |
