@@ -303,6 +303,17 @@ in eine Tagesdatei zum Teilen. Funktioniert, ist aber ein einziger Topf.
   3. nebenbei: deutsch nachtrainierte Whisper-Varianten in small-Größe gegen den Prüfstand testen (reiner Modelltausch)
   4. später: eigenes Nachtrainieren auf dem Zenbook, wenn genug Daten da sind (einige Stunden); Schicht 2 liefert die
      sauberen Texte als Trainingsdaten nebenbei
+- fest **Notiz-Kette geräteunabhängig** (Markus, 13.11.2026): Anlass reSpeaker Clip von Seeed (tragbarer KI-Rekorder,
+  nRF54, 2 PDM-Mikros, BLE, ~75–110 €). Jedes „Ohr“ meldet beim Verbinden Typ und Fähigkeiten (Display ja/nein,
+  Puffer, Tasten) und liefert Ton im gemeinsamen Format (IMA-ADPCM 16 kHz in Paketen wie AUDIO heute). Abtippen,
+  Wörterbuch, Sortieren und Ziele sitzen nur in der App. Clip jetzt nicht kaufen/bauen (zweite Firmware-Kette
+  Zephyr/nRF Connect), später ein überschaubares Projekt: Kragen-Mikro, längere Aufnahmen; Display bleibt beim Sticky
+- fest **Korrigieren am Zenbook mit Tastatur** (Markus, 13.11.2026): bequemer als am Fold. Vorschlag: hängt an Schicht 2.
+  Ist das Fold zu Hause, kommen die Notizen des Tages aufs Zenbook (Weg offen: Syncthing-Ordner im Heimnetz, NAS oder
+  adb), turbo + Claude legen eine Tagesnotiz in den Vault (`Wissen`, Obsidian). Markus korrigiert dort; der Abgleich
+  vergleicht mit `roh`, lernt Paare ins Wörterbuch (`lernen()` aus `woerterbuch.js`) und schickt Wörterbuch und
+  korrigierte Texte zurück aufs Fold. Bis dahin geht Korrigieren in der App-Liste
+- offen: Transportweg Fold ↔ Zenbook (Vorschlag Syncthing, kein Cloud-Umweg)
 - fest **kein Weckwort** („Hey Sticky“): kostet Strom, die KI-Taste reicht
 - offen: Reihenfolge (Vorschlag: 1. Sortieren mit Stichwort + Eingang, 2. Rückmeldung am Sticky, 3. Seite „Heute“,
   4. Claude-Nachbearbeitung, 5. Ziele Kalender/Vault/Bubble Log anbinden); Zettel aus Diktat = Bestellzettel oder
