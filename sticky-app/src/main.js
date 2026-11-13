@@ -32,6 +32,7 @@ import * as notizen from './notizen.js';
 import { SORTEN, naechsteSorte } from './sorte.js';
 import { HILFE } from './hilfe.js';
 import { HANDGRIFFE_STANDARD } from './handgriffe.js';
+import { AppSeite } from './appseite.js';
 import { WOERTERBUCH_STANDARD, paareLesen, paareText, korrigiere, lernen, einpflegen } from './woerterbuch.js';
 import * as bb from './bordbuch.js';
 import { tabsEinrichten } from './tabs.js';
@@ -273,10 +274,11 @@ zwilling.beobachte((art, d) => {
   }
   else if (art === 'ereignis') {
     if (d.t === 'key' && d.a === 'down') eintrag(`Taste ${TASTEN[d.k] || d.k} gedrückt`);
+    else if (d.t === 'touch' && d.a === 'down' && stickyModus === 'app') { appSeite.tipp(d.x, d.y).catch((e) => eintrag(`App-Seite: ${e.message}`, true)); }
     else if (d.t === 'touch' && d.a === 'down') { eintrag(`Touch bei ${d.x}, ${d.y}`); touchMarke(d.x, d.y); fahrtTouch(d.x, d.y, d.ms); }
     else if (d.t === 'pong') eintrag('Pong');
     else if (d.t === 'schlaf') stickySchlaeft = true;
-    else if (d.t === 'modus') { spiegelSetze({ modus: d.m, ...(d.zettel != null ? { zettel: d.zettel } : {}), verbunden: true }); stickyModus = d.m; imBordbuch = d.m === 'bordbuch'; eintrag(`Modus: ${{ home: 'Home', notiz: 'Notiz', bordbuch: 'Bordbuch', bestell: `Bestellzettel ${(d.zettel ?? 0) + 1}` }[d.m] ?? d.m}`); }
+    else if (d.t === 'modus') { spiegelSetze({ modus: d.m, ...(d.zettel != null ? { zettel: d.zettel } : {}), verbunden: true }); stickyModus = d.m; imBordbuch = d.m === 'bordbuch'; eintrag(`Modus: ${{ home: 'Home', notiz: 'Notiz', bordbuch: 'Bordbuch', kritzel: 'Kritzelblock', app: 'App-Seite', bestell: `Bestellzettel ${(d.zettel ?? 0) + 1}` }[d.m] ?? d.m}`); if (d.m === 'app') appSeite.zeigen().catch((e) => eintrag(`App-Seite: ${e.message}`, true)); }
     else if (d.t === 'seite') { $('bbStatus').textContent = `Sticky zeigt Bordbuch-Seite ${d.n + 1} von ${d.von}`; spiegelSetze({ bb: d.n }); }
     else if (d.t === 'audio' && (d.a === 'start' || d.a === 'stop')) spiegelSetze({ aufnahme: d.a === 'start' });
     else if (d.t === 'bordbuch') eintrag(`Bordbuch auf dem Sticky: ${d.seiten} Seiten, ${d.belegtKB} KB`);
@@ -444,6 +446,8 @@ vorladen();
 // ---- Fahrt: Testnotizen (SPEC „MVP 1“) -----------------------------------------------
 let ortBeiAufnahme = null;
 let stickyModus = null;
+// App-Seite im Karussell (FW ≥ 0.17.0): die App zeichnet den Rechner, der Sticky meldet die Tipper
+const appSeite = new AppSeite((bytes, bereich) => zwilling.sendeBild(bytes, bereich ? { bereich } : { schnell: false }));
 let fahrtCrc = null;
 const knoepfe = () => {
   const l = $('knoepfe').value.split(',').map((t) => t.trim()).filter(Boolean).slice(0, 5);
@@ -653,8 +657,8 @@ async function abgleich() {
 }
 
 // ---- Karussell (SPEC „Bedienung und Oberfläche“): Reihe, durch die ▲/▼ am Sticky blättern -------------------------
-const KARUSSELL_STANDARD = 'Home, Notiz, Kritzel, Bordbuch, Zettel';
-const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'bordbuch', zettel: 'zettel', bestellzettel: 'zettel', kritzel: 'kritzel', kritzelblock: 'kritzel' };
+const KARUSSELL_STANDARD = 'Home, Notiz, Kritzel, Rechner, Bordbuch, Zettel';
+const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'bordbuch', zettel: 'zettel', bestellzettel: 'zettel', kritzel: 'kritzel', kritzelblock: 'kritzel', app: 'app', rechner: 'app' };
 function karussellText() {
   const roh = (localStorage.getItem('sticky.karussell') || KARUSSELL_STANDARD).split(/[,;\n]/).map((w) => KARUSSELL_WOERTER[w.trim().toLowerCase()]).filter(Boolean);
   return [...new Set(roh)].join('\n') + '\n';

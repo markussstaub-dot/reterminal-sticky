@@ -361,6 +361,7 @@ Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzu
   - **mit Handy**: geht im Prinzip schon heute (App bekommt Tipper und Tasten, schickt Bilder/Teilbilder; ~1 s je Tipp).
     Fehlt ein Karussell-Eintrag „App-Seite“, der ▲/▼ und Touch an die App durchreicht, statt weiterzublättern →
     letztes kleines Firmware-Update, danach Taschenrechner, Tastatur u. Ä. rein in der App
+    → umgesetzt 13.11. (FW 0.17.0), erstes Widget Taschenrechner, ~1 s je Tipp
   - **ohne Handy** (Timer im Micro): einmal eine **Widget-Maschine mit festen Bausteinen** (Countdown, Stoppuhr,
     Zähler, Zahlenfeld, Rechner); die App liefert Bild + `felder.txt` unter `/soll/widgets/<name>/`, neue Widgets sind
     danach nur Dateien

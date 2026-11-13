@@ -3,7 +3,7 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.16.7 – Kritzelblock, Tastenhilfe (▲+▼), Rahmen beim Tippen, Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
+version: FW 0.17.0 – App-Seite mit Rechner, Kritzelblock, Tastenhilfe (▲+▼), Rahmen beim Tippen, Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
 wartet: Markus: Bewegungswecken von Hand prüfen (USB ab, 3 min liegen lassen, hochnehmen) und Fahrterkennung bei der nächsten Microlino-Fahrt; Offline-Diktat auf /ist/puffer einmal prüfen; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
@@ -278,6 +278,10 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   App-Neustart half (`verbindeGerade` blieb stehen, ein Versuch kam nie zurück). App: Frist 25 s für den ganzen Versuch,
   danach Verbindung lösen (`abbrechen()`), Wächter alle 30 s (kein Versuch seit 1 min → neu). Getestet: 3 und 5 schnelle
   Resets hintereinander, App jeweils 9–11 s danach wieder verbunden. Den ursprünglichen Hänger nicht nachgestellt
+- **App-Seite im Karussell (FW 0.17.0, 13.11.2026):** Modus „app“, nur wenn die App zuhört (sonst übersprungen, App weg →
+  Home). ▲/▼ kurz und Tipper gehen nur an die App, ▲/▼ 1 s und KI bleiben Notausgang. Die App zeichnet; erstes Widget
+  Taschenrechner (`sticky-app/src/rechner.js` mit Tests, `appseite.js`), nach jedem Tipp nur das Anzeigefeld als
+  Teilbild. Karussell-Standard jetzt Home, Notiz, Kritzel, Rechner, Bordbuch, Zettel. Am Gerät: ~1 s je Tipp
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

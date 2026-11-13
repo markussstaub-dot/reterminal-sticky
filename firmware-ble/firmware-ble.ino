@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.16.7";
+static const char* FW_VERSION = "0.17.0";
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "Markus";
@@ -111,7 +111,7 @@ static volatile bool wantFast = false, wantSlow = false, wantKarte = false, want
 static volatile uint32_t slowAt = 0;
 static uint32_t advFastUntil = 0;
 static const char* seite = "karte";
-enum Modus { M_HOME = 0, M_BORDBUCH = 1, M_NOTIZ = 2, M_BESTELL = 3, M_KRITZEL = 4 };
+enum Modus { M_HOME = 0, M_BORDBUCH = 1, M_NOTIZ = 2, M_BESTELL = 3, M_KRITZEL = 4, M_APP = 5 };
 static Modus modus = M_HOME;
 
 // ---- Hilfen ------------------------------------------------------------------
@@ -559,7 +559,7 @@ class CmdCb : public NimBLECharacteristicCallbacks {
             break;
         case OP_BB_MODUS:    // 14 modus [seite] – 0 Home, 1 Bordbuch, 2 Notiz
             // Fernbedienung aus der App: Modus und optional Seite (Bordbuch) bzw. Zettel (Bestellen)
-            if (n > 1 && d[1] <= 4) {
+            if (n > 1 && d[1] <= 5) {
                 modusWunsch = d[1];
                 if (n > 2 && d[1] == M_BESTELL) bestellWunsch = d[2];
                 else if (n > 2) bbWunsch = d[2];

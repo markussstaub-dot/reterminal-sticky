@@ -47,7 +47,7 @@ static void bestellZaehlen() {
 }
 
 static const char* modusName() {
-    return modus == M_HOME ? "home" : modus == M_NOTIZ ? "notiz" : modus == M_BESTELL ? "bestell" : modus == M_KRITZEL ? "kritzel" : "bordbuch";
+    return modus == M_HOME ? "home" : modus == M_NOTIZ ? "notiz" : modus == M_BESTELL ? "bestell" : modus == M_KRITZEL ? "kritzel" : modus == M_APP ? "app" : "bordbuch";
 }
 
 static bool homeLaden(int n, uint8_t* ziel) {
@@ -387,7 +387,7 @@ static void setzeModus(Modus m) {
     }
     hilfeAn = false;
     if (modus == M_KRITZEL && m != M_KRITZEL) { kritzelStopp(); kritzelSpeichern(); }   // Blatt verlassen = speichern
-    if (m != modus) protokoll("Modus %s", m == M_HOME ? "home" : m == M_BORDBUCH ? "bordbuch" : m == M_NOTIZ ? "notiz" : m == M_KRITZEL ? "kritzel" : "bestell");
+    if (m != modus) protokoll("Modus %s", m == M_HOME ? "home" : m == M_BORDBUCH ? "bordbuch" : m == M_NOTIZ ? "notiz" : m == M_KRITZEL ? "kritzel" : m == M_APP ? "app" : "bestell");
     modus = m;
     bordbuch = m == M_BORDBUCH;
     letzteBedienung = millis();
@@ -415,6 +415,10 @@ static void setzeModus(Modus m) {
         } else kzBlattNeu();
         seite = "kritzel";
         kritzelStart();
+    } else if (m == M_APP) {
+        // App-Seite (SPEC „Widgets ohne ständiges Flashen“): die App zeichnet, sobald sie „modus app“ hört;
+        // Tipper und ▲/▼ kurz gehen nur an die App, ▲/▼ 1 s und KI bleiben der Notausgang
+        seite = "app";
     } else if (m == M_BORDBUCH) {
         bbZeige(bbAktuell);
     } else if (m == M_NOTIZ && notizDa && homeLaden(1, imgBuf)) {
@@ -459,6 +463,7 @@ static void karussellLaden() {
             else if (z == "bordbuch") karussell[kAnzahl++] = M_BORDBUCH;
             else if (z == "zettel") karussell[kAnzahl++] = M_BESTELL;
             else if (z == "kritzel") karussell[kAnzahl++] = M_KRITZEL;
+            else if (z == "app") karussell[kAnzahl++] = M_APP;
         }
     }
     bool homeDrin = false;
@@ -472,6 +477,7 @@ static bool karussellDa(Modus m) {
     if (m == M_BORDBUCH) return bbSeiten > 0;
     if (m == M_BESTELL) return bestellAnzahl > 0;
     if (m == M_NOTIZ) return notizDa;
+    if (m == M_APP) return appDa();   // ohne zuhörende App gibt es nichts zu zeigen
     return true;
 }
 
@@ -604,13 +610,13 @@ static void tasteAktion(const char* name, bool gedrueckt) {
     if (strcmp(name, "up") == 0) {
         if (gedrueckt) { upSeit = millis(); upLang = false; return; }
         upSeit = 0;
-        if (!upLang) blaettern(-1);
+        if (!upLang && modus != M_APP) blaettern(-1);   // App-Seite: kurz gehört der App (kommt als Ereignis an)
         return;
     }
     if (strcmp(name, "down") == 0) {
         if (gedrueckt) { downSeit = millis(); downLang = false; return; }
         downSeit = 0;
-        if (!downLang) blaettern(+1);
+        if (!downLang && modus != M_APP) blaettern(+1);
     }
 }
 
@@ -653,6 +659,7 @@ static void modusLoop() {
         if (m != modus || m == M_NOTIZ || m == M_BESTELL) setzeModus(m);
     }
     if (modus != M_HOME && !audioLaeuft && millis() - letzteBedienung > ZURUECK_MS) setzeModus(M_HOME);
+    if (modus == M_APP && !appDa()) { protokoll("App weg, zurück nach Home"); setzeModus(M_HOME); }
     if (modus == M_HOME && homeDa && !audioLaeuft && !hilfeAn && uhrZeichnen()) uhrAuffrischen(uhrMinute == 0);
     static uint32_t akkuZuletzt = 0;
     (void)akkuZuletzt;
