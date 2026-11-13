@@ -272,6 +272,12 @@ die Firmware rechnet. Ein Flash für alles.
   - **Strichliste**: Tippen zählt hoch, lang tippen setzt zurück
   - **Klimakurve**: letzte 24 h Temperatur, Feuchte, Taupunkt als Grafik aus `/ist/mess` (Beschlag im Micro)
   - **Würfel/Münze** durch Schütteln (nebenbei)
+  - **Tastatur** (Markus, 13.11.2026): für Kurzes, das man nicht sagen will (Parkplatz „P3 Reihe 12“, Namen, Nummern,
+    Suchbegriff fürs Bordbuch). Quer QWERTZ, 10 Tasten je Reihe (~76 px), Ziffern-/Umlautreihe, Leertaste, Braun-Stil.
+    Touch in eigener Aufgabe wie beim Kritzelblock: jeder Tipp sofort erfasst und mit Klick quittiert, die Textzeile
+    zieht gesammelt nach (Teil-Refresh ~0,75 s). Ablage als Textnotiz in `/ist/notizen`, auch ohne Handy
+- ohne Flash, reine App-Arbeit: **Kritzel-Texterkennung** – die App liest Kritzel-Notizen per Handschrifterkennung aus
+  („Eier, Mehl“ wird zusätzlich eine Textnotiz); für Einkaufslisten schneller als Tippen
 - später, eigenes Paket: **Schrittzähler** (Hardware-Schrittzähler im LSM6DS3; Zusammenspiel mit Bewegungswecken und
   Fahrterkennung prüfen), **Tagesbilanz** (Fahrten, Notizen, Diktate von heute aus dem Fahrtenschreiber)
 - nicht lokal: **Spracherkennung** (Espressifs Offline-Befehle nur Englisch/Chinesisch, feste Befehle) und **Wetter
