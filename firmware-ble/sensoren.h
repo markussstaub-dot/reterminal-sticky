@@ -69,9 +69,49 @@ static bool klimaLesen() {
     return true;
 }
 
+static int shtFehler = 0, lsmFehler = 0;
+static uint32_t probeZuletzt = 0;
+
+/** I2C-Bus lösen: hält ein Baustein SDA fest (13.11.2026 nach dem Anstecken: Akku, Klima und Bewegung eingefroren),
+ *  helfen bis zu 9 Takte auf SCL und ein STOP, danach Wire neu starten. */
+static void busRetten() {
+    int sdaVorher = digitalRead(PIN_BFG_SDA);
+    Wire.end();
+    pinMode(PIN_BFG_SDA, INPUT_PULLUP);
+    pinMode(PIN_BFG_SCL, OUTPUT_OPEN_DRAIN);
+    for (int i = 0; i < 9 && digitalRead(PIN_BFG_SDA) == LOW; i++) {
+        digitalWrite(PIN_BFG_SCL, LOW); delayMicroseconds(10);
+        digitalWrite(PIN_BFG_SCL, HIGH); delayMicroseconds(10);
+    }
+    pinMode(PIN_BFG_SDA, OUTPUT_OPEN_DRAIN);          // STOP: SDA low → high, während SCL high ist
+    digitalWrite(PIN_BFG_SDA, LOW); delayMicroseconds(10);
+    digitalWrite(PIN_BFG_SDA, HIGH); delayMicroseconds(10);
+    Wire.begin(PIN_BFG_SDA, PIN_BFG_SCL, 100000);
+    Wire.beginTransmission(0x55);
+    int akku = Wire.endTransmission();
+    protokoll("I2C-Bus gerettet (SDA vorher %s): Akku-Chip %s", sdaVorher ? "frei" : "festgehalten", akku == 0 ? "antwortet" : "weiter stumm");
+}
+
+/** Fehler zählen und nur beim Wechsel ins Fahrtenschreiber (am 13.11. standen beide Sensoren nach dem Anstecken still) */
+static void sensorStatus(const char* name, int& fehler, bool ok, int schwelle) {
+    if (ok) {
+        if (fehler >= schwelle) protokoll("%s antwortet wieder", name);
+        fehler = 0;
+        return;
+    }
+    if (++fehler == schwelle) {
+        Wire.beginTransmission(0x55);
+        int akku = Wire.endTransmission();
+        protokoll("%s antwortet nicht (Akku-Chip: %s)", name, akku == 0 ? "ok" : "auch nicht");
+    }
+}
+
 static void klimaMessen() {
     klimaZuletzt = millis();
-    if (!shtDa || !klimaLesen()) return;
+    if (!shtDa) return;
+    bool ok = klimaLesen();
+    sensorStatus("Klima-Sensor", shtFehler, ok, 3);
+    if (!ok) return;
     time_t s = time(nullptr);
     tm t;
     localtime_r(&s, &t);
@@ -184,14 +224,28 @@ static void fensterAuswerten() {
 
 /** Aus loop() (wach) */
 static void sensorenLoop() {
-    if (shtDa && (klimaZuletzt == 0 || millis() - klimaZuletzt > 60000)) klimaMessen();
+    // Klima jede Minute nur wach; im Schlummern misst schlafPruefen() alle 15 min (loop läuft auch zwischen zwei Schlafminuten)
+    bool wach = usbDa() || millis() - letzteAktivitaet < 120000;
+    if (shtDa && wach && (klimaZuletzt == 0 || millis() - klimaZuletzt > 60000)) klimaMessen();
     if (!lsmDa) return;
-    static uint32_t zuletzt = 0;
+    static uint32_t zuletzt = 0, neuVersuch = 0;
     if (millis() - zuletzt < 100) return;
     zuletzt = millis();
+    // Sicherheitsnetz: ohne Messwerte keine Fahrt (sonst bleibt er wach, bis der Akku leer ist)
+    if (fahrt && probeZuletzt && millis() - probeZuletzt > 120000) {
+        fahrt = false;
+        protokoll("Fahrt beendet: seit 2 min keine Messwerte");
+        wantState = true;
+    }
     if (bewegtSeither()) bewegtZuletzt = millis();
     float x, y, z;
-    if (!beschleunigung(x, y, z)) return;
+    bool ok = beschleunigung(x, y, z);
+    sensorStatus("Bewegungssensor", lsmFehler, ok, 20);
+    if (!ok) {
+        if (lsmFehler >= 20 && millis() - neuVersuch > 30000) { neuVersuch = millis(); busRetten(); bewegungInit(); }
+        return;
+    }
+    probeZuletzt = millis();
     float b = sqrtf(x * x + y * y + z * z);
     fSum += b; fSum2 += b * b; fX += x; fY += y; fZ += z; fN++;
     if (millis() - fensterStart >= 2000) { fensterStart = millis(); fensterAuswerten(); }

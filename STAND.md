@@ -3,7 +3,7 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.12.0 – eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
+version: FW 0.12.1 – eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
 wartet: Markus: Bewegungswecken von Hand prüfen (USB ab, 3 min liegen lassen, hochnehmen) und Fahrterkennung bei der nächsten Microlino-Fahrt; Offline-Diktat auf /ist/puffer einmal prüfen; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
@@ -202,6 +202,13 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   Bewegungswecken 5 min. Schwellen sind Startwerte. App holt Messreihen ab (`files/messreihen/`) und zeigt Klima im
   Zustand. Am Gerät geprüft: beide Sensoren erkannt, Lage 1,02 g, Klima 22,9 °C / 39 %, Messreihe abgeholt.
   **Noch nicht geprüft:** Wecken durch Bewegung im Akkubetrieb, Fahrterkennung bei echter Fahrt
+- **Erste Fahrt mit FW 0.12.0 (13.11.2026, 08:07–08:38):** Wecken durch Bewegung ok (08:07), „getragen“ ok,
+  **Fahrt erkannt** nach ~6 min (Streuung 21 mg), Offline-Diktat über /ist/puffer abgeholt und abgetippt, Klima-
+  Messreihe zeigt Heizung (bis 28,7 °C) und Lüften (17,9 °C). Drei BLE-Abrisse (0x208, Funkloch/Tasche).
+  **Fehler:** Nach dem Anstecken an USB (08:38) hing der I2C-Bus (Akku, Klima, Bewegung eingefroren, `fahrt` blieb an)
+  und der Sticky ließ sich erst nach Ab- und Anstecken flashen (GPIO0 ist SCL und Boot-Pin). FW 0.12.1: Bus-Rettung
+  (9 SCL-Takte + STOP, Wire neu), Fehler und Rettung landen im Fahrtenschreiber, Fahrt endet nach 2 min ohne
+  Messwerte; Klima im Schlummern wirklich nur alle 15 min (vorher jede Minute). Ursache noch offen
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik
