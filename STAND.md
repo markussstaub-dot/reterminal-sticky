@@ -274,6 +274,10 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   und ✕ Leeren (verwerfen); Hilfe im Kritzelblock behält das Blatt. Refresh 840 → 742 ms durch Patch an Seeed_GFX2
   (`firmware-ble/bibliothek-patch/`, zwei 100-ms-Pausen beim Schlafenlegen weg). Wach-Modus ohne Schlafen war 617 ms,
   ließ aber das Notizbild durchblitzen → verworfen. **Nach Updates von Seeed_GFX2 den Patch neu einspielen**
+- **Wiederverbinden hing (13.11.2026, 12:24–12:42):** nach mehrfachem Flashen keine BLE-Aufrufe der App mehr, erst
+  App-Neustart half (`verbindeGerade` blieb stehen, ein Versuch kam nie zurück). App: Frist 25 s für den ganzen Versuch,
+  danach Verbindung lösen (`abbrechen()`), Wächter alle 30 s (kein Versuch seit 1 min → neu). Getestet: 3 und 5 schnelle
+  Resets hintereinander, App jeweils 9–11 s danach wieder verbunden. Den ursprünglichen Hänger nicht nachgestellt
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

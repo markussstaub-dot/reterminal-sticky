@@ -334,12 +334,26 @@ Promise.resolve().then(() => Hintergrund.addListener('sticky', (e) => {
 })).catch(() => {});   // im Browser gibt es den Dienst nicht
 
 let verbindeGerade = false;
+// 13.11.2026: Nach mehrfachem Flashen hing ein Verbindungsversuch (kein BLE-Aufruf mehr ab 12:24); verbindeGerade blieb
+// stehen, jeder weitere Versuch brach sofort ab, bis die App neu startete. Darum Frist für den ganzen Versuch und ein Wächter.
+const VERBINDEN_FRIST_MS = 25000;
+let letzterVersuch = 0;
+function mitFrist(p, ms, was) {
+  let zeit;
+  return Promise.race([p, new Promise((_, nein) => { zeit = setTimeout(() => nein(new Error(`${was}: keine Antwort nach ${ms / 1000} s`)), ms); })])
+    .finally(() => clearTimeout(zeit));
+}
+
 async function wiederverbinden() {
   wiederTimer = 0;
   if (!autoVerbinden || zwilling.verbunden || verbindeGerade || !(verbindung instanceof BleVerbindung)) return;
   verbindeGerade = true;
+  letzterVersuch = Date.now();
   try {
-    await verbindung.verbinden({ nurGemerkt: true });
+    await mitFrist(verbindung.verbinden({ nurGemerkt: true }), VERBINDEN_FRIST_MS, 'Verbinden').catch(async (e) => {
+      await verbindung.abbrechen?.().catch(() => {});   // halbe Verbindung lösen, sonst blockiert sie den nächsten Versuch
+      throw e;
+    });
     eintrag(`Wieder verbunden mit ${verbindung.name}`);
     console.info('[sticky] wieder verbunden');
     zeigeVerbindung();
@@ -1012,6 +1026,13 @@ setInterval(async () => {
   }
   if (Date.now() < fahrtBis && zwilling.verbunden) zwilling.wach().catch(() => {});
 }, 60 * 1000);
+
+// Wächter: nicht verbunden, automatisch erwünscht, aber seit über einer Minute kein Versuch → neu anstoßen
+setInterval(() => {
+  if (!autoVerbinden || zwilling.verbunden || !(verbindung instanceof BleVerbindung)) return;
+  if (verbindeGerade && Date.now() - letzterVersuch > 2 * VERBINDEN_FRIST_MS) verbindeGerade = false;   // hängt trotz Frist
+  if (!verbindeGerade && !wiederTimer && Date.now() - letzterVersuch > 60000) wiederverbinden();
+}, 30 * 1000);
 
 // Wetter stündlich nachziehen, solange verbunden (Abgleich schickt nur die geänderte Karte)
 setInterval(() => { if (zwilling.verbunden) abgleich().catch(() => {}); }, 60 * 60 * 1000);

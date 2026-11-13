@@ -79,7 +79,15 @@ export class BleVerbindung extends Basis {
     try { localStorage.setItem(SPEICHER_ID, JSON.stringify(geraet)); } catch { /* egal */ }
   }
 
+  /** Laufenden oder halben Verbindungsversuch lösen (nach Fristablauf) */
+  async abbrechen() {
+    const id = this.id ?? this.versuchId;
+    this.id = null;
+    if (id) await BleClient.disconnect(id).catch(() => {});
+  }
+
   async #verbindeMit(g) {
+    this.versuchId = g.id;
     this.onLog(`Verbinde mit ${g.name} …`);
     await BleClient.connect(g.id, () => { this.id = null; this.onGetrennt(); }, { timeout: 8000 });
     this.id = g.id;
