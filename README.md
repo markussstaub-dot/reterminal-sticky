@@ -1,5 +1,7 @@
 # The EDC Sticky – reTerminal Sticky as an everyday-carry companion
 
+> **Useful on its own – the phone app makes it as smart as you like.**
+
 Custom firmware and an Android companion app for the **Seeed reTerminal Sticky** (ESP32-S3, 3.97″ e-paper 800 × 480
 with touch, microphone, buzzer, motion and climate sensors). The Sticky becomes a pocket helper that runs on its own
 for days and syncs with the phone when it is near.

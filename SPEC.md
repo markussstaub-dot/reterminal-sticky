@@ -1,5 +1,9 @@
 # reTerminal Sticky – Spec
 
+> **Leitsatz (Markus, 13.11.2026): Der Sticky ist allein nützlich – die App macht ihn beliebig smart.**
+> Ohne Handy ein vollwertiges EDC-Werkzeug (Uhr, Wecker, Weltzeit, Timer, Rechner, Waage, Lineal, Zettel, Schrift,
+> Diktat-Puffer, Fahrtenschreiber); mit Handy kommen Spracherkennung, Ort, Wetter, neue Seiten und Abgleich dazu.
+
 Grundidee (Markus, 11.11.2026): **Der Sticky als Erweiterung des Handys**, nicht in erster Linie als
 Smart-Home-Tafel. Handy (Fold6) = Rechenleistung und Internet; Sticky = Knopf, Mikro und stromsparendes
 Papier-Display, das man auf den Tisch legt oder irgendwo ranpappt.
