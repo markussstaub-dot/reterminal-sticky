@@ -234,6 +234,21 @@ Vorbild: Device Shadow / Device Twin aus der Industrie (AWS IoT, Azure).
   seine Reaktion (wach bleiben, schlafen, warnen) trifft er aus seinen Sensoren selbst. Inhaltliches bleibt in der App.
   Die App veredelt Ist-Daten (Ort, Fahrt aus Bubble Log, Wetter) und zeigt Verläufe
 
+### Wie autark ist der Sticky? (Stand 13.11.2026, FW 0.26.0)
+Die App ist Lieferant und Abholer, kaum noch Fernsteuerung. Das Handy ist nur noch für drei Dinge nötig:
+Einrichten, Abholen, Rechner/Umrechner.
+- **Läuft ohne Handy:** Uhr/Datum (eigene RTC, beim Verbinden gestellt) · Home, Notiz-Seite, Zettel mit QR, Bordbuch
+  (liegen auf Karte/Flash) · Timer (eigenes Uhrwerk, weckt aus dem Schlummer), Wasserwaage, Lineal, Menü ·
+  Kritzelblock · Diktat (ADPCM in `/ist/puffer`) · Knopf-Notizen mit Zeitstempel · Fahrtenschreiber und Klima
+  (Fahrterkennung per Lagesensor, Temperatur, Feuchte, Taupunkt) · Hoch/Quer automatisch und 180° · Statuszeile,
+  Tastenhilfe, Schlummer und Wecken
+- **Braucht das Handy zum Erledigen:** Spracherkennung (Diktat wird erst am Handy Text) · Ort für Notizen (GPS) ·
+  Rechner/Umrechner (einzige Thin-Client-Seite) · Gegenseitig suchen · Push-to-Talk in die Zwischenablage
+- **Braucht das Handy zum Einrichten:** neue Zettel, Bordbuch, Widget-Bilder, Karussell, Lage, Lineal-Kalibrierung,
+  Firmware-Updates
+- **Grenzen allein:** Akku und Kartenplatz. Denkbarer nächster Schritt: Rechner als Widget in die Firmware holen
+  (Logik überschaubar), dann bleibt nur noch Spracherkennung und Ort am Handy
+
 ### Denkmodell: zwei Arten von Seiten (Markus, 13.11.2026)
 - fest **App-Seiten** (z. B. Rechner): der Sticky ist **Thin Client** (Bildschirm + Eingabe, wie ein Terminal am
   Großrechner oder ein X11-Display). Logik und Zeichnen in der App, der Sticky meldet Tipper/Tasten und zeigt, was
