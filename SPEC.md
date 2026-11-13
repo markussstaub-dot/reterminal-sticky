@@ -469,8 +469,7 @@ Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzu
 
 ## Für Fremd-Apps: eigene App für den Sticky bauen (Markus, 13.11.2026)
 
-Für alle, die eine eigene App bauen wollen (Anlass: der zweite Sticky geht an Markus' Angehörige, die mit ihrem
-KI-Helfer eine iOS-App bauen kann). Ziel: **mit diesem Abschnitt und `PROTOKOLL.md` auskommen, ohne Rückfragen und ohne
+Für alle, die eine eigene App bauen wollen, z. B. für das iPhone, gern mit einem KI-Helfer. Ziel: **mit diesem Abschnitt und `PROTOKOLL.md` auskommen, ohne Rückfragen und ohne
 unseren App-Code lesen zu müssen.** Die Firmware bleibt dieselbe, Bluetooth LE ist auf iPhone und Android gleich.
 
 ### Was fest ist (darauf kann man bauen)
@@ -520,7 +519,7 @@ unseren App-Code lesen zu müssen.** Die Firmware bleibt dieselbe, Bluetooth LE 
   nicht vorn ist. iOS sucht Geräte nach Dienst-UUID, nicht nach Name
 - **Voraussetzungen:** Mac mit Xcode. Mit kostenloser Apple-ID läuft die App 7 Tage, dauerhaft nur mit dem
   Entwicklerkonto (99 $ im Jahr)
-- **Unser Repo ist öffentlich, aber ohne Lizenz** (mitgucken ja). Für die Familie klärt Markus das direkt
+- **Unser Repo ist öffentlich, aber ohne Lizenz** (mitgucken ja). Wer mehr will, fragt Markus
 
 ## Zusammenhang mit dem Microlino-Knopf
 Beide Geräte sind ESP32-S3 mit BLE, beide folgen dem Muster „Handy rechnet, Gerät zeigt“.
