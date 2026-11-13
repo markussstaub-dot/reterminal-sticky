@@ -32,6 +32,7 @@ static uint32_t letzteBedienung = 0;
 static const uint32_t ZURUECK_MS = 5UL * 60 * 1000;
 static volatile int modusWunsch = -1;     // von der App (OP_BB_MODUS) oder Tasten, umgesetzt in loop()
 static int bestellAnzahl = 0, bestellAktuell = 0;
+static bool hilfeAn = false;          // Tastenhilfe gerade sichtbar (▲+▼)
 
 static void bestellZaehlen() {
     const char* semi = strchr(homeVersion, ';');
@@ -183,6 +184,7 @@ static void setzeModus(Modus m) {
         tone(PIN_BUZZER, 900, 120);   // tiefer Ton: kein Bordbuch aufgespielt
         return;
     }
+    hilfeAn = false;
     if (m != modus) protokoll("Modus %s", m == M_HOME ? "home" : m == M_BORDBUCH ? "bordbuch" : m == M_NOTIZ ? "notiz" : "bestell");
     modus = m;
     bordbuch = m == M_BORDBUCH;
@@ -285,8 +287,93 @@ static void blaettern(int richtung) {
     karussellSchritt(richtung);
 }
 
+// ---- Rückmeldung beim Tippen (SPEC „Bedienung und Oberfläche“): Rahmen ums getroffene Feld, nach 1,5 s weg --------
+static int rhX0 = 0, rhY0 = 0, rhX1 = 0, rhY1 = 0, rhModus = -1, rhSeite = -1;
+static uint32_t rahmenBis = 0;
+static uint8_t* rahmenSicher = nullptr;
+static volatile bool rahmenNeu = false;
+
+/** Aus sendTouch (down): welches Feld wurde getroffen? Streifen der Notiz-Seite oder Kapitel im Inhaltsverzeichnis */
+static void rahmenAntippen(int x, int y) {
+    if (hilfeAn || rahmenBis) return;
+    auto treffer = [&](int x0, int y0, int x1, int y1) {
+        if (x < x0 || x >= x1 || y < y0 || y >= y1) return false;
+        rhX0 = max(0, x0 & ~7); rhX1 = min(W, (x1 + 7) & ~7); rhY0 = max(0, y0); rhY1 = min(H, y1);
+        return true;
+    };
+    bool getroffen = false;
+    if (modus == M_NOTIZ) for (int i = 0; i < streifenAnzahl && !getroffen; i++) getroffen = treffer(streifen[i].x0, streifen[i].y0, streifen[i].x1, streifen[i].y1);
+    else if (bordbuch && bbAktuell == bbToc) for (int i = 0; i < bbAnzahl && !getroffen; i++) getroffen = treffer(bbEintraege[i].x0, bbEintraege[i].y0, bbEintraege[i].x1, bbEintraege[i].y1);
+    if (getroffen) rahmenNeu = true;
+}
+
+static void rahmenLoop() {
+    if (rahmenNeu) {
+        rahmenNeu = false;
+        int bpz = (rhX1 - rhX0) / 8, h = rhY1 - rhY0;
+        if (bpz <= 0 || h <= 0) return;
+        if (!rahmenSicher) rahmenSicher = (uint8_t*)ps_malloc(IMG_BYTES);
+        if (!rahmenSicher) return;
+        for (int r = 0; r < h; r++) memcpy(rahmenSicher + r * bpz, imgBuf + (rhY0 + r) * (W / 8) + rhX0 / 8, bpz);
+        const int d = 6;   // dicker schwarzer Rand innen am Feld
+        bildRechteck(rhX0, rhY0, rhX1 - rhX0, d, true);
+        bildRechteck(rhX0, rhY1 - d, rhX1 - rhX0, d, true);
+        bildRechteck(rhX0, rhY0, d, h, true);
+        bildRechteck(rhX1 - d, rhY0, d, h, true);
+        display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+        display.updatePartial(rhX0, rhY0, rhX1 - rhX0, h);
+        rhModus = modus; rhSeite = bbAktuell;
+        rahmenBis = millis() + 1500;
+    }
+    if (rahmenBis && millis() > rahmenBis) {
+        rahmenBis = 0;
+        if (modus != rhModus || bbAktuell != rhSeite || hilfeAn) return;   // Seite schon gewechselt: nichts zurückzumalen
+        int bpz = (rhX1 - rhX0) / 8, h = rhY1 - rhY0;
+        for (int r = 0; r < h; r++) memcpy(imgBuf + (rhY0 + r) * (W / 8) + rhX0 / 8, rahmenSicher + r * bpz, bpz);
+        display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+        display.updatePartial(rhX0, rhY0, rhX1 - rhX0, h);
+    }
+}
+
+// ---- Tastenhilfe (SPEC „Bedienung und Oberfläche“): ▲ und ▼ zusammen zeigen /soll/hilfe/<modus>.bin -----------
+static bool upUnten = false, downUnten = false, kombi = false;
+static volatile bool hilfeWunsch = false, neuZeichnen = false;
+
+static const char* hilfeName() {
+    return modus == M_HOME ? "hilfe/home.bin" : modus == M_NOTIZ ? "hilfe/notiz.bin" : modus == M_BORDBUCH ? "hilfe/bordbuch.bin" : "hilfe/zettel.bin";
+}
+
+static void hilfeZeigen() {
+    if (!sollLesen(hilfeName(), imgBuf, IMG_BYTES)) { tone(PIN_BUZZER, 900, 120); return; }   // noch keine Hilfe aufgespielt
+    hilfeAn = true;
+    protokoll("Hilfe %s", hilfeName() + 6);
+    display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+    display.update();
+    seite = "hilfe";
+}
+
 static void tasteAktion(const char* name, bool gedrueckt) {
     letzteBedienung = millis();
+    bool up = strcmp(name, "up") == 0, down = strcmp(name, "down") == 0;
+    if (up) upUnten = gedrueckt;
+    if (down) downUnten = gedrueckt;
+    // Hilfe offen: der nächste Tastendruck schließt sie (losgelassen wird erst danach, damit nichts doppelt passiert)
+    if (hilfeAn) {
+        if (!gedrueckt && !upUnten && !downUnten) { hilfeAn = false; kombi = false; neuZeichnen = true; }
+        kiSeit = upSeit = downSeit = 0;
+        return;
+    }
+    if ((up || down) && gedrueckt && upUnten && downUnten) {   // ▲+▼ zusammen
+        kombi = true;
+        upSeit = downSeit = 0;
+        hilfeWunsch = true;
+        return;
+    }
+    if (kombi) {                                                // eine der beiden noch unten: nichts blättern
+        if (!upUnten && !downUnten) kombi = false;
+        upSeit = downSeit = 0;
+        return;
+    }
     if (strcmp(name, "ki") == 0) {
         if (gedrueckt) { kiSeit = millis(); kiDiktat = false; return; }
         kiSeit = 0;
@@ -332,14 +419,21 @@ static void modusLoop() {
         if (bestellWunsch < bestellAnzahl) bestellAktuell = bestellWunsch;
         bestellWunsch = -1;
     }
+    rahmenLoop();
+    if (hilfeWunsch) { hilfeWunsch = false; hilfeZeigen(); }
+    if (neuZeichnen) {                    // Hilfe zu: dieselbe Seite wieder zeigen
+        neuZeichnen = false;
+        if (modus == M_BORDBUCH) bbWunsch = bbAktuell;
+        setzeModus(modus);
+    }
     if (modusWunsch >= 0) {
         Modus m = (Modus)modusWunsch;
         modusWunsch = -1;
         if (m != modus || m == M_NOTIZ || m == M_BESTELL) setzeModus(m);
     }
     if (modus != M_HOME && !audioLaeuft && millis() - letzteBedienung > ZURUECK_MS) setzeModus(M_HOME);
-    if (modus == M_HOME && homeDa && !audioLaeuft && uhrZeichnen()) uhrAuffrischen(uhrMinute == 0);
+    if (modus == M_HOME && homeDa && !audioLaeuft && !hilfeAn && uhrZeichnen()) uhrAuffrischen(uhrMinute == 0);
     static uint32_t akkuZuletzt = 0;
     (void)akkuZuletzt;
-    statusPruefen(true, false);           // Statuszeile auf jeder Seite (Akku, Uhr, Handy, Notizen, Warnung)
+    if (!hilfeAn) statusPruefen(true, false);   // Statuszeile auf jeder Seite (Akku, Uhr, Handy, Notizen, Warnung)
 }

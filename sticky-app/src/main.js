@@ -30,6 +30,7 @@ import { KARTEN_STANDARD, karten, zeichneKarte } from './karten.js';
 import { Aufnahme, wav, sprachPruefung, nurWortliste, angehoben } from './audio.js';
 import * as notizen from './notizen.js';
 import { SORTEN, naechsteSorte } from './sorte.js';
+import { HILFE } from './hilfe.js';
 import { WOERTERBUCH_STANDARD, paareLesen, paareText, korrigiere, lernen, einpflegen } from './woerterbuch.js';
 import * as bb from './bordbuch.js';
 import { tabsEinrichten } from './tabs.js';
@@ -623,6 +624,7 @@ async function abgleich() {
   }
   await pufferAbholen();
   if (fwAb('0.13.0')) await karussellAufspielen().catch((e) => eintrag(`Karussell: ${e.message}`, true));
+  if (fwAb('0.15.0')) await hilfeAufspielen().catch((e) => eintrag(`Hilfe: ${e.message}`, true));
   if (fwAb('0.10.0')) await fahrtenschreiberAbholen().catch((e) => eintrag(`Fahrtenschreiber: ${e.message}`, true));
 }
 
@@ -633,6 +635,18 @@ function karussellText() {
   const roh = (localStorage.getItem('sticky.karussell') || KARUSSELL_STANDARD).split(/[,;\n]/).map((w) => KARUSSELL_WOERTER[w.trim().toLowerCase()]).filter(Boolean);
   return [...new Set(roh)].join('\n') + '\n';
 }
+/** Tastenhilfe je Modus (▲+▼ am Sticky): auf eigener Leinwand rendern, damit die Vorschau bleibt, wie sie ist */
+async function hilfeAufspielen() {
+  const c = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(BREITE, HOEHE) : Object.assign(document.createElement('canvas'), { width: BREITE, height: HOEHE });
+  const h = c.getContext('2d', { willReadFrequently: true });
+  const dateien = Object.entries(HILFE).map(([modus, seite]) => {
+    bb.zeichneTextseite(h, seite, '▲+▼ = Hilfe');
+    return { n: `${modus}.bin`, daten: rgbaZu1bpp(h.getImageData(0, 0, BREITE, HOEHE).data) };
+  });
+  const n = await zwilling.sollAbgleich('hilfe', dateien);
+  if (n) eintrag(`Tastenhilfe aufgespielt (${n} Seiten)`);
+}
+
 async function karussellAufspielen() {
   const n = await zwilling.sollAbgleich('einstellungen', [{ n: 'karussell.txt', daten: new TextEncoder().encode(karussellText()) }]);
   if (n) eintrag(`Karussell: ${karussellText().trim().split('\n').join(' → ')}`);
