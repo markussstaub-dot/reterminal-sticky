@@ -234,6 +234,17 @@ Vorbild: Device Shadow / Device Twin aus der Industrie (AWS IoT, Azure).
   seine Reaktion (wach bleiben, schlafen, warnen) trifft er aus seinen Sensoren selbst. Inhaltliches bleibt in der App.
   Die App veredelt Ist-Daten (Ort, Fahrt aus Bubble Log, Wetter) und zeigt Verläufe
 
+### Denkmodell: zwei Arten von Seiten (Markus, 13.11.2026)
+- fest **App-Seiten** (z. B. Rechner): der Sticky ist **Thin Client** (Bildschirm + Eingabe, wie ein Terminal am
+  Großrechner oder ein X11-Display). Logik und Zeichnen in der App, der Sticky meldet Tipper/Tasten und zeigt, was
+  kommt. Ohne Handy gibt es sie nicht; jeder Tipp kostet Funk → App → Funk (~1 s)
+- fest **eigene Seiten** (Home mit Uhr, Notiz, Kritzel, Bordbuch, Zettel, Diktat): der Sticky ist **eigenständiges
+  Gerät**, zeichnet, reagiert und speichert selbst, auch ohne Handy. Die App ist nur **Lieferant** (`/soll`: Bilder,
+  Bordbuch, Zettel, Hilfe, Karussell) und **Abholer** (`/ist`: Notizen, Diktate, Kritzel, Fahrtenschreiber, Messreihen)
+- fest **Faustregel für neue Ideen**: muss es ohne Handy gehen (Timer im Micro, Uhr, Notizen) → eigene Seite (Firmware,
+  später Baustein der Widget-Maschine); ist das Handy ohnehin dabei (Rechner, Tastatur, Nachschlagen) → App-Seite,
+  ohne Flashen
+
 ### SD-Karte als Vertrag
 - Vorschlag **alles ist eine Datei**, zwei Bereiche:
   - `/soll/…` schreibt nur die App (z. B. `/soll/home/`, `/soll/zettel/`, `/soll/bordbuch/`, `/soll/layout/`,
