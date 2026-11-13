@@ -331,6 +331,22 @@ in eine Tagesdatei zum Teilen. Funktioniert, ist aber ein einziger Topf.
   4. Claude-Nachbearbeitung, 5. Ziele Kalender/Vault/Bubble Log anbinden); Zettel aus Diktat = Bestellzettel oder
   eigener Erledigungszettel?
 
+### Spickzettel und Handbücher trennen (Markus, 13.11.2026)
+Heute steckt beides im Bordbuch (Spickzettel, Handgriffe und PDF-Seiten mit einem Inhaltsverzeichnis). Künftig zwei
+Seitentypen, beide eigene Seiten (gehen ohne Handy):
+- fest **Spickzettel = flott und variabel**: kurze Karten (3–10 Zeilen), oft geändert (Felgen, Pannenhilfe, Handgriffe,
+  Bestellungen). Eigener Karussell-Eintrag; erst Liste der Kartentitel (zuletzt benutzte oben), Tippen öffnet, ▲/▼ zur
+  nächsten Karte. Pflege in der App (Textfeld), per Diktat („Spickzettel: Reifendruck vorne 2,2 bar“) und von Claude
+  nach gelösten Fragen. Technik: eine Karte = eine Datei, nur Geändertes geht rüber
+- fest **Handbücher = Dokumenten-Viewer**: große PDFs, nur lesen (Microlino, später Bambu, Laser, Wallbox …). Eigener
+  Eintrag; Bibliothek → Inhaltsverzeichnis → Seite, ▲/▼ blättern, jedes Dokument merkt sich die letzte Seite,
+  Lesezeichen per ▲ lang. Suche über die App: am Fold suchen, der Sticky springt auf die Seite (passt zur
+  Handbuch-Suche aus der Session „handbuch-vektor“). Technik: `/soll/doku/<name>/` mit Seitenbildern und Inhalt;
+  einmal ein allgemeiner Viewer in der Firmware (der Bordbuch-Code ist fast einer), danach neues Handbuch = neuer Ordner
+- Vorschlag **mit Szenen**: Szene „Micro“ zeigt Microlino-Handbuch und Auto-Spickzettel, „Werkstatt“ Bambu-Handbuch und
+  Werkstatt-Handgriffe
+- Vorschlag: der Name „Bordbuch“ geht in diesen zwei Teilen auf (bleibt höchstens als Titel der Micro-Szene)
+
 ### Handgriff-Spickzettel (Markus, 13.11.2026, Idee)
 Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzufügen“), solche Handgriffe vergisst man.
 - Vorschlag **Was einmal gelöst ist, wird ein Spickzettel**: kurze Anleitungen für Geräte und Abläufe, 3–6 Schritte,
