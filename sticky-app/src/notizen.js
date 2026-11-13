@@ -5,6 +5,7 @@ import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Geolocation } from '@capacitor/geolocation';
 import { Hintergrund as HintergrundOrt } from './hintergrund.js';
 import { Share } from '@capacitor/share';
+import { sortiere } from './sorte.js';
 
 const NATIV = Capacitor.isNativePlatform();
 const ORDNER = 'notizen';
@@ -30,6 +31,13 @@ export async function standort() {
 
 /** Neue Notiz: { art: 'knopf'|'diktat', knopf?, text?, audio? } → gespeicherte Zeile */
 export async function notiere(teile, ort = null) {
+  // Sorte (SPEC „Sprachnotizen 2.0“): Knöpfe sind Fahrt-Notizen, Diktate sortiert sorte.js; Stichwort fällt aus dem Text
+  if (!teile.sorte) {
+    if (teile.art === 'diktat' && teile.text && !teile.unklar) {
+      const s = sortiere(teile.text, { tempo: ort?.tempo, dauerMs: teile.dauerMs, faehrt: teile.faehrt });
+      teile = { ...teile, text: s.text, sorte: s.sorte, sorteGrund: s.grund };
+    } else teile = { ...teile, sorte: teile.art === 'knopf' ? 'fahrt' : 'eingang' };
+  }
   const zeile = { t: Date.now(), typ: 'notiz', quelle: 'sticky', ...teile, ...(ort ?? {}) };
   const json = JSON.stringify(zeile);
   if (NATIV) {
@@ -43,7 +51,13 @@ export async function notiere(teile, ort = null) {
 /** Text einer Notiz von heute ändern (Zeit t ist der Schlüssel); die erste erkannte Fassung bleibt als „roh“ erhalten */
 export async function aendern(t, text) {
   if (!String(text ?? '').trim()) throw new Error('leerer Text');
-  const neu = (z) => { const n = JSON.parse(z); if (n.t !== t) return z; if (n.roh == null) n.roh = n.text; n.text = text; n.korrigiert = true; return JSON.stringify(n); };
+  return setzen(t, (n) => { if (n.roh == null) n.roh = n.text; n.text = text; n.korrigiert = true; });
+}
+
+/** Felder einer Notiz von heute ändern; aendere(n) bekommt das Objekt zum Bearbeiten */
+export async function setzen(t, aendere) {
+  let erledigt = false;   // nur den ersten Treffer (gleiche Millisekunde ist selten, aber möglich)
+  const neu = (z) => { const n = JSON.parse(z); if (erledigt || n.t !== t) return z; erledigt = true; aendere(n); return JSON.stringify(n); };
   if (!NATIV) { web = web.map(neu); return; }
   const pfad = `${ORDNER}/${tagesName()}`;
   const alt = (await Filesystem.readFile({ path: pfad, directory: Directory.Data, encoding: Encoding.UTF8 })).data;

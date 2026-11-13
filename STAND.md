@@ -3,7 +3,7 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.14.2 – Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
+version: FW 0.14.3 – Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
 wartet: Markus: Bewegungswecken von Hand prüfen (USB ab, 3 min liegen lassen, hochnehmen) und Fahrterkennung bei der nächsten Microlino-Fahrt; Offline-Diktat auf /ist/puffer einmal prüfen; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
@@ -240,6 +240,13 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   10:23:40). Ursache: Weckschwelle 62 mg, der Micro rüttelt beim Fahren nur ~21 mg (Wert aus „Fahrt erkannt“ am
   Morgen); dazu die 5-min-Sperre nach „getragen“ bis 10:19. FW 0.14.2: Schwelle auf das Minimum 31 mg. Anstecken an
   USB diesmal ohne I2C-Hänger. Zu prüfen: wacht er jetzt beim Fahren auf, und nicht zu oft auf dem Tisch
+- **Café-Tisch mit 31 mg (13.11.2026, 10:33–11:00):** 6× durch Bewegung geweckt (vermutlich Tippen am selben Tisch),
+  100 → 97 % in 30 min. FW 0.14.3: nach dem Wecken 3 s prüfen, ohne Funk; ganz wach nur bei Streuung > 12 mg (Micro
+  ~21 mg) oder Lageänderung > 0,15 g, sonst weiterschlafen und als Fehlalarm zählen (Zahl steht im Stundenfenster).
+- **Notizen sortieren (13.11.2026, `sticky-app/src/sorte.js`, Sprachnotizen 2.0 Schritt 1):** Stichwort am Anfang
+  („Einkauf“, „Idee“, „Erinnere mich“, „Fahrt“, „Erzählung“) geht vor und fällt aus dem Text; sonst Zeitangabe →
+  Erinnerung, Kaufen/Besorgen → Erledigung, „man könnte/wäre cool“ → Idee, fährt oder Fahrt-Wörter → Fahrt, lang →
+  Erzählung, sonst Eingang. Knöpfe = Fahrt. Schild in der Notizliste, Antippen schaltet weiter („von Hand“)
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

@@ -315,6 +315,7 @@ in eine Tagesdatei zum Teilen. Funktioniert, ist aber ein einziger Topf.
   korrigierte Texte zurück aufs Fold. Bis dahin geht Korrigieren in der App-Liste
 - offen: Transportweg Fold ↔ Zenbook (Vorschlag Syncthing, kein Cloud-Umweg)
 - fest **kein Weckwort** („Hey Sticky“): kostet Strom, die KI-Taste reicht
+- umgesetzt 13.11.: Sortieren mit Stichwort + Eingang (`sorte.js`, Schild in der Liste)
 - offen: Reihenfolge (Vorschlag: 1. Sortieren mit Stichwort + Eingang, 2. Rückmeldung am Sticky, 3. Seite „Heute“,
   4. Claude-Nachbearbeitung, 5. Ziele Kalender/Vault/Bubble Log anbinden); Zettel aus Diktat = Bestellzettel oder
   eigener Erledigungszettel?

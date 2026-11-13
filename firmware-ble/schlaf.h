@@ -108,8 +108,10 @@ static void schlafPruefen() {
     protokollSchreiben();
     sdAus();                                       // Karte stromlos, pfs() bindet sie beim nächsten Zugriff ein
     Weckgrund grund = leichtSchlaf();
-    if (grund == W_BEWEGUNG) {                     // Bewegung: Funk an, damit die App gleich da ist; Touch erst mit Taste
-        protokoll("wach durch Bewegung (nach %lu Schlafminuten)", (unsigned long)schlafZaehler);
+    if (grund == W_BEWEGUNG) {                     // Bewegung: erst 3 s prüfen (ohne Funk), dann ganz wach
+        float streu = 0;
+        if (!bewegungPruefen(3000, &streu)) { fehlalarme++; return; }   // Stoß/Tippen: weiterschlafen
+        protokoll("wach durch Bewegung (nach %lu Schlafminuten, Streuung %.0f mg)", (unsigned long)schlafZaehler, streu * 1000);
         schlafZaehler = 0;
         funkEin(true);
         aktiv();
@@ -130,7 +132,8 @@ static void schlafPruefen() {
     if (t.tm_year > 120 && t.tm_min % 15 == 0) klimaMessen();   // Klima alle 15 min auch im Schlummern
     if (t.tm_year > 120 && t.tm_min == 0) {        // volle Stunde: kurz erreichbar für den Abgleich
         funkEin(true);
-        protokoll("Stundenfenster: Funk 1 min an (Akku %d %%)", batPct);
+        protokoll("Stundenfenster: Funk 1 min an (Akku %d %%, %lu Fehlalarme Bewegung)", batPct, (unsigned long)fehlalarme);
+        fehlalarme = 0;
         letzteAktivitaet = millis() - (SCHLAF_NACH - STUNDEN_FENSTER);
     }
 }

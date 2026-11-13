@@ -115,3 +115,9 @@ footer { padding: 0; }
 .spiegel .unter button { min-width: 56px; }
 .spiegel .unter .pille { flex: 1; text-align: center; }
 #logText { max-height: 40vh; overflow: auto; white-space: pre-wrap; margin: 0; font-family: ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+/* Sorte einer Notiz (Sprachnotizen 2.0) */
+.sorte { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 10px; border: 1px solid currentColor; cursor: pointer; opacity: .85; }
+.sorte.eingang { opacity: .55; }
+.sorte.erledigung { color: #2e9d6a; } .sorte.erinnerung { color: #d08a2a; } .sorte.idee { color: #7a6ad8; }
+.sorte.fahrt { color: #3a87c8; } .sorte.erzaehlung { color: #c45a7a; }

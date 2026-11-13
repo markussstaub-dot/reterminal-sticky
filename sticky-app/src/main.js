@@ -29,6 +29,7 @@ import { BESTELL_STANDARD, zettel, zeichneZettel } from './bestellung.js';
 import { KARTEN_STANDARD, karten, zeichneKarte } from './karten.js';
 import { Aufnahme, wav, sprachPruefung, nurWortliste, angehoben } from './audio.js';
 import * as notizen from './notizen.js';
+import { SORTEN, naechsteSorte } from './sorte.js';
 import { WOERTERBUCH_STANDARD, paareLesen, paareText, korrigiere, lernen, einpflegen } from './woerterbuch.js';
 import * as bb from './bordbuch.js';
 import { tabsEinrichten } from './tabs.js';
@@ -232,7 +233,7 @@ async function zeigeAufnahme(a) {
     werte.textContent += zusatz;
     console.info('[sticky] sprache', JSON.stringify({ dauer: a.dauerMs, gesamt, erkennung: r.ms, laden: r.ladeMs, modell: r.modell, zweiter: r.zweiterLauf, text: r.text, umweg: Math.round(tErk - a.tLos) }));
     const spaet = Date.now() - a.start - a.dauerMs > VERSPAETET_MS;
-    neueNotiz({ t: a.start, art: 'diktat', text: r.text || '', ...(r.roh ? { roh: r.roh } : {}), ...(r.unklar ? { unklar: r.unklar } : {}), audio: nativ ? `aufnahmen/${name}` : name, dauerMs: a.dauerMs, ...(spaet ? { offline: true } : {}) },
+    neueNotiz({ t: a.start, art: 'diktat', text: r.text || '', ...(zwilling.geraet.fahrt ? { faehrt: true } : {}), ...(r.roh ? { roh: r.roh } : {}), ...(r.unklar ? { unklar: r.unklar } : {}), audio: nativ ? `aufnahmen/${name}` : name, dauerMs: a.dauerMs, ...(spaet ? { offline: true } : {}) },
       spaet ? null : a.ort, 'Diktat');
   }).catch((e) => {
     text.className = 'text';
@@ -507,6 +508,19 @@ function zeigeNotiz(n, neu = false) {
   kopf.className = 'kopf';
   const ort = n.lat != null ? `${n.lat.toFixed(5)}, ${n.lon.toFixed(5)} (±${n.gen} m)` : n.offline ? 'ohne Handy aufgenommen' : 'ohne GPS';
   kopf.textContent = `${new Date(n.t).toLocaleTimeString('de-DE')} · ${ort}`;
+  // Sorte als Schild; Antippen schaltet weiter (von Hand gilt dann)
+  const schild = document.createElement('span');
+  schild.className = `sorte ${n.sorte ?? 'eingang'}`;
+  const schildText = () => { schild.textContent = SORTEN[n.sorte ?? 'eingang'].name; schild.title = `${SORTEN[n.sorte ?? 'eingang'].ziel}${n.sorteGrund ? ` · ${n.sorteGrund}` : ''}`; };
+  schildText();
+  schild.onclick = async (e) => {
+    e.stopPropagation();
+    const neu = naechsteSorte(n.sorte ?? 'eingang');
+    try { await notizen.setzen(n.t, (x) => { x.sorte = neu; x.sorteGrund = 'von Hand'; }); } catch (err) { eintrag(`Sorte nicht gespeichert: ${err.message}`, true); return; }
+    n.sorte = neu; n.sorteGrund = 'von Hand';
+    schildText();
+  };
+  kopf.append(' ', schild);
   const was = document.createElement('div');
   was.className = 'was';
   was.textContent = n.art === 'diktat' ? `🎙 ${n.text || '(nichts erkannt)'}` : n.knopf;

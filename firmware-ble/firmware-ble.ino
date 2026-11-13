@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.14.2";
+static const char* FW_VERSION = "0.14.3";
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "Markus";

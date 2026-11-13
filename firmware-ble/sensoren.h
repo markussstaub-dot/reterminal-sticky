@@ -251,6 +251,35 @@ static void sensorenLoop() {
     if (millis() - fensterStart >= 2000) { fensterStart = millis(); fensterAuswerten(); }
 }
 
+static uint32_t fehlalarme = 0;
+
+/**
+ * Nach dem Wecken durch Bewegung: ms lang messen, ohne Funk. Echt ist es, wenn es gleichmäßig rüttelt (Micro beim Fahren
+ * ~21 mg Streuung) oder er bewegt/getragen wird; ein Stoß oder Tippen am selben Tisch (Café, 13.11.2026: 6 Wecker in
+ * 25 min bei 31 mg Schwelle) ist nach einem Augenblick wieder ruhig. → true = ganz wach werden
+ */
+static bool bewegungPruefen(uint32_t ms, float* streuung) {
+    float s = 0, s2 = 0, x0 = 0, y0 = 0, z0 = 0, lage = 0;
+    int n = 0;
+    uint32_t t0 = millis();
+    while (millis() - t0 < ms) {
+        float x, y, z;
+        if (beschleunigung(x, y, z)) {
+            float b = sqrtf(x * x + y * y + z * z);
+            s += b; s2 += b * b;
+            if (n == 0) { x0 = x; y0 = y; z0 = z; }
+            lage = fmaxf(lage, sqrtf((x - x0) * (x - x0) + (y - y0) * (y - y0) + (z - z0) * (z - z0)));
+            n++;
+        }
+        delay(38);                                  // ~26 Hz wie der Sensor
+    }
+    bewegtSeither();                                // gehaltene Meldung löschen
+    if (n < 10) return true;                        // nichts gemessen: lieber wach werden
+    float m = s / n, streu = sqrtf(fmaxf(0, s2 / n - m * m));
+    if (streuung) *streuung = streu;
+    return streu > 0.012f || lage > 0.15f;          // rüttelt wie im Auto oder wird bewegt
+}
+
 /** Vor dem Leichtschlaf: soll Bewegung wecken dürfen? (Meldung löschen, Leitung muss frei sein) */
 static bool bewegungWecktGleich() {
     if (!lsmDa || millis() < weckSperreBis) return false;
