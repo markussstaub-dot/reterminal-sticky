@@ -191,8 +191,9 @@ export function schriftHilfe() {
   g.font = `500 24px ${BRAUN_FONT}`; g.textBaseline = 'middle'; g.textAlign = 'left';
   g.fillText('Hilfe · Strichschrift', 16, 20);
   g.font = `400 15px ${BRAUN_FONT}`;
-  g.fillText('Punkt = Anfang · links Buchstaben, rechts Ziffern · beliebige Taste schließt', 230, 21);
-  const alle = [...Object.entries(BUCHSTABEN), ...Object.entries(ZIFFERN), ['→ Leer', GESTEN[' ']], ['← weg', GESTEN['⌫']]];
+  g.fillText('Punkt = Anfang, Pfeil = Richtung · ² = geht auch · beliebige Taste schließt', 230, 21);
+  const alle = [...Object.entries(BUCHSTABEN), ...Object.entries(ZWEITFORMEN).map(([z, p]) => [`${z}²`, p]), ...Object.entries(ZIFFERN),
+    ['→ Leer', GESTEN[' ']], ['← weg', GESTEN['⌫']]];
   const sp = 10, zw = (BREITE - 16) / sp, zh = (HOEHE - 44) / Math.ceil(alle.length / sp);
   alle.forEach(([z, p], i) => {
     const x = 8 + (i % sp) * zw, y = 40 + Math.floor(i / sp) * zh;
@@ -201,6 +202,10 @@ export function schriftHilfe() {
     g.lineWidth = 3; g.lineJoin = 'round'; g.lineCap = 'round';
     g.beginPath(); p.forEach(([px, py], k) => (k ? g.lineTo(ox + px * s, oy + py * s) : g.moveTo(ox + px * s, oy + py * s))); g.stroke();
     g.beginPath(); g.arc(ox + p[0][0] * s, oy + p[0][1] * s, 5, 0, Math.PI * 2); g.fill();
+    const [ax, ay] = p[p.length - 2], [bx, by] = p[p.length - 1], w = Math.atan2(by - ay, bx - ax);   // Pfeil = Richtung
+    g.beginPath();
+    for (const d of [2.6, -2.6]) { g.moveTo(ox + bx * s, oy + by * s); g.lineTo(ox + bx * s + 9 * Math.cos(w + d), oy + by * s + 9 * Math.sin(w + d)); }
+    g.stroke();
   });
   return rgbaZu1bpp(g.getImageData(0, 0, BREITE, HOEHE).data);
 }
