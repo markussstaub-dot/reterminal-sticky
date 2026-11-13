@@ -294,8 +294,10 @@ in eine Tagesdatei zum Teilen. Funktioniert, ist aber ein einziger Topf.
   inoffizielle Nachbauten zu wackelig. Gut als eigenes Diktierwerkzeug am Zenbook und am Fold (Android-App seit 2026),
   ohne Sticky. Ton geht in deren Cloud (gleiche Abwägung wie Schicht 3)
 - fest **lokales Modell flott machen** (Markus, 13.11.2026), Reihenfolge:
-  1. Ton säubern: Pegel so, dass nichts kappt (6/16 Fahrt-Aufnahmen übersteuert), Hochpass ~100 Hz gegen Brummen,
-     leichte Rauschunterdrückung auf dem Fold vor whisper. Prüfstand: die 16 Fahrt-Aufnahmen vom 11.11.
+  1. Ton säubern: **erledigt** (seit 11.11. ×2 statt ×4, Hochpass 120 Hz zweistufig, weicher Begrenzer). Gemessen an den
+     9 Fahrt-Aufnahmen vom 13.11.: 0 gekappt (vorher 7/16), Spitze −3,6 bis −11 dBFS, Störabstand 23–38 dB (vorher oft
+     11–17), unter 150 Hz 1–4 % (vorher bis 47 %). Die Fehler kommen jetzt vom Modell, nicht vom Ton → keine
+     Rauschunterdrückung (kann whisper bei sauberem Ton eher schaden)
   2. lernendes Ersetzungswörterbuch nach der Erkennung (jede Korrektur von Markus oder aus Schicht 2 wird ein Paar,
      z. B. „Mikrolino → Microlino“), dazu Zahlenregeln (unplausible Prozente markieren). Wortliste im Prompt kurz halten
   3. nebenbei: deutsch nachtrainierte Whisper-Varianten in small-Größe gegen den Prüfstand testen (reiner Modelltausch)
