@@ -279,6 +279,16 @@ in eine Tagesdatei zum Teilen. Funktioniert, ist aber ein einziger Topf.
 - Vorschlag **Wiederfinden**: Seite „Heute“ im Karussell mit den letzten 5 Notizen als Text (ohne Handy nachlesen)
 - Vorschlag **Qualität, Stufe 2**: offline abtippen wie heute; mit Netz glättet Claude nach (Eigennamen, Ortsnamen,
   Satzzeichen) und bestätigt Sorte und Ziel. Audio bleibt lokal, nur Text geht raus
+- fest **Spracherkennung in drei Schichten** (Markus, 13.11.2026, nach Rechenstufen):
+  1. sofort auf dem Fold: whisper small + kurzes Fenster + Wortliste wie heute (~1 s, offline, auch im Funkloch);
+     liefert die 5-s-Rückmeldung am Sticky
+  2. nachschärfen im Heimnetz: ist das Fold zu Hause, gehen die Audios des Tages ans Zenbook (RTX, faster-whisper
+     large-v3-turbo), danach sortiert und glättet Claude nur den Text („Eingang aufräumen“)
+  3. Cloud nur als Schalter, Standard aus (gpt-4o-transcribe, ElevenLabs Scribe, Deepgram Nova-3 oder Gemini mit
+     Sortieren in einem Schritt; Kosten im Cent-Bereich pro Monat, vor der Wahl Preise neu prüfen). Haken: der Ton
+     verlässt das Haus
+- verworfen/geparkt: turbo auf dem Fold (6–60 s, Schleifen) · Android-Erkennung auf dem Gerät (Ton kommt per BLE,
+  kaum Wortliste) · Vosk/sherpa-onnx (schwächer als small) · Whisper auf dem NPU des Fold (reizvoll, viel Pflege)
 - fest **kein Weckwort** („Hey Sticky“): kostet Strom, die KI-Taste reicht
 - offen: Reihenfolge (Vorschlag: 1. Sortieren mit Stichwort + Eingang, 2. Rückmeldung am Sticky, 3. Seite „Heute“,
   4. Claude-Nachbearbeitung, 5. Ziele Kalender/Vault/Bubble Log anbinden); Zettel aus Diktat = Bestellzettel oder
