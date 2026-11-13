@@ -35,7 +35,7 @@ export async function notiere(teile, ort = null) {
   if (!teile.sorte) {
     if (teile.art === 'diktat' && teile.text && !teile.unklar) {
       const s = sortiere(teile.text, { tempo: ort?.tempo, dauerMs: teile.dauerMs, faehrt: teile.faehrt });
-      teile = { ...teile, text: s.text, sorte: s.sorte, sorteGrund: s.grund };
+      teile = { ...teile, text: s.text, sorte: s.sorte, sorteGrund: s.grund, ...(s.text !== teile.text && teile.roh == null ? { roh: teile.text } : {}) };
     } else teile = { ...teile, sorte: teile.art === 'knopf' ? 'fahrt' : 'eingang' };
   }
   const zeile = { t: Date.now(), typ: 'notiz', quelle: 'sticky', ...teile, ...(ort ?? {}) };
