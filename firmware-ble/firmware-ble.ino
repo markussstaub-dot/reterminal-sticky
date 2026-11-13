@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.15.0";
+static const char* FW_VERSION = "0.16.1";
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "Markus";
@@ -111,7 +111,7 @@ static volatile bool wantFast = false, wantSlow = false, wantKarte = false, want
 static volatile uint32_t slowAt = 0;
 static uint32_t advFastUntil = 0;
 static const char* seite = "karte";
-enum Modus { M_HOME = 0, M_BORDBUCH = 1, M_NOTIZ = 2, M_BESTELL = 3 };
+enum Modus { M_HOME = 0, M_BORDBUCH = 1, M_NOTIZ = 2, M_BESTELL = 3, M_KRITZEL = 4 };
 static Modus modus = M_HOME;
 
 // ---- Hilfen ------------------------------------------------------------------
@@ -260,6 +260,8 @@ static void touchInit() {
 static void bbTouch(int x, int y);
 static void pufferTouch(int x, int y);
 static void rahmenAntippen(int x, int y);
+static void kritzelPunkt(int x, int y, bool neu);
+static void kritzelLos();
 static uint64_t jetztMs();
 static void sendTouch(const char* a, int x, int y) {
     aktiv();
@@ -271,8 +273,9 @@ static void sendTouch(const char* a, int x, int y) {
 }
 static bool tpDown = false;
 static int tpLastX = 0, tpLastY = 0;
+static volatile bool kzAn;   // Kritzelblock: eigene Aufgabe liest den Touch (modus.h)
 static void touchPoll() {
-    if (!tpAddr) return;
+    if (!tpAddr || kzAn) return;
     uint8_t st;
     static int tpFehler = 0;
     if (!tpRead(0x814E, &st, 1)) { if (++tpFehler % 200 == 1) Serial.println("Touch: Lesefehler"); return; }
@@ -556,7 +559,7 @@ class CmdCb : public NimBLECharacteristicCallbacks {
             break;
         case OP_BB_MODUS:    // 14 modus [seite] – 0 Home, 1 Bordbuch, 2 Notiz
             // Fernbedienung aus der App: Modus und optional Seite (Bordbuch) bzw. Zettel (Bestellen)
-            if (n > 1 && d[1] <= 3) {
+            if (n > 1 && d[1] <= 4) {
                 modusWunsch = d[1];
                 if (n > 2 && d[1] == M_BESTELL) bestellWunsch = d[2];
                 else if (n > 2) bbWunsch = d[2];

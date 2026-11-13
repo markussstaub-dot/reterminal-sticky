@@ -121,3 +121,6 @@ footer { padding: 0; }
 .sorte.eingang { opacity: .55; }
 .sorte.erledigung { color: #2e9d6a; } .sorte.erinnerung { color: #d08a2a; } .sorte.idee { color: #7a6ad8; }
 .sorte.fahrt { color: #3a87c8; } .sorte.erzaehlung { color: #c45a7a; }
+
+/* Kritzel vom Sticky als Bild-Notiz */
+#notizen img.kritzel { display: block; width: 100%; max-width: 400px; margin-top: 6px; border: 1px solid var(--leise, #888); border-radius: 6px; background: #fff; }

@@ -47,7 +47,7 @@ static void bestellZaehlen() {
 }
 
 static const char* modusName() {
-    return modus == M_HOME ? "home" : modus == M_NOTIZ ? "notiz" : modus == M_BESTELL ? "bestell" : "bordbuch";
+    return modus == M_HOME ? "home" : modus == M_NOTIZ ? "notiz" : modus == M_BESTELL ? "bestell" : modus == M_KRITZEL ? "kritzel" : "bordbuch";
 }
 
 static bool homeLaden(int n, uint8_t* ziel) {
@@ -179,13 +179,123 @@ static void meldeModus() {
     wantState = true;
 }
 
+// ---- Kritzelblock (SPEC „Eingabe am Sticky nur für Kleinkram“, FW 0.16.0) ------------------------------------
+// Mit dem Finger auf das leere Blatt zeichnen; die Striche sammeln sich in imgBuf, alle 150 ms per Teil-Refresh.
+// Beim Verlassen der Seite wird ein bemaltes Blatt nach /ist/kritzel/JJJJ-MM-TT-hhmmss.bin gespeichert (1 bpp,
+// 800 × 480 wie ein Bild), die App holt es ab. Wiederkommen = neues Blatt.
+static int kzLetztX = -1, kzLetztY = -1, kzX0 = W, kzY0 = H, kzX1 = 0, kzY1 = 0;
+static bool kzBemalt = false;
+static uint32_t kzZuletzt = 0;
+static portMUX_TYPE kzSperre = portMUX_INITIALIZER_UNLOCKED;
+static TaskHandle_t kzAufgabe = nullptr;
+// kzAn ist in firmware-ble.ino deklariert (touchPoll braucht es vorher)
+static const int KZ_STIFT = 2;   // halbe Strichbreite in Pixeln
+
+static void kzPunkt(int x, int y) {
+    for (int dy = -KZ_STIFT; dy <= KZ_STIFT; dy++)
+        for (int dx = -KZ_STIFT; dx <= KZ_STIFT; dx++) {
+            int px = x + dx, py = y + dy;
+            if (px < 0 || px >= W || py < 32 || py >= H) continue;   // oben bleibt die Statuszeile frei
+            imgBuf[py * (W / 8) + px / 8] |= 0x80 >> (px & 7);
+        }
+    portENTER_CRITICAL(&kzSperre);
+    kzX0 = min(kzX0, x - KZ_STIFT); kzY0 = min(kzY0, y - KZ_STIFT);
+    kzX1 = max(kzX1, x + KZ_STIFT + 1); kzY1 = max(kzY1, y + KZ_STIFT + 1);
+    portEXIT_CRITICAL(&kzSperre);
+}
+
+/** Aus touchPoll: neuer Berührungspunkt; neu = Finger gerade aufgesetzt */
+static void kritzelPunkt(int x, int y, bool neu) {
+    if (hilfeAn) return;
+    aktiv();
+    letzteBedienung = millis();
+    if (neu || kzLetztX < 0) { kzPunkt(x, y); }
+    else {
+        // Linie vom letzten Punkt (Bresenham)
+        int x0 = kzLetztX, y0 = kzLetztY, dx = abs(x - x0), dy = -abs(y - y0), sx = x0 < x ? 1 : -1, sy = y0 < y ? 1 : -1, e = dx + dy;
+        while (true) {
+            kzPunkt(x0, y0);
+            if (x0 == x && y0 == y) break;
+            int e2 = 2 * e;
+            if (e2 >= dy) { e += dy; x0 += sx; }
+            if (e2 <= dx) { e += dx; y0 += sy; }
+        }
+    }
+    kzLetztX = x; kzLetztY = y;
+    kzBemalt = true;
+}
+static void kritzelLos() { kzLetztX = kzLetztY = -1; }
+
+// Eigene Aufgabe liest den Touch (eigener I2C-Bus wireTp), auch während loop() im Teil-Refresh wartet (~0,3 s).
+// Vorher gingen in dieser Zeit alle Punkte verloren, die Striche wurden zäh und eckig (Markus, 13.11.2026).
+static void kzAufgabeFn(void*) {
+    bool unten = false;
+    while (kzAn) {
+        uint8_t st;
+        if (tpRead(0x814E, &st, 1) && (st & 0x80)) {
+            if ((st & 0x0F) > 0) {
+                uint8_t p[7];
+                tpRead(0x814F, p, 7);
+                int x = p[1] | p[2] << 8, y = p[3] | p[4] << 8;
+                kritzelPunkt(799 - y, 479 - x, !unten);
+                unten = true;
+            } else if (unten) { unten = false; kritzelLos(); }
+            tpWrite(0x814E, 0);
+        }
+        vTaskDelay(pdMS_TO_TICKS(8));
+    }
+    kzAufgabe = nullptr;
+    vTaskDelete(nullptr);
+}
+static void kritzelStart() {
+    if (kzAufgabe) return;
+    kzAn = true;
+    xTaskCreatePinnedToCore(kzAufgabeFn, "kritzel", 4096, nullptr, 4, &kzAufgabe, 0);
+}
+static void kritzelStopp() {
+    kzAn = false;
+    for (int i = 0; i < 30 && kzAufgabe; i++) delay(5);
+}
+
+/** Aus modusLoop: gesammelte Striche zeigen */
+static void kritzelLoop() {
+    if (modus != M_KRITZEL || kzX1 <= kzX0 || millis() - kzZuletzt < 150) return;
+    kzZuletzt = millis();
+    portENTER_CRITICAL(&kzSperre);
+    int x0 = max(0, kzX0) & ~7, x1 = min(W, (kzX1 + 7) & ~7), y0 = max(0, kzY0), y1 = min(H, kzY1);
+    kzX0 = W; kzY0 = H; kzX1 = 0; kzY1 = 0;
+    portEXIT_CRITICAL(&kzSperre);
+    if (x1 <= x0 || y1 <= y0) return;
+    display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+    display.updatePartial(x0, y0, x1 - x0, y1 - y0);
+}
+
+/** Bemaltes Blatt auf die Karte (beim Verlassen) */
+static void kritzelSpeichern() {
+    if (!kzBemalt) return;
+    kzBemalt = false;
+    time_t s = time(nullptr);
+    tm t;
+    localtime_r(&s, &t);
+    char pfad[48];
+    snprintf(pfad, sizeof pfad, "/ist/kritzel/%04d-%02d-%02d-%02d%02d%02d.bin", t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
+    bool ok = false;
+    if (sdEin()) {
+        SD.mkdir("/ist"); SD.mkdir("/ist/kritzel");
+        File f = SD.open(pfad, FILE_WRITE);
+        if (f) { ok = f.write(imgBuf, IMG_BYTES) == IMG_BYTES; f.close(); }
+    }
+    protokoll(ok ? "Kritzel gespeichert: %s" : "Kritzel nicht gespeichert (%s)", pfad + 13);
+}
+
 static void setzeModus(Modus m) {
     if ((m == M_BORDBUCH && bbSeiten == 0) || (m == M_BESTELL && bestellAnzahl == 0)) {
         tone(PIN_BUZZER, 900, 120);   // tiefer Ton: kein Bordbuch aufgespielt
         return;
     }
     hilfeAn = false;
-    if (m != modus) protokoll("Modus %s", m == M_HOME ? "home" : m == M_BORDBUCH ? "bordbuch" : m == M_NOTIZ ? "notiz" : "bestell");
+    if (modus == M_KRITZEL && m != M_KRITZEL) { kritzelStopp(); kritzelSpeichern(); }   // Blatt verlassen = speichern
+    if (m != modus) protokoll("Modus %s", m == M_HOME ? "home" : m == M_BORDBUCH ? "bordbuch" : m == M_NOTIZ ? "notiz" : m == M_KRITZEL ? "kritzel" : "bestell");
     modus = m;
     bordbuch = m == M_BORDBUCH;
     letzteBedienung = millis();
@@ -202,6 +312,15 @@ static void setzeModus(Modus m) {
         display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
         display.update();
         seite = "bild";
+    } else if (m == M_KRITZEL) {
+        memset(imgBuf, 0, IMG_BYTES);   // neues, leeres Blatt
+        kzBemalt = false; kritzelLos();
+        kzX0 = W; kzY0 = H; kzX1 = 0; kzY1 = 0;
+        statusPruefen(false, true);
+        display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+        display.update();
+        seite = "kritzel";
+        kritzelStart();
     } else if (m == M_BORDBUCH) {
         bbZeige(bbAktuell);
     } else if (m == M_NOTIZ && notizDa && homeLaden(1, imgBuf)) {
@@ -245,6 +364,7 @@ static void karussellLaden() {
             else if (z == "notiz") karussell[kAnzahl++] = M_NOTIZ;
             else if (z == "bordbuch") karussell[kAnzahl++] = M_BORDBUCH;
             else if (z == "zettel") karussell[kAnzahl++] = M_BESTELL;
+            else if (z == "kritzel") karussell[kAnzahl++] = M_KRITZEL;
         }
     }
     bool homeDrin = false;
@@ -340,7 +460,8 @@ static bool upUnten = false, downUnten = false, kombi = false;
 static volatile bool hilfeWunsch = false, neuZeichnen = false;
 
 static const char* hilfeName() {
-    return modus == M_HOME ? "hilfe/home.bin" : modus == M_NOTIZ ? "hilfe/notiz.bin" : modus == M_BORDBUCH ? "hilfe/bordbuch.bin" : "hilfe/zettel.bin";
+    return modus == M_HOME ? "hilfe/home.bin" : modus == M_NOTIZ ? "hilfe/notiz.bin" : modus == M_BORDBUCH ? "hilfe/bordbuch.bin"
+         : modus == M_KRITZEL ? "hilfe/kritzel.bin" : "hilfe/zettel.bin";
 }
 
 static void hilfeZeigen() {
@@ -420,6 +541,7 @@ static void modusLoop() {
         bestellWunsch = -1;
     }
     rahmenLoop();
+    kritzelLoop();
     if (hilfeWunsch) { hilfeWunsch = false; hilfeZeigen(); }
     if (neuZeichnen) {                    // Hilfe zu: dieselbe Seite wieder zeigen
         neuZeichnen = false;

@@ -20,6 +20,11 @@ export const HILFE = {
     zeilen: ['!Tippen', 'im Inhaltsverzeichnis auf ein Kapitel = dorthin', '!Tasten', '▲ ▼ kurz   Seite zurück / vor', '▲ 1 s halten   Inhaltsverzeichnis',
       '▼ 1 s halten   nächster Eintrag im Karussell', 'KI kurz   Home · KI halten   Diktat', '!Zurück', 'beliebige Taste schließt diese Hilfe'],
   },
+  kritzel: {
+    titel: 'Hilfe · Kritzelblock',
+    zeilen: ['!Zeichnen', 'mit dem Finger auf das Blatt', '!Speichern', 'Seite verlassen (▲ ▼ oder KI) = Blatt speichern',
+      'wiederkommen = neues, leeres Blatt', 'die App holt es ab, es erscheint als Notiz', '!Zurück', 'beliebige Taste schließt diese Hilfe'],
+  },
   zettel: {
     titel: 'Hilfe · Zettel',
     zeilen: ['!Tasten', '▲ ▼ kurz   Zettel zurück / vor', '▲ 1 s halten   erster Zettel', '▼ 1 s halten   nächster Eintrag im Karussell',

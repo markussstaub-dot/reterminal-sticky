@@ -525,7 +525,16 @@ function zeigeNotiz(n, neu = false) {
   kopf.append(' ', schild);
   const was = document.createElement('div');
   was.className = 'was';
-  was.textContent = n.art === 'diktat' ? `🎙 ${n.text || '(nichts erkannt)'}` : n.knopf;
+  was.textContent = n.art === 'diktat' ? `🎙 ${n.text || '(nichts erkannt)'}` : n.art === 'kritzel' ? '✎ Kritzel' : n.knopf;
+  if (n.art === 'kritzel' && n.bild) {
+    const img = document.createElement('img');
+    img.className = 'kritzel';
+    img.alt = 'Kritzel vom Sticky';
+    const name = n.bild.split('/').pop();
+    (nativ ? Filesystem.readFile({ path: n.bild, directory: Directory.Data }).then((r) => r.data) : Promise.resolve(kritzelSim[name]))
+      .then((b64) => { if (b64) img.src = `data:image/png;base64,${b64}`; }).catch(() => {});
+    was.append(img);
+  }
   if (n.art === 'diktat' && n.text) {
     // Korrigieren direkt in der Liste (13.11.2026: der Android-Dialog von window.prompt verschwand und speicherte leer)
     was.title = 'Antippen zum Korrigieren';
@@ -630,8 +639,8 @@ async function abgleich() {
 }
 
 // ---- Karussell (SPEC „Bedienung und Oberfläche“): Reihe, durch die ▲/▼ am Sticky blättern -------------------------
-const KARUSSELL_STANDARD = 'Home, Notiz, Bordbuch, Zettel';
-const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'bordbuch', zettel: 'zettel', bestellzettel: 'zettel' };
+const KARUSSELL_STANDARD = 'Home, Notiz, Kritzel, Bordbuch, Zettel';
+const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'bordbuch', zettel: 'zettel', bestellzettel: 'zettel', kritzel: 'kritzel', kritzelblock: 'kritzel' };
 function karussellText() {
   const roh = (localStorage.getItem('sticky.karussell') || KARUSSELL_STANDARD).split(/[,;\n]/).map((w) => KARUSSELL_WOERTER[w.trim().toLowerCase()]).filter(Boolean);
   return [...new Set(roh)].join('\n') + '\n';
@@ -707,10 +716,45 @@ async function istAbholen(quelle, ziel) {
   return zeilen;
 }
 
+/** 1 bpp (800 × 480, Bit 1 = schwarz) → PNG als base64 */
+function kritzelPng(bits) {
+  const c = typeof OffscreenCanvas !== 'undefined' ? null : Object.assign(document.createElement('canvas'), { width: BREITE, height: HOEHE });
+  const k = c ?? document.createElement('canvas');
+  k.width = BREITE; k.height = HOEHE;
+  const h = k.getContext('2d');
+  const bild = h.createImageData(BREITE, HOEHE);
+  for (let i = 0; i < BREITE * HOEHE; i++) {
+    const v = bits[i >> 3] & (0x80 >> (i & 7)) ? 0 : 255;
+    bild.data[i * 4] = bild.data[i * 4 + 1] = bild.data[i * 4 + 2] = v;
+    bild.data[i * 4 + 3] = 255;
+  }
+  h.putImageData(bild, 0, 0);
+  return k.toDataURL('image/png').split(',')[1];
+}
+const kritzelSim = {};   // im Browser statt Filesystem
+
+/** Kritzelblock (FW ≥ 0.16.0): Blätter aus /ist/kritzel holen, als PNG ablegen, als Notiz eintragen, quittieren */
+async function kritzelAbholen() {
+  const liste = (await zwilling.liste('/ist/kritzel')).filter((d) => !d.ordner && d.n.endsWith('.bin'));
+  for (const d of liste) {
+    const bits = await zwilling.holen(`/ist/kritzel/${d.n}`, d.b);
+    const png = kritzelPng(bits);
+    const name = d.n.replace('.bin', '.png');
+    if (nativ) await Filesystem.writeFile({ path: `kritzel/${name}`, data: png, directory: Directory.Data, recursive: true });
+    else kritzelSim[name] = png;
+    const m = d.n.match(/(\d{4})-(\d{2})-(\d{2})-(\d{2})(\d{2})(\d{2})/);
+    const t = m ? new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +m[6]).getTime() : Date.now();
+    zeigeNotiz(await notizen.notiere({ t, art: 'kritzel', bild: `kritzel/${name}` }), true);
+    await zwilling.loeschen(`/ist/kritzel/${d.n}`);
+  }
+  if (liste.length) eintrag(`${liste.length} ${liste.length === 1 ? 'Kritzel' : 'Kritzel'} vom Sticky abgeholt`);
+}
+
 async function fahrtenschreiberAbholen() {
   const zeilen = await istAbholen('log', LOG_ORDNER);
   if (zeilen) eintrag(`Fahrtenschreiber: ${zeilen} neue ${zeilen === 1 ? 'Zeile' : 'Zeilen'}`);
   await zeigeFahrtenschreiber();
+  if (fwAb('0.16.0')) await kritzelAbholen().catch((e) => eintrag(`Kritzel: ${e.message}`, true));
   if (fwAb('0.12.0')) {
     const mess = await istAbholen('mess', 'messreihen');
     if (mess) eintrag(`Messreihen: ${mess} neue Werte`);
