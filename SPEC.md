@@ -417,6 +417,25 @@ Seitentypen, beide eigene Seiten (gehen ohne Handy):
   Werkstatt-Handgriffe
 - Vorschlag: der Name „Bordbuch“ geht in diesen zwei Teilen auf (bleibt höchstens als Titel der Micro-Szene)
 
+### Bordbuch generisch: Objekte als Ordnung, Doku-Viewer für Notfälle (Markus, 13.11.2026, geparkt)
+Weiterführung von „Spickzettel und Handbücher trennen“: geordnet wird nach **Objekten**, nicht nach Dokumentart.
+- fest **ein Bordbuch pro Objekt** (Micro, Hruodland, Bambu, Hütte, NAS …) mit drei Teilen:
+  **Handbuch** (PDF-Seiten, nur lesen) · **Spickzettel** (kurze Karten, oft geändert) · **Logbuch** (Einträge mit
+  Datum: beim Micro Fahrten/Ladungen, bei der Uhr Zeitwaagen-Messungen, bei der Hütte Renovierungsschritte, beim NAS
+  Backup-Prüfungen)
+- fest **generischer Doku-Viewer für Notfälle zum Nachlesen**, auch ohne Objekt: offline auf der Karte, z. B. Erste
+  Hilfe, Pannenhilfe/Notrufnummern, Verhalten bei Unfall, Sicherungen. Muss ohne Handy und ohne Netz gehen; schnell
+  erreichbar (eigener Menü-Eintrag „Notfall“)
+- Vorschlag **am Sticky**: Bibliothek → Objekt → Handbuch | Spickzettel | Logbuch; ▲/▼ blättern, jedes Dokument merkt
+  sich die letzte Seite
+- Vorschlag **Ablage**: `/soll/objekte/<name>/` mit `handbuch/` (Seitenbilder + Inhalt), `spick/` (eine Karte je
+  Datei) und `log.txt`; Notfall-Dokumente unter `/soll/doku/notfall/`. Neues Objekt = neuer Ordner, kein Flash
+- Vorschlag **Logbuch füllen**: Diktat „Micro: Reifendruck 2,2 bar geprüft“ landet im Logbuch des Objekts (die App
+  erkennt die Sorte schon heute); Einträge, die der Sticky selbst schreibt (Fahrten), wandern über `/ist` dorthin
+- Vorschlag: die **Szenen** fallen damit ab (im Micro steht das Objekt „Micro“ vorne)
+- offen: Viewer einmal allgemein in die Firmware (der Bordbuch-Code ist fast einer), dann gehört er ins nächste
+  Flash-Paket; private Handbücher und Notfalldaten nie ins Repo
+
 ### Handgriff-Spickzettel (Markus, 13.11.2026, Idee)
 Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzufügen“), solche Handgriffe vergisst man.
 - Vorschlag **Was einmal gelöst ist, wird ein Spickzettel**: kurze Anleitungen für Geräte und Abläufe, 3–6 Schritte,
