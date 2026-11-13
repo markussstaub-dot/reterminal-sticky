@@ -318,8 +318,8 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   Aufnahme-Schild) drehen über die Rotation der Bibliothek nur fürs Malen (`malenGedreht`, FW 0.23.1). Am Gerät: Bild,
   Touch und Aufnahme-Schild gedreht ok
 - **Push-to-Talk Weg 1 (App, 13.11.2026):** Schalter „Diktat zusätzlich in die Zwischenablage“ (Mehr → Push-to-Talk),
-  frisch und sicher erkannter Text geht auch im Hintergrund in die Zwischenablage. Am Gerät: Einfügen in WhatsApp
-  klappt. Weg 2 (BLE-Taste) und 3 (Funk-PTT) nur in der SPEC „180° gedreht“ und Stufe 2 (automatisch) folgen
+  frisch und sicher erkannter Text geht auch im Hintergrund in die Zwischenablage. Am Gerät: Text landet in der
+  Zwischenablage; Einfügen in WhatsApp noch nicht probiert. Weg 2 (BLE-Taste) und 3 (Funk-PTT) nur in der SPEC „180° gedreht“ und Stufe 2 (automatisch) folgen
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik
