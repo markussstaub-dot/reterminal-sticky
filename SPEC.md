@@ -249,7 +249,7 @@ Einrichten, Abholen, Rechner/Umrechner.
 - **Grenzen allein:** Akku und Kartenplatz. Denkbarer nächster Schritt: Rechner als Widget in die Firmware holen
   (Logik überschaubar), dann bleibt nur noch Spracherkennung und Ort am Handy
 
-#### Rechner und Umrechner lokal, gekapselt (Markus, 13.11.2026, geparkt)
+#### Rechner und Umrechner lokal, gekapselt (Markus, 13.11.2026, umgesetzt FW 0.28.0)
 - Vorschlag **Aufteilung wie Timer/Waage:** Die App liefert nur die Optik (Braun-Tasten als `bild.bin`, Knöpfe in
   `felder.txt` mit Aktion `taste <zeichen>`, Ziffernblatt mit `,` `−` `e` `M`); die Firmware rechnet
 - Vorschlag **eigenes Modul `rechner.h`** in reinem C ohne Arduino-Abhängigkeit, schmale Schnittstelle
@@ -266,7 +266,7 @@ Einrichten, Abholen, Rechner/Umrechner.
 Alles als neue Widget-Typen der Widget-Maschine: die App liefert Optik (Braun-Stil) und Einstellungen in `felder.txt`,
 die Firmware rechnet. Ein Flash für alles.
 - fest **im Paket:**
-  - **Rechner und Umrechner** (siehe oben)
+  - **Rechner und Umrechner** (siehe oben) – umgesetzt 13.11.2026, FW 0.28.0
   - **Weltzeit**: z. B. Tokio und zwei weitere Städte, Versätze aus `felder.txt`
   - **Wecker/Erinnerung**: Uhrzeit oder „in 2 h“, piept auch im Schlummer (Uhrwerk des Timers)
   - **Strichliste**: Tippen zählt hoch, lang tippen setzt zurück

@@ -5,6 +5,8 @@
 import { BREITE, HOEHE, rgbaZu1bpp } from './protokoll.js';
 import { groesse, zuDisplay, punktZuDisplay, aufsDisplay } from './lage.js';
 import { braunKnopf, BRAUN_FONT } from './braun.js';
+import { TASTEN as R_TASTEN, ROLLE as R_ROLLE } from './rechner.js';
+import { PAARE } from './umrechner.js';
 
 const FONT = BRAUN_FONT;
 const leinwand = (b, h) => (typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(b, h) : Object.assign(document.createElement('canvas'), { width: b, height: h }));
@@ -208,6 +210,107 @@ export function linealWidget(echtBei80 = 80) {
   ];
 }
 
-export const WIDGETS = { timer: timerWidget, waage: waageWidget, lineal: () => linealWidget(linealEcht()) };
+// ---- Rechner und Umrechner im Sticky (FW ≥ 0.28.0) -----------------------------------------------------------------
+// Die Logik läuft im Sticky (firmware-ble/rechner.h, getestet gegen dieselben Fälle wie rechner.js); hier entstehen nur
+// Optik (Braun-Tasten), Glyphen für die Anzeige und die Felder. Lagen wie auf der App-Seite.
+
+/** Glyphenblatt für die Anzeige: Schrift passt sich der Zellbreite an (Einheiten wie „m“ sind breit) */
+function textBlatt(w, h, glyphen, hoch) {
+  const n = glyphen.length, zw = hoch ? h : w, zh = hoch ? w : h;
+  const c = leinwand(n * zw, zh);
+  const g = c.getContext('2d', { willReadFrequently: true });
+  g.fillStyle = '#fff'; g.fillRect(0, 0, n * zw, zh);
+  g.fillStyle = '#000'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  let gr = Math.round(h * 0.9);
+  const breiteste = () => Math.max(...glyphen.map((z) => g.measureText(z === '-' ? '−' : z).width));
+  do { g.font = `500 ${gr}px ${FONT}`; gr -= 1; } while (breiteste() > w - 2 && gr > 10);
+  glyphen.forEach((z, i) => {
+    g.save();
+    if (hoch) { g.translate(i * zw, w); g.rotate(-Math.PI / 2); } else g.translate(i * w, 0);
+    g.fillText(z === '-' ? '−' : z, w / 2, h / 2 + h * 0.04);
+    g.restore();
+  });
+  return rgbaZu1bpp(g.getImageData(0, 0, n * zw, zh).data, n * zw, zh);
+}
+
+/** Anzeige-Fenster wie das LCD beim Braun */
+function fenster(g, x, y, w, h) {
+  g.fillStyle = '#fff'; g.fillRect(x, y, w, h);
+  g.strokeStyle = '#000'; g.lineWidth = 4; g.strokeRect(x + 2, y + 2, w - 4, h - 4);
+}
+
+/** Taschenrechner: 5er-Raster wie der Braun BNE001, Anzeige rechtsbündig mit „M“ links, wenn der Speicher belegt ist */
+export function rechnerWidget(hoch = false) {
+  const p = seite(hoch, 'Rechner', 'rechnet im Sticky · ▲▼ = blättern · KI = Home');
+  const { g } = p;
+  const A = hoch ? { x: 16, y: 48, w: 448, h: 112 } : { x: 16, y: 44, w: 768, h: 84 };
+  const Z = hoch ? { w: 32, h: 72 } : { w: 40, h: 64 };                   // logische Zelle
+  const n = Math.floor((A.w - 32) / Z.w);
+  const tx = (A.x + A.w - 16 - n * Z.w) & ~7, ty = hoch ? 72 : A.y + 10;  // hochkant: ty wird Display-x (Vielfaches von 8)
+  fenster(g, A.x, A.y, A.w, A.h);
+  const F = hoch ? { x: 16, y: 176, w: 448, h: 608 } : { x: 16, y: 136, w: 768, h: 336 };
+  const tw = F.w / R_TASTEN[0].length, th = F.h / R_TASTEN.length;
+  const liste = R_TASTEN.flat();
+  R_TASTEN.forEach((zeile, ze) => zeile.forEach((t, sp) => {
+    const x = F.x + sp * tw, y = F.y + ze * th;
+    braunKnopf(g, x, y, tw, th, t, R_ROLLE(t), { rund: true });
+    const d = zuDisplay({ x: Math.round(x), y: Math.round(y), w: Math.round(tw), h: Math.round(th) }, hoch);
+    p.felder.push(`knopf ${d.x} ${d.y} ${d.x + d.w} ${d.y + d.h} taste ${liste.indexOf(t)}`);
+  }));
+  const glyphen = [...'0123456789,-+eFhlrM', ' '];
+  const z = p.ziffernPos(tx, ty, Z.w);
+  p.felder.unshift('typ rechner', hoch ? `ziffern ${Z.h} ${Z.w}` : `ziffern ${Z.w} ${Z.h}`, ...(hoch ? [`schritt 0 ${-Z.w}`] : []),
+    `glyphen ${glyphen.map((x) => (x === ' ' ? '_' : x)).join(' ')}`, `text ${z.x} ${z.y} ${n}`, `tasten ${liste.join(' ')}`);
+  return [
+    { n: 'ziffern.bin', daten: textBlatt(Z.w, Z.h, glyphen, hoch) },
+    { n: 'bild.bin', daten: p.bild() },
+    { n: 'felder.txt', daten: text(p.felder) },
+  ];
+}
+
+/** Umrechner: Einheitenpaare (gewähltes invertiert), Ziffernblock, Anzeige „12,5 km = 7,77 mi“ */
+export function umrechnerWidget(hoch = false) {
+  const p = seite(hoch, 'Umrechner', 'rechnet im Sticky · ▲▼ = blättern · KI = Home');
+  const { g } = p;
+  const A = hoch ? { x: 16, y: 48, w: 448, h: 96 } : { x: 16, y: 44, w: 768, h: 72 };
+  const Z = hoch ? { w: 18, h: 48 } : { w: 24, h: 48 };
+  const n = Math.floor((A.w - 16) / Z.w);
+  const tx = (A.x + A.w - 8 - n * Z.w) & ~7, ty = hoch ? 72 : A.y + 12;
+  fenster(g, A.x, A.y, A.w, A.h);
+  const L = hoch ? { x: 16, y: 152, w: 448, h: 256 } : { x: 16, y: 124, w: 280, h: 352 };
+  const T = hoch ? { x: 16, y: 416, w: 448, h: 368 } : { x: 304, y: 124, w: 480, h: 352 };
+  const zeilen = Math.ceil(PAARE.length / 2), lw = L.w / 2, lh = L.h / zeilen;
+  PAARE.forEach((pa, i) => {
+    const x = L.x + (i % 2) * lw, y = L.y + Math.floor(i / 2) * lh;
+    braunKnopf(g, x, y, lw, lh, `${pa.a}↔${pa.b}`, 'neben', { rand: 6, gr: 22 });
+    const d = zuDisplay({ x: Math.round(x), y: Math.round(y), w: Math.round(lw), h: Math.round(lh) }, hoch);
+    p.felder.push(`knopf ${d.x} ${d.y} ${d.x + d.w} ${d.y + d.h} paar ${i}`);
+  });
+  const U = [['7', '8', '9', '⌫'], ['4', '5', '6', 'C'], ['1', '2', '3', '⇄'], ['±', '0', ',', '']];
+  const liste = U.flat().filter(Boolean);
+  const tw = T.w / 4, th = T.h / U.length;
+  U.forEach((zeile, ze) => zeile.forEach((t, sp) => {
+    if (!t) return;
+    const x = T.x + sp * tw, y = T.y + ze * th;
+    braunKnopf(g, x, y, tw, th, t, t === '⇄' ? 'haupt' : /^[\d,]$/.test(t) ? 'wahl' : 'werkzeug', { rund: true });
+    const d = zuDisplay({ x: Math.round(x), y: Math.round(y), w: Math.round(tw), h: Math.round(th) }, hoch);
+    p.felder.push(`knopf ${d.x} ${d.y} ${d.x + d.w} ${d.y + d.h} taste ${liste.indexOf(t)}`);
+  }));
+  // Glyphen: Ziffern, Zeichen und alle Buchstaben der Einheiten (°, /)
+  const einheiten = new Set(PAARE.flatMap((pa) => [...pa.a, ...pa.b]));
+  const glyphen = [...new Set([...'0123456789,-=', ...einheiten, ...'Fehlr', ' '])];
+  // Paare für die Firmware: y = a·x + b, aus hin(0) und hin(1) bestimmt
+  const paare = PAARE.map((pa) => { const b = pa.hin(0), a = pa.hin(1) - b; return `paar ${pa.a} ${pa.b} ${+a.toPrecision(9)} ${+b.toPrecision(9)}`; });
+  const z = p.ziffernPos(tx, ty, Z.w);
+  p.felder.unshift('typ umrechner', hoch ? `ziffern ${Z.h} ${Z.w}` : `ziffern ${Z.w} ${Z.h}`, ...(hoch ? [`schritt 0 ${-Z.w}`] : []),
+    `glyphen ${glyphen.map((x) => (x === ' ' ? '_' : x)).join(' ')}`, `text ${z.x} ${z.y} ${n}`, `tasten ${liste.join(' ')}`, ...paare);
+  return [
+    { n: 'ziffern.bin', daten: textBlatt(Z.w, Z.h, glyphen, hoch) },
+    { n: 'bild.bin', daten: p.bild() },
+    { n: 'felder.txt', daten: text(p.felder) },
+  ];
+}
+
+export const WIDGETS = { timer: timerWidget, waage: waageWidget, lineal: () => linealWidget(linealEcht()), rechner: rechnerWidget, umrechner: umrechnerWidget };
 /** Kalibrierung aus der App (Mehr → Lineal): so viele echte mm misst die 80-mm-Marke */
 function linealEcht() { try { return parseFloat(localStorage.getItem('sticky.lineal80')) || 80; } catch { return 80; } }

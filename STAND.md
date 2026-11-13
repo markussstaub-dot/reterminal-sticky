@@ -3,7 +3,7 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.27.1 – EDC-Sticky: Strichschrift, Braun-Optik, Hoch/Quer (auch per Sensor, 180°), Rechner, Timer, Waage, Lineal, Zettel mit QR, Gegenseitig suchen, Push-to-Talk, Fahrtenschreiber, SD-Karte als Vertrag; MIT-Lizenz (13.11.2026)
+version: FW 0.28.0 – EDC-Sticky: Rechner/Umrechner im Sticky, Strichschrift, Braun-Optik, Hoch/Quer (auch per Sensor, 180°), Rechner, Timer, Waage, Lineal, Zettel mit QR, Gegenseitig suchen, Push-to-Talk, Fahrtenschreiber, SD-Karte als Vertrag; MIT-Lizenz (13.11.2026)
 wartet: Markus: Lineal nachmessen, Einfügen in WhatsApp probieren, Fotos für den Seeed Playground (Einreichen um den 20.11.); Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
@@ -349,6 +349,12 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   (`sticky-app/src/strichschrift.js` → `/soll/schrift/`), Formen also ohne Flashen änderbar. ✓ speichert nach
   `/ist/schrift/…txt`, die App macht daraus Notizen „✍ …“. Am Gerät: „klappt gut“. FW 0.27.1: Zweitformen für B (Stamm runter, wieder hoch) und F (Stamm hoch, dann rechts),
   Abstandsgrenze 0,20 kommt als „grenze“ aus alphabet.txt (Feintuning ohne Flashen); im Test 99,8 % richtig
+- **Rechner und Umrechner im Sticky (FW 0.28.0, 13.11.2026):** Logik als reines C in `firmware-ble/rechner.h`
+  (1:1 aus rechner.js/umrechner.js), getestet mit `firmware-ble/test/rechner_test.cpp` (NDK, läuft auf dem Fold:
+  38 Fälle, 0 Fehler). Neue Widget-Typen `rechner`/`umrechner`: App liefert Braun-Tasten, Glyphen und Felder
+  (`glyphen`, `text`, `tasten`, `knopf … taste i`, `paar von nach a b`, `knopf … paar i`), Knöpfe bis 48. Gewähltes
+  Paar invertiert. Lage übernimmt die der App-Seite (auto). Karussell: Rechner und Umrechner als eigene Einträge;
+  die App-Seite (Thin Client) bleibt als Technik. Am Gerät: „rechnet“
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

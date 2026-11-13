@@ -696,10 +696,12 @@ async function abgleich() {
 }
 
 // ---- Karussell (SPEC „Bedienung und Oberfläche“): Reihe, durch die ▲/▼ am Sticky blättern -------------------------
-const KARUSSELL_STANDARD = 'Home, Timer, Waage, Lineal, Notiz, Kritzel, Schrift, Rechner, Bordbuch, Zettel';
-const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'bordbuch', zettel: 'zettel', bestellzettel: 'zettel', kritzel: 'kritzel', kritzelblock: 'kritzel', schrift: 'schrift', strichschrift: 'schrift', app: 'app', rechner: 'app', timer: 'widget timer', waage: 'widget waage', wasserwaage: 'widget waage', lineal: 'widget lineal' };
+const KARUSSELL_STANDARD = 'Home, Timer, Waage, Lineal, Notiz, Kritzel, Schrift, Rechner, Umrechner, Bordbuch, Zettel';
+const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'bordbuch', zettel: 'zettel', bestellzettel: 'zettel', kritzel: 'kritzel', kritzelblock: 'kritzel', schrift: 'schrift', strichschrift: 'schrift', app: 'app', rechner: 'app', umrechner: 'app', timer: 'widget timer', waage: 'widget waage', wasserwaage: 'widget waage', lineal: 'widget lineal' };
 function karussellText() {
-  const roh = (localStorage.getItem('sticky.karussell') || KARUSSELL_STANDARD).split(/[,;\n]/).map((w) => KARUSSELL_WOERTER[w.trim().toLowerCase()]).filter(Boolean);
+  // Rechner/Umrechner rechnen ab FW 0.28.0 im Sticky (Widgets); vorher über die App-Seite
+  const lokal = fwAb('0.28.0'), wort = (w) => (lokal && (w === 'rechner' || w === 'umrechner') ? `widget ${w}` : KARUSSELL_WOERTER[w]);
+  const roh = (localStorage.getItem('sticky.karussell') || KARUSSELL_STANDARD).split(/[,;\n]/).map((w) => wort(w.trim().toLowerCase())).filter(Boolean);
   return [...new Set(roh)].join('\n') + '\n';
 }
 /** Tastenhilfe je Modus (▲+▼ am Sticky): auf eigener Leinwand rendern, damit die Vorschau bleibt, wie sie ist */
@@ -735,7 +737,12 @@ async function karussellAufspielen() {
 }
 // ---- Lage der Seiten (SPEC „Hoch/Quer in zwei Stufen“, Stufe 1, FW ≥ 0.21.0) -------------------------------------
 function lagen() {
-  try { return { ...LAGE_STANDARD, ...JSON.parse(localStorage.getItem('sticky.lagen') || '{}') }; } catch { return { ...LAGE_STANDARD }; }
+  try {
+    const eigen = JSON.parse(localStorage.getItem('sticky.lagen') || '{}');
+    // Rechner/Umrechner sind ab FW 0.28.0 eigene Widgets: sie übernehmen die bisherige Lage der App-Seite
+    if (eigen.app && !eigen.rechner) { eigen.rechner = eigen.app; eigen.umrechner = eigen.app; }
+    return { ...LAGE_STANDARD, ...eigen };
+  } catch { return { ...LAGE_STANDARD }; }
 }
 const hochkant = (seite) => fwAb('0.21.0') && lagen()[seite] === 'hoch';
 const dreh180 = () => { try { return localStorage.getItem('sticky.dreh180') === '1'; } catch { return false; } };

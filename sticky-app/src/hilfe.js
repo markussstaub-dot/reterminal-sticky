@@ -42,6 +42,18 @@ export const HILFE = {
       '!Genauigkeit', 'einmal mit einem echten Lineal nachmessen: App → Mehr → Lineal', '!Tasten', '▲ ▼   blättern · KI   Home',
       '!Zurück', 'beliebige Taste schließt diese Hilfe'],
   },
+  'w-rechner': {
+    titel: 'Hilfe · Rechner',
+    zeilen: ['!Rechnen im Sticky', 'auch ohne Handy · Tasten wie beim Braun-Rechner', '!Prozent', '80 + 11 % = 88,8 (Aufschlag) · 80 × 11 % = 8,8',
+      '!Speicher', 'M+ / M− buchen das Ergebnis · MR holt · MC löscht · „M“ links = belegt', '!Tasten', '▲ ▼   blättern · KI   Home',
+      '!Zurück', 'beliebige Taste schließt diese Hilfe'],
+  },
+  'w-umrechner': {
+    titel: 'Hilfe · Umrechner',
+    zeilen: ['!Rechnen im Sticky', 'auch ohne Handy', '!Paar wählen', 'links bzw. oben antippen, das gewählte ist schwarz',
+      '!⇄', 'Richtung tauschen, das Ergebnis wird die neue Eingabe', '!Tasten', '▲ ▼   blättern · KI   Home',
+      '!Zurück', 'beliebige Taste schließt diese Hilfe'],
+  },
   'w-menue': {
     titel: 'Hilfe · Menü',
     zeilen: ['!Öffnen', 'KI kurz auf Home', '!Tippen', 'auf eine Kachel = direkt dorthin', '!Kacheln', 'kommen aus dem Karussell (App → Mehr → Karussell)',
