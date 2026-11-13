@@ -171,6 +171,9 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   `StickyDienst` WACH: liest GPS passiv mit (was Bubble Log ohnehin anfordert), bei > 2 m/s bis 10 min danach alle
   45 s über die Wecker-Verbindung (App 2026.11.12-1612). **Offen:** auf der nächsten Fahrt prüfen (Log „Wach an
   Sticky: ok“); fährt man ohne Bubble Log, greift nur der alte Weg mit der App vorne
+- **microSD (13.11.)**: 32-GB-Karte (SDHC, FAT32, leer) läuft im SPI-Modus am E-Paper-Bus: SCK 13, MOSI 14, MISO 12,
+  CS 8, Strom GPIO10 (HIGH = an), Erkennung GPIO11 (LOW = steckt). `karte.h` (nicht `sd.h`, kollidiert unter Windows
+  mit `SD.h`) prüft beim Start nur lesend, danach Karte stromlos. Noch keine Nutzung
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

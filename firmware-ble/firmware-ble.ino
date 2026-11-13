@@ -388,6 +388,7 @@ static void zeigeKarte() {
 #include "puffer.h"
 #include "audio.h"
 #include "modus.h"
+#include "karte.h"
 
 // ---- Zustand -------------------------------------------------------------------
 static void sendState() {
@@ -618,6 +619,7 @@ void setup() {
     hinweisBuf = (uint8_t*)ps_malloc(IMG_BYTES);
     if (!imgBuf || !rxBuf || !hinweisBuf) Serial.println("Kein PSRAM!");
 
+    sdPruefen();
     if (!display.begin()) {
         Serial.println(display.lastResult().message);
     } else {
