@@ -31,6 +31,9 @@ Gedacht auch für den Microlino-Knopf: gleiche Rahmen, nur andere Bildgröße im
 | `20` | LISTE | `20 pfad` (nur unter `/ist`) → `{"t":"liste","p","d":[{"n","b","ordner"?}],"mehr":bool}` (ab FW 0.10.0) |
 | `21` | HOLEN | `21 offset:u32 pfad` → ein Stück auf DATEI wie PUFFER_HOLEN |
 | `22` | LOESCHEN | `22 pfad` → `{"t":"geloescht","p","ok"}`; falscher Pfad: `{"t":"abgleich","ok":false,"err":"pfad"}` |
+| `23` | SCHREIBEN_START | `23 größe:u32 crc32:u32 pfad` – nur unter `/soll/`, bis 1 MB (FW 0.11.0) |
+| `24` | SCHREIBEN_DATEN | `24 offset:u32 daten…` wie BILD_DATEN, write-no-response |
+| `25` | SCHREIBEN_ENDE | → CRC prüfen, ablegen, `{"t":"geschrieben","p","ok","b"\|"err":"crc\|unvollstaendig\|ablage\|pfad\|groesse"}` |
 
 Bild: Zeilen à 100 Byte, MSB = linkes Pixel, Bit 1 = schwarz. CRC-32 wie zlib.
 
@@ -47,6 +50,13 @@ Bild: Zeilen à 100 Byte, MSB = linkes Pixel, Bit 1 = schwarz. CRC-32 wie zlib.
 Fahrtenschreiber (ab FW 0.10.0): `/ist/log/JJJJ-MM-TT.txt` auf der Karte, je Zeile `HH:MM:SS Text` in Ortszeit
 (ohne gestellte Uhr `/ist/log/ohne-zeit.txt` mit `+Sekunden`). Die App holt per LISTE/HOLEN ab dem bekannten Stand
 und löscht vergangene Tage.
+
+Soll/Ist auf der Karte (ab FW 0.11.0): `/soll/home/` (0–8.bin, version.txt), `/soll/bordbuch/` (NN.bin, index.txt),
+`/soll/notiz/` (layout.txt, rNN.bin = x,y,w,h je u16 + 1 bpp) schreibt nur die App; `/ist/log/`, `/ist/puffer/`
+nur der Sticky. Jeder Soll-Ordner hat eine Bestandsliste `stand.txt` („name crc“ je Zeile), die App schreibt nur,
+was sich unterscheidet, und `stand.txt` zuletzt. Auslöser fürs Neuladen: `home/version.txt`, `bordbuch/index.txt`,
+`notiz/layout.txt`. Ohne Karte landet das Soll im Flash (alte Pfade), Home 0–2 und version.txt liegen immer auch dort.
+Die alten Spezialbefehle (BILD_ENDE 3/5, BB_INDEX, FAHRT_LAYOUT, HOME_VERSION, PUFFER_*) gehen weiter.
 
 ## Zustand (JSON)
 `{"fw","modus","bb":Bordbuch-Seite,"zettel":Bestellzettel,"usb","seite":"karte|bild","bat":%,"mv","ma","chg","mtu","phy","itvl":×1,25 ms,"tp":"BxH","fahrtv":CRC des Layouts,"offen":Notizen im Puffer,"uhr":bool}` – bei Verbindung,

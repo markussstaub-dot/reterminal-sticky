@@ -12,7 +12,8 @@ export const UUID = {
 
 export const OP = { BILD_START: 0x01, BILD_DATEN: 0x02, BILD_ENDE: 0x03, PING: 0x10, KARTE: 0x11, BB_INDEX: 0x13, BB_MODUS: 0x14,
   ZEIT: 0x15, FAHRT_LAYOUT: 0x16, PUFFER_LISTE: 0x17, PUFFER_HOLEN: 0x18, PUFFER_LOESCHEN: 0x19, HOME_VERSION: 0x1a, WACH: 0x1b,
-  LISTE: 0x20, HOLEN: 0x21, LOESCHEN: 0x22 };   // Datei-Abgleich (Zwilling 2.0), Pfade unter /ist/
+  LISTE: 0x20, HOLEN: 0x21, LOESCHEN: 0x22,      // Datei-Abgleich (Zwilling 2.0): /ist lesen und quittieren,
+  SCHR_START: 0x23, SCHR_DATEN: 0x24, SCHR_ENDE: 0x25 };   // /soll schreiben (FW ≥ 0.11.0)
 
 export const BREITE = 800, HOEHE = 480;
 export const BILD_BYTES = BREITE / 8 * HOEHE; // 48000
@@ -65,12 +66,33 @@ export function rahmenStart(bild, bereich = null) {
 }
 
 /** Zerlegt das Bild in DATEN-Rahmen; nutzlast = Bytes Bild pro Rahmen. */
-export function rahmenDaten(bild, nutzlast) {
+/** SCHREIBEN: Start (Größe, CRC, Pfad), Daten in Stücken (wie BILD_DATEN), Ende */
+export const rahmenSchreibStart = (daten, pfad) => {
+  const t = new TextEncoder().encode(pfad);
+  const r = new Uint8Array(9 + t.length);
+  r[0] = OP.SCHR_START;
+  le(r, 1, daten.length, 4);
+  le(r, 5, crc32(daten), 4);
+  r.set(t, 9);
+  return r;
+};
+export const rahmenSchreibDaten = (daten, nutzlast) => rahmenDaten(daten, nutzlast, OP.SCHR_DATEN);
+export const rahmenSchreibEnde = () => Uint8Array.of(OP.SCHR_ENDE);
+
+/** Teilbild-Datei für die Offline-Rückmeldung: x, y, w, h (je u16) + 1 bpp, wie die Firmware sie liest */
+export function rueckDatei(bytes, bereich) {
+  const r = new Uint8Array(8 + bytes.length);
+  le(r, 0, bereich.x, 2); le(r, 2, bereich.y, 2); le(r, 4, bereich.w, 2); le(r, 6, bereich.h, 2);
+  r.set(bytes, 8);
+  return r;
+}
+
+export function rahmenDaten(bild, nutzlast, op = OP.BILD_DATEN) {
   const rahmen = [];
   for (let off = 0; off < bild.length; off += nutzlast) {
     const teil = bild.subarray(off, Math.min(off + nutzlast, bild.length));
     const r = new Uint8Array(5 + teil.length);
-    r[0] = OP.BILD_DATEN;
+    r[0] = op;
     le(r, 1, off, 4);
     r.set(teil, 5);
     rahmen.push(r);
@@ -137,6 +159,9 @@ export function lies(rahmen) {
     case OP.LISTE: return { op: 'liste', pfad: new TextDecoder().decode(rahmen.subarray(1)) };
     case OP.HOLEN: return { op: 'holen', offset: r32(1), pfad: new TextDecoder().decode(rahmen.subarray(5)) };
     case OP.LOESCHEN: return { op: 'loeschen', pfad: new TextDecoder().decode(rahmen.subarray(1)) };
+    case OP.SCHR_START: return { op: 'schreibStart', laenge: r32(1), crc: r32(5), pfad: new TextDecoder().decode(rahmen.subarray(9)) };
+    case OP.SCHR_DATEN: return { op: 'schreibDaten', offset: r32(1), daten: rahmen.subarray(5) };
+    case OP.SCHR_ENDE: return { op: 'schreibEnde' };
     case OP.BB_MODUS: return { op: 'bbModus', m: rahmen[1], an: rahmen[1] === 1, seite: rahmen.length > 2 ? rahmen[2] : null };
     case OP.PING: return { op: 'ping' };
     case OP.KARTE: return { op: 'karte' };

@@ -3,7 +3,7 @@
  * und die App holt sie beim nächsten Verbinden ab (SPEC „Notizen puffern“).
  *
  * Ablage auf der microSD (karte.h), ohne Karte im Flash (LittleFS, dasselbe wie das Bordbuch):
- *   /puffer/notizen.jsonl   je Zeile {"t":ms,"typ":"notiz","quelle":"sticky","art":"knopf|diktat","knopf"|"audio",…,"offline":true}
+ *   /ist/puffer/notizen.jsonl (ohne Karte /puffer/…)   je Zeile {"t":ms,"typ":"notiz","quelle":"sticky","art":"knopf|diktat","knopf"|"audio",…,"offline":true}
  *   /puffer/aNNNN.adp       Diktat: aneinandergereihte Audio-Pakete (je 245 Byte, wie über BLE)
  *   /fahrt/layout.txt       Streifen der Fahrt-Seite in Display-Koordinaten („e x0 y0 x1 y1 Name“), von der App
  *   /fahrt/rNN.bin          Rückmelde-Teilbilder (Kopf x,y,w,h je u16 + 1 bpp), von der App gerendert
@@ -58,6 +58,8 @@ static void zeitInit() {
     timeval tv = {s, 0};
     settimeofday(&tv, nullptr);
     zeitGesetzt = true;
+    setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);   // Ortszeit gleich ab hier (Fahrtenschreiber beim Umzug)
+    tzset();
     Serial.printf("Uhr: PCF8563 %04d-%02d-%02d %02d:%02d UTC\n", u.tm_year + 1900, u.tm_mon + 1, u.tm_mday, u.tm_hour, u.tm_min);
 }
 
@@ -76,11 +78,10 @@ static volatile bool fahrtLayoutDa = false;
 static uint32_t fahrtVersion = 0;   // CRC des Layout-Texts, meldet der Zustand → App weiß, ob neu senden
 
 static void fahrtLayoutLaden() {
+    fahrtVersion = 0;   // fehlt das Layout, soll die App es neu schicken
     streifenAnzahl = 0;
-    File f = LittleFS.open("/fahrt/layout.txt", "r");
-    if (!f) return;
-    String alles = f.readString();
-    f.close();
+    String alles;
+    if (!sollText("notiz/layout.txt", alles)) return;
     fahrtVersion = crc32((const uint8_t*)alles.c_str(), alles.length());
     int start = 0;
     while (start < (int)alles.length() && streifenAnzahl < 8) {
@@ -100,8 +101,8 @@ static void fahrtLayoutLaden() {
 
 static bool rueckSpeichern(int slot, const uint8_t* daten, uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
     char pfad[24];
-    snprintf(pfad, sizeof pfad, "/fahrt/r%02d.bin", slot);
-    File f = LittleFS.open(pfad, "w");
+    snprintf(pfad, sizeof pfad, "notiz/r%02d.bin", slot);
+    File f = sollOeffnen(pfad, "w");
     if (!f) return false;
     uint16_t kopf[4] = {x, y, w, h};
     f.write((uint8_t*)kopf, 8);
@@ -114,8 +115,8 @@ static bool rueckSpeichern(int slot, const uint8_t* daten, uint16_t x, uint16_t 
 /** Rückmeldung slot (0–4 Knopf, 5 Diktat gespeichert, 6 Aufnahme läuft) als Teilbild zeigen */
 static void rueckZeigen(int slot) {
     char pfad[24];
-    snprintf(pfad, sizeof pfad, "/fahrt/r%02d.bin", slot);
-    File f = LittleFS.open(pfad, "r");
+    snprintf(pfad, sizeof pfad, "notiz/r%02d.bin", slot);
+    File f = sollOeffnen(pfad);
     if (!f) return;
     uint16_t k[4];
     f.read((uint8_t*)k, 8);
@@ -133,7 +134,9 @@ static volatile int offlineKnopf = -1;     // Touch-Treffer, umgesetzt in loop()
 static int offeneNotizen = 0;
 
 static void notizAnhaengen(const char* json) {
-    File f = pfs().open("/puffer/notizen.jsonl", "a");
+    char pfad[40];
+    snprintf(pfad, sizeof pfad, "%s/notizen.jsonl", pDir());
+    File f = pfs().open(pfad, "a");
     if (!f) return;
     f.println(json);
     f.close();
@@ -156,7 +159,7 @@ static bool offlineAufnahmeOeffnen() {
     for (int i = 1; i < 10000; i++) {
         snprintf(audioName, sizeof audioName, "a%04d.adp", i);
         char pfad[32];
-        snprintf(pfad, sizeof pfad, "/puffer/%s", audioName);
+        snprintf(pfad, sizeof pfad, "%s/%s", pDir(), audioName);
         if (!pfs().exists(pfad)) {
             audioDatei = pfs().open(pfad, "w");
             return (bool)audioDatei;
@@ -166,10 +169,10 @@ static bool offlineAufnahmeOeffnen() {
 }
 
 static void pufferInit() {
-    pfs().mkdir("/puffer");
+    pfs().mkdir(pDir());
     LittleFS.mkdir("/fahrt");
     fahrtLayoutLaden();
-    File d = pfs().open("/puffer");
+    File d = pfs().open(pDir());
     for (File f = d.openNextFile(); f; f = d.openNextFile())
         if (String(f.name()).endsWith(".jsonl")) { while (f.available()) if (f.read() == '\n') offeneNotizen++; }
     Serial.printf("Puffer: %d offene Notizen\n", offeneNotizen);
@@ -184,7 +187,7 @@ static volatile bool loeschWunsch = false;
 
 static void pufferListe() {
     String j = "{\"t\":\"puffer\",\"dateien\":[";
-    File d = pfs().open("/puffer");
+    File d = pfs().open(pDir());
     bool erst = true;
     for (File f = d.openNextFile(); f; f = d.openNextFile()) {
         if (!erst) j += ",";
@@ -201,7 +204,7 @@ static void pufferListe() {
  *  nur zu einem Fünftel an (15 von 84 Paketen, 11.11.2026). */
 static void pufferStueck(const char* name, uint32_t off) {
     char pfad[48];
-    snprintf(pfad, sizeof pfad, "/puffer/%s", name);
+    snprintf(pfad, sizeof pfad, "%s/%s", pDir(), name);
     static uint8_t paket[4 + 480];
     int n = 0;
     File f = pfs().open(pfad, "r");
@@ -221,8 +224,7 @@ static void pufferStueck(const char* name, uint32_t off) {
 static void pufferLoop() {
     if (fahrtLayoutDa) {
         fahrtLayoutDa = false;
-        File f = LittleFS.open("/fahrt/layout.txt", "w");
-        if (f) { f.print(fahrtLayoutNeu); f.close(); }
+        sollSchreiben("notiz/layout.txt", (const uint8_t*)fahrtLayoutNeu, strlen(fahrtLayoutNeu));
         fahrtLayoutLaden();
         wantState = true;
     }
@@ -243,7 +245,7 @@ static void pufferLoop() {
     if (loeschWunsch) {
         loeschWunsch = false;
         char pfad[48];
-        snprintf(pfad, sizeof pfad, "/puffer/%s", loeschName);
+        snprintf(pfad, sizeof pfad, "%s/%s", pDir(), loeschName);
         bool weg = pfs().remove(pfad);
         protokoll("Puffer %s %s", loeschName, weg ? "abgeholt und gelöscht" : "nicht gelöscht");
         if (strcmp(loeschName, "notizen.jsonl") == 0) offeneNotizen = 0;

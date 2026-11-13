@@ -88,7 +88,7 @@ static void schlafPruefen() {
     // Touch erst nach der Taste einschalten (touchInit braucht ~½ s, der Klick soll sofort kommen)
     if (!touchAn && funkAn && millis() - letzteTaste < 5000) touchEin();
     if (millis() - letzteAktivitaet < SCHLAF_NACH) return;
-    if (audioLaeuft || imgActive || imgReady || tasteGedrueckt()) return;
+    if (audioLaeuft || imgActive || imgReady || schrAktiv || tasteGedrueckt()) return;
     if (funkAn) {
         Serial.println("Schlummern: Funk und Touch aus");
         protokoll("schlummert (Akku %d %%)", batPct);

@@ -281,7 +281,7 @@ Vorbild: Device Shadow / Device Twin aus der Industrie (AWS IoT, Azure).
   frei schaltbar. **RTC_INTn hängt an VDD_3V3_ENn**, nicht an einem GPIO: der Uhr-Wecker schaltet die 3,3 V ein, also
   Einschalten aus „ganz aus“, kein Interrupt im Betrieb
 - fest (13.11.2026): **schrittweise**: 1. Fahrtenschreiber (fertig, FW 0.10.0), 2. Sync-Protokoll mit /soll /ist
-  und Umzug von Puffer/Home/Bordbuch, 3. Sensoren, danach Szenen
+  und Umzug von Puffer/Home/Bordbuch (fertig, FW 0.11.0, Bestandsliste `stand.txt` je Ordner), 3. Sensoren, danach Szenen
 - Vorschlag **Messintervalle**: Klima wach 1/min, im Schlummern alle 15 min per Timer-Wecken; Bewegungssensor im
   Schlaf im Weck-Modus (~25 µA); Fahrtenschreiber nur Ereignisse. Ziel < 5 % Akku über Nacht
 - Vorschlag **Fahrt**: die Bewegung entscheidet übers Wachbleiben, GPS im `StickyDienst` bleibt Rückfall, bis

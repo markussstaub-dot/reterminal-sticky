@@ -29,7 +29,7 @@ import * as notizen from './notizen.js';
 import * as bb from './bordbuch.js';
 import { tabsEinrichten } from './tabs.js';
 import { spiegelEinrichten } from './spiegel.js';
-import { BREITE, HOEHE, rgbaZu1bpp, crc32 } from './protokoll.js';
+import { BREITE, HOEHE, rgbaZu1bpp, crc32, rueckDatei } from './protokoll.js';
 import { BleVerbindung, SimVerbindung } from './verbindung.js';
 import { Zwilling } from './zwilling.js';
 
@@ -272,7 +272,7 @@ zwilling.beobachte((art, d) => {
     else if (d.t === 'modus') { spiegelSetze({ modus: d.m, ...(d.zettel != null ? { zettel: d.zettel } : {}), verbunden: true }); stickyModus = d.m; imBordbuch = d.m === 'bordbuch'; eintrag(`Modus: ${{ home: 'Home', notiz: 'Notiz', bordbuch: 'Bordbuch', bestell: `Bestellzettel ${(d.zettel ?? 0) + 1}` }[d.m] ?? d.m}`); }
     else if (d.t === 'seite') { $('bbStatus').textContent = `Sticky zeigt Bordbuch-Seite ${d.n + 1} von ${d.von}`; spiegelSetze({ bb: d.n }); }
     else if (d.t === 'audio' && (d.a === 'start' || d.a === 'stop')) spiegelSetze({ aufnahme: d.a === 'start' });
-    else if (d.t === 'bordbuch') eintrag(`Bordbuch im Flash: ${d.seiten} Seiten, ${d.belegtKB} KB`);
+    else if (d.t === 'bordbuch') eintrag(`Bordbuch auf dem Sticky: ${d.seiten} Seiten, ${d.belegtKB} KB`);
     else if (d.t === 'audio' && d.a === 'fehler') { eintrag(`Aufnahme nicht möglich: ${d.err}`, true); $('aufnahmeStatus').hidden = true; }
   }
 });
@@ -529,7 +529,12 @@ async function abgleich() {
   const zettelBilder = alleZettel().map((z) => { z.zeichne(g); return bildBytes(); });
   const alle = [home, notiz, ziffern, ...zettelBilder];
   const homeV = crc32(new Uint8Array(alle.flatMap((b) => [...b]))).toString(16).padStart(8, '0') + ';' + zettelBilder.length;
-  if (zwilling.geraet.homev !== homeV) {
+  if (zwilling.geraet.homev !== homeV && fwAb('0.11.0')) {
+    // Datei-Abgleich: nur geänderte Bilder (Bestandsliste auf der Karte), version.txt zuletzt löst das Neuladen aus
+    const dateien = alle.map((b, i) => ({ n: `${i}.bin`, daten: b })).concat([{ n: 'version.txt', daten: new TextEncoder().encode(homeV) }]);
+    const n = await zwilling.sollAbgleich('home', dateien);
+    eintrag(`Home: ${n} Dateien aufgespielt`);
+  } else if (zwilling.geraet.homev !== homeV) {
     // Nur geänderte Bilder senden (das Wetter ändert meist nur die Karte); unbekannt → alle
     let alt = null;
     try { alt = JSON.parse(localStorage.getItem('sticky.homecrcs') || 'null'); } catch { /* egal */ }
@@ -543,7 +548,14 @@ async function abgleich() {
   zeichneHome(g, undefined, new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }), wetter);
   pruefeAbgleich();
   if (zwilling.geraet.modus) stickyModus = zwilling.geraet.modus;
-  if (zwilling.geraet.fahrtv !== version) {
+  if (zwilling.geraet.fahrtv !== version && fwAb('0.11.0')) {
+    const k = knoepfe();
+    const texte = [0, 1, 2, 3, 4].map((i) => (k[i] ? `✓ ${k[i]}` : null)).concat(['✓ Diktat gespeichert', '● Aufnahme']);
+    const dateien = texte.map((t, i) => (t ? { n: `r${String(i).padStart(2, '0')}.bin`, daten: (({ bytes, bereich }) => rueckDatei(bytes, bereich))(rueckmeldung(t)) } : null)).filter(Boolean);
+    dateien.push({ n: 'layout.txt', daten: new TextEncoder().encode(text) });
+    await zwilling.sollAbgleich('notiz', dateien);
+    eintrag('Sticky kann jetzt auch ohne Handy Notizen sammeln');
+  } else if (zwilling.geraet.fahrtv !== version) {
     await zwilling.fahrtLayout(text);
     const k = knoepfe();
     const texte = [0, 1, 2, 3, 4].map((i) => (k[i] ? `✓ ${k[i]}` : null)).concat(['✓ Diktat gespeichert', '● Aufnahme']);
@@ -618,12 +630,19 @@ $('logTag').onchange = () => zeigeFahrtenschreiber();
 $('logHolen').onclick = () => fahrtenschreiberAbholen().catch((e) => eintrag(`Fahrtenschreiber: ${e.message}`, true));
 zeigeFahrtenschreiber();
 
+// Ab FW 0.11.0 liegt der Puffer unter /ist/puffer und geht über den allgemeinen Datei-Abgleich
+const puffer = {
+  liste: () => (fwAb('0.11.0') ? zwilling.liste('/ist/puffer') : zwilling.pufferListe()),
+  holen: (n, b) => (fwAb('0.11.0') ? zwilling.holen(`/ist/puffer/${n}`, b) : zwilling.pufferHolen(n, b)),
+  loeschen: (n) => (fwAb('0.11.0') ? zwilling.loeschen(`/ist/puffer/${n}`) : zwilling.pufferLoeschen(n)),
+};
+
 async function pufferAbholen() {
-  const liste = await zwilling.pufferListe();
+  const liste = (await puffer.liste()).filter((d) => !d.ordner);
   if (!liste.length) return;
   eintrag(`Hole Notizen vom Sticky (${liste.length} Dateien) …`);
   const groesse = Object.fromEntries(liste.map((d) => [d.n, d.b]));
-  const roh = groesse['notizen.jsonl'] ? new TextDecoder().decode(await zwilling.pufferHolen('notizen.jsonl', groesse['notizen.jsonl'])) : '';
+  const roh = groesse['notizen.jsonl'] ? new TextDecoder().decode(await puffer.holen('notizen.jsonl', groesse['notizen.jsonl'])) : '';
   const zeilen = roh.split('\n').map((z) => { try { return JSON.parse(z); } catch { return null; } }).filter(Boolean);
   // Aufnahmen ohne Notiz-Zeile (z. B. nach einem abgebrochenen Abholen) trotzdem mitnehmen
   for (const d of liste) {
@@ -638,7 +657,7 @@ async function pufferAbholen() {
       try {
         if (groesse[z.audio] == null) throw new Error('Audiodatei fehlt auf dem Sticky');
         const t0 = performance.now();
-        const daten = await zwilling.pufferHolen(z.audio, groesse[z.audio]);
+        const daten = await puffer.holen(z.audio, groesse[z.audio]);
         console.info('[sticky] abgeholt', z.audio, daten.length, Math.round(performance.now() - t0));
         const a = new Aufnahme();
         for (let o = 0; o + 245 <= daten.length; o += 245) a.paket(daten.subarray(o, o + 245));
@@ -646,7 +665,7 @@ async function pufferAbholen() {
         dauerMs = e.dauerMs;
         pfad = await speichern(`sticky-${dateiZeit(t)}-offline.wav`, wav(e.pcm));
         text = (await erkenne(e.pcm)).text || '';
-        await zwilling.pufferLoeschen(z.audio);
+        await puffer.loeschen(z.audio);
       } catch (e) { eintrag(`Diktat ${z.audio}: ${e.message}`, true); }
       n = await notizen.notiere({ t, art: 'diktat', text, audio: pfad ?? z.audio, dauerMs, offline: true });
     } else {
@@ -655,7 +674,7 @@ async function pufferAbholen() {
     zeigeNotiz(n, true);
     anzahl++;
   }
-  if (groesse['notizen.jsonl']) await zwilling.pufferLoeschen('notizen.jsonl');
+  if (groesse['notizen.jsonl']) await puffer.loeschen('notizen.jsonl');
   eintrag(`${anzahl} Notizen vom Sticky abgeholt`);
 }
 
@@ -741,11 +760,19 @@ $('bbAufspielen').onclick = async () => {
   try {
     const { seiten, index } = await bordbuchBauen(status);
     if (seiten.length > 255) throw new Error(`Zu viele Seiten (${seiten.length}, höchstens 255)`);
-    for (let i = 0; i < seiten.length; i++) {
-      status(`Aufspielen: Seite ${i + 1} von ${seiten.length} …`);
-      await zwilling.sendeBild(seiten[i], { speichern: i });
+    if (fwAb('0.11.0')) {
+      // Auf die Karte: nur geänderte Seiten, der Index zuletzt (er lässt den Sticky neu einlesen)
+      const dateien = seiten.map((b, i) => ({ n: `${String(i).padStart(2, '0')}.bin`, daten: b }));
+      dateien.push({ n: 'index.txt', daten: new TextEncoder().encode(index) });
+      const n = await zwilling.sollAbgleich('bordbuch', dateien, (i, von, name) => status(`Aufspielen: ${name} (${i} von ${von} geänderten) …`));
+      eintrag(`Bordbuch: ${n} von ${dateien.length} Dateien neu`);
+    } else {
+      for (let i = 0; i < seiten.length; i++) {
+        status(`Aufspielen: Seite ${i + 1} von ${seiten.length} …`);
+        await zwilling.sendeBild(seiten[i], { speichern: i });
+      }
+      await zwilling.bordbuchIndex(index);
     }
-    await zwilling.bordbuchIndex(index);
     const s = Math.round((performance.now() - t0) / 1000);
     status(`Bordbuch aufgespielt: ${seiten.length} Seiten in ${s} s`);
     eintrag(`Bordbuch aufgespielt (${seiten.length} Seiten, ${s} s)`);

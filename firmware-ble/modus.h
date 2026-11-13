@@ -8,7 +8,8 @@
  * Bestellzettel (11.11.2026): ▼ auf Home → erster Zettel, ▼/▲ blättern (rundum), KI kurz → Home. Quer, große Schrift,
  * zum Vorzeigen an der Theke; ohne Handy lesbar.
  *
- * Bilder von der App (BILD_ENDE Modus 5 + Nummer), im Flash unter /home/:
+ * Bilder von der App (SCHREIBEN /soll/home/… oder BILD_ENDE Modus 5 + Nummer), auf der Karte unter /soll/home/,
+ * ohne Karte im Flash unter /home/ (0–2 und version.txt liegen immer auch dort):
  *   0.bin Home-Karte (Uhrfeld leer) · 1.bin Notiz-Seite · 2.bin Ziffernblatt (Ziffern 0–9 und „:“, schon gedreht)
  *   3.bin–8.bin Bestellzettel und Karten (Lidl Plus u. Ä.); ihre Anzahl steht in version.txt hinter „;“
  *   version.txt  Kennung, die die App vergleicht (OP_HOME_VERSION)
@@ -33,8 +34,8 @@ static void bestellZaehlen() {
     bestellAnzahl = 0;
     for (int i = 0; i < n && i < 6; i++) {
         char pfad[20];
-        snprintf(pfad, sizeof pfad, "/home/%d.bin", 3 + i);
-        if (LittleFS.exists(pfad)) bestellAnzahl++;
+        snprintf(pfad, sizeof pfad, "home/%d.bin", 3 + i);
+        if (sollDa(pfad)) bestellAnzahl++;
     }
     if (bestellAktuell >= bestellAnzahl) bestellAktuell = 0;
 }
@@ -45,35 +46,35 @@ static const char* modusName() {
 
 static bool homeLaden(int n, uint8_t* ziel) {
     char pfad[20];
-    snprintf(pfad, sizeof pfad, "/home/%d.bin", n);
-    File f = LittleFS.open(pfad, "r");
-    if (!f) return false;
-    bool ok = f.read(ziel, IMG_BYTES) == IMG_BYTES;
-    f.close();
-    return ok;
+    snprintf(pfad, sizeof pfad, "home/%d.bin", n);
+    return sollLesen(pfad, ziel, IMG_BYTES);
 }
 
 static bool homeSpeichern(int n, const uint8_t* daten) {
     char pfad[20];
-    snprintf(pfad, sizeof pfad, "/home/%d.bin", n);
-    File f = LittleFS.open(pfad, "w");
-    if (!f) return false;
-    bool ok = f.write(daten, IMG_BYTES) == IMG_BYTES;
-    f.close();
+    snprintf(pfad, sizeof pfad, "home/%d.bin", n);
+    bool ok = sollSchreiben(pfad, daten, IMG_BYTES);
     if (n == 2) ziffernDa = homeLaden(2, ziffernBuf);
     if (n == 0) homeDa = true;
     if (n == 1) notizDa = true;
     return ok;
 }
 
+/** Home-Bilder und Version (neu) einlesen: beim Start und wenn die App etwas unter /soll/home geschrieben hat */
+static void homeLesen() {
+    homeDa = sollDa("home/0.bin");
+    notizDa = sollDa("home/1.bin");
+    ziffernDa = homeLaden(2, ziffernBuf);
+    homeVersion[0] = 0;
+    File f = sollOeffnen("home/version.txt");
+    if (f) { size_t n = f.readBytes(homeVersion, sizeof homeVersion - 1); homeVersion[n] = 0; f.close(); }
+    bestellZaehlen();
+}
+
 static void homeInit() {
     ziffernBuf = (uint8_t*)ps_malloc(IMG_BYTES);
     LittleFS.mkdir("/home");
-    homeDa = LittleFS.exists("/home/0.bin");
-    notizDa = LittleFS.exists("/home/1.bin");
-    ziffernDa = homeLaden(2, ziffernBuf);
-    File f = LittleFS.open("/home/version.txt", "r");
-    if (f) { size_t n = f.readBytes(homeVersion, sizeof homeVersion - 1); homeVersion[n] = 0; f.close(); }
+    homeLesen();
     // Ortszeit Deutschland (die Uhr läuft in UTC)
     setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
     tzset();

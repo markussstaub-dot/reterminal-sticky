@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.10.0";
+static const char* FW_VERSION = "0.11.0";
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "Markus";
@@ -389,8 +389,11 @@ static void zeigeKarte() {
     seite = "karte";
 }
 
-#include "bordbuch.h"
+#include <LittleFS.h>
+#include <vector>
 #include "karte.h"
+#include "ablage.h"
+#include "bordbuch.h"
 #include "puffer.h"
 #include "audio.h"
 #include "modus.h"
@@ -652,6 +655,7 @@ void setup() {
     // Tasten und Touch erst nach display.begin(): vorher eingerichtet, kamen keine Tastendrücke an (11.11.2026)
     bbInit();
     sdStart();
+    bbIndexLaden();
     pufferInit();
     homeInit();
     tastenInit();
@@ -737,8 +741,7 @@ void loop() {
     }
     if (homeVersionDa) {
         homeVersionDa = false;
-        File f = LittleFS.open("/home/version.txt", "w");
-        if (f) { f.print(homeVersionNeu); f.close(); }
+        sollSchreiben("home/version.txt", (const uint8_t*)homeVersionNeu, strlen(homeVersionNeu));
         strlcpy(homeVersion, homeVersionNeu, sizeof homeVersion);
         bestellZaehlen();
         if (modus == M_HOME) setzeModus(M_HOME);     // neue Karte gleich zeigen

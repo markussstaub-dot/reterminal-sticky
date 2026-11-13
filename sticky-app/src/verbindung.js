@@ -154,6 +154,14 @@ export class SimVerbindung extends Basis {
 
   async trennen() { this.verbunden = false; this.onGetrennt(); }
   async schnell() {}
+  /** Dateien auf der Karte des Simulators: Pfad → Uint8Array */
+  #karte() {
+    if (!this.dateien) {
+      const t = new TextEncoder();
+      this.dateien = Object.fromEntries(Object.entries(simLogs()).map(([n, text]) => [`/ist/log/${n}`, t.encode(text)]));
+    }
+    return this.dateien;
+  }
 
   #zustand() {
     this.onZustand({ fw: 'sim', modus: this.modus ?? 'home', bb: this.bb ?? 0, zettel: this.zettel ?? 0, seite: this.seite, bat: 87, mv: 3990, ma: -12, chg: false, mtu: this.mtu, phy: 2, itvl: 128, tp: `${BREITE}x${HOEHE}` });
@@ -191,22 +199,35 @@ export class SimVerbindung extends Basis {
     } else if (r.op === 'pufferListe') {
       this.onEreignis({ t: 'puffer', dateien: [] });
     } else if (r.op === 'liste') {
-      // Fahrtenschreiber des Simulators: gestern (wird abgeholt und gelöscht) und heute (wächst weiter)
-      this.logs ??= simLogs();
-      this.logs[heute()] += `${new Date().toTimeString().slice(0, 8)} verbunden\n`;
-      const d = r.pfad === '/ist/log' ? Object.entries(this.logs).map(([n, t]) => ({ n, b: new TextEncoder().encode(t).length })) : [];
-      this.onEreignis({ t: 'liste', p: r.pfad, d, mehr: false });
+      // Karte des Simulators: Fahrtenschreiber gestern (wird abgeholt und gelöscht) und heute (wächst weiter), dazu /soll
+      const k = this.#karte();
+      k[`/ist/log/${heute()}`] = new Uint8Array([...k[`/ist/log/${heute()}`], ...new TextEncoder().encode(`${new Date().toTimeString().slice(0, 8)} verbunden\n`)]);
+      const [pfad, ab = 0] = r.pfad.split('|');
+      const vor = `${pfad}/`;
+      const d = Object.entries(k).filter(([p]) => p.startsWith(vor) && !p.slice(vor.length).includes('/')).map(([p, b]) => ({ n: p.slice(vor.length), b: b.length }));
+      const stueck = d.slice(+ab, +ab + 8);   // wie die Firmware: nicht alles in ein Paket
+      this.onEreignis({ t: 'liste', p: pfad, ab: +ab, d: stueck, mehr: +ab + 8 < d.length });
+    } else if (r.op === 'schreibStart') {
+      this.schreib = { ...r, daten: new Uint8Array(r.laenge) };
+      setTimeout(() => this.onEreignis({ t: 'itvl', v: 6, lat: 0 }), 50);
+    } else if (r.op === 'schreibDaten' && this.schreib) {
+      this.schreib.daten.set(r.daten, r.offset);
+    } else if (r.op === 'schreibEnde' && this.schreib) {
+      const s = this.schreib;
+      this.schreib = null;
+      const ok = crc32(s.daten) === s.crc;
+      if (ok) this.#karte()[s.pfad] = s.daten;
+      this.onEreignis(ok ? { t: 'geschrieben', p: s.pfad, ok, b: s.laenge } : { t: 'geschrieben', p: s.pfad, ok, err: 'crc' });
     } else if (r.op === 'holen') {
-      const name = r.pfad.split('/').pop();
-      const b = new TextEncoder().encode(this.logs?.[name] ?? '').subarray(r.offset, r.offset + 480);
+      const b = (this.#karte()[r.pfad] ?? new Uint8Array(0)).subarray(r.offset, r.offset + 480);
       const p = new Uint8Array(4 + b.length);
       p.set([r.offset & 0xff, r.offset >> 8 & 0xff, r.offset >> 16 & 0xff, r.offset >>> 24], 0);
       p.set(b, 4);
       setTimeout(() => this.onDatei(p), 5);
     } else if (r.op === 'loeschen') {
-      const name = r.pfad.split('/').pop();
-      const ok = !!this.logs && name in this.logs;
-      if (ok) delete this.logs[name];
+      const k = this.#karte();
+      const ok = r.pfad in k;
+      if (ok) delete k[r.pfad];
       this.onEreignis({ t: 'geloescht', p: r.pfad, ok });
     } else if (r.op === 'bbIndex') {
       this.bbAnzahl = +(r.text.match(/seiten=(\d+)/)?.[1] ?? 0);

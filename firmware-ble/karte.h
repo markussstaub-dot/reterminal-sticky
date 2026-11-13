@@ -9,6 +9,8 @@
 #include <SPI.h>
 #include "bus/Bus_SPI.h"
 
+static void sollUmzug();
+
 static const int PIN_SD_CS = 8, PIN_SD_PWR = 10, PIN_SD_DET = 11;
 static bool sdEingebunden = false;
 
@@ -36,6 +38,8 @@ static void sdAus() {
 
 /** Ablage für den Puffer: SD, wenn eine Karte steckt und sich einbinden lässt, sonst der Flash */
 static fs::FS& pfs() { return sdEin() ? (fs::FS&)SD : (fs::FS&)LittleFS; }
+/** Ordner des Puffers: auf der Karte im Ist-Bereich, im Flash wie bisher */
+static const char* pDir() { return sdEin() ? "/ist/puffer" : "/puffer"; }
 
 /** Nach display.begin(): Pins einrichten, Karte einbinden, Reste aus dem Flash-Puffer auf die Karte umziehen */
 static void sdStart() {
@@ -46,14 +50,14 @@ static void sdStart() {
     delay(5);
     if (!sdEin()) { Serial.printf("SD: %s, Puffer im Flash\n", sdSteckt() ? "nicht lesbar" : "keine Karte"); return; }
     Serial.printf("SD: %llu MB, belegt %llu MB, Puffer auf der Karte\n", SD.totalBytes() >> 20, SD.usedBytes() >> 20);
-    SD.mkdir("/puffer");
+    sollUmzug();
     File d = LittleFS.open("/puffer");
     if (!d) return;
     static uint8_t buf[512];
     int n = 0;
     for (File f = d.openNextFile(); f; f = d.openNextFile()) {
         String name = String(f.name());
-        String ziel = "/puffer/" + name;
+        String ziel = "/ist/puffer/" + name;
         File z = SD.open(ziel, name.endsWith(".jsonl") ? FILE_APPEND : FILE_WRITE);
         bool ok = (bool)z;
         while (ok && f.available()) { int k = f.read(buf, sizeof buf); ok = k > 0 && z.write(buf, k) == (size_t)k; }

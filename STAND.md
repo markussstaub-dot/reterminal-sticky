@@ -3,8 +3,8 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.10.0 – Fahrtenschreiber auf microSD (/ist/log), Datei-Abgleich LISTE/HOLEN/LOESCHEN, Puffer auf microSD, Akku lädt, Schlummermodus, Home, Notizen (auch offline), Bordbuch, Bestellzettel, App mit Spiegel/Fernbedienung (13.11.2026)
-wartet: Zwilling 2.0 läuft schrittweise (1 Fahrtenschreiber fertig, als Nächstes Sync-Protokoll /soll /ist, dann Sensoren); Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
+version: FW 0.11.0 – SD-Karte als Vertrag (/soll von der App, /ist vom Sticky, Datei-Abgleich mit Bestandsliste), Fahrtenschreiber, Puffer auf microSD, Akku lädt, Schlummermodus, Home, Notizen (auch offline), Bordbuch, Bestellzettel, App mit Spiegel/Fernbedienung (13.11.2026)
+wartet: Zwilling 2.0 läuft schrittweise (1 Fahrtenschreiber und 2 Sync-Protokoll fertig, als Nächstes Sensoren); Offline-Diktat auf /ist/puffer einmal von Hand prüfen; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
 Repo: github.com/markussstaub-dot/reterminal-sticky (privat, seit 11.11.2026). `backup/`, Modelle und
@@ -185,6 +185,14 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   Abgleich-Befehle `LISTE/HOLEN/LOESCHEN` (0x20–0x22, nur unter `/ist`, `abgleich.h`). Die App holt beim Abgleich
   nur den neuen Teil, löscht vergangene Tage und zeigt das Protokoll unter „Mehr → Fahrtenschreiber“.
   Am Gerät geprüft: Zeilen landen auf der Karte, App holt sie ab (Fold: `files/fahrtenschreiber/`)
+- **SD-Karte als Vertrag (FW 0.11.0, 13.11.2026, Zwilling 2.0 Schritt 2):** `/soll/home|bordbuch|notiz` schreibt nur
+  die App (SCHREIBEN 0x23–0x25, bis 1 MB im PSRAM, CRC, dann ablegen), `/ist/log|puffer` nur der Sticky. Je Soll-Ordner
+  eine Bestandsliste `stand.txt`; die App schreibt nur Geändertes, räumt Überzähliges ab und schreibt die Auslöser
+  (`version.txt`, `index.txt`, `layout.txt`) zuletzt. LISTE blättert (`pfad|ab`). Ablage-Schicht `ablage.h`: ohne Karte
+  alte Flash-Pfade, Home 0–2 immer auch im Flash. Beim ersten Start mit 0.11.0 zieht der Inhalt aus dem Flash auf die
+  Karte, das Bordbuch im Flash wird danach freigegeben. Alte Spezialbefehle laufen weiter.
+  Am Gerät geprüft: 100 KB schreiben/lesen/löschen (3,4 s schreiben), Bordbuch-Abgleich (125 Altlasten abgeräumt,
+  zweiter Lauf 0 Dateien), Home (2 von 10 Dateien), Notiz nach Löschen von selbst wiederhergestellt, Puffer über /ist
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

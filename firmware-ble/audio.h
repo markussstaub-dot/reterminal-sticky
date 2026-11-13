@@ -222,9 +222,9 @@ static void audioLoop() {
     static const int IX = 560, IY = 12, IW = 228, IH = 52;
     static bool slotAktiv = false;
     static uint16_t sk[4];
-    if (indikator == 1 && LittleFS.exists("/fahrt/r06.bin")) {
+    if (indikator == 1 && sollDa("notiz/r06.bin")) {
         indikator = 0;
-        File f = LittleFS.open("/fahrt/r06.bin", "r");
+        File f = sollOeffnen("notiz/r06.bin");
         f.read((uint8_t*)sk, 8);
         size_t n = (size_t)sk[2] / 8 * sk[3];
         if (n <= IMG_BYTES && f.read(hinweisBuf, n) == n) {
