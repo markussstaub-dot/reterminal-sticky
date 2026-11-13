@@ -284,6 +284,26 @@ Vorbild: Device Shadow / Device Twin aus der Industrie (AWS IoT, Azure).
 - offen: Wie man zwischen Widgets wechselt (eigener Modus mit ▲/▼ wie die Bestellzettel?); Reihenfolge nach den Szenen
   oder davor
 
+### Bedienung und Oberfläche (Markus, 13.11.2026, Mockup abgenommen)
+- fest **Tastenregeln überall gleich**: KI kurz = Home, KI halten = Diktat (Rettungsanker, nie anders belegt);
+  ▲/▼ = blättern in dem, was gerade zu sehen ist; Tippen aufs große Feld = Hauptaktion (Start/Stopp, „jetzt geparkt“).
+  Löst die heutige Sonderbelegung ab (▲ auf Home = Bordbuch, ▼ auf Home = Bestellzettel)
+- fest **Karussell statt Menü, je Szene**: von Home aus mit ▲/▼ durch eine feste Reihe; die Szene legt Reihe und
+  Reihenfolge fest, eingestellt in der App, am Gerät kein Menü. Punktestreifen unten zeigt die Stelle.
+  Beispiele: Micro Home → Parkuhr → Timer → Notiz → Bordbuch → Zettel · Werkstatt Home → Timer → Waage → Spickzettel ·
+  Unterwegs Home → Zettel → Weltzeit → Strichliste. Home zeigt unten „Szene: …“
+- fest **Schlafbild muss ohne Strom stimmen**: was beim Einschlummern stehen bleibt, braucht keine Aktualisierung
+  (Parkuhr „geparkt um 14:05, Scheibe bis 15:05“ statt Countdown; Uhr minutengenau); Zzz in der Statuszeile
+- fest **eine Statuszeile**: links Uhr (bzw. Seitenname), rechts Handy verbunden, offene Notizen mit Zahl, Akku, bei
+  Bedarf Warnzeichen (Beschlag, Laden zu kalt/heiß), im Schlaf Zzz statt Handy. Zeichnet der Sticky selbst
+- fest **Tastenhilfe**: ▲ und ▼ gleichzeitig zeigt, was die Tasten auf dieser Seite tun (auch für Übergabe)
+- Vorschlag **Rückmeldung**: Klick sofort (gibt es), dazu Rahmen ums gedrückte Feld per Teil-Refresh (~0,3 s),
+  Sanduhr in der Statuszeile bei allem über 1 s
+- Vorschlag **Lesbarkeit im Micro**: Mindestgröße ~28 px für Fahr-Infos, nur Schwarz/Weiß, dicke Linien
+- später: hoch/quer automatisch über den Bewegungssensor (jede Seite in beiden Lagen, doppeltes Rendern in der App)
+- Reihenfolge: Tastenregeln, Karussell, Statuszeile zuerst (Grundlage für die Widgets), dann Schlafbild-Regel,
+  Rückmeldung, Hilfe
+
 ### Eigene Sensoren (laut Schaltplan, Bus MISC_I2C)
 | Baustein | Adresse | heute | Vorschlag |
 |---|---|---|---|
