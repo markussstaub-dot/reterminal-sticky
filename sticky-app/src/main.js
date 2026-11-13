@@ -661,7 +661,7 @@ async function abgleich() {
       const n = await zwilling.sollAbgleich(`widgets/${name}`, bauen()).catch((e) => { eintrag(`Widget ${name}: ${e.message}`, true); return 0; });
       if (n) eintrag(`Widget „${name}“ aufgespielt`);
     }
-    if (fwAb('0.21.0')) await zwilling.sollAbgleich('einstellungen', [{ n: 'lage.txt', daten: new TextEncoder().encode(lageText()) }]).catch((e) => eintrag(`Lage: ${e.message}`, true));
+    if (fwAb('0.21.0')) await einstellungenAufspielen().catch((e) => eintrag(`Lage: ${e.message}`, true));
   }
   if (fwAb('0.10.0')) await fahrtenschreiberAbholen().catch((e) => eintrag(`Fahrtenschreiber: ${e.message}`, true));
 }
@@ -685,8 +685,20 @@ async function hilfeAufspielen() {
   if (n) eintrag(`Tastenhilfe aufgespielt (${n} Seiten)`);
 }
 
+/**
+ * /soll/einstellungen immer vollständig abgleichen: sollAbgleich räumt auf, was nicht in der Liste steht
+ * (13.11.2026: lage.txt allein hat karussell.txt gelöscht, das Menü sprang dann ins falsche Ziel)
+ */
+function einstellungenAufspielen() {
+  const enc = new TextEncoder();
+  return zwilling.sollAbgleich('einstellungen', [
+    { n: 'karussell.txt', daten: enc.encode(karussellText()) },
+    ...(fwAb('0.21.0') ? [{ n: 'lage.txt', daten: enc.encode(lageText()) }] : []),
+  ]);
+}
+
 async function karussellAufspielen() {
-  const n = await zwilling.sollAbgleich('einstellungen', [{ n: 'karussell.txt', daten: new TextEncoder().encode(karussellText()) }]);
+  const n = await einstellungenAufspielen();
   if (n) eintrag(`Karussell: ${karussellText().trim().split('\n').join(' → ')}`);
   // Menü-Kacheln folgen dem Karussell (FW ≥ 0.19.0)
   if (n && fwAb('0.19.0')) await zwilling.sollAbgleich('widgets/menue', widgetBauer().menue());
@@ -707,7 +719,7 @@ async function lageAufspielen() {
   appSeite.hoch = hochkant('app');
   if (!zwilling.verbunden || !fwAb('0.21.0')) return;
   for (const [name, bauen] of Object.entries(widgetBauer())) await zwilling.sollAbgleich(`widgets/${name}`, bauen());
-  const n = await zwilling.sollAbgleich('einstellungen', [{ n: 'lage.txt', daten: new TextEncoder().encode(lageText()) }]);
+  const n = await einstellungenAufspielen();
   if (n) eintrag(`Lage: ${Object.entries(lagen()).map(([s, l]) => `${LAGE_NAMEN[s]} ${l === 'hoch' ? 'hochkant' : 'quer'}`).join(', ')}`);
   if (stickyModus === 'app') await appSeite.zeigen();
 }
