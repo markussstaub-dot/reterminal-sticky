@@ -144,7 +144,7 @@ export function waageWidget(hoch = false) {
   const W1 = hoch ? { x: 96, y: 520 } : { x: 496, y: 92 }, W2 = hoch ? { x: 96, y: 608 } : { x: 496, y: 196 };
   const b = punktZuDisplay(K.x, K.y, hoch), w1 = p.ziffernPos(W1.x, W1.y, Z.w), w2 = p.ziffernPos(W2.x, W2.y, Z.w);
   p.felder.push('typ waage', hoch ? `ziffern ${Z.h} ${Z.w}` : `ziffern ${Z.w} ${Z.h}`, ...(hoch ? [`schritt 0 ${-Z.w}`] : []),
-    `blase ${b.x} ${b.y} ${K.r}`, `wert1 ${w1.x} ${w1.y}`, `wert2 ${w2.x} ${w2.y}`, 'achsen x y');
+    `blase ${b.x} ${b.y} ${K.r}`, `wert1 ${w1.x} ${w1.y}`, `wert2 ${w2.x} ${w2.y}`, 'achsen y x');   // Sensor-y ∥ Display-x (gemessen 13.11.2026)
   g.strokeStyle = '#000';
   g.lineWidth = 4;
   g.beginPath(); g.arc(K.x, K.y, K.r, 0, Math.PI * 2); g.stroke();
