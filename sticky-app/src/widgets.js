@@ -162,4 +162,52 @@ export function waageWidget(hoch = false) {
   ];
 }
 
-export const WIDGETS = { timer: timerWidget, waage: waageWidget };
+// ---- Lineal (SPEC „EDC-Ideen“, 13.11.2026) -------------------------------------------------------------------------
+// Statische Seite ohne Uhr (typ menue, keine Knöpfe): mm-Skala am unteren Rand (0 links unten, bis ~8 cm) und am linken
+// Rand (nach oben, bis ~5 cm). Panel 3,97″ bei 800 × 480 → 9,25 px/mm; kalibriert über „80 mm messen in echt …“.
+export const PX_PRO_MM = 9.25;
+export function linealWidget(echtBei80 = 80) {
+  const pxmm = PX_PRO_MM * 80 / (echtBei80 || 80);
+  const p = seite(false, 'Lineal', '0 = Ecke links unten · mm');
+  const { g } = p;
+  p.felder.push('typ menue');
+  const x0 = 8, y0 = HOEHE - 8;   // Nullpunkt: 8 px vom linken und unteren Rand
+  g.strokeStyle = '#000';
+  g.fillStyle = '#000';
+  g.lineCap = 'butt';
+  const strich = (mm) => (mm % 10 === 0 ? 46 : mm % 5 === 0 ? 30 : 18);
+  // unten, waagrecht
+  g.lineWidth = 2;
+  g.beginPath(); g.moveTo(x0, y0 + 1); g.lineTo(BREITE, y0 + 1); g.stroke();
+  for (let mm = 0; x0 + mm * pxmm <= BREITE - 2; mm++) {
+    const x = Math.round(x0 + mm * pxmm) + 0.5;
+    g.lineWidth = mm % 10 === 0 ? 3 : 1.5;
+    g.beginPath(); g.moveTo(x, y0); g.lineTo(x, y0 - strich(mm)); g.stroke();
+    if (mm % 10 === 0 && mm > 0) {
+      g.font = `500 26px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'bottom';
+      g.fillText(String(mm / 10), x, y0 - 50);
+    }
+  }
+  // links, senkrecht
+  g.lineWidth = 2;
+  g.beginPath(); g.moveTo(x0 - 1, y0); g.lineTo(x0 - 1, 40); g.stroke();
+  for (let mm = 1; y0 - mm * pxmm >= 44; mm++) {
+    const y = Math.round(y0 - mm * pxmm) + 0.5;
+    g.lineWidth = mm % 10 === 0 ? 3 : 1.5;
+    g.beginPath(); g.moveTo(x0, y); g.lineTo(x0 + strich(mm), y); g.stroke();
+    if (mm % 10 === 0) {
+      g.font = `500 26px ${FONT}`; g.textAlign = 'left'; g.textBaseline = 'middle';
+      g.fillText(String(mm / 10), x0 + 54, y);
+    }
+  }
+  g.font = `400 20px ${FONT}`; g.textAlign = 'right'; g.textBaseline = 'middle';
+  g.fillText('cm', BREITE - 16, y0 - 100);
+  return [
+    { n: 'bild.bin', daten: p.bild() },
+    { n: 'felder.txt', daten: text(p.felder) },
+  ];
+}
+
+export const WIDGETS = { timer: timerWidget, waage: waageWidget, lineal: () => linealWidget(linealEcht()) };
+/** Kalibrierung aus der App (Mehr → Lineal): so viele echte mm misst die 80-mm-Marke */
+function linealEcht() { try { return parseFloat(localStorage.getItem('sticky.lineal80')) || 80; } catch { return 80; } }

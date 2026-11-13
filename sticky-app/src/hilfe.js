@@ -36,6 +36,12 @@ export const HILFE = {
       '!Null setzen', 'aktuelle Lage als Null (schräge Unterlage ausgleichen)', '!Halten', 'Wert einfrieren, zum Ablesen wegnehmen',
       '!Tasten', '▲ ▼   blättern · KI   Home', '!Zurück', 'beliebige Taste schließt diese Hilfe'],
   },
+  'w-lineal': {
+    titel: 'Hilfe · Lineal',
+    zeilen: ['!Messen', 'Gegenstand an die Ecke links unten legen (0), Skala in mm und cm', 'unten bis gut 8 cm, links bis gut 4 cm',
+      '!Genauigkeit', 'einmal mit einem echten Lineal nachmessen: App → Mehr → Lineal', '!Tasten', '▲ ▼   blättern · KI   Home',
+      '!Zurück', 'beliebige Taste schließt diese Hilfe'],
+  },
   'w-menue': {
     titel: 'Hilfe · Menü',
     zeilen: ['!Öffnen', 'KI kurz auf Home', '!Tippen', 'auf eine Kachel = direkt dorthin', '!Kacheln', 'kommen aus dem Karussell (App → Mehr → Karussell)',

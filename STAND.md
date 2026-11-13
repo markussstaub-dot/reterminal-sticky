@@ -3,8 +3,8 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.25.1 – Gegenseitig suchen, Zettel mit QR, Braun-Optik für alle Bedienelemente, 180° gedreht (Schalter), Hoch/Quer je Seite, auch automatisch per Lagesensor, Wasserwaage, Menü (KI auf Home), Umrechner, Widget-Maschine mit Timer, App-Seite mit Rechner, Kritzelblock, Tastenhilfe (▲+▼), Rahmen beim Tippen, Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
-wartet: Markus: Bewegungswecken von Hand prüfen (USB ab, 3 min liegen lassen, hochnehmen) und Fahrterkennung bei der nächsten Microlino-Fahrt; Offline-Diktat auf /ist/puffer einmal prüfen; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
+version: FW 0.26.0 – Lineal, Karussell bis 12, Gegenseitig suchen, Zettel mit QR, Braun-Optik für alle Bedienelemente, 180° gedreht (Schalter), Hoch/Quer je Seite, auch automatisch per Lagesensor, Wasserwaage, Menü (KI auf Home), Umrechner, Widget-Maschine mit Timer, App-Seite mit Rechner, Kritzelblock, Tastenhilfe (▲+▼), Rahmen beim Tippen, Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
+wartet: Markus: Lineal einmal mit echtem Lineal nachmessen; Bewegungswecken von Hand prüfen (USB ab, 3 min liegen lassen, hochnehmen) und Fahrterkennung bei der nächsten Microlino-Fahrt; Offline-Diktat auf /ist/puffer einmal prüfen; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
 Repo: github.com/markussstaub-dot/reterminal-sticky (privat, seit 11.11.2026). `backup/`, Modelle und
@@ -333,6 +333,10 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   vibrieren (Hintergrund.java `klingeln`/`ruhe`, Lautstärke wird nicht verstellt); der Sticky wartet bis zu 20 s auf die
   App. KI kurz wartet dafür 0,45 s auf weitere Drücke (sonst schluckte der Refresh die Serie). Grenze: im Schlummer
   (Akku, 2 min ohne Bedienung) ist der Funk aus, dann erreicht „Sticky suchen“ ihn nicht. Am Gerät: beides ok
+- **Lineal (FW 0.26.0, 13.11.2026):** Widget „lineal“ (statische Seite, typ menue), mm-Skala unten bis ~8 cm und links bis
+  ~4 cm, Null links unten. 9,25 px/mm aus 3,97″ bei 800 × 480; Kalibrierung „8-cm-Marke misst in echt …“ unter
+  Mehr → Lage der Seiten. Karussell in der Firmware jetzt bis 12 Einträge (Standard mit Lineal hat 9). Am Gerät
+  angezeigt, **noch nicht mit einem echten Lineal nachgemessen**
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

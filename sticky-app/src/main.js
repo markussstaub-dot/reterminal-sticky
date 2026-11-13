@@ -690,8 +690,8 @@ async function abgleich() {
 }
 
 // ---- Karussell (SPEC „Bedienung und Oberfläche“): Reihe, durch die ▲/▼ am Sticky blättern -------------------------
-const KARUSSELL_STANDARD = 'Home, Timer, Waage, Notiz, Kritzel, Rechner, Bordbuch, Zettel';
-const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'bordbuch', zettel: 'zettel', bestellzettel: 'zettel', kritzel: 'kritzel', kritzelblock: 'kritzel', app: 'app', rechner: 'app', timer: 'widget timer', waage: 'widget waage', wasserwaage: 'widget waage' };
+const KARUSSELL_STANDARD = 'Home, Timer, Waage, Lineal, Notiz, Kritzel, Rechner, Bordbuch, Zettel';
+const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'bordbuch', zettel: 'zettel', bestellzettel: 'zettel', kritzel: 'kritzel', kritzelblock: 'kritzel', app: 'app', rechner: 'app', timer: 'widget timer', waage: 'widget waage', wasserwaage: 'widget waage', lineal: 'widget lineal' };
 function karussellText() {
   const roh = (localStorage.getItem('sticky.karussell') || KARUSSELL_STANDARD).split(/[,;\n]/).map((w) => KARUSSELL_WOERTER[w.trim().toLowerCase()]).filter(Boolean);
   return [...new Set(roh)].join('\n') + '\n';
@@ -770,6 +770,15 @@ for (const [seite, name] of Object.entries(LAGE_NAMEN)) {
   zeile.append(`${name} `, wahl);
   $('lagen').append(zeile);
 }
+
+// Lineal kalibrieren: die 80-mm-Marke mit einem echten Lineal nachmessen und eintragen
+try { $('lineal80').value = localStorage.getItem('sticky.lineal80') || '80'; } catch { $('lineal80').value = '80'; }
+$('lineal80').onchange = () => {
+  const v = parseFloat(String($('lineal80').value).replace(',', '.'));
+  if (!(v > 60 && v < 100)) { eintrag('Lineal: bitte einen Wert um 80 mm eintragen', true); return; }
+  try { localStorage.setItem('sticky.lineal80', String(v)); } catch { /* egal */ }
+  if (zwilling.verbunden && fwAb('0.18.0')) zwilling.sollAbgleich('widgets/lineal', WIDGETS.lineal()).then((n) => n && eintrag(`Lineal neu kalibriert (80 mm = ${v} mm)`)).catch((e) => eintrag(e.message, true));
+};
 
 $('dreh180').checked = dreh180();
 $('dreh180').onchange = () => {

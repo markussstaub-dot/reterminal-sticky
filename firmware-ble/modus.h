@@ -564,8 +564,8 @@ static int kiTipps = 0;
 static bool kiDiktat = false, upLang = false, downLang = false;
 
 // ---- Karussell -------------------------------------------------------------------------------
-static Modus karussell[8];
-static char kWidget[8][16];   // Name zum Eintrag „widget <name>“
+static Modus karussell[12];   // bis 12 Einträge (FW 0.26.0, vorher 8)
+static char kWidget[12][16];   // Name zum Eintrag „widget <name>“
 static int kAnzahl = 0;
 
 static void karussellLaden() {
@@ -573,7 +573,7 @@ static void karussellLaden() {
     String t;
     if (sollText("einstellungen/karussell.txt", t)) {
         int start = 0;
-        while (start < (int)t.length() && kAnzahl < 8) {
+        while (start < (int)t.length() && kAnzahl < 12) {
             int ende = t.indexOf('\n', start);
             if (ende < 0) ende = t.length();
             String z = t.substring(start, ende);
@@ -592,7 +592,7 @@ static void karussellLaden() {
     bool homeDrin = false;
     for (int i = 0; i < kAnzahl; i++) homeDrin |= karussell[i] == M_HOME;
     if (kAnzahl == 0) { const Modus std[] = {M_HOME, M_NOTIZ, M_BORDBUCH, M_BESTELL}; for (auto m : std) karussell[kAnzahl++] = m; }
-    else if (!homeDrin && kAnzahl < 8) {
+    else if (!homeDrin && kAnzahl < 12) {
         memmove(karussell + 1, karussell, kAnzahl * sizeof(Modus));
         memmove(kWidget + 1, kWidget, kAnzahl * sizeof kWidget[0]);
         karussell[0] = M_HOME; kAnzahl++;
