@@ -288,7 +288,8 @@ Was der Sticky als Immer-dabei-Helfer noch können könnte, sortiert nach Aufwan
   - **Strichliste** (Tippen zählt hoch)
   - **Würfel/Münze** durch Schütteln (Lagesensor)
 - Etwas mehr:
-  - **Gegenseitig suchen**: App „Sticky suchen“ lässt ihn piepen; KI 3× schnell lässt das Handy klingeln
+  - **Gegenseitig suchen**: App „Sticky suchen“ lässt ihn piepen; KI 3× schnell lässt das Handy klingeln (umgesetzt
+    13.11.2026, FW 0.25.1; offen: im Schlummer findbar, kostet Akku)
   - **Schrittzähler** über den Hardware-Schrittzähler im LSM6DS3 (stromsparend), Werte in den Fahrtenschreiber
   - **Parkplatz merken**: ein Tipp merkt den GPS-Ort vom Handy, optional Parkuhr-Timer
 

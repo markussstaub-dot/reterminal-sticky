@@ -286,6 +286,8 @@ zwilling.beobachte((art, d) => {
     else if (d.t === 'touch' && d.a === 'down' && stickyModus === 'app') { appSeite.tipp(d.x, d.y).catch((e) => eintrag(`App-Seite: ${e.message}`, true)); }
     else if (d.t === 'touch' && d.a === 'down') { eintrag(`Touch bei ${d.x}, ${d.y}`); touchMarke(d.x, d.y); fahrtTouch(d.x, d.y, d.ms); }
     else if (d.t === 'pong') eintrag('Pong');
+    else if (d.t === 'suchen') handyKlingeln();
+    else if (d.t === 'suche') eintrag(d.a === 'gefunden' ? 'Sticky gefunden' : 'Sticky piept');
     else if (d.t === 'schlaf') stickySchlaeft = true;
     else if (d.t === 'modus') { spiegelSetze({ modus: d.m, ...(d.zettel != null ? { zettel: d.zettel } : {}), verbunden: true }); stickyModus = d.m; imBordbuch = d.m === 'bordbuch'; eintrag(`Modus: ${{ home: 'Home', notiz: 'Notiz', bordbuch: 'Bordbuch', kritzel: 'Kritzelblock', app: 'App-Seite', widget: 'Widget', bestell: `Bestellzettel ${(d.zettel ?? 0) + 1}` }[d.m] ?? d.m}`); if (d.m === 'app') { if (d.hoch != null) appSeite.hoch = !!d.hoch; appSeite.zeigen().catch((e) => eintrag(`App-Seite: ${e.message}`, true)); } }
     else if (d.t === 'seite') { $('bbStatus').textContent = `Sticky zeigt Bordbuch-Seite ${d.n + 1} von ${d.von}`; spiegelSetze({ bb: d.n }); }
@@ -317,6 +319,7 @@ function zeigeVerbindung() {
   $('senden').disabled = !an;
   $('fahrtZeigen').disabled = !an;
   $('homeZeigen').disabled = !an;
+  $('stickySuchen').disabled = !an;
   $('bestellZeigen').disabled = !an;
   for (const id of ['bbAufspielen', 'bbZeigen']) $(id).disabled = !an;
   if (an) $('bbAufspielen').disabled = !pdf && !$('spickzettel').value.trim();
@@ -482,6 +485,18 @@ async function zeigeFahrtSeite() {
 }
 $('fahrtZeigen').onclick = () => zwilling.modusSetzen(2).catch((e) => eintrag(e.message, true));
 $('homeZeigen').onclick = () => zwilling.modusSetzen(0).catch((e) => eintrag(e.message, true));
+// Gegenseitig suchen (FW ≥ 0.25.0): Knopf lässt den Sticky piepen; KI 3× am Sticky lässt das Handy klingeln
+$('stickySuchen').onclick = () => {
+  if (!fwAb('0.25.0')) { eintrag('Sticky suchen braucht Firmware 0.25.0', true); return; }
+  zwilling.suchen(30).then(() => eintrag('Sticky piept – Taste am Sticky drücken, wenn gefunden')).catch((e) => eintrag(e.message, true));
+};
+function handyKlingeln() {
+  eintrag('Sticky sucht das Handy');
+  $('handyRuhe').hidden = false;
+  Hintergrund.klingeln({ sekunden: 20 }).catch((e) => eintrag(e.message, true));
+  setTimeout(() => { $('handyRuhe').hidden = true; }, 20000);
+}
+$('handyRuhe').onclick = () => { Hintergrund.ruhe().catch(() => {}); $('handyRuhe').hidden = true; };
 $('bestellZeigen').onclick = () => zwilling.modusSetzen(3).catch((e) => eintrag(e.message, true));
 // Zettel (13.11.2026): ein Feld für Bestellzettel und QR-Karten; einmaliger Umzug aus den alten zwei Feldern
 function zettelLaden() {

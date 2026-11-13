@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.24.0";
+static const char* FW_VERSION = "0.25.1";
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "Markus";
@@ -87,6 +87,9 @@ static NimBLECharacteristic *chEvt, *chState;
 static volatile bool connected = false;
 static volatile bool appHoert = false;   // Abo auf AUDIO gesetzt, s. AboCb
 static bool appDa() { return connected && appHoert; }
+// Gegenseitig suchen (SPEC „EDC-Ideen“, FW 0.25.0): suchenBis = Sticky piept bis dahin; handySuchenBis = KI 3× wartet
+// so lange auf die App, um das Handy klingeln zu lassen
+static volatile uint32_t suchenBis = 0, handySuchenBis = 0;
 static volatile uint16_t connHandle = 0xFFFF;
 static volatile uint16_t mtu = 23;
 static volatile uint8_t phy = 1;
@@ -566,6 +569,11 @@ class CmdCb : public NimBLECharacteristicCallbacks {
             imgRueckSlot = (n > 2 && d[1] == 4) ? d[2] : -1;   // Modus 4: Teilbild als Rückmeldung d[2] speichern
             imgHome = (n > 2 && d[1] == 5) ? d[2] : -1;        // Modus 5: Home-Bild d[2] speichern (3–8 Bestellzettel und Karten)
             imgReady = true;
+            break;
+        case 0x30:           // SUCHEN [sekunden] – Sticky piept, bis eine Taste kommt (Standard 30 s)
+            suchenBis = millis() + (n >= 2 && d[1] ? d[1] : 30) * 1000UL;
+            if (!suchenBis) suchenBis = 1;
+            sendEvt("{\"t\":\"suche\",\"a\":\"start\"}");
             break;
         case OP_PING:
             sendEvt("{\"t\":\"pong\"}");

@@ -109,6 +109,8 @@ export class Zwilling {
 
   async zeigeKarte() { await this.verbindung.schreiben(rahmenKarte()); this.gesendetCrc = null; }
   async ping() { await this.verbindung.schreiben(rahmenPing()); }
+  /** Sticky piept, bis eine Taste kommt (FW ≥ 0.25.0) */
+  async suchen(sekunden = 30) { await this.verbindung.schreiben(new Uint8Array([0x30, sekunden])); }
   async wach() { await this.verbindung.schreiben(rahmenWach()); }
   async homeVersion(text) { await this.verbindung.schreiben(rahmenHomeVersion(text)); }
   async modusSetzen(m, seite = null) { await this.verbindung.schreiben(rahmenModus(m, seite)); }

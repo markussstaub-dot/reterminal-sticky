@@ -27,6 +27,7 @@ Gedacht auch für den Microlino-Knopf: gleiche Rahmen, nur andere Bildgröße im
 | `18` | PUFFER_HOLEN | `18 offset:u32 Name` → ein Stück auf DATEI (Anfrage/Antwort, App wiederholt bei Verlust) |
 | `19` | PUFFER_LOESCHEN | `19 Name` |
 | `14` | MODUS | `14 m [seite]` – 0 Home, 1 Bordbuch, 2 Notiz, 3 Bestellzettel; `seite` = Bordbuch-Seite bzw. Zettel (Fernbedienung aus der App) |
+| `30` | SUCHEN | `30 sekunden` – Sticky piept, bis eine Taste kommt → `{"t":"suche","a":"start|gefunden"}`; KI 3× am Sticky → `{"t":"suchen"}` (FW 0.25.0) |
 | `1A` | HOME_VERSION | Text „crc;Anzahl Zettel“ nach dem Aufspielen der Home-Bilder |
 | `20` | LISTE | `20 pfad[|ab]` (unter `/ist` und `/soll`; mit `|ab` ab dem n-ten Eintrag weiterblättern) → `{"t":"liste","p","d":[{"n","b","ordner"?}],"mehr":bool}` (ab FW 0.10.0) |
 | `21` | HOLEN | `21 offset:u32 pfad` → ein Stück auf DATEI wie PUFFER_HOLEN |

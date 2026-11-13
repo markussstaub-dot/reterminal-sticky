@@ -55,6 +55,51 @@ public class Hintergrund extends Plugin {
         call.resolve(r);
     }
 
+    // ---- Handy suchen (KI 3× am Sticky, 13.11.2026): Weckton über den Weckerkanal, damit es auch lautlos klingelt.
+    // Die Lautstärke des Handys wird nicht verstellt; es klingelt so laut, wie der Wecker eingestellt ist.
+    private static android.media.Ringtone ton;
+    private static final android.os.Handler hand = new android.os.Handler(android.os.Looper.getMainLooper());
+
+    @PluginMethod
+    public void klingeln(PluginCall call) {
+        int sek = call.getInt("sekunden", 20);
+        try {
+            ruhe();
+            android.net.Uri uri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM);
+            if (uri == null) uri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_RINGTONE);
+            ton = android.media.RingtoneManager.getRingtone(getContext(), uri);
+            if (ton != null) {
+                ton.setAudioAttributes(new android.media.AudioAttributes.Builder()
+                        .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION).build());
+                if (Build.VERSION.SDK_INT >= 28) ton.setLooping(true);
+                ton.play();
+            }
+            android.os.Vibrator v = (android.os.Vibrator) getContext().getSystemService(android.content.Context.VIBRATOR_SERVICE);
+            if (v != null && Build.VERSION.SDK_INT >= 26)
+                v.vibrate(android.os.VibrationEffect.createWaveform(new long[] { 0, 600, 400 }, 0));
+            hand.postDelayed(Hintergrund::ruheStatisch, sek * 1000L);
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("Klingeln geht nicht: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
+    public void ruhe(PluginCall call) { ruhe(); call.resolve(); }
+
+    private void ruhe() { ruheStatisch(); }
+
+    private static void ruheStatisch() {
+        hand.removeCallbacksAndMessages(null);
+        if (ton != null) { try { ton.stop(); } catch (Exception ignored) { } ton = null; }
+        Hintergrund h = instanz;
+        if (h != null) {
+            android.os.Vibrator v = (android.os.Vibrator) h.getContext().getSystemService(android.content.Context.VIBRATOR_SERVICE);
+            if (v != null) v.cancel();
+        }
+    }
+
     @PluginMethod
     public void stop(PluginCall call) {
         getContext().stopService(new Intent(getContext(), StickyDienst.class));

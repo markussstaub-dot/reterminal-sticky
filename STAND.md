@@ -3,7 +3,7 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.24.0 – Braun-Optik für alle Bedienelemente, 180° gedreht (Schalter), Hoch/Quer je Seite, auch automatisch per Lagesensor, Wasserwaage, Menü (KI auf Home), Umrechner, Widget-Maschine mit Timer, App-Seite mit Rechner, Kritzelblock, Tastenhilfe (▲+▼), Rahmen beim Tippen, Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
+version: FW 0.25.1 – Gegenseitig suchen, Zettel mit QR, Braun-Optik für alle Bedienelemente, 180° gedreht (Schalter), Hoch/Quer je Seite, auch automatisch per Lagesensor, Wasserwaage, Menü (KI auf Home), Umrechner, Widget-Maschine mit Timer, App-Seite mit Rechner, Kritzelblock, Tastenhilfe (▲+▼), Rahmen beim Tippen, Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
 wartet: Markus: Bewegungswecken von Hand prüfen (USB ab, 3 min liegen lassen, hochnehmen) und Fahrterkennung bei der nächsten Microlino-Fahrt; Offline-Diktat auf /ist/puffer einmal prüfen; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
@@ -328,6 +328,11 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
 - **Zettel mit QR (13.11.2026):** ein Feld „Zettel“ für Bestellzettel und QR-Karten (bis zu 6, Reihenfolge wie im
   Text), Kurzformen `wlan: Name | Passwort`, `link: …`, `qr: …` (`sticky-app/src/zettel.js`). Alte Felder einmalig
   umgezogen (Schlüssel `sticky.bestellung`/`sticky.karten` bleiben als Sicherung). Warnung bei mehr als 6. Am Gerät: „passt“
+- **Gegenseitig suchen (FW 0.25.1, 13.11.2026):** App-Knopf „Sticky suchen“ schickt `30 sekunden`, der Sticky piept bis
+  zu 30 s, eine Taste beendet es („gefunden“). KI 3× schnell lässt das Handy 20 s über den Weckerkanal klingeln und
+  vibrieren (Hintergrund.java `klingeln`/`ruhe`, Lautstärke wird nicht verstellt); der Sticky wartet bis zu 20 s auf die
+  App. KI kurz wartet dafür 0,45 s auf weitere Drücke (sonst schluckte der Refresh die Serie). Grenze: im Schlummer
+  (Akku, 2 min ohne Bedienung) ist der Funk aus, dann erreicht „Sticky suchen“ ihn nicht. Am Gerät: beides ok
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

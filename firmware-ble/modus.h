@@ -558,6 +558,9 @@ static void setzeModus(Modus m) {
 
 // ---- Tasten ----------------------------------------------------------------------------------
 static uint32_t kiSeit = 0, upSeit = 0, downSeit = 0;
+static const uint32_t KI_SERIE_MS = 450;
+static uint32_t kiLetzt = 0;
+static int kiTipps = 0;
 static bool kiDiktat = false, upLang = false, downLang = false;
 
 // ---- Karussell -------------------------------------------------------------------------------
@@ -729,6 +732,11 @@ static void hilfeZeigen() {
 
 static void tasteAktion(const char* name, bool gedrueckt) {
     letzteBedienung = millis();
+    if (suchenBis && gedrueckt) {                 // gefunden: irgendeine Taste beendet das Piepen
+        suchenBis = 0;
+        sendEvt("{\"t\":\"suche\",\"a\":\"gefunden\"}");
+        return;
+    }
     bool up = strcmp(name, "up") == 0, down = strcmp(name, "down") == 0;
     if (up) upUnten = gedrueckt;
     if (down) downUnten = gedrueckt;
@@ -753,8 +761,16 @@ static void tasteAktion(const char* name, bool gedrueckt) {
         if (gedrueckt) { kiSeit = millis(); kiDiktat = false; return; }
         kiSeit = 0;
         if (kiDiktat) { aufnahmeStopp(); return; }
-        if (modus != M_HOME) modusWunsch = M_HOME;   // kurz: immer nach Home
-        else if (sollDa("widgets/menue/felder.txt")) { strlcpy(widgetName, "menue", sizeof widgetName); modusWunsch = M_WIDGET; }   // auf Home: Menü
+        // KI 3× schnell: Handy klingeln lassen (wartet bis zu 20 s, bis die App nach dem Aufwachen wieder verbunden ist).
+        // KI kurz wartet KI_SERIE_MS, ob noch ein Druck folgt; sonst blockiert der Refresh nach dem ersten Druck die
+        // nächsten zwei (13.11.2026 am Gerät: kamen als ein „nachgeholter“ Druck an). Ausgeführt wird in kiSerieLoop.
+        kiTipps = millis() - kiLetzt < KI_SERIE_MS ? kiTipps + 1 : 1;
+        kiLetzt = millis();
+        if (kiTipps >= 3) {
+            kiTipps = 0;
+            handySuchenBis = millis() + 20000;
+            tone(PIN_BUZZER, 2000, 80); delay(110); tone(PIN_BUZZER, 2700, 80);
+        }
         return;
     }
     if (strcmp(name, "up") == 0) {
@@ -789,6 +805,29 @@ static void lageLoop() {
     neuZeichnen = true;
 }
 
+/** KI kurz (1–2 Drücke, Serie vorbei): Home bzw. auf Home das Menü */
+static void kiSerieLoop() {
+    if (!kiTipps || millis() - kiLetzt < KI_SERIE_MS) return;
+    kiTipps = 0;
+    if (modus != M_HOME) modusWunsch = M_HOME;   // kurz: immer nach Home
+    else if (sollDa("widgets/menue/felder.txt")) { strlcpy(widgetName, "menue", sizeof widgetName); modusWunsch = M_WIDGET; }   // auf Home: Menü
+}
+
+/** Gegenseitig suchen: Piepen, solange gesucht wird; Handy-Klingeln senden, sobald die App da ist */
+static void suchenLoop() {
+    if (handySuchenBis) {
+        if (appDa()) { sendEvt("{\"t\":\"suchen\"}"); handySuchenBis = 0; protokoll("Handy suchen"); }
+        else if ((int32_t)(millis() - handySuchenBis) > 0) { handySuchenBis = 0; tone(PIN_BUZZER, 900, 400); }   // App kam nicht
+    }
+    if (!suchenBis) return;
+    if ((int32_t)(millis() - suchenBis) > 0) { suchenBis = 0; return; }
+    aktiv();
+    static uint32_t zuletzt = 0;
+    if (millis() - zuletzt < 1200) return;
+    zuletzt = millis();
+    tone(PIN_BUZZER, 2700, 150); delay(200); tone(PIN_BUZZER, 3300, 150); delay(200); tone(PIN_BUZZER, 2700, 150);
+}
+
 static void modusLoop() {
     if (kiSeit && !kiDiktat && millis() - kiSeit > 500) {
         kiDiktat = true;                 // KI gehalten → Diktat (mit oder ohne Handy)
@@ -817,6 +856,8 @@ static void modusLoop() {
     kritzelLoop();
     widgetLoop();
     lageLoop();
+    kiSerieLoop();
+    suchenLoop();
     if (hilfeWunsch) { hilfeWunsch = false; hilfeZeigen(); }
     if (neuZeichnen) {                    // Hilfe zu: dieselbe Seite wieder zeigen
         neuZeichnen = false;
