@@ -1,5 +1,5 @@
 import { Capacitor } from '@capacitor/core';
-import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Clipboard } from '@capacitor/clipboard';
 import { Spracherkennung, MODELLE, WOERTER_STANDARD, pcmBase64 } from './sprache.js';
 import { registerPlugin } from '@capacitor/core';
@@ -555,7 +555,68 @@ async function abgleich() {
     eintrag('Sticky kann jetzt auch ohne Handy Notizen sammeln');
   }
   await pufferAbholen();
+  if (fwAb('0.10.0')) await fahrtenschreiberAbholen().catch((e) => eintrag(`Fahrtenschreiber: ${e.message}`, true));
 }
+
+// ---- Fahrtenschreiber (SPEC „Zwilling 2.0“): /ist/log/JJJJ-MM-TT.txt auf der Karte des Sticky ----------------------
+// Die App holt nur den neuen Teil (Stand je Datei in localStorage) und hängt ihn an ihre Kopie an
+// (Data/fahrtenschreiber/…). Vergangene Tage löscht sie danach auf dem Sticky, den heutigen lässt sie dort weiterwachsen.
+/** Firmware mindestens v? ("sim" kann alles) */
+const fwAb = (v) => { const f = zwilling.geraet.fw; if (f === 'sim') return true; const a = String(f ?? '0').split('.').map(Number), b = v.split('.').map(Number);
+  for (let i = 0; i < 3; i++) if ((a[i] || 0) !== b[i]) return (a[i] || 0) > b[i]; return true; };
+const LOG_ORDNER = 'fahrtenschreiber';
+const logStand = () => { try { return JSON.parse(localStorage.getItem('sticky.logStand') ?? '{}'); } catch { return {}; } };
+const heuteName = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}.txt`; };
+const logSim = {};   // im Browser statt Filesystem
+
+async function logAnhaengen(name, text) {
+  if (!nativ) { logSim[name] = (logSim[name] ?? '') + text; return; }
+  await Filesystem.appendFile({ path: `${LOG_ORDNER}/${name}`, data: text, directory: Directory.Data, encoding: Encoding.UTF8, recursive: true });
+}
+async function logLesen(name) {
+  if (!nativ) return logSim[name] ?? '';
+  try { return (await Filesystem.readFile({ path: `${LOG_ORDNER}/${name}`, directory: Directory.Data, encoding: Encoding.UTF8 })).data; } catch { return ''; }
+}
+async function logTage() {
+  if (!nativ) return Object.keys(logSim).sort().reverse();
+  try { return (await Filesystem.readdir({ path: LOG_ORDNER, directory: Directory.Data })).files.map((f) => f.name).sort().reverse(); } catch { return []; }
+}
+
+async function fahrtenschreiberAbholen() {
+  const liste = (await zwilling.liste('/ist/log')).filter((d) => !d.ordner && d.n.endsWith('.txt'));
+  const stand = logStand();
+  let zeilen = 0;
+  for (const d of liste) {
+    const ab = Math.min(stand[d.n] ?? 0, d.b);
+    if (d.b > ab) {
+      const neu = new TextDecoder().decode(await zwilling.holen(`/ist/log/${d.n}`, d.b, ab));
+      await logAnhaengen(d.n, neu);
+      zeilen += neu.split('\n').filter(Boolean).length;
+      stand[d.n] = d.b;
+      localStorage.setItem('sticky.logStand', JSON.stringify(stand));
+    }
+    // vergangene Tage (und die Zeilen ohne Uhrzeit) sind abgeschlossen: auf dem Sticky quittieren
+    if (d.n !== heuteName() && await zwilling.loeschen(`/ist/log/${d.n}`)) {
+      delete stand[d.n];
+      localStorage.setItem('sticky.logStand', JSON.stringify(stand));
+    }
+  }
+  if (zeilen) eintrag(`Fahrtenschreiber: ${zeilen} neue ${zeilen === 1 ? "Zeile" : "Zeilen"}`);
+  await zeigeFahrtenschreiber();
+}
+
+async function zeigeFahrtenschreiber(tag = $('logTag').value) {
+  const tage = await logTage();
+  const wahl = $('logTag');
+  const vorher = tag || tage[0];
+  wahl.replaceChildren(...tage.map((t) => new Option(t.replace('.txt', ''), t)));
+  if (vorher && tage.includes(vorher)) wahl.value = vorher;
+  const text = wahl.value ? await logLesen(wahl.value) : '';
+  $('logText').textContent = text ? text.split('\n').reverse().join('\n').trim() : 'noch nichts abgeholt';
+}
+$('logTag').onchange = () => zeigeFahrtenschreiber();
+$('logHolen').onclick = () => fahrtenschreiberAbholen().catch((e) => eintrag(`Fahrtenschreiber: ${e.message}`, true));
+zeigeFahrtenschreiber();
 
 async function pufferAbholen() {
   const liste = await zwilling.pufferListe();
@@ -697,7 +758,7 @@ $('bbAufspielen').onclick = async () => {
   }
 };
 $('bbZeigen').onclick = () => zwilling.modusSetzen(1).catch((e) => eintrag(e.message, true));
-window.__sticky = { ladePdf, zwilling, pufferAbholen, erkenne, sprachPruefung };   // zum Prüfen per WebView-Fernsteuerung (adb)
+window.__sticky = { ladePdf, zwilling, pufferAbholen, fahrtenschreiberAbholen, erkenne, sprachPruefung };   // zum Prüfen per WebView-Fernsteuerung (adb)
 
 try { $('woerter').value = localStorage.getItem('sticky.woerter') ?? WOERTER_STANDARD; } catch { $('woerter').value = WOERTER_STANDARD; }
 $('woerter').onchange = () => { try { localStorage.setItem('sticky.woerter', $('woerter').value); } catch { /* egal */ } };

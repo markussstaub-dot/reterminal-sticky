@@ -91,22 +91,27 @@ static void schlafPruefen() {
     if (audioLaeuft || imgActive || imgReady || tasteGedrueckt()) return;
     if (funkAn) {
         Serial.println("Schlummern: Funk und Touch aus");
+        protokoll("schlummert (Akku %d %%)", batPct);
         funkAus();
     }
     if (touchAn) touchAus();
+    protokollSchreiben();
     sdAus();                                       // Karte stromlos, pfs() bindet sie beim nächsten Zugriff ein
     if (leichtSchlaf()) {                          // Taste: ganz wach (Touch folgt nach dem Tastendruck, s. o.)
+        protokoll("wach durch Taste (nach %lu Schlafminuten)", (unsigned long)schlafZaehler);
+        schlafZaehler = 0;
         funkEin(true);
         aktiv();
         letzteTaste = millis();
         return;
     }
-    if (usbDa()) { aktiv(); return; }              // während des Schlafs angesteckt
+    if (usbDa()) { protokoll("wach: USB angesteckt"); schlafZaehler = 0; aktiv(); return; }   // während des Schlafs angesteckt
     time_t jetzt = time(nullptr);
     struct tm t;
     localtime_r(&jetzt, &t);
     if (t.tm_year > 120 && t.tm_min == 0) {        // volle Stunde: kurz erreichbar für den Abgleich
         funkEin(true);
+        protokoll("Stundenfenster: Funk 1 min an (Akku %d %%)", batPct);
         letzteAktivitaet = millis() - (SCHLAF_NACH - STUNDEN_FENSTER);
     }
 }

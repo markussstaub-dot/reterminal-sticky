@@ -20,7 +20,9 @@ static bool zeitGesetzt = false;
 static uint8_t bcd(uint8_t v) { return (v / 10) << 4 | (v % 10); }
 static uint8_t unbcd(uint8_t v) { return (v >> 4) * 10 + (v & 0x0F); }
 
+static void protokoll(const char* fmt, ...);
 static void zeitSetzen(uint64_t ms) {
+    bool vorher = zeitGesetzt;
     timeval tv = {(time_t)(ms / 1000), (suseconds_t)((ms % 1000) * 1000)};
     settimeofday(&tv, nullptr);
     zeitGesetzt = true;
@@ -34,6 +36,7 @@ static void zeitSetzen(uint64_t ms) {
         Wire.write(bcd(u.tm_mday)); Wire.write(u.tm_wday); Wire.write(bcd(u.tm_mon + 1)); Wire.write(bcd(u.tm_year - 100));
         Wire.endTransmission();
     }
+    if (!vorher) protokoll("Uhr von der App gestellt");
 }
 
 static void zeitInit() {
@@ -230,6 +233,7 @@ static void pufferLoop() {
         snprintf(j, sizeof j, "{\"t\":%llu,\"typ\":\"notiz\",\"quelle\":\"sticky\",\"art\":\"knopf\",\"knopf\":\"%s\",\"offline\":true}",
                  (unsigned long long)jetztMs(), streifen[i].name);
         notizAnhaengen(j);
+        protokoll("Notiz offline: %s", streifen[i].name);
         tone(PIN_BUZZER, 2700, 30);
         rueckZeigen(i);
         Serial.printf("Offline-Notiz: %s\n", j);
@@ -240,7 +244,8 @@ static void pufferLoop() {
         loeschWunsch = false;
         char pfad[48];
         snprintf(pfad, sizeof pfad, "/puffer/%s", loeschName);
-        pfs().remove(pfad);
+        bool weg = pfs().remove(pfad);
+        protokoll("Puffer %s %s", loeschName, weg ? "abgeholt und gelöscht" : "nicht gelöscht");
         if (strcmp(loeschName, "notizen.jsonl") == 0) offeneNotizen = 0;
         wantState = true;
     }

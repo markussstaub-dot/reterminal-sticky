@@ -1,6 +1,7 @@
 // Der Zwilling: Soll-Zustand des Sticky in der App (Quelle der Wahrheit) plus Übertragung.
 import { rahmenStart, rahmenDaten, rahmenEnde, rahmenKarte, rahmenPing, rahmenWach, nutzlastFuer, crc32, rahmenSpeichern, rahmenBbIndex, rahmenBbModus,
-  rahmenRueck, rahmenHome, rahmenHomeVersion, rahmenModus, rahmenZeit, rahmenFahrtLayout, rahmenPufferListe, rahmenPufferHolen, rahmenPufferLoeschen } from './protokoll.js';
+  rahmenRueck, rahmenHome, rahmenHomeVersion, rahmenModus, rahmenZeit, rahmenFahrtLayout, rahmenPufferListe, rahmenPufferHolen, rahmenPufferLoeschen,
+  rahmenListe, rahmenHolen, rahmenLoeschen } from './protokoll.js';
 import { Aufnahme, wav } from './audio.js';
 
 export class Zwilling {
@@ -21,6 +22,7 @@ export class Zwilling {
     v.onEreignis = (e) => {
       if (e.t === 'img' && this.warteBild) { this.warteBild(e); this.warteBild = null; }
       if (e.t === 'puffer' && this.wartePuffer) { this.wartePuffer(e); this.wartePuffer = null; }
+      if ((e.t === 'liste' || e.t === 'geloescht' || e.t === 'abgleich') && this.warteAbgleich) { this.warteAbgleich(e); this.warteAbgleich = null; }
       if (e.t === 'itvl') { this.intervall = e.v; this.warteSchnell?.(); }
       if (e.t === 'key' && e.k === 'ki' && e.a === 'up') this.tLos = performance.now();
       if (e.t === 'audio' && e.a === 'start') {
@@ -123,22 +125,44 @@ export class Zwilling {
   }
 
   /** Eine Puffer-Datei Stück für Stück abholen (Anfrage → Antwort, bei Verlust wiederholen) → Uint8Array */
-  async pufferHolen(name, groesse) {
-    const daten = new Uint8Array(groesse);
+  pufferHolen(name, groesse) { return this.#stueckweise(name, (off) => rahmenPufferHolen(name, off), groesse); }
+
+  /** Datei-Abgleich: Inhalt eines Ordners unter /ist → [{ n, b, ordner? }] */
+  async liste(pfad) {
+    const e = await this.#abgleich(rahmenListe(pfad), `Liste ${pfad}`);
+    if (e.t !== 'liste') throw new Error(`${pfad}: ${e.err ?? 'abgelehnt'}`);
+    return e.d ?? [];
+  }
+  /** Datei ab Byte `ab` bis `groesse` holen → Uint8Array (nur der neue Teil) */
+  holen(pfad, groesse, ab = 0) { return this.#stueckweise(pfad, (off) => rahmenHolen(pfad, off), groesse, ab); }
+  async loeschen(pfad) {
+    const e = await this.#abgleich(rahmenLoeschen(pfad), `Löschen ${pfad}`);
+    return e.ok === true;
+  }
+  #abgleich(rahmen, was) {
+    return new Promise((ok, fehler) => {
+      const zeit = setTimeout(() => { this.warteAbgleich = null; fehler(new Error(`Sticky antwortet nicht (${was})`)); }, 5000);
+      this.warteAbgleich = (x) => { clearTimeout(zeit); ok(x); };
+      this.verbindung.schreiben(rahmen).catch(fehler);
+    });
+  }
+
+  async #stueckweise(name, anfrage, groesse, ab = 0) {
+    const daten = new Uint8Array(Math.max(0, groesse - ab));
     await this.verbindung.schnell();
-    let off = 0;
+    let off = ab;
     while (off < groesse) {
       let stueck = null;
       for (let versuch = 0; versuch < 4 && !stueck; versuch++) {
         stueck = await new Promise((ok) => {
           const zeit = setTimeout(() => { this.datei = null; ok(null); }, 1500);
           this.datei = { warte: off, fertig: (p) => { clearTimeout(zeit); this.datei = null; ok(p); } };
-          this.verbindung.schreiben(rahmenPufferHolen(name, off)).catch(() => ok(null));
+          this.verbindung.schreiben(anfrage(off)).catch(() => ok(null));
         });
       }
       if (!stueck) throw new Error(`${name}: bei Byte ${off} keine Antwort`);
       if (!stueck.length) break;   // Ende der Datei
-      daten.set(stueck.subarray(0, Math.min(stueck.length, groesse - off)), off);
+      daten.set(stueck.subarray(0, Math.min(stueck.length, groesse - off)), off - ab);
       off += stueck.length;
     }
     if (off < groesse) throw new Error(`${name}: unvollständig (${off}/${groesse} Byte)`);

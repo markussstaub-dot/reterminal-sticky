@@ -173,11 +173,12 @@ static void aufnahmeStart() {
         audioLaeuft = true;
         xTaskCreatePinnedToCore(audioTask, "audio", 6144, nullptr, 5, nullptr, 1);
         indikator = 1;
+        protokoll("Diktat offline (%s)", !connected ? "nicht verbunden" : !appHoert ? "App hört nicht zu" : "MTU zu klein");
         return;
     }
     audioOffline = false;
     if (mtu < AUDIO_PAKET + 3) { sendEvt("{\"t\":\"audio\",\"a\":\"fehler\",\"err\":\"mtu\"}"); return; }
-    if (!micAn()) { sendEvt("{\"t\":\"audio\",\"a\":\"fehler\",\"err\":\"mikro\"}"); return; }
+    if (!micAn()) { protokoll("Fehler: Mikro startet nicht"); sendEvt("{\"t\":\"audio\",\"a\":\"fehler\",\"err\":\"mikro\"}"); return; }
     audioStopp = false;
     audioLaeuft = true;
     slowAt = 0;
@@ -204,6 +205,7 @@ static void audioLoop() {
                  (unsigned long long)jetztMs(), audioName, (unsigned long)audioMs);
         notizAnhaengen(j);
         Serial.printf("Offline-Diktat: %s\n", j);
+        protokoll("Diktat gepuffert: %s, %lu ms", audioName, (unsigned long)audioMs);
         indikator = 3;   // Rückmeldung „Diktat gespeichert“
     }
     if (audioFertig) {
@@ -212,6 +214,7 @@ static void audioLoop() {
         snprintf(j, sizeof j, "{\"t\":\"audio\",\"a\":\"stop\",\"pakete\":%lu,\"verworfen\":%lu,\"ms\":%lu,\"spitze\":%d}",
                  (unsigned long)audioPakete, (unsigned long)audioVerworfen, (unsigned long)audioMs, audioSpitze);
         sendEvt(j);
+        protokoll("Diktat live: %lu ms, %lu Pakete, %lu verworfen", (unsigned long)audioMs, (unsigned long)audioPakete, (unsigned long)audioVerworfen);
         slowAt = millis() + 1500;
         indikator = 2;
     }

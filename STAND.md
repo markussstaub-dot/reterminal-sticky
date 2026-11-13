@@ -3,8 +3,8 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.9.1 – Puffer auf microSD, Akku lädt, Schlummermodus, Home mit Uhr, Datum, Akku, Wetter, Karten, Notizen (auch offline), Bordbuch, Bestellzettel, App in Tabs mit Spiegel/Fernbedienung (12.11.2026)
-wartet: Markus prüft SPEC „Zwilling 2.0“ (Soll/Ist, SD als Vertrag, Sensoren), dann Umbau in frischer Session; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Schlummermodus auf Akku testen, Nachtverbrauch messen
+version: FW 0.10.0 – Fahrtenschreiber auf microSD (/ist/log), Datei-Abgleich LISTE/HOLEN/LOESCHEN, Puffer auf microSD, Akku lädt, Schlummermodus, Home, Notizen (auch offline), Bordbuch, Bestellzettel, App mit Spiegel/Fernbedienung (13.11.2026)
+wartet: Zwilling 2.0 läuft schrittweise (1 Fahrtenschreiber fertig, als Nächstes Sync-Protokoll /soll /ist, dann Sensoren); Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
 Repo: github.com/markussstaub-dot/reterminal-sticky (privat, seit 11.11.2026). `backup/`, Modelle und
@@ -178,6 +178,13 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   stromlos. **Fehler dabei gefunden:** Über die Wecker-Verbindung allein (MTU 23, keine App) galt der Sticky als
   verbunden, Diktate gingen mit `err mtu` verloren. Jetzt zählt nur „App hört zu“ (Abo auf AUDIO), sonst Puffer.
   Getestet: App ferngetrennt, 2 Diktate auf SD, nach dem Verbinden abgeholt und abgetippt
+- **Fahrtenschreiber (FW 0.10.0, 13.11.2026, Zwilling 2.0 Schritt 1):** `/ist/log/JJJJ-MM-TT.txt` auf der Karte,
+  eine Zeile je Ereignis (Start mit Reset-Grund, Tasten, Modus, verbunden/getrennt, App hört zu/nicht, Diktat live/
+  offline/gepuffert, Schlummern/Wachwerden/Stundenfenster, Akku alle 10 min und bei USB/Laden, Uhr gestellt, Fehler).
+  RAM-Ring, geschrieben aus loop() und vor dem Schlummern (SPI geteilt mit dem Display). Erste allgemeine
+  Abgleich-Befehle `LISTE/HOLEN/LOESCHEN` (0x20–0x22, nur unter `/ist`, `abgleich.h`). Die App holt beim Abgleich
+  nur den neuen Teil, löscht vergangene Tage und zeigt das Protokoll unter „Mehr → Fahrtenschreiber“.
+  Am Gerät geprüft: Zeilen landen auf der Karte, App holt sie ab (Fold: `files/fahrtenschreiber/`)
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

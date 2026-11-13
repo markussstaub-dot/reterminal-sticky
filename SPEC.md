@@ -249,6 +249,22 @@ Vorbild: Device Shadow / Device Twin aus der Industrie (AWS IoT, Azure).
   Akku, Fehler. Erster kleiner Schritt, hätte die Rätsel vom 12./13.11. in einer Minute gelöst
 - fest: SD am SPI-Bus des E-Paper, gleiche SPIClass wie das Display (`karte.h`); Karte vor dem Leichtschlaf stromlos
 
+### Nutzung: der Kleine als Immer-dabei-Helfer (Markus, 13.11.2026)
+- fest: Der Sticky ist **nicht nur Microlino-Zubehör**, sondern ein Helfer, den Markus überallhin mitnimmt.
+  Der Microlino ist ein Einsatzort unter mehreren
+- Vorschlag **Szenarien**:
+  - **Microlino**: Bordbuch, Testnotizen, Fahrtenschreiber, Klima/Beschlag-Warnung
+  - **Unterwegs ohne Handy-Blick**: Zettel (Einkauf, Erledigungen), Diktat in die Tasche, Uhr, Wetter vom Morgen
+  - **Werkstatt** (Bambu, Laser, später CNC): Spickzettel/Maße auf dem Display, Diktat mit schmutzigen Händen
+  - **Hütte/Renovierung**: Raumklima und Taupunkt als Messreihe (Schimmel-/Feuchte-Frage), Maße und Notizen vor Ort
+  - **Schreibtisch/Nachttisch**: Tagesübersicht, Wecker, Schlafzimmerklima
+- Vorschlag **Folge für die Architektur**: Einsatzorte als **Szenen** unter `/soll/szenen/` (Home-Karte, Tasten,
+  Messintervall je Szene); der Sticky wechselt selbst (Bewegung: getragen vs. gefahren vs. liegt) oder per Taste,
+  die App schlägt anhand des Orts vor. Alles bleibt offline nutzbar, Abgleich wenn das Handy wieder da ist
+- Vorschlag **Messreihen tragen Szene und Ort** (Ort ergänzt die App beim Abholen), damit Hütte und Microlino
+  nicht in einem Topf landen
+- offen: Halterung/Hülle zum Mitnehmen (Druckteil Bambu: Clip für Microlino, Gürtel, Magnet für die Werkstatt)
+
 ### Eigene Sensoren (laut Schaltplan, Bus MISC_I2C)
 | Baustein | Adresse | heute | Vorschlag |
 |---|---|---|---|
@@ -259,14 +275,18 @@ Vorbild: Device Shadow / Device Twin aus der Industrie (AWS IoT, Azure).
 | Lade-LED rot/grün, Summer, Mikro, Tasten, Touch | – | teils | LED als stille Rückmeldung (z. B. „Diktat gepuffert“) |
 
 ### Offen
-- offen: Pins von MISC_I2C, 6D_INTn, RTC_INTn, RED_LED im Schaltplan nachsehen (GPIO0/1 ist der Akku-Bus, die Uhr
-  hängt schon daran – vermutlich alle dort)
-- offen: Umbau in einem Rutsch oder schrittweise (Vorschlag: 1. Fahrtenschreiber, 2. Sync-Protokoll mit /soll /ist
-  und Umzug von Puffer/Home/Bordbuch, 3. Sensoren)
-- offen: Messintervalle und was davon im Schlummermodus läuft (Akkuziel über Nacht < 5 %)
-- offen: Ob die App die Fahrt künftig vom Sticky (Bewegung) statt vom GPS übernimmt; der GPS-Weg im `StickyDienst`
-  (seit 12.11.) bliebe dann nur Rückfall
-- offen: Firmware-Update von der Karte (`/soll/firmware.bin`, OTA-Partitionen sind da) – macht ihn übergebbar
+- fest (Schaltplan 260609, Seite 5): **MISC_I2C = Akku-Bus** (SCL GPIO0, SDA GPIO1), alle Sensoren dort.
+  **6D_INTn = GPIO7**, teilt sich die Leitung mit BFG_INT (Akku-Interrupt); GPIO7 ist RTC-fähig, also Wecken aus
+  dem Schlaf möglich. **RED_LED = CHARGE_STATE = GPIO40**: die rote LED ist die Lade-Anzeige des Laders, nur bedingt
+  frei schaltbar. **RTC_INTn hängt an VDD_3V3_ENn**, nicht an einem GPIO: der Uhr-Wecker schaltet die 3,3 V ein, also
+  Einschalten aus „ganz aus“, kein Interrupt im Betrieb
+- fest (13.11.2026): **schrittweise**: 1. Fahrtenschreiber (fertig, FW 0.10.0), 2. Sync-Protokoll mit /soll /ist
+  und Umzug von Puffer/Home/Bordbuch, 3. Sensoren, danach Szenen
+- Vorschlag **Messintervalle**: Klima wach 1/min, im Schlummern alle 15 min per Timer-Wecken; Bewegungssensor im
+  Schlaf im Weck-Modus (~25 µA); Fahrtenschreiber nur Ereignisse. Ziel < 5 % Akku über Nacht
+- Vorschlag **Fahrt**: die Bewegung entscheidet übers Wachbleiben, GPS im `StickyDienst` bleibt Rückfall, bis
+  ein paar echte Fahrten gut gelaufen sind
+- Vorschlag **Firmware von der Karte** (`/soll/firmware.bin`): eigener Schritt nach den Sensoren
 
 ## Zusammenhang mit dem Microlino-Knopf
 Beide Geräte sind ESP32-S3 mit BLE, beide folgen dem Muster „Handy rechnet, Gerät zeigt“.

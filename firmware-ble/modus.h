@@ -173,6 +173,7 @@ static void setzeModus(Modus m) {
         tone(PIN_BUZZER, 900, 120);   // tiefer Ton: kein Bordbuch aufgespielt
         return;
     }
+    if (m != modus) protokoll("Modus %s", m == M_HOME ? "home" : m == M_BORDBUCH ? "bordbuch" : m == M_NOTIZ ? "notiz" : "bestell");
     modus = m;
     bordbuch = m == M_BORDBUCH;
     letzteBedienung = millis();

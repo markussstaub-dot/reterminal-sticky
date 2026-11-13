@@ -11,7 +11,8 @@ export const UUID = {
 };
 
 export const OP = { BILD_START: 0x01, BILD_DATEN: 0x02, BILD_ENDE: 0x03, PING: 0x10, KARTE: 0x11, BB_INDEX: 0x13, BB_MODUS: 0x14,
-  ZEIT: 0x15, FAHRT_LAYOUT: 0x16, PUFFER_LISTE: 0x17, PUFFER_HOLEN: 0x18, PUFFER_LOESCHEN: 0x19, HOME_VERSION: 0x1a, WACH: 0x1b };
+  ZEIT: 0x15, FAHRT_LAYOUT: 0x16, PUFFER_LISTE: 0x17, PUFFER_HOLEN: 0x18, PUFFER_LOESCHEN: 0x19, HOME_VERSION: 0x1a, WACH: 0x1b,
+  LISTE: 0x20, HOLEN: 0x21, LOESCHEN: 0x22 };   // Datei-Abgleich (Zwilling 2.0), Pfade unter /ist/
 
 export const BREITE = 800, HOEHE = 480;
 export const BILD_BYTES = BREITE / 8 * HOEHE; // 48000
@@ -103,6 +104,17 @@ export const rahmenPufferHolen = (name, offset = 0) => {
   return r;
 };
 export const rahmenPufferLoeschen = (name) => textRahmen(OP.PUFFER_LOESCHEN, name);
+export const rahmenListe = (pfad) => textRahmen(OP.LISTE, pfad);
+/** Ein Stück (bis 480 Byte) einer Datei ab offset anfordern (Antwort auf DATEI wie beim Puffer) */
+export const rahmenHolen = (pfad, offset = 0) => {
+  const t = new TextEncoder().encode(pfad);
+  const r = new Uint8Array(5 + t.length);
+  r[0] = OP.HOLEN;
+  le(r, 1, offset, 4);
+  r.set(t, 5);
+  return r;
+};
+export const rahmenLoeschen = (pfad) => textRahmen(OP.LOESCHEN, pfad);
 export const rahmenBbModus = (an, seite = null) => (seite == null ? Uint8Array.of(OP.BB_MODUS, an ? 1 : 0) : Uint8Array.of(OP.BB_MODUS, an ? 1 : 0, seite));
 export const rahmenPing = () => Uint8Array.of(OP.PING);
 /** „Bleib wach“: zählt am Sticky als Bedienung, er schlummert nicht ein (während der Fahrt, Firmware ≥ 0.8.0) */
@@ -122,6 +134,9 @@ export function lies(rahmen) {
     case OP.BILD_ENDE: return rahmen[1] === 3 ? { op: 'ende', schnell: false, speichern: rahmen[2] } : { op: 'ende', schnell: rahmen[1] === 1 };
     case OP.BB_INDEX: return { op: 'bbIndex', text: new TextDecoder().decode(rahmen.subarray(1)) };
     case OP.PUFFER_LISTE: return { op: 'pufferListe' };
+    case OP.LISTE: return { op: 'liste', pfad: new TextDecoder().decode(rahmen.subarray(1)) };
+    case OP.HOLEN: return { op: 'holen', offset: r32(1), pfad: new TextDecoder().decode(rahmen.subarray(5)) };
+    case OP.LOESCHEN: return { op: 'loeschen', pfad: new TextDecoder().decode(rahmen.subarray(1)) };
     case OP.BB_MODUS: return { op: 'bbModus', m: rahmen[1], an: rahmen[1] === 1, seite: rahmen.length > 2 ? rahmen[2] : null };
     case OP.PING: return { op: 'ping' };
     case OP.KARTE: return { op: 'karte' };

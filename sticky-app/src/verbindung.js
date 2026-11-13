@@ -124,6 +124,15 @@ export class BleVerbindung extends Basis {
 }
 
 /** Spielt die Firmware nach: gleiche Rahmen, gleiche JSON-Antworten. */
+const heute = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}.txt`;
+function simLogs() {
+  const gestern = heute(new Date(Date.now() - 864e5));
+  return {
+    [gestern]: '18:02:11 Start FW sim · Grund 1 · Akku 91 % · Karte ja · Uhr gestellt\n18:02:40 verbunden\n18:02:41 App hört zu\n18:05:12 Taste ki\n18:05:15 Diktat live: 3020 ms, 101 Pakete, 0 verworfen\n18:09:30 schlummert (Akku 90 %)\n',
+    [heute()]: '07:41:03 wach durch Taste (nach 812 Schlafminuten)\n07:41:04 Taste up\n07:41:06 Modus notiz\n07:41:20 Diktat offline (App hört nicht zu)\n07:41:24 Diktat gepuffert: a0001.adp, 3880 ms\n',
+  };
+}
+
 export class SimVerbindung extends Basis {
   constructor() {
     super();
@@ -181,6 +190,24 @@ export class SimVerbindung extends Basis {
       this.#zustand();
     } else if (r.op === 'pufferListe') {
       this.onEreignis({ t: 'puffer', dateien: [] });
+    } else if (r.op === 'liste') {
+      // Fahrtenschreiber des Simulators: gestern (wird abgeholt und gelöscht) und heute (wächst weiter)
+      this.logs ??= simLogs();
+      this.logs[heute()] += `${new Date().toTimeString().slice(0, 8)} verbunden\n`;
+      const d = r.pfad === '/ist/log' ? Object.entries(this.logs).map(([n, t]) => ({ n, b: new TextEncoder().encode(t).length })) : [];
+      this.onEreignis({ t: 'liste', p: r.pfad, d, mehr: false });
+    } else if (r.op === 'holen') {
+      const name = r.pfad.split('/').pop();
+      const b = new TextEncoder().encode(this.logs?.[name] ?? '').subarray(r.offset, r.offset + 480);
+      const p = new Uint8Array(4 + b.length);
+      p.set([r.offset & 0xff, r.offset >> 8 & 0xff, r.offset >> 16 & 0xff, r.offset >>> 24], 0);
+      p.set(b, 4);
+      setTimeout(() => this.onDatei(p), 5);
+    } else if (r.op === 'loeschen') {
+      const name = r.pfad.split('/').pop();
+      const ok = !!this.logs && name in this.logs;
+      if (ok) delete this.logs[name];
+      this.onEreignis({ t: 'geloescht', p: r.pfad, ok });
     } else if (r.op === 'bbIndex') {
       this.bbAnzahl = +(r.text.match(/seiten=(\d+)/)?.[1] ?? 0);
       this.onEreignis({ t: 'bordbuch', seiten: this.bbAnzahl, belegtKB: this.bbAnzahl * 47 });

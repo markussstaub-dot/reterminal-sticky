@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.9.1";
+static const char* FW_VERSION = "0.10.0";
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "Markus";
@@ -53,6 +53,7 @@ static const int PIN_CHG_EN_N = 39;
 // Letzte Bedienung (Taste, Touch, Befehl der App außer Ping) – danach zählt die Schlummer-Frist (schlaf.h)
 static volatile uint32_t letzteAktivitaet = 0, letzteTaste = 0;
 static void aktiv() { letzteAktivitaet = millis(); }
+static void protokoll(const char* fmt, ...);   // Fahrtenschreiber, fahrtenschreiber.h
 
 // ---- BLE ---------------------------------------------------------------------
 #define UUID_SVC   "b1e50001-7374-6963-6b79-7465726d6e6c"
@@ -324,6 +325,7 @@ static void tastenPoll() {
             sendEvt(j);
             tone(PIN_BUZZER, 2700, 30);
             if (!connected) startAdvertising(true);
+            protokoll("Taste %s (nachgeholt)", t.name);
             tasteAktion(t.name, true);
             snprintf(j, sizeof j, "{\"t\":\"key\",\"k\":\"%s\",\"a\":\"up\"}", t.name);
             sendEvt(j);
@@ -340,6 +342,7 @@ static void tastenPoll() {
         char j[64];
         snprintf(j, sizeof j, "{\"t\":\"key\",\"k\":\"%s\",\"a\":\"%s\"}", t.name, gedrueckt ? "down" : "up");
         sendEvt(j);
+        if (gedrueckt) protokoll("Taste %s", t.name);
         if (gedrueckt) tone(PIN_BUZZER, 2700, 30);   // kurzer Klick als Rückmeldung am Gerät
         if (gedrueckt && !connected) startAdvertising(true);
         tasteAktion(t.name, gedrueckt);
@@ -391,6 +394,8 @@ static void zeigeKarte() {
 #include "puffer.h"
 #include "audio.h"
 #include "modus.h"
+#include "fahrtenschreiber.h"
+#include "abgleich.h"
 
 // ---- Zustand -------------------------------------------------------------------
 static void sendState() {
@@ -416,6 +421,7 @@ class ServerCb : public NimBLEServerCallbacks {
         mtu = ci.getMTU();
         connItvl = ci.getConnInterval();
         Serial.printf("Verbunden mit %s, Intervall %u\n", ci.getAddress().toString().c_str(), connItvl);
+        protokoll("verbunden");
         s->updatePhy(connHandle, BLE_GAP_LE_PHY_2M_MASK, BLE_GAP_LE_PHY_2M_MASK, 0);
         s->setDataLen(connHandle, 251);
         // gleich nach dem Verbinden fragt die App nach Zustand/Dienst → kurz schnell, dann träge
@@ -429,6 +435,7 @@ class ServerCb : public NimBLEServerCallbacks {
         connHandle = 0xFFFF;
         imgActive = false;
         Serial.printf("Getrennt (Grund 0x%02X)\n", reason);
+        protokoll("getrennt (Grund 0x%02X)", reason);
         startAdvertising(false);
     }
     void onMTUChange(uint16_t m, NimBLEConnInfo&) override {
@@ -455,6 +462,7 @@ class AboCb : public NimBLECharacteristicCallbacks {
     void onSubscribe(NimBLECharacteristic*, NimBLEConnInfo&, uint16_t sub) override {
         appHoert = sub != 0;
         Serial.printf("App %s\n", appHoert ? "hört zu" : "hört nicht mehr zu");
+        protokoll("App %s", appHoert ? "hört zu" : "hört nicht mehr zu");
     }
 };
 
@@ -465,6 +473,7 @@ class CmdCb : public NimBLECharacteristicCallbacks {
         size_t n = v.length();
         if (n < 1) return;
         if (d[0] != OP_PING) aktiv();
+        if (abgleichBefehl(d, n)) return;
         switch (d[0]) {
         case OP_IMG_BEGIN: { // 01 fmt w16 h16 len32 crc32 [x16 y16] – mit x/y ein Teilbild (x, w Vielfache von 8)
             if (n < 14) return;
@@ -651,6 +660,8 @@ void setup() {
     bleInit();
     setzeModus(M_HOME);
     aktiv();
+    protokoll("Start FW %s · Grund %d · Akku %d %% · Karte %s · Uhr %s", FW_VERSION, (int)esp_reset_reason(), batPct,
+              sdEingebunden ? "ja" : "nein", zeitGesetzt ? "gestellt" : "nicht gestellt");
 }
 
 void loop() {
@@ -670,6 +681,7 @@ void loop() {
         if (!teil || slowAt) slowAt = millis() + 1500;   // nach dem Bild wieder träge
         if (!ok) {
             char j[96];
+            protokoll("Bild: CRC-Fehler (%lu von %lu Byte)", (unsigned long)imgGot, (unsigned long)imgLen);
             snprintf(j, sizeof j, "{\"t\":\"img\",\"ok\":false,\"err\":\"crc\",\"got\":%lu,\"ms\":%lu}", (unsigned long)imgGot, (unsigned long)empfang);
             sendEvt(j);
         } else {
@@ -745,6 +757,8 @@ void loop() {
     audioLoop();
     bbLoop();
     pufferLoop();
+    abgleichLoop();
+    protokollLoop();
     static uint32_t lastTp = 0;
     if (touchAn && millis() - lastTp > 25) { lastTp = millis(); touchPoll(); }
     schlafPruefen();
