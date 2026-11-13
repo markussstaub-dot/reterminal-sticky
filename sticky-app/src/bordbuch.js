@@ -110,7 +110,7 @@ export function zeichneTextseite(g, seite, fuss) {
 
 /** Titelseite mit Inhaltsverzeichnis; liefert die Touch-Felder [{x0,y0,x1,y1,seite}] */
 export function zeichneInhalt(g, links, rechts) {
-  kopf(g, 'Microlino · Bordbuch', '▲▼ blättern · KI = Inhalt');
+  kopf(g, 'Microlino · Bordbuch', '▲▼ blättern · ▲ 1 s = Inhalt · ▲+▼ = Hilfe');
   const felder = [];
   const spalte = (eintraege, x0, ueber) => {
     g.font = `bold 22px ${FONT}`;

@@ -31,6 +31,7 @@ import { Aufnahme, wav, sprachPruefung, nurWortliste, angehoben } from './audio.
 import * as notizen from './notizen.js';
 import { SORTEN, naechsteSorte } from './sorte.js';
 import { HILFE } from './hilfe.js';
+import { HANDGRIFFE_STANDARD } from './handgriffe.js';
 import { WOERTERBUCH_STANDARD, paareLesen, paareText, korrigiere, lernen, einpflegen } from './woerterbuch.js';
 import * as bb from './bordbuch.js';
 import { tabsEinrichten } from './tabs.js';
@@ -791,6 +792,11 @@ let pdf = null;
 try { $('spickzettel').value = localStorage.getItem('sticky.spickzettel') || bb.SPICKZETTEL_STANDARD; } catch { $('spickzettel').value = bb.SPICKZETTEL_STANDARD; }
 $('spickzettel').onchange = () => { try { localStorage.setItem('sticky.spickzettel', $('spickzettel').value); } catch { /* egal */ } };
 $('spickStandard').onclick = () => { $('spickzettel').value = bb.SPICKZETTEL_STANDARD; $('spickzettel').onchange(); };
+try { $('handgriffe').value = localStorage.getItem('sticky.handgriffe') ?? HANDGRIFFE_STANDARD; } catch { $('handgriffe').value = HANDGRIFFE_STANDARD; }
+$('handgriffe').onchange = () => { try { localStorage.setItem('sticky.handgriffe', $('handgriffe').value); } catch { /* egal */ } };
+$('handgriffeStandard').onclick = () => { $('handgriffe').value = HANDGRIFFE_STANDARD; $('handgriffe').onchange(); };
+/** Spickzettel und Handgriffe zusammen, in dieser Reihenfolge (Bordbuch und Vorschau nutzen dieselbe Liste) */
+const spickSeiten = () => [...bb.spickzettelSeiten($('spickzettel').value), ...bb.spickzettelSeiten($('handgriffe').value)];
 
 async function ladePdf(bytes, name) {
   pdf = await bb.oeffnePdf(bytes);
@@ -818,7 +824,7 @@ if (nativ) {
 
 /** Alle Bildschirme erzeugen: [Inhalt, Spickzettel…, Handbuch-Ausschnitte…] → { seiten: Uint8Array[], index } */
 async function bordbuchBauen(status) {
-  const spick = bb.spickzettelSeiten($('spickzettel').value);
+  const spick = spickSeiten();
   const hb = [];        // { bytes, pdfSeite }
   const ersteVon = {};  // PDF-Seite → Bildschirm-Index (relativ)
   if (pdf) {
@@ -905,7 +911,7 @@ async function bordbuchSeite(n) {
   let bild = null;
   if (e.a === 'inhalt') { bb.zeichneInhalt(h, plan.links, plan.rechts); bild = h.getImageData(0, 0, BREITE, HOEHE); }
   else if (e.a === 'spick') {
-    const s = bb.spickzettelSeiten($('spickzettel').value)[e.i];
+    const s = spickSeiten()[e.i];
     if (s) { bb.zeichneTextseite(h, s, `Spickzettel ${e.i + 1}/${e.n} · ${n + 1}/${e.von}`); bild = h.getImageData(0, 0, BREITE, HOEHE); }
   } else if (e.a === 'pdf' && pdf) {
     const teile = await bb.pdfAusschnitte(pdf, e.p);

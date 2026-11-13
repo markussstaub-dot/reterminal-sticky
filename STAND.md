@@ -252,6 +252,9 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   malen währenddessen nicht hinein. Tippen auf Notiz-Streifen oder Kapitel im Inhaltsverzeichnis zeichnet sofort
   einen dicken Rahmen (Teil-Refresh), nach 1,5 s weg. Am Gerät geprüft (Markus). Tischtest mit 0.14.3: 11:08–11:17
   durchgeschlafen trotz Tippen am Tisch, wach erst beim Hochnehmen (203 mg)
+- **Handgriff-Spickzettel (13.11.2026, `sticky-app/src/handgriffe.js`):** eigenes Feld „Handgriffe“ im Bordbuch-Tab,
+  im Bordbuch nach den Spickzetteln (erste drei: Bose-Earbuds koppeln, Fold ans Zenbook, Sticky klemmt beim Flashen).
+  Inhaltsverzeichnis-Kopf auf die neuen Tasten angepasst. Am Gerät: 9 Seiten, bis ans Ende geblättert, weiter in die Zettel
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

@@ -329,8 +329,9 @@ Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzu
   NAS-Backup prüfen · Bambu/Laser-Grundeinstellungen · Wi-Fi im Café
 - Vorschlag **Claude schreibt sie**: nach einer gelösten Frage bietet Claude an, den Handgriff als Spickzettel
   (Format „## Titel“ + Zeilen wie im Spickzettel-Feld der App) abzulegen; die App spielt ihn beim nächsten Abgleich auf
-- offen: Ablage (eigene Datei `spickzettel/handgriffe.md` im Projekt, privat, nicht im Repo?) und ob sie im Karussell
-  einen eigenen Eintrag bekommen
+- umgesetzt 13.11.: eigenes Feld „Handgriffe“ in der App (`handgriffe.js` als Standard, öffentlich, nichts Privates),
+  im Bordbuch nach den Spickzetteln
+- offen: ob sie im Karussell einen eigenen Eintrag bekommen; Private Handgriffe nur im App-Feld, nie im Standard
 
 ### Widgets (Markus, 13.11.2026, Ideensammlung)
 - Vorschlag **Weiche**: Was sich sekündlich ändert, rechnet und zeichnet der Sticky selbst (offline); die App liefert
