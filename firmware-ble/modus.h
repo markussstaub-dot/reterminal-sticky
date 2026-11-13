@@ -45,6 +45,7 @@ static bool sensorHoch = false;   // Stufe 2 (FW 0.22.0): Lage laut Lagesensor, 
 static int lageAnzahl = 0;
 static void lageLaden() {
     lageAnzahl = 0;
+    gedreht180 = false;
     String t;
     if (!sollText("einstellungen/lage.txt", t)) return;
     int start = 0;
@@ -54,6 +55,7 @@ static void lageLaden() {
         String z = t.substring(start, ende);
         start = ende + 1;
         char a[16], b[8];
+        if (sscanf(z.c_str(), "%15s %7s", a, b) == 2 && !strcmp(a, "dreh")) { gedreht180 = !strcmp(b, "180"); continue; }
         if (sscanf(z.c_str(), "%15s %7s", a, b) == 2) {
             strlcpy(lageSeite[lageAnzahl], a, 16);
             lageAutoFlag[lageAnzahl] = !strcmp(b, "auto");
@@ -232,15 +234,15 @@ static void akkuPruefen(bool teil) {
     akkuUsb = usb;
     akkuZeichnen(stufe, usb);
     if (teil) {
-        display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
-        display.updatePartial(AKKU_X, AKKU_Y, AKKU_W, AKKU_H);
+        bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+        teilZeigen(AKKU_X, AKKU_Y, AKKU_W, AKKU_H);
     }
 }
 
 static void uhrAuffrischen(bool voll) {
-    display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+    bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
     if (voll) display.update();
-    else display.updatePartial(UHR_X, UHR_Y, UHR_W, UHR_H);
+    else teilZeigen(UHR_X, UHR_Y, UHR_W, UHR_H);
 }
 
 static void meldeModus() {
@@ -362,7 +364,9 @@ static void kzAufgabeFn(void*) {
                 uint8_t p[7];
                 tpRead(0x814F, p, 7);
                 int x = p[1] | p[2] << 8, y = p[3] | p[4] << 8;
-                if (!kzKnopf(799 - y, 479 - x, !unten)) kritzelPunkt(799 - y, 479 - x, !unten);
+                int dx, dy;
+                touchDisplay(x, y, dx, dy);
+                if (!kzKnopf(dx, dy, !unten)) kritzelPunkt(dx, dy, !unten);
                 unten = true;
             } else if (unten) { unten = false; kritzelLos(); }
             tpWrite(0x814E, 0);
@@ -424,10 +428,10 @@ static void kritzelLoop() {
     uint32_t t0 = millis();
     if (kzAusschnitt) {
         for (int r = 0; r < h; r++) memcpy(kzAusschnitt + r * bpz, imgBuf + (y0 + r) * (W / 8) + x0 / 8, bpz);
-        display.drawBitmap(x0, y0, kzAusschnitt, x1 - x0, h, TFT_BLACK, TFT_WHITE);
-    } else display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+        bildZeigen(x0, y0, kzAusschnitt, x1 - x0, h, TFT_BLACK, TFT_WHITE);
+    } else bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
     uint32_t t1 = millis();
-    display.updatePartial(x0, y0, x1 - x0, h);
+    teilZeigen(x0, y0, x1 - x0, h);
     static uint32_t gemeldet = 0;
     if (millis() - gemeldet > 2000) { gemeldet = millis(); Serial.printf("Kritzel: zeichnen %lu ms, Refresh %lu ms (%dx%d)\n", (unsigned long)(t1 - t0), (unsigned long)(millis() - t1), x1 - x0, h); }
 }
@@ -462,7 +466,7 @@ static void kzBlattNeu() {
     portEXIT_CRITICAL(&kzSperre);
     kzKnoepfeZeichnen();
     statusPruefen(false, true);
-    display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+    bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
     display.update();
 }
 
@@ -489,7 +493,7 @@ static void setzeModus(Modus m) {
     }
     if (m == M_BESTELL && homeLaden(3 + bestellAktuell, imgBuf)) {
         statusPruefen(false, true);
-        display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+        bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
         display.update();
         seite = "bild";
     } else if (m == M_KRITZEL) {
@@ -498,7 +502,7 @@ static void setzeModus(Modus m) {
             kzBlattGesichert = false;
             kritzelLos();
             statusPruefen(false, true);
-            display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+            bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
             display.update();
         } else kzBlattNeu();
         seite = "kritzel";
@@ -513,7 +517,7 @@ static void setzeModus(Modus m) {
         bbZeige(bbAktuell);
     } else if (m == M_NOTIZ && notizDa && homeLaden(1, imgBuf)) {
         statusPruefen(false, true);
-        display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+        bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
         display.update();
         seite = "bild";
     } else if (m == M_HOME && homeDa && homeLaden(0, imgBuf)) {
@@ -654,8 +658,8 @@ static void rahmenLoop() {
         bildRechteck(rhX0, rhY1 - d, rhX1 - rhX0, d, true);
         bildRechteck(rhX0, rhY0, d, h, true);
         bildRechteck(rhX1 - d, rhY0, d, h, true);
-        display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
-        display.updatePartial(rhX0, rhY0, rhX1 - rhX0, h);
+        bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+        teilZeigen(rhX0, rhY0, rhX1 - rhX0, h);
         rhModus = modus; rhSeite = bbAktuell;
         rahmenBis = millis() + 1500;
     }
@@ -664,8 +668,8 @@ static void rahmenLoop() {
         if (modus != rhModus || bbAktuell != rhSeite || hilfeAn) return;   // Seite schon gewechselt: nichts zurückzumalen
         int bpz = (rhX1 - rhX0) / 8, h = rhY1 - rhY0;
         for (int r = 0; r < h; r++) memcpy(imgBuf + (rhY0 + r) * (W / 8) + rhX0 / 8, rahmenSicher + r * bpz, bpz);
-        display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
-        display.updatePartial(rhX0, rhY0, rhX1 - rhX0, h);
+        bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+        teilZeigen(rhX0, rhY0, rhX1 - rhX0, h);
     }
 }
 
@@ -694,7 +698,7 @@ static void hilfeZeigen() {
     if (!sollLesen(hilfeName(), imgBuf, IMG_BYTES)) { tone(PIN_BUZZER, 900, 120); return; }   // noch keine Hilfe aufgespielt
     hilfeAn = true;
     protokoll("Hilfe %s", hilfeName() + 6);
-    display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+    bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
     display.update();
     seite = "hilfe";
 }

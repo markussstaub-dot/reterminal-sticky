@@ -708,7 +708,9 @@ function lagen() {
   try { return { ...LAGE_STANDARD, ...JSON.parse(localStorage.getItem('sticky.lagen') || '{}') }; } catch { return { ...LAGE_STANDARD }; }
 }
 const hochkant = (seite) => fwAb('0.21.0') && lagen()[seite] === 'hoch';
-const lageText = () => Object.entries(lagen()).map(([s, l]) => `${s} ${l}`).join('\n') + '\n';
+const dreh180 = () => { try { return localStorage.getItem('sticky.dreh180') === '1'; } catch { return false; } };
+// „dreh 180“ (FW ≥ 0.23.0): der Sticky dreht alles an der Ausgabe, die App zeichnet wie immer
+const lageText = () => Object.entries(lagen()).map(([s, l]) => `${s} ${l}`).join('\n') + '\n' + (fwAb('0.23.0') ? `dreh ${dreh180() ? 180 : 0}\n` : '');
 /** Widgets in ihrer Lage bauen; das Menü folgt dem Karussell */
 const auto = (seite) => fwAb('0.22.0') && lagen()[seite] === 'auto';
 /** bei „auto“ (Stufe 2, FW ≥ 0.22.0) beide Lagen: <name> quer, <name>-h hochkant; der Sticky nimmt laut Lagesensor */
@@ -745,6 +747,12 @@ for (const [seite, name] of Object.entries(LAGE_NAMEN)) {
   zeile.append(`${name} `, wahl);
   $('lagen').append(zeile);
 }
+
+$('dreh180').checked = dreh180();
+$('dreh180').onchange = () => {
+  try { localStorage.setItem('sticky.dreh180', $('dreh180').checked ? '1' : '0'); } catch { /* egal */ }
+  if (zwilling.verbunden && fwAb('0.21.0')) einstellungenAufspielen().then((n) => n && eintrag(`Sticky ${$('dreh180').checked ? 'auf dem Kopf' : 'normal'}`)).catch((e) => eintrag(`Lage: ${e.message}`, true));
+};
 
 $('karussell').value = localStorage.getItem('sticky.karussell') || KARUSSELL_STANDARD;
 $('karussell').onchange = () => {

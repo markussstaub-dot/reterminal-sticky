@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.22.1";
+static const char* FW_VERSION = "0.23.0";
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "Markus";
@@ -100,8 +100,39 @@ static uint8_t* hinweisBuf;   // eigener Puffer für Einblendungen, damit sie ke
 static volatile uint16_t imgX = 0, imgY = 0, imgW = 800, imgH = 480;
 static volatile uint32_t imgLen = 0, imgCrc = 0, imgGot = 0, imgT0 = 0, imgT1 = 0, imgFrames = 0;
 static volatile uint16_t dleTx = 27, dleRx = 27;
+
 static volatile bool imgActive = false, imgReady = false, imgFast = false;
 static volatile int imgSpeichern = -1;   // >= 0: Bild als Bordbuch-Seite n speichern statt zeigen
+
+// ---- 180° gedreht (SPEC „Hoch/Quer“, FW 0.23.0): alles dreht zentral an der Ausgabe ---------------------------------
+// Seiten, App und Teilbilder rechnen weiter in normalen Koordinaten; erst hier wird das Bild gespiegelt (Bytes rückwärts,
+// Bits je Byte umgedreht), Teil-Refresh-Bereiche gespiegelt und Touch-Punkte zurückgespiegelt. Schalter: lage.txt „dreh 180“.
+static bool gedreht180 = false;
+static uint8_t* drehBuf = nullptr;
+static uint8_t bitDreh(uint8_t b) { b = (b & 0xF0) >> 4 | (b & 0x0F) << 4; b = (b & 0xCC) >> 2 | (b & 0x33) << 2; return (b & 0xAA) >> 1 | (b & 0x55) << 1; }
+static void bildZeigen(int x, int y, const uint8_t* b, int w, int h, uint16_t vorne, uint16_t hinten) {
+    if (!gedreht180) { display.drawBitmap(x, y, b, w, h, vorne, hinten); return; }
+    int zb = (w + 7) / 8;
+    size_t n = (size_t)zb * h;
+    if (!drehBuf) drehBuf = (uint8_t*)ps_malloc(IMG_BYTES);
+    if (!drehBuf || n > IMG_BYTES) { display.drawBitmap(x, y, b, w, h, vorne, hinten); return; }
+    if (w % 8 == 0) {
+        for (size_t i = 0; i < n; i++) drehBuf[n - 1 - i] = bitDreh(b[i]);
+    } else {                                  // krumme Breite: Pixel für Pixel
+        memset(drehBuf, 0, n);
+        for (int r = 0; r < h; r++) for (int c = 0; c < w; c++)
+            if (b[r * zb + c / 8] & (0x80 >> (c % 8))) { int rr = h - 1 - r, cc = w - 1 - c; drehBuf[rr * zb + cc / 8] |= 0x80 >> (cc % 8); }
+    }
+    display.drawBitmap(W - x - w, H - y - h, drehBuf, w, h, vorne, hinten);
+}
+static void teilZeigen(int x, int y, int w, int h) {
+    if (gedreht180) display.updatePartial(W - x - w, H - y - h, w, h); else display.updatePartial(x, y, w, h);
+}
+/** Touch (Rohwerte GT911) → Display-Koordinaten der Seite */
+static void touchDisplay(int x, int y, int& dx, int& dy) {
+    dx = 799 - y; dy = 479 - x;
+    if (gedreht180) { dx = 799 - dx; dy = 479 - dy; }
+}
 static volatile int imgRueckSlot = -1;   // >= 0: Teilbild als Rückmeldung für den Offline-Betrieb speichern
 static volatile int imgHome = -1;        // >= 0: Bild als Home-Bild n speichern (0 Karte, 1 Notiz-Seite, 2 Ziffern)
 static char homeVersionNeu[24];
@@ -266,7 +297,8 @@ static void kritzelLos();
 static uint64_t jetztMs();
 static void sendTouch(const char* a, int x, int y) {
     aktiv();
-    int dx = 799 - y, dy = 479 - x;
+    int dx, dy;
+    touchDisplay(x, y, dx, dy);
     if (a[0] == 'd') { rahmenAntippen(dx, dy); bbTouch(dx, dy); pufferTouch(dx, dy); widgetTipp(dx, dy); }
     char j[128];
     snprintf(j, sizeof j, "{\"t\":\"touch\",\"a\":\"%s\",\"x\":%d,\"y\":%d,\"rx\":%d,\"ry\":%d,\"ms\":%llu}", a, dx, dy, x, y, (unsigned long long)jetztMs());
@@ -732,11 +764,11 @@ void loop() {
             } else if (teil) {
                 // Teilbild in die gemerkte Seite einsetzen (zeilenweise, x und w sind Byte-genau) und nur den Bereich auffrischen
                 for (int r = 0; r < imgH; r++) memcpy(imgBuf + (imgY + r) * (W / 8) + imgX / 8, rxBuf + r * (imgW / 8), imgW / 8);
-                display.drawBitmap(imgX, imgY, rxBuf, imgW, imgH, TFT_BLACK, TFT_WHITE);
-                display.updatePartial(imgX, imgY, imgW, imgH);
+                bildZeigen(imgX, imgY, rxBuf, imgW, imgH, TFT_BLACK, TFT_WHITE);
+                teilZeigen(imgX, imgY, imgW, imgH);
             } else {
                 memcpy(imgBuf, rxBuf, IMG_BYTES);
-                display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+                bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
                 if (imgFast) display.updateFast(); else display.update();
                 seite = "bild";
             }

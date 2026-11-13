@@ -231,8 +231,8 @@ static void audioLoop() {
         f.read((uint8_t*)sk, 8);
         size_t n = (size_t)sk[2] / 8 * sk[3];
         if (n <= IMG_BYTES && f.read(hinweisBuf, n) == n) {
-            display.drawBitmap(sk[0], sk[1], hinweisBuf, sk[2], sk[3], TFT_BLACK, TFT_WHITE);
-            display.updatePartial(sk[0], sk[1], sk[2], sk[3]);
+            bildZeigen(sk[0], sk[1], hinweisBuf, sk[2], sk[3], TFT_BLACK, TFT_WHITE);
+            teilZeigen(sk[0], sk[1], sk[2], sk[3]);
             slotAktiv = true;
         }
         f.close();
@@ -244,9 +244,9 @@ static void audioLoop() {
         indikator = 0;
         slotAktiv = false;
         // Stelle aus der gemerkten Seite wiederherstellen
-        if (strcmp(seite, "karte") != 0) display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+        if (strcmp(seite, "karte") != 0) bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
         else zeichneKarte();
-        display.updatePartial(sk[0], sk[1], sk[2], sk[3]);
+        teilZeigen(sk[0], sk[1], sk[2], sk[3]);
     } else if (indikator == 1) {
         indikator = 0;
         display.fillRoundRect(IX, IY, IW, IH, 10, TFT_BLACK);
@@ -256,11 +256,11 @@ static void audioLoop() {
         display.setFreeFont(&FreeSans12pt7b);
         display.drawString("Aufnahme", IX + 52, IY + IH / 2);
         display.setFreeFont(nullptr);
-        display.updatePartial(IX - 4, IY - 4, IW + 8, IH + 8);
+        teilZeigen(IX - 4, IY - 4, IW + 8, IH + 8);
     } else if (indikator == 2) {
         indikator = 0;
-        if (strcmp(seite, "bild") == 0) display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+        if (strcmp(seite, "bild") == 0) bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
         else zeichneKarte();
-        display.updatePartial(IX - 4, IY - 4, IW + 8, IH + 8);
+        teilZeigen(IX - 4, IY - 4, IW + 8, IH + 8);
     }
 }

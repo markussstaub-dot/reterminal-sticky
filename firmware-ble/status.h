@@ -137,9 +137,9 @@ static void statusPruefen(bool teil, bool erzwingen) {
     statusSig = sig;
     statusZeichnen();
     if (!teil) return;
-    display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
-    if (statusHoch()) display.updatePartial(0, 0, ST_H, ST_B);
-    else display.updatePartial(W - ST_B, 0, ST_B, ST_H);
+    bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+    if (statusHoch()) teilZeigen(0, 0, ST_H, ST_B);
+    else teilZeigen(W - ST_B, 0, ST_B, ST_H);
 }
 
 static bool schlummertGerade() { return !funkAn; }

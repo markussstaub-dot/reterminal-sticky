@@ -125,8 +125,8 @@ static void rueckZeigen(int slot) {
     f.read(hinweisBuf, n);
     f.close();
     for (int r = 0; r < k[3]; r++) memcpy(imgBuf + (k[1] + r) * (W / 8) + k[0] / 8, hinweisBuf + r * (k[2] / 8), k[2] / 8);
-    display.drawBitmap(k[0], k[1], hinweisBuf, k[2], k[3], TFT_BLACK, TFT_WHITE);
-    display.updatePartial(k[0], k[1], k[2], k[3]);
+    bildZeigen(k[0], k[1], hinweisBuf, k[2], k[3], TFT_BLACK, TFT_WHITE);
+    teilZeigen(k[0], k[1], k[2], k[3]);
 }
 
 // ---- Offline-Notizen ---------------------------------------------------------------------------

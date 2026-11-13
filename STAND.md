@@ -3,7 +3,7 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.22.1 – Hoch/Quer je Seite, auch automatisch per Lagesensor, Wasserwaage, Menü (KI auf Home), Umrechner, Widget-Maschine mit Timer, App-Seite mit Rechner, Kritzelblock, Tastenhilfe (▲+▼), Rahmen beim Tippen, Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
+version: FW 0.23.0 – 180° gedreht (Schalter), Hoch/Quer je Seite, auch automatisch per Lagesensor, Wasserwaage, Menü (KI auf Home), Umrechner, Widget-Maschine mit Timer, App-Seite mit Rechner, Kritzelblock, Tastenhilfe (▲+▼), Rahmen beim Tippen, Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
 wartet: Markus: Bewegungswecken von Hand prüfen (USB ab, 3 min liegen lassen, hochnehmen) und Fahrterkennung bei der nächsten Microlino-Fahrt; Offline-Diktat auf /ist/puffer einmal prüfen; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
@@ -311,7 +311,11 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   Firmware: Winkel aus Sensor-x/-y (hochkant aufrecht y ≈ −0,9 g, gemessen), Hysterese hochkant über 60°, quer unter
   30°, flach liegend keine Änderung; alle 0,25 s ein Lesen nur auf „auto“-Seiten, Umschalten nach 3 gleichen Werten
   (~0,75 s) plus Voll-Refresh. Beim Seitenwechsel eine Sofortmessung. Bemaltes Kritzelblatt dreht nicht mit.
-  Am Gerät mit dem Timer geprüft: „dreht richtig“ „180° gedreht“ und Stufe 2 (automatisch) folgen
+  Am Gerät mit dem Timer geprüft: „dreht richtig“. Waage-Achsen dafür auf `achsen y x` (Sensor-y ∥ Display-x)
+- **180° gedreht (FW 0.23.0, 13.11.2026):** Schalter „Sticky steht auf dem Kopf“ in „Mehr → Lage der Seiten“, Zeile
+  `dreh 180` in lage.txt. Gedreht wird zentral an der Ausgabe (`bildZeigen`/`teilZeigen` statt display.drawBitmap/
+  updatePartial, `touchDisplay` für Touch); Seiten und App merken nichts. Startbild und Kartenanzeige drehen noch nicht
+  mit. Am Gerät: Bild gedreht ok „180° gedreht“ und Stufe 2 (automatisch) folgen
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

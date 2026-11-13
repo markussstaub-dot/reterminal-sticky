@@ -426,7 +426,8 @@ Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzu
   2. **danach automatisch per Lagesensor**: jede Seite liegt in beiden Lagen auf der Karte, der Sticky nimmt beim
      Drehen die passende (Voll-Refresh). Baut auf Stufe 1 auf, kostet doppelt Speicher und Übertragung
   - Stand: Stufe 1 umgesetzt (FW 0.21.0, 13.11.2026), ohne „180° gedreht“ (eigener kleiner Schritt). Stufe 2 als
-    Lage „automatisch“ je Seite (FW 0.22.1): Hysterese 30°/60°, flach bleibt die Lage, bemaltes Kritzelblatt bleibt
+    Lage „automatisch“ je Seite (FW 0.22.1): Hysterese 30°/60°, flach bleibt die Lage, bemaltes Kritzelblatt bleibt.
+    „180° gedreht“ umgesetzt (FW 0.23.0): zentral an der Ausgabe, Schalter in der App
 - später: hoch/quer automatisch über den Bewegungssensor (jede Seite in beiden Lagen, doppeltes Rendern in der App)
 - Tastenregeln und Karussell (FW 0.13.0), Statuszeile (0.14.0), Tastenhilfe und Tipp-Rahmen (0.15.0) umgesetzt ( Szenen noch nicht: ein Karussell für alles)
 - Reihenfolge: Tastenregeln, Karussell, Statuszeile zuerst (Grundlage für die Widgets), dann Schlafbild-Regel,

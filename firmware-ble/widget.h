@@ -197,8 +197,8 @@ static void waageLoop() {
     if (!waageMessen()) return;
     if (fabsf(wWinkel[0] - alt0) < 0.05f && fabsf(wWinkel[1] - alt1) < 0.05f && wBlaseX != -999) return;
     waageZeichnen();
-    display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
-    if (statusHoch()) display.updatePartial(62, 0, W - 62, H); else display.updatePartial(0, 62, W, H - 62);
+    bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+    if (statusHoch()) teilZeigen(62, 0, W - 62, H); else teilZeigen(0, 62, W, H - 62);
 }
 
 /** Aus setzeModus: Seite aufbauen */
@@ -218,7 +218,7 @@ static void widgetZeigen() {
     widgetZeitZeichnen(true);
     gfxPartialWachHalten = true;            // Teil-Refresh ohne die 100-ms-Pausen (Bibliotheks-Patch), wie im Kritzelblock
     statusPruefen(false, true);
-    display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+    bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
     display.update();
     seite = "widget";
 }
@@ -308,8 +308,8 @@ static void widgetLoop() {
     if (modus != M_WIDGET || hilfeAn || !wHatUhr) return;
     if (tLaeuft) aktiv();                     // auf der Timer-Seite nicht einschlafen, solange er läuft
     if (widgetZeitZeichnen(false)) {
-        display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+        bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
         int x0 = min(wzX, wzX + 4 * wzDx), y0 = min(wzY, wzY + 4 * wzDy);
-        display.updatePartial(max(0, x0), max(0, y0), abs(4 * wzDx) + wzW, abs(4 * wzDy) + wzH);
+        teilZeigen(max(0, x0), max(0, y0), abs(4 * wzDx) + wzW, abs(4 * wzDy) + wzH);
     }
 }
