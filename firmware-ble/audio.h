@@ -249,6 +249,7 @@ static void audioLoop() {
         teilZeigen(sk[0], sk[1], sk[2], sk[3]);
     } else if (indikator == 1) {
         indikator = 0;
+        malenGedreht(true);
         display.fillRoundRect(IX, IY, IW, IH, 10, TFT_BLACK);
         display.fillCircle(IX + 30, IY + IH / 2, 10, TFT_WHITE);
         display.setTextColor(TFT_WHITE);
@@ -256,6 +257,7 @@ static void audioLoop() {
         display.setFreeFont(&FreeSans12pt7b);
         display.drawString("Aufnahme", IX + 52, IY + IH / 2);
         display.setFreeFont(nullptr);
+        malenGedreht(false);
         teilZeigen(IX - 4, IY - 4, IW + 8, IH + 8);
     } else if (indikator == 2) {
         indikator = 0;

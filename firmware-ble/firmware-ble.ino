@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.23.0";
+static const char* FW_VERSION = "0.23.1";
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "Markus";
@@ -127,6 +127,12 @@ static void bildZeigen(int x, int y, const uint8_t* b, int w, int h, uint16_t vo
 }
 static void teilZeigen(int x, int y, int w, int h) {
     if (gedreht180) display.updatePartial(W - x - w, H - y - h, w, h); else display.updatePartial(x, y, w, h);
+}
+/** Für direkt gemalte Seiten (Karte, Aufnahme-Schild): Rotation der Bibliothek nur fürs Malen um 180° weiter */
+static int drehBasis = -1;
+static void malenGedreht(bool an) {
+    if (drehBasis < 0) drehBasis = display.getRotation();
+    display.setRotation(an && gedreht180 ? (drehBasis + 2) & 3 : drehBasis);
 }
 /** Touch (Rohwerte GT911) → Display-Koordinaten der Seite */
 static void touchDisplay(int x, int y, int& dx, int& dy) {
@@ -401,6 +407,7 @@ static void drawQr(esp_qrcode_handle_t qr) {
             if (esp_qrcode_get_module(qr, x, y)) display.fillRect(x0 + x * scale, y0 + y * scale, scale, scale, TFT_BLACK);
 }
 static void zeichneKarte() {   // nur in den Bildpuffer, ohne Refresh
+    malenGedreht(true);
     display.fillScreen(TFT_WHITE);
     qrX0 = W - QR_AREA - 30;
     qrY0 = (H - QR_AREA) / 2;
@@ -421,6 +428,7 @@ static void zeichneKarte() {   // nur in den Bildpuffer, ohne Refresh
     display.drawString("Scan mich", leftW / 2 + 10, H / 2 + 80);
     display.setFreeFont(nullptr);
     display.drawString(QR_LABEL, leftW / 2 + 10, H / 2 + 115, 2);
+    malenGedreht(false);
 }
 static void zeigeKarte() {
     zeichneKarte();
