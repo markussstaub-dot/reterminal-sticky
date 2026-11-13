@@ -3,7 +3,7 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.18.3 – Umrechner, Widget-Maschine mit Timer, App-Seite mit Rechner, Kritzelblock, Tastenhilfe (▲+▼), Rahmen beim Tippen, Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
+version: FW 0.19.1 – Menü (KI auf Home), Umrechner, Widget-Maschine mit Timer, App-Seite mit Rechner, Kritzelblock, Tastenhilfe (▲+▼), Rahmen beim Tippen, Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
 wartet: Markus: Bewegungswecken von Hand prüfen (USB ab, 3 min liegen lassen, hochnehmen) und Fahrterkennung bei der nächsten Microlino-Fahrt; Offline-Diktat auf /ist/puffer einmal prüfen; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
@@ -293,6 +293,9 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   Umrechner“ (`umrechner.js` mit Tests: km/mi, m/ft, cm/in, km/h/mph, °C/°F, kg/lb, l/gal, bar/psi; ⇄ dreht die
   Richtung). ▲/▼ kurz blättern wieder überall im Karussell (auch Timer und App-Seite), Widget-Funktionen nur per Tippen;
   App-Seite piept sofort bei jedem Tipp
+- **Menü (FW 0.19.x, 13.11.2026):** KI kurz auf Home öffnet das Menü (Widget „menue“, Kacheln aus dem Karussell, Aktion
+  „gehe <i>“), Tipp springt direkt hin; App gleicht es bei jeder Karussell-Änderung mit ab. Wurstfinger-tauglich:
+  Reiter der App-Seite und Kritzel-Knöpfe einheitlich 58 px hoch, Umrechner-Einheiten zweispaltig. Am Gerät geprüft
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

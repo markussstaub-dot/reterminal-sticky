@@ -6,8 +6,8 @@ import { Rechner, TASTEN } from './rechner.js';
 import { Umrechner, PAARE } from './umrechner.js';
 
 const FONT = 'system-ui, sans-serif';
-export const ANZEIGE = { x: 16, y: 40, w: 768, h: 88 };   // x und w Vielfache von 8 (Teil-Refresh)
-const UNTEN = { x: 0, y: 40, w: 800, h: 440 };            // alles unter der Kopfzeile
+export const ANZEIGE = { x: 16, y: 66, w: 768, h: 80 };   // x und w Vielfache von 8 (Teil-Refresh)
+const UNTEN = { x: 0, y: 64, w: 800, h: 416 };            // alles unter den Reitern
 const leinwand = (b, h) => (typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(b, h) : Object.assign(document.createElement('canvas'), { width: b, height: h }));
 
 function taste(g, x, y, w, h, t, dunkel, gr = 34) {
@@ -34,14 +34,14 @@ function kopf(g, aktiv) {
     g.strokeStyle = '#000';
     g.lineWidth = 2;
     g.beginPath();
-    g.roundRect(r.x0, 2, r.x1 - r.x0 - 4, 30, 8);
+    g.roundRect(r.x0, 2, r.x1 - r.x0 - 4, REITER_H - 4, 10);
     g.fill();
     g.stroke();
     g.fillStyle = i === aktiv ? '#fff' : '#000';
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.font = `bold 20px ${FONT}`;
-    g.fillText(r.text, (r.x0 + r.x1 - 4) / 2, 18);
+    g.font = `bold 28px ${FONT}`;
+    g.fillText(r.text, (r.x0 + r.x1 - 4) / 2, REITER_H / 2 + 1);
   });
 }
 
@@ -63,10 +63,12 @@ function anzeigeRahmen(g, oben, gross) {
   g.fillText(gross, x + w - 18, y + h / 2 + 10);
 }
 
-const REITER = [{ x0: 16, x1: 168, text: 'Rechner' }, { x0: 176, x1: 352, text: 'Umrechner' }];   // oben links, y 2–32
+// Reiter oben links, groß genug für Finger (13.11.2026: vorher 30 px hoch); rechts daneben ab x 512 die Statuszeile
+const REITER = [{ x0: 16, x1: 256, text: 'Rechner' }, { x0: 264, x1: 504, text: 'Umrechner' }];
+const REITER_H = 58;
 
 // ---- Taschenrechner ---------------------------------------------------------------------------
-const R_FELD = { x: 16, y: 140, w: 768, h: 332 };
+const R_FELD = { x: 16, y: 154, w: 768, h: 320 };
 export const rechnerWidget = {
   name: 'Rechner',
   neu() { return new Rechner(); },
@@ -88,8 +90,8 @@ export const rechnerWidget = {
 };
 
 // ---- Umrechner --------------------------------------------------------------------------------
-const U_LISTE = { x: 16, y: 140, w: 240, h: 332 };
-const U_FELD = { x: 272, y: 140, w: 512, h: 332 };
+const U_LISTE = { x: 16, y: 154, w: 248, h: 320 };   // zwei Spalten à 4 Einheitenpaare
+const U_FELD = { x: 272, y: 154, w: 512, h: 320 };
 const U_TASTEN = [['7', '8', '9', '⌫'], ['4', '5', '6', 'C'], ['1', '2', '3', '⇄'], ['±', '0', ',', '']];
 export const umrechnerWidget = {
   name: 'Umrechner',
@@ -98,14 +100,15 @@ export const umrechnerWidget = {
   seite(g, u) {
     kopf(g, 1);
     this.anzeige(g, u);
-    const lh = U_LISTE.h / PAARE.length;
-    PAARE.forEach((p, i) => taste(g, U_LISTE.x, U_LISTE.y + i * lh, U_LISTE.w, lh, `${p.a} ↔ ${p.b}`, i === u.paar, 20));
+    const lw = U_LISTE.w / 2, lh = U_LISTE.h / Math.ceil(PAARE.length / 2);
+    PAARE.forEach((p, i) => taste(g, U_LISTE.x + (i % 2) * lw, U_LISTE.y + Math.floor(i / 2) * lh, lw, lh, `${p.a}↔${p.b}`, i === u.paar, 23));
     const tw = U_FELD.w / 4, th = U_FELD.h / U_TASTEN.length;
     U_TASTEN.forEach((zeile, ze) => zeile.forEach((t, sp) => { if (t) taste(g, U_FELD.x + sp * tw, U_FELD.y + ze * th, tw, th, t, t === '⇄'); }));
   },
   tipp(u, x, y) {
     if (x >= U_LISTE.x && x < U_LISTE.x + U_LISTE.w && y >= U_LISTE.y && y < U_LISTE.y + U_LISTE.h) {
-      u.waehle(Math.floor((y - U_LISTE.y) / (U_LISTE.h / PAARE.length)));
+      const sp = Math.floor((x - U_LISTE.x) / (U_LISTE.w / 2)), ze = Math.floor((y - U_LISTE.y) / (U_LISTE.h / Math.ceil(PAARE.length / 2)));
+      u.waehle(ze * 2 + sp);
       return 'seite';
     }
     if (x < U_FELD.x || x >= U_FELD.x + U_FELD.w || y < U_FELD.y || y >= U_FELD.y + U_FELD.h) return null;
@@ -154,7 +157,7 @@ export class AppSeite {
 
   /** Tipper vom Sticky (Display-Koordinaten); true, wenn etwas getroffen wurde */
   async tipp(x, y) {
-    const reiter = y < 36 ? REITER.findIndex((r) => x >= r.x0 && x < r.x1) : -1;
+    const reiter = y < REITER_H ? REITER.findIndex((r) => x >= r.x0 && x < r.x1) : -1;
     if (reiter >= 0) {
       if (reiter !== this.aktiv) { this.aktiv = reiter; await this.zeigen(); }
       return true;

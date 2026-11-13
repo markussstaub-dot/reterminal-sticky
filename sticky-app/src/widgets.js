@@ -62,4 +62,38 @@ export function timerWidget() {
   ];
 }
 
+const NAMEN = { home: 'Home', notiz: 'Notiz', bordbuch: 'Bordbuch', zettel: 'Zettel', kritzel: 'Kritzel', app: 'Rechner' };
+
+/**
+ * Menü (KI kurz auf Home): eine Kachel je Karussell-Eintrag, Tippen springt direkt hin (Aktion „gehe <i>“).
+ * eintraege: Zeilen wie in karussell.txt („home“, „widget timer“, …), Reihenfolge = Index im Karussell.
+ */
+export function menueWidget(eintraege) {
+  const felder = ['typ menue'];
+  const c = leinwand(BREITE, HOEHE);
+  const g = c.getContext('2d', { willReadFrequently: true });
+  g.fillStyle = '#fff';
+  g.fillRect(0, 0, BREITE, HOEHE);
+  g.fillStyle = '#000';
+  g.textAlign = 'left';
+  g.textBaseline = 'middle';
+  g.font = `bold 24px ${FONT}`;
+  g.fillText('Menü', 16, 18);
+  g.font = `16px ${FONT}`;
+  g.fillText('Tippen = hin · KI = Home · ▲▼ = blättern', 100, 19);
+  const spalten = eintraege.length > 6 ? 3 : 2;
+  const zeilen = Math.ceil(eintraege.length / spalten);
+  const x0 = 16, y0 = 44, w = (BREITE - 32) / spalten, h = Math.min(140, (HOEHE - y0 - 12) / zeilen);
+  eintraege.forEach((e, i) => {
+    const name = e.startsWith('widget ') ? e.slice(7).replace(/^./, (b) => b.toUpperCase()) : NAMEN[e] ?? e;
+    const x = Math.round(x0 + (i % spalten) * w), y = Math.round(y0 + Math.floor(i / spalten) * h);
+    knopf(g, x, y, Math.round(x + w), Math.round(y + h), name, e === 'home', 36);
+    felder.push(`knopf ${x} ${y} ${Math.round(x + w)} ${Math.round(y + h)} gehe ${i}`);
+  });
+  return [
+    { n: 'bild.bin', daten: rgbaZu1bpp(g.getImageData(0, 0, BREITE, HOEHE).data) },
+    { n: 'felder.txt', daten: new TextEncoder().encode(felder.join('\n') + '\n') },
+  ];
+}
+
 export const WIDGETS = { timer: timerWidget };

@@ -202,7 +202,7 @@ static void kzPunkt(int x, int y) {
     for (int dy = -KZ_STIFT; dy <= KZ_STIFT; dy++)
         for (int dx = -KZ_STIFT; dx <= KZ_STIFT; dx++) {
             int px = x + dx, py = y + dy;
-            if (px < 0 || px >= W || py < 32 || py >= H) continue;   // oben bleibt die Statuszeile frei
+            if (px < 0 || px >= W || py < 62 || py >= H) continue;   // oben bleiben Knöpfe (KZ_KOPF) und Statuszeile frei
             imgBuf[py * (W / 8) + px / 8] |= 0x80 >> (px & 7);
         }
     portENTER_CRITICAL(&kzSperre);
@@ -234,7 +234,8 @@ static void kritzelPunkt(int x, int y, bool neu) {
 static void kritzelLos() { kzLetztX = kzLetztY = -1; }
 
 // Knöpfe links oben in der Statuszeilen-Höhe (dort wird nicht gemalt): ✓ Speichern bei x 8–80, ✕ Leeren bei x 96–168
-static const int KZ_KN_Y0 = 2, KZ_KN_Y1 = 30, KZ_SP_X0 = 8, KZ_SP_X1 = 80, KZ_LE_X0 = 96, KZ_LE_X1 = 168;
+// gleiche Größe wie die Reiter der App-Seite (58 px hoch, für Finger; 13.11.2026), rechts ab x 512 die Statuszeile
+static const int KZ_KN_Y0 = 2, KZ_KN_Y1 = 58, KZ_SP_X0 = 16, KZ_SP_X1 = 176, KZ_LE_X0 = 184, KZ_LE_X1 = 344, KZ_KOPF = 62;
 static volatile bool kzSpeichernWunsch = false, kzLeerenWunsch = false;
 
 static void kzStrich(int x0, int y0, int x1, int y1) {   // 3 px dicke Linie direkt in imgBuf (für die Knopfsymbole)
@@ -257,15 +258,15 @@ static void kzKnoepfeZeichnen() {
         bildRechteck(x0, KZ_KN_Y0, x1 - x0, KZ_KN_Y1 - KZ_KN_Y0, true);
         bildRechteck(x0 + 3, KZ_KN_Y0 + 3, x1 - x0 - 6, KZ_KN_Y1 - KZ_KN_Y0 - 6, false);
     }
-    int m = (KZ_SP_X0 + KZ_SP_X1) / 2;       // ✓
-    kzStrich(m - 12, 16, m - 4, 24); kzStrich(m - 4, 24, m + 12, 8);
+    int m = (KZ_SP_X0 + KZ_SP_X1) / 2, c = (KZ_KN_Y0 + KZ_KN_Y1) / 2;   // ✓
+    kzStrich(m - 20, c, m - 6, c + 14); kzStrich(m - 6, c + 14, m + 20, c - 14);
     m = (KZ_LE_X0 + KZ_LE_X1) / 2;           // ✕
-    kzStrich(m - 9, 7, m + 9, 25); kzStrich(m + 9, 7, m - 9, 25);
+    kzStrich(m - 15, c - 15, m + 15, c + 15); kzStrich(m + 15, c - 15, m - 15, c + 15);
 }
 
 /** Touch im Knopfstreifen (aus der Kritzel-Aufgabe): true = war ein Knopf, nicht malen */
 static bool kzKnopf(int x, int y, bool neu) {
-    if (y >= 32) return false;
+    if (y >= KZ_KOPF) return false;
     if (!neu) return true;                   // nur beim Aufsetzen auslösen
     if (x >= KZ_SP_X0 && x < KZ_SP_X1) kzSpeichernWunsch = true;
     else if (x >= KZ_LE_X0 && x < KZ_LE_X1) kzLeerenWunsch = true;
@@ -517,6 +518,16 @@ static void karussellSchritt(int richtung) {
     }
 }
 
+/** Menü: direkt zum Karussell-Eintrag i */
+static void karussellGehe(int i) {
+    if (i < 0 || i >= kAnzahl || !karussellDaI(i)) { tone(PIN_BUZZER, 900, 120); return; }
+    Modus m = karussell[i];
+    if (m == M_BORDBUCH) bbWunsch = bbToc;
+    if (m == M_BESTELL) bestellAktuell = 0;
+    if (m == M_WIDGET) { strlcpy(widgetName, kWidget[i], sizeof widgetName); if (modus == M_WIDGET) neuZeichnen = true; }
+    modusWunsch = m;
+}
+
 /** ▲/▼ kurz: innerhalb von Bordbuch und Zetteln blättern, an den Enden weiter im Karussell */
 static void blaettern(int richtung) {
     if (modus == M_BORDBUCH) {
@@ -627,6 +638,7 @@ static void tasteAktion(const char* name, bool gedrueckt) {
         kiSeit = 0;
         if (kiDiktat) { aufnahmeStopp(); return; }
         if (modus != M_HOME) modusWunsch = M_HOME;   // kurz: immer nach Home
+        else if (sollDa("widgets/menue/felder.txt")) { strlcpy(widgetName, "menue", sizeof widgetName); modusWunsch = M_WIDGET; }   // auf Home: Menü
         return;
     }
     if (strcmp(name, "up") == 0) {

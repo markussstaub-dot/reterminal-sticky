@@ -5,7 +5,8 @@
  *   /soll/widgets/<name>/felder.txt   je Zeile ein Eintrag:
  *       typ countdown|stoppuhr        dauer <s>            zeit <x> <y>        ziffern <w> <h>
  *       knopf <x0> <y0> <x1> <y1> <aktion> [wert]        taste up|down <aktion> [wert]
- *     Aktionen: start_stopp · reset · plus <s> · minus <s> · setze <s>
+ *     Aktionen: start_stopp · reset · plus <s> · minus <s> · setze <s> · gehe <i> (Karussell-Eintrag i, fürs Menü)
+ *     typ menue: keine Uhr (das Menü öffnet KI kurz auf Home)
  * Karussell-Eintrag „widget <name>“. Ein Uhrwerk für alle Widgets: der Timer läuft weiter, wenn man die Seite verlässt;
  * beim Ablauf weckt er den Sticky (leichtSchlaf), piept und holt die Timer-Seite nach vorn.
  */
@@ -17,7 +18,7 @@ static WKnopf wKnoepfe[12];
 static int wKnopfAnzahl = 0;
 static char wTaste[2][12] = {"", ""};
 static int wTasteWert[2] = {0, 0};
-static bool wCountdown = true;
+static bool wCountdown = true, wHatUhr = false;
 static int32_t wDauerS = 300;
 // Uhrwerk
 static bool tLaeuft = false, tAblauf = false;
@@ -39,7 +40,7 @@ static bool widgetLaden(const char* name) {
     snprintf(rel, sizeof rel, "widgets/%s/felder.txt", name);
     if (!sollText(rel, t)) return false;
     strlcpy(widgetName, name, sizeof widgetName);
-    wKnopfAnzahl = 0; wzX = -1; wTaste[0][0] = wTaste[1][0] = 0;
+    wKnopfAnzahl = 0; wzX = -1; wTaste[0][0] = wTaste[1][0] = 0; wHatUhr = false;
     int start = 0;
     while (start < (int)t.length()) {
         int ende = t.indexOf('\n', start);
@@ -49,7 +50,7 @@ static bool widgetLaden(const char* name) {
         z.trim();
         char a[12] = "", b[12] = "";
         int v[5] = {0, 0, 0, 0, 0};
-        if (sscanf(z.c_str(), "typ %11s", a) == 1) wCountdown = strcmp(a, "stoppuhr") != 0;
+        if (sscanf(z.c_str(), "typ %11s", a) == 1) { wCountdown = strcmp(a, "stoppuhr") != 0; wHatUhr = strcmp(a, "menue") != 0; }
         else if (sscanf(z.c_str(), "dauer %d", &v[0]) == 1) wDauerS = v[0];
         else if (sscanf(z.c_str(), "zeit %d %d", &v[0], &v[1]) == 2) { wzX = v[0] & ~7; wzY = v[1]; }
         else if (sscanf(z.c_str(), "ziffern %d %d", &v[0], &v[1]) == 2) { wzW = v[0] & ~7; wzH = v[1]; }
@@ -66,7 +67,7 @@ static bool widgetLaden(const char* name) {
     size_t n = (size_t)11 * wzW / 8 * wzH;
     if (!wzZiffern || n > (size_t)11 * 128 * 160 / 8 || !sollLesen(rel, wzZiffern, n)) wzX = -1;   // ohne Ziffern keine Zeit
     // Uhrwerk gehört diesem Widget, solange es nicht läuft
-    if (!tLaeuft && strcmp(tWidget, name)) { strlcpy(tWidget, name, sizeof tWidget); tStandMs = wCountdown ? wDauerS * 1000 : 0; }
+    if (wHatUhr && !tLaeuft && strcmp(tWidget, name)) { strlcpy(tWidget, name, sizeof tWidget); tStandMs = wCountdown ? wDauerS * 1000 : 0; }
     return true;
 }
 
@@ -105,7 +106,10 @@ static void widgetZeigen() {
     seite = "widget";
 }
 
+static void karussellGehe(int i);
 static void widgetAktion(const char* a, int wert) {
+    if (!strcmp(a, "gehe")) { karussellGehe(wert); return; }
+    if (!wHatUhr) return;
     int32_t jetzt = tJetztMs();
     if (!strcmp(a, "start_stopp")) {
         if (tLaeuft) { tStandMs = jetzt; tLaeuft = false; protokoll("Timer %s angehalten bei %ld s", widgetName, (long)(jetzt / 1000)); }
@@ -167,14 +171,14 @@ static void widgetLoop() {
     }
     if (wTasteWunsch >= 0) { int i = wTasteWunsch; wTasteWunsch = -1; widgetAktion(wTaste[i], wTasteWert[i]); }
     // Ablauf: piepen, Seite nach vorn holen
-    if (tLaeuft && wCountdown && tJetztMs() <= 0) {
+    if (tLaeuft && wCountdown && tJetztMs() <= 0) {   // Uhrwerk des Timers (nicht des Menüs)
         tLaeuft = false; tStandMs = 0; tAblauf = true;
         protokoll("Timer %s abgelaufen", tWidget);
         aktiv();
         for (int k = 0; k < 3; k++) { tone(PIN_BUZZER, 2700, 150); delay(250); tone(PIN_BUZZER, 3300, 150); delay(350); }
         if (modus != M_WIDGET || strcmp(widgetName, tWidget)) { strlcpy(widgetName, tWidget, sizeof widgetName); modusWunsch = M_WIDGET; }
     }
-    if (modus != M_WIDGET || hilfeAn) return;
+    if (modus != M_WIDGET || hilfeAn || !wHatUhr) return;
     if (tLaeuft) aktiv();                     // auf der Timer-Seite nicht einschlafen, solange er läuft
     if (widgetZeitZeichnen(false)) {
         display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);

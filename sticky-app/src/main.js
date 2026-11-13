@@ -33,7 +33,7 @@ import { SORTEN, naechsteSorte } from './sorte.js';
 import { HILFE } from './hilfe.js';
 import { HANDGRIFFE_STANDARD } from './handgriffe.js';
 import { AppSeite } from './appseite.js';
-import { WIDGETS } from './widgets.js';
+import { WIDGETS, menueWidget } from './widgets.js';
 import { WOERTERBUCH_STANDARD, paareLesen, paareText, korrigiere, lernen, einpflegen } from './woerterbuch.js';
 import * as bb from './bordbuch.js';
 import { tabsEinrichten } from './tabs.js';
@@ -655,7 +655,8 @@ async function abgleich() {
   if (fwAb('0.13.0')) await karussellAufspielen().catch((e) => eintrag(`Karussell: ${e.message}`, true));
   if (fwAb('0.15.0')) await hilfeAufspielen().catch((e) => eintrag(`Hilfe: ${e.message}`, true));
   if (fwAb('0.18.0')) {   // Widget-Maschine: nur Geändertes geht rüber (Bestandsliste je Widget)
-    for (const [name, bauen] of Object.entries(WIDGETS)) {
+    const menue = () => menueWidget(karussellText().trim().split('\n'));   // Kacheln = Karussell (KI auf Home)
+    for (const [name, bauen] of Object.entries({ ...WIDGETS, menue })) {
       const n = await zwilling.sollAbgleich(`widgets/${name}`, bauen()).catch((e) => { eintrag(`Widget ${name}: ${e.message}`, true); return 0; });
       if (n) eintrag(`Widget „${name}“ aufgespielt`);
     }
@@ -685,6 +686,8 @@ async function hilfeAufspielen() {
 async function karussellAufspielen() {
   const n = await zwilling.sollAbgleich('einstellungen', [{ n: 'karussell.txt', daten: new TextEncoder().encode(karussellText()) }]);
   if (n) eintrag(`Karussell: ${karussellText().trim().split('\n').join(' → ')}`);
+  // Menü-Kacheln folgen dem Karussell (FW ≥ 0.19.0)
+  if (n && fwAb('0.19.0')) await zwilling.sollAbgleich('widgets/menue', menueWidget(karussellText().trim().split('\n')));
 }
 $('karussell').value = localStorage.getItem('sticky.karussell') || KARUSSELL_STANDARD;
 $('karussell').onchange = () => {

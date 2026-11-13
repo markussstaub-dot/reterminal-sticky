@@ -411,6 +411,8 @@ Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzu
   (Parkuhr „geparkt um 14:05, Scheibe bis 15:05“ statt Countdown; Uhr minutengenau); Zzz in der Statuszeile
 - fest **eine Statuszeile**: links Uhr (bzw. Seitenname), rechts Handy verbunden, offene Notizen mit Zahl, Akku, bei
   Bedarf Warnzeichen (Beschlag, Laden zu kalt/heiß), im Schlaf Zzz statt Handy. Zeichnet der Sticky selbst
+- fest **Menü** (umgesetzt 13.11., FW 0.19): KI kurz auf Home öffnet Kacheln je Karussell-Eintrag, Tipp springt hin
+- fest **Knöpfe einheitlich groß** (Markus, „Wurstfinger“): Kopf-Knöpfe/Reiter 58 px hoch, mind. ~120 × 58 px
 - fest **Tastenhilfe**: ▲ und ▼ gleichzeitig zeigt, was die Tasten auf dieser Seite tun (auch für Übergabe)
 - Vorschlag **Rückmeldung**: Klick sofort (gibt es), dazu Rahmen ums gedrückte Feld per Teil-Refresh (~0,3 s),
   Sanduhr in der Statuszeile bei allem über 1 s
