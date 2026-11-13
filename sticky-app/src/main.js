@@ -280,7 +280,7 @@ zwilling.beobachte((art, d) => {
     else if (d.t === 'touch' && d.a === 'down') { eintrag(`Touch bei ${d.x}, ${d.y}`); touchMarke(d.x, d.y); fahrtTouch(d.x, d.y, d.ms); }
     else if (d.t === 'pong') eintrag('Pong');
     else if (d.t === 'schlaf') stickySchlaeft = true;
-    else if (d.t === 'modus') { spiegelSetze({ modus: d.m, ...(d.zettel != null ? { zettel: d.zettel } : {}), verbunden: true }); stickyModus = d.m; imBordbuch = d.m === 'bordbuch'; eintrag(`Modus: ${{ home: 'Home', notiz: 'Notiz', bordbuch: 'Bordbuch', kritzel: 'Kritzelblock', app: 'App-Seite', widget: 'Widget', bestell: `Bestellzettel ${(d.zettel ?? 0) + 1}` }[d.m] ?? d.m}`); if (d.m === 'app') appSeite.zeigen().catch((e) => eintrag(`App-Seite: ${e.message}`, true)); }
+    else if (d.t === 'modus') { spiegelSetze({ modus: d.m, ...(d.zettel != null ? { zettel: d.zettel } : {}), verbunden: true }); stickyModus = d.m; imBordbuch = d.m === 'bordbuch'; eintrag(`Modus: ${{ home: 'Home', notiz: 'Notiz', bordbuch: 'Bordbuch', kritzel: 'Kritzelblock', app: 'App-Seite', widget: 'Widget', bestell: `Bestellzettel ${(d.zettel ?? 0) + 1}` }[d.m] ?? d.m}`); if (d.m === 'app') { if (d.hoch != null) appSeite.hoch = !!d.hoch; appSeite.zeigen().catch((e) => eintrag(`App-Seite: ${e.message}`, true)); } }
     else if (d.t === 'seite') { $('bbStatus').textContent = `Sticky zeigt Bordbuch-Seite ${d.n + 1} von ${d.von}`; spiegelSetze({ bb: d.n }); }
     else if (d.t === 'audio' && (d.a === 'start' || d.a === 'stop')) spiegelSetze({ aufnahme: d.a === 'start' });
     else if (d.t === 'bordbuch') eintrag(`Bordbuch auf dem Sticky: ${d.seiten} Seiten, ${d.belegtKB} KB`);
@@ -701,7 +701,7 @@ async function karussellAufspielen() {
   const n = await einstellungenAufspielen();
   if (n) eintrag(`Karussell: ${karussellText().trim().split('\n').join(' → ')}`);
   // Menü-Kacheln folgen dem Karussell (FW ≥ 0.19.0)
-  if (n && fwAb('0.19.0')) await zwilling.sollAbgleich('widgets/menue', widgetBauer().menue());
+  if (n && fwAb('0.19.0')) for (const [name, bauen] of Object.entries(widgetBauer())) if (name.startsWith('menue')) await zwilling.sollAbgleich(`widgets/${name}`, bauen());
 }
 // ---- Lage der Seiten (SPEC „Hoch/Quer in zwei Stufen“, Stufe 1, FW ≥ 0.21.0) -------------------------------------
 function lagen() {
@@ -710,24 +710,31 @@ function lagen() {
 const hochkant = (seite) => fwAb('0.21.0') && lagen()[seite] === 'hoch';
 const lageText = () => Object.entries(lagen()).map(([s, l]) => `${s} ${l}`).join('\n') + '\n';
 /** Widgets in ihrer Lage bauen; das Menü folgt dem Karussell */
-const widgetBauer = () => ({
-  ...Object.fromEntries(Object.entries(WIDGETS).map(([n, f]) => [n, () => f(hochkant(n))])),
-  menue: () => menueWidget(karussellText().trim().split('\n'), hochkant('menue')),
-});
+const auto = (seite) => fwAb('0.22.0') && lagen()[seite] === 'auto';
+/** bei „auto“ (Stufe 2, FW ≥ 0.22.0) beide Lagen: <name> quer, <name>-h hochkant; der Sticky nimmt laut Lagesensor */
+const widgetBauer = () => {
+  const alle = { ...WIDGETS, menue: (h) => menueWidget(karussellText().trim().split('\n'), h) };
+  const b = {};
+  for (const [n, f] of Object.entries(alle)) {
+    b[n] = () => f(hochkant(n));
+    if (auto(n)) b[`${n}-h`] = () => f(true);
+  }
+  return b;
+};
 /** erst die Bilder (in neuer Lage), dann lage.txt: deren Änderung lässt den Sticky neu zeichnen */
 async function lageAufspielen() {
   appSeite.hoch = hochkant('app');
   if (!zwilling.verbunden || !fwAb('0.21.0')) return;
   for (const [name, bauen] of Object.entries(widgetBauer())) await zwilling.sollAbgleich(`widgets/${name}`, bauen());
   const n = await einstellungenAufspielen();
-  if (n) eintrag(`Lage: ${Object.entries(lagen()).map(([s, l]) => `${LAGE_NAMEN[s]} ${l === 'hoch' ? 'hochkant' : 'quer'}`).join(', ')}`);
+  if (n) eintrag(`Lage: ${Object.entries(lagen()).map(([s, l]) => `${LAGE_NAMEN[s]} ${{ hoch: 'hochkant', quer: 'quer', auto: 'automatisch' }[l]}`).join(', ')}`);
   if (stickyModus === 'app') await appSeite.zeigen();
 }
 for (const [seite, name] of Object.entries(LAGE_NAMEN)) {
   const zeile = document.createElement('label');
   zeile.className = 'lage';
   const wahl = document.createElement('select');
-  wahl.innerHTML = '<option value="hoch">hochkant</option><option value="quer">quer</option>';
+  wahl.innerHTML = '<option value="hoch">hochkant</option><option value="quer">quer</option><option value="auto">automatisch (Sensor)</option>';
   wahl.value = lagen()[seite];
   wahl.onchange = () => {
     const l = lagen();

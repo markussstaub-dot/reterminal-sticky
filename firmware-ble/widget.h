@@ -47,10 +47,17 @@ static int32_t tJetztMs() {
     return wCountdown ? max<int32_t>(0, tStandMs - d) : tStandMs + d;
 }
 
+/** Datei eines Widgets; bei Lage „auto“ und hochkant aus widgets/<name>-h/ (die App legt beide Lagen ab, FW 0.22.0) */
+static void wPfad(char* rel, size_t n, const char* name, const char* datei) {
+    snprintf(rel, n, "widgets/%s-h/felder.txt", name);
+    if (lageAuto(name) && lageHoch(name) && sollDa(rel)) snprintf(rel, n, "widgets/%s-h/%s", name, datei);
+    else snprintf(rel, n, "widgets/%s/%s", name, datei);
+}
+
 static bool widgetLaden(const char* name) {
     char rel[48];
     String t;
-    snprintf(rel, sizeof rel, "widgets/%s/felder.txt", name);
+    wPfad(rel, sizeof rel, name, "felder.txt");
     if (!sollText(rel, t)) return false;
     strlcpy(widgetName, name, sizeof widgetName);
     wKnopfAnzahl = 0; wzX = -1; wTaste[0][0] = wTaste[1][0] = 0; wHatUhr = false; wWaage = false; wbR = 0; wW1x = wW2x = -1;
@@ -85,7 +92,7 @@ static bool widgetLaden(const char* name) {
     }
     if (!wzSchrittGesetzt) { wzDx = wzW; wzDy = 0; }
     if (!wzZiffern) wzZiffern = (uint8_t*)ps_malloc(14 * 128 * 160 / 8);
-    snprintf(rel, sizeof rel, "widgets/%s/ziffern.bin", name);
+    wPfad(rel, sizeof rel, name, "ziffern.bin");
     wZellen = wWaage ? 14 : 11;
     size_t n = (size_t)wZellen * wzW / 8 * wzH;
     if (!wzZiffern || n > (size_t)14 * 128 * 160 / 8 || !sollLesen(rel, wzZiffern, n)) { wzX = -1; wW1x = wW2x = -1; }   // ohne Ziffern keine Zahlen
@@ -197,7 +204,7 @@ static void waageLoop() {
 /** Aus setzeModus: Seite aufbauen */
 static void widgetZeigen() {
     char rel[48];
-    snprintf(rel, sizeof rel, "widgets/%s/bild.bin", widgetName);
+    wPfad(rel, sizeof rel, widgetName, "bild.bin");
     if (!widgetLaden(widgetName) || !sollLesen(rel, imgBuf, IMG_BYTES)) {
         memset(imgBuf, 0, IMG_BYTES);
         tone(PIN_BUZZER, 900, 120);           // Widget noch nicht aufgespielt

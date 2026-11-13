@@ -40,7 +40,8 @@ static char widgetName[16] = "";       // aktuelles Widget (widget.h)
 // Bordbuch und Zettel quer. Die App rendert in der gewählten Lage; die Firmware braucht sie für Statuszeile,
 // Ziffern und die Kritzel-Knöpfe.
 static char lageSeite[12][16];
-static bool lageHochFlag[12];
+static bool lageHochFlag[12], lageAutoFlag[12];
+static bool sensorHoch = false;   // Stufe 2 (FW 0.22.0): Lage laut Lagesensor, für Seiten mit „auto“
 static int lageAnzahl = 0;
 static void lageLaden() {
     lageAnzahl = 0;
@@ -53,12 +54,50 @@ static void lageLaden() {
         String z = t.substring(start, ende);
         start = ende + 1;
         char a[16], b[8];
-        if (sscanf(z.c_str(), "%15s %7s", a, b) == 2) { strlcpy(lageSeite[lageAnzahl], a, 16); lageHochFlag[lageAnzahl++] = !strcmp(b, "hoch"); }
+        if (sscanf(z.c_str(), "%15s %7s", a, b) == 2) {
+            strlcpy(lageSeite[lageAnzahl], a, 16);
+            lageAutoFlag[lageAnzahl] = !strcmp(b, "auto");
+            lageHochFlag[lageAnzahl++] = !strcmp(b, "hoch");
+        }
     }
 }
-static bool lageHoch(const char* seite) {
-    for (int i = 0; i < lageAnzahl; i++) if (!strcmp(lageSeite[i], seite)) return lageHochFlag[i];
+static bool lageAuto(const char* seite) {
+    for (int i = 0; i < lageAnzahl; i++) if (!strcmp(lageSeite[i], seite)) return lageAutoFlag[i];
     return false;
+}
+static bool lageHoch(const char* seite) {
+    for (int i = 0; i < lageAnzahl; i++) if (!strcmp(lageSeite[i], seite)) return lageAutoFlag[i] ? sensorHoch : lageHochFlag[i];
+    return false;
+}
+/**
+ * Lage aus der Schwerkraft: hochkant zeigt sie entlang Sensor-y, quer entlang Sensor-x (am Gerät gemessen). Flach liegend (beide klein) oder schräg dazwischen: keine Aussage (-1).
+ */
+static bool beschleunigung(float& x, float& y, float& z);
+/**
+ * Winkel in der Displayebene: 0° = quer aufrecht, 90° = hochkant aufrecht; -1, wenn er flach liegt (< 0,5 g in der Ebene).
+ * Hysterese (14.11.2026, Markus: „zu träge/zappelig“): nach hochkant erst über 60°, zurück nach quer erst unter 30°
+ */
+static float lageWinkel() {
+    float x, y, z;
+    if (!beschleunigung(x, y, z)) return -1;
+    float ax = fabsf(x), ay = fabsf(y);
+    if (sqrtf(ax * ax + ay * ay) < 0.5f) return -1;
+    return atan2f(ay, ax) * 57.2958f;   // gemessen 13.11.2026: hochkant aufrecht y ≈ −0,9 g, also Sensor-y ∥ Display-x
+}
+static int lageMessen() {
+    float w = lageWinkel();
+    if (w < 0) return -1;
+    if (w > 60) return 1;
+    if (w < 30) return 0;
+    return sensorHoch ? 1 : 0;   // dazwischen: bleibt, wie es ist
+}
+/** beim Seitenwechsel: gleich in der richtigen Lage aufbauen (ein Messwert reicht, Grenze 45°) */
+static void lageSofort() {
+    float x, y, z;
+    if (!beschleunigung(x, y, z)) return;
+    float w = lageWinkel();
+    protokoll("Lage beim Aufbau: x %.2f g, y %.2f g, z %.2f g -> %.0f Grad", x, y, z, w);
+    if (w >= 0) sensorHoch = w > 45;
 }
 static volatile bool neuZeichnen = false;   // Seite neu aufbauen (Hilfe zu, anderes Widget)
 static void widgetZeigen();
@@ -205,8 +244,8 @@ static void uhrAuffrischen(bool voll) {
 }
 
 static void meldeModus() {
-    char j[48];
-    snprintf(j, sizeof j, "{\"t\":\"modus\",\"m\":\"%s\",\"zettel\":%d}", modusName(), bestellAktuell);
+    char j[64];   // hoch: Lage der App-Seite (bei „auto“ vom Sensor), die App zeichnet danach
+    snprintf(j, sizeof j, "{\"t\":\"modus\",\"m\":\"%s\",\"zettel\":%d,\"hoch\":%d}", modusName(), bestellAktuell, lageHoch("app") ? 1 : 0);
     sendEvt(j);
     wantState = true;
 }
@@ -267,7 +306,8 @@ static void kritzelLos() { kzLetztX = kzLetztY = -1; }
 static const int KZ_KN_Y0 = 2, KZ_KN_Y1 = 58, KZ_SP_X0 = 16, KZ_SP_X1 = 176, KZ_LE_X0 = 184, KZ_LE_X1 = 344, KZ_KOPF = 62;
 static volatile bool kzSpeichernWunsch = false, kzLeerenWunsch = false;
 
-static bool kzHoch() { return lageHoch("kritzel"); }
+static bool kzLageHoch = false;   // Lage des Blatts, beim neuen Blatt festgelegt (ein bemaltes Blatt dreht nicht mit)
+static bool kzHoch() { return kzLageHoch; }
 /** logisch → Display */
 static void kzD(int lx, int ly, int& x, int& y) { if (kzHoch()) { x = ly; y = H - 1 - lx; } else { x = lx; y = ly; } }
 /** logisches Rechteck in imgBuf (schwarz/weiß) */
@@ -413,6 +453,7 @@ static void kritzelSpeichern() {
 
 /** Leeres Blatt mit Knöpfen und Statuszeile zeigen (Voll-Refresh, damit nichts nachleuchtet) */
 static void kzBlattNeu() {
+    kzLageHoch = lageHoch("kritzel");
     memset(imgBuf, 0, IMG_BYTES);
     kzBemalt = false;
     kritzelLos();
@@ -426,6 +467,7 @@ static void kzBlattNeu() {
 }
 
 static void setzeModus(Modus m) {
+    lageSofort();
     if ((m == M_BORDBUCH && bbSeiten == 0) || (m == M_BESTELL && bestellAnzahl == 0)) {
         tone(PIN_BUZZER, 900, 120);   // tiefer Ton: kein Bordbuch aufgespielt
         return;
@@ -701,6 +743,24 @@ static void tasteAktion(const char* name, bool gedrueckt) {
 }
 
 /** Aus loop(): Halten erkennen, Moduswünsche umsetzen, Uhr, Rückfall nach Home */
+/** Stufe 2: Seite mit Lage „auto“ dreht mit, sobald der Sensor 3 × hintereinander dieselbe Lage misst (~0,75 s) */
+static void lageLoop() {
+    static uint32_t zuletzt = 0;
+    static int kandidat = -1, gleich = 0;
+    if (hilfeAn || audioLaeuft || millis() - zuletzt < 250) return;   // ein I2C-Lesen (6 Byte, < 1 ms) je 0,25 s, nur auf „auto“-Seiten
+    zuletzt = millis();
+    const char* s = modus == M_APP ? "app" : modus == M_KRITZEL ? "kritzel" : modus == M_WIDGET ? widgetName : nullptr;
+    if (!s || !lageAuto(s)) { gleich = 0; return; }
+    int k = lageMessen();
+    if (k < 0) { gleich = 0; return; }
+    if (k != kandidat) { kandidat = k; gleich = 1; return; }
+    if (++gleich < 3 || (k == 1) == sensorHoch) return;
+    sensorHoch = k == 1;
+    protokoll("Lage %s (Sensor, %.0f Grad)", sensorHoch ? "hoch" : "quer", lageWinkel());
+    if (modus == M_KRITZEL && kzBemalt) return;   // bemaltes Blatt bleibt, wie es ist
+    neuZeichnen = true;
+}
+
 static void modusLoop() {
     if (kiSeit && !kiDiktat && millis() - kiSeit > 500) {
         kiDiktat = true;                 // KI gehalten → Diktat (mit oder ohne Handy)
@@ -728,6 +788,7 @@ static void modusLoop() {
     rahmenLoop();
     kritzelLoop();
     widgetLoop();
+    lageLoop();
     if (hilfeWunsch) { hilfeWunsch = false; hilfeZeigen(); }
     if (neuZeichnen) {                    // Hilfe zu: dieselbe Seite wieder zeigen
         neuZeichnen = false;
