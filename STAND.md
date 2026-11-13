@@ -3,7 +3,7 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.12.1 – eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
+version: FW 0.13.0 – Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
 wartet: Markus: Bewegungswecken von Hand prüfen (USB ab, 3 min liegen lassen, hochnehmen) und Fahrterkennung bei der nächsten Microlino-Fahrt; Offline-Diktat auf /ist/puffer einmal prüfen; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
@@ -209,6 +209,11 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   und der Sticky ließ sich erst nach Ab- und Anstecken flashen (GPIO0 ist SCL und Boot-Pin). FW 0.12.1: Bus-Rettung
   (9 SCL-Takte + STOP, Wire neu), Fehler und Rettung landen im Fahrtenschreiber, Fahrt endet nach 2 min ohne
   Messwerte; Klima im Schlummern wirklich nur alle 15 min (vorher jede Minute). Ursache noch offen
+- **Tastenregeln und Karussell (FW 0.13.0, 13.11.2026, SPEC „Bedienung und Oberfläche“):** KI kurz = Home, KI halten =
+  Diktat; ▲/▼ kurz blättern (im Bordbuch und in den Zetteln seitenweise, an den Enden weiter im Karussell, rundum);
+  ▼ 1 s = nächster Eintrag, ▲ 1 s = Anfang des Eintrags bzw. voriger. Reihe aus `/soll/einstellungen/karussell.txt`,
+  in der App unter „Mehr → Karussell“ (Standard Home, Notiz, Bordbuch, Zettel). Lange Drücke und Bordbuch-Seiten
+  stehen im Fahrtenschreiber. Am Gerät geprüft (Markus): ▼/▲ kurz, ▼ lang, ▲ am Anfang zurück, KI → Home
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

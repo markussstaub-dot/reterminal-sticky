@@ -569,8 +569,26 @@ async function abgleich() {
     eintrag('Sticky kann jetzt auch ohne Handy Notizen sammeln');
   }
   await pufferAbholen();
+  if (fwAb('0.13.0')) await karussellAufspielen().catch((e) => eintrag(`Karussell: ${e.message}`, true));
   if (fwAb('0.10.0')) await fahrtenschreiberAbholen().catch((e) => eintrag(`Fahrtenschreiber: ${e.message}`, true));
 }
+
+// ---- Karussell (SPEC „Bedienung und Oberfläche“): Reihe, durch die ▲/▼ am Sticky blättern -------------------------
+const KARUSSELL_STANDARD = 'Home, Notiz, Bordbuch, Zettel';
+const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'bordbuch', zettel: 'zettel', bestellzettel: 'zettel' };
+function karussellText() {
+  const roh = (localStorage.getItem('sticky.karussell') || KARUSSELL_STANDARD).split(/[,;\n]/).map((w) => KARUSSELL_WOERTER[w.trim().toLowerCase()]).filter(Boolean);
+  return [...new Set(roh)].join('\n') + '\n';
+}
+async function karussellAufspielen() {
+  const n = await zwilling.sollAbgleich('einstellungen', [{ n: 'karussell.txt', daten: new TextEncoder().encode(karussellText()) }]);
+  if (n) eintrag(`Karussell: ${karussellText().trim().split('\n').join(' → ')}`);
+}
+$('karussell').value = localStorage.getItem('sticky.karussell') || KARUSSELL_STANDARD;
+$('karussell').onchange = () => {
+  localStorage.setItem('sticky.karussell', $('karussell').value);
+  if (zwilling.verbunden && fwAb('0.13.0')) karussellAufspielen().catch((e) => eintrag(`Karussell: ${e.message}`, true));
+};
 
 // ---- Fahrtenschreiber (SPEC „Zwilling 2.0“): /ist/log/JJJJ-MM-TT.txt auf der Karte des Sticky ----------------------
 // Die App holt nur den neuen Teil (Stand je Datei in localStorage) und hängt ihn an ihre Kopie an

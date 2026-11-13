@@ -87,6 +87,8 @@ static void sollGeaendert(const char* rel) {
         ziffernDa = homeLaden(2, ziffernBuf);
     } else if (!strcmp(rel, "bordbuch/index.txt")) {
         bbIndexMelden();
+    } else if (!strcmp(rel, "einstellungen/karussell.txt")) {
+        karussellLaden();
     } else if (!strcmp(rel, "notiz/layout.txt")) {
         fahrtLayoutLaden();
         wantState = true;

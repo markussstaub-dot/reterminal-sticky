@@ -80,6 +80,7 @@ static void bbZeige(int n) {
     // update() ist nach dem ersten Bild ohnehin nur ~0,4 s
     uint32_t t0 = millis();
     display.update();
+    protokoll("Bordbuch Seite %d von %d", n + 1, bbSeiten);
     Serial.printf("Bordbuch: Seite %d in %lu ms\n", n, (unsigned long)(millis() - t0));
     bbMeldeSeite();
 }

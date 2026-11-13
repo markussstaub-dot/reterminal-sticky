@@ -1,8 +1,13 @@
 /**
  * Modi (Markus, 11.11.2026): Home = Visitenkarte hochkant mit Uhrzeit · Notiz = Fahrt-Seite · Bordbuch.
  *
- * Tasten:  KI kurz = Home ↔ Notiz (aus dem Bordbuch: Home) · KI halten (≥ 0,5 s) = Diktat, in jedem Modus
- *          ▲ kurz = Bordbuch (im Bordbuch: zurückblättern) · ▲ 1 s im Bordbuch = Inhaltsverzeichnis · ▼ = weiterblättern
+ * Tasten (SPEC „Bedienung und Oberfläche“, FW 0.13.0), überall gleich:
+ *   KI kurz = Home · KI halten (≥ 0,5 s) = Diktat
+ *   ▲/▼ kurz = eine Seite zurück/vor; am Ende von Bordbuch oder Zetteln weiter zum nächsten Eintrag im Karussell (rundum)
+ *   ▼ 1 s = nächster Eintrag · ▲ 1 s = Anfang des Eintrags (Inhaltsverzeichnis, erster Zettel), dort: voriger Eintrag
+ *   Tippen = Hauptaktion der Seite (Inhaltsverzeichnis: Kapitel, Notiz: Streifen)
+ * Karussell: Reihe aus /soll/einstellungen/karussell.txt (je Zeile home|notiz|bordbuch|zettel), sonst
+ *   home, notiz, bordbuch, zettel. Leere Einträge (kein Bordbuch, keine Zettel) werden übersprungen.
  * Rückweg: KI kurz oder 5 min ohne Bedienung → Home.
  *
  * Bestellzettel (11.11.2026): ▼ auf Home → erster Zettel, ▼/▲ blättern (rundum), KI kurz → Home. Quer, große Schrift,
@@ -71,10 +76,13 @@ static void homeLesen() {
     bestellZaehlen();
 }
 
+static void karussellLaden();
 static void homeInit() {
     ziffernBuf = (uint8_t*)ps_malloc(IMG_BYTES);
     LittleFS.mkdir("/home");
+    LittleFS.mkdir("/einstellungen");
     homeLesen();
+    karussellLaden();
     // Ortszeit Deutschland (die Uhr läuft in UTC)
     setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
     tzset();
@@ -210,8 +218,70 @@ static void setzeModus(Modus m) {
 }
 
 // ---- Tasten ----------------------------------------------------------------------------------
-static uint32_t kiSeit = 0, upSeit = 0;
-static bool kiDiktat = false, upLang = false;
+static uint32_t kiSeit = 0, upSeit = 0, downSeit = 0;
+static bool kiDiktat = false, upLang = false, downLang = false;
+
+// ---- Karussell -------------------------------------------------------------------------------
+static Modus karussell[8];
+static int kAnzahl = 0;
+
+static void karussellLaden() {
+    kAnzahl = 0;
+    String t;
+    if (sollText("einstellungen/karussell.txt", t)) {
+        int start = 0;
+        while (start < (int)t.length() && kAnzahl < 8) {
+            int ende = t.indexOf('\n', start);
+            if (ende < 0) ende = t.length();
+            String z = t.substring(start, ende);
+            start = ende + 1;
+            z.trim();
+            z.toLowerCase();
+            if (z == "home") karussell[kAnzahl++] = M_HOME;
+            else if (z == "notiz") karussell[kAnzahl++] = M_NOTIZ;
+            else if (z == "bordbuch") karussell[kAnzahl++] = M_BORDBUCH;
+            else if (z == "zettel") karussell[kAnzahl++] = M_BESTELL;
+        }
+    }
+    bool homeDrin = false;
+    for (int i = 0; i < kAnzahl; i++) homeDrin |= karussell[i] == M_HOME;
+    if (kAnzahl == 0) { const Modus std[] = {M_HOME, M_NOTIZ, M_BORDBUCH, M_BESTELL}; for (auto m : std) karussell[kAnzahl++] = m; }
+    else if (!homeDrin && kAnzahl < 8) { memmove(karussell + 1, karussell, kAnzahl * sizeof(Modus)); karussell[0] = M_HOME; kAnzahl++; }
+    Serial.printf("Karussell: %d Einträge\n", kAnzahl);
+}
+
+static bool karussellDa(Modus m) {
+    if (m == M_BORDBUCH) return bbSeiten > 0;
+    if (m == M_BESTELL) return bestellAnzahl > 0;
+    if (m == M_NOTIZ) return notizDa;
+    return true;
+}
+
+/** Zum nächsten (richtung +1) bzw. vorigen (−1) Eintrag; rückwärts landet man auf dessen letzter Seite */
+static void karussellSchritt(int richtung) {
+    int pos = 0;
+    for (int i = 0; i < kAnzahl; i++) if (karussell[i] == modus) { pos = i; break; }
+    for (int i = 1; i <= kAnzahl; i++) {
+        Modus m = karussell[((pos + richtung * i) % kAnzahl + kAnzahl) % kAnzahl];
+        if (!karussellDa(m) || m == modus) continue;
+        if (m == M_BORDBUCH) bbWunsch = richtung > 0 ? bbToc : bbSeiten - 1;
+        if (m == M_BESTELL) bestellAktuell = richtung > 0 ? 0 : bestellAnzahl - 1;
+        modusWunsch = m;
+        return;
+    }
+}
+
+/** ▲/▼ kurz: innerhalb von Bordbuch und Zetteln blättern, an den Enden weiter im Karussell */
+static void blaettern(int richtung) {
+    if (modus == M_BORDBUCH) {
+        int n = bbAktuell + richtung;
+        if (n >= 0 && n < bbSeiten) { bbWunsch = n; return; }
+    } else if (modus == M_BESTELL) {
+        int n = bestellAktuell + richtung;
+        if (n >= 0 && n < bestellAnzahl) { bestellAktuell = n; modusWunsch = M_BESTELL; return; }
+    }
+    karussellSchritt(richtung);
+}
 
 static void tasteAktion(const char* name, bool gedrueckt) {
     letzteBedienung = millis();
@@ -219,22 +289,19 @@ static void tasteAktion(const char* name, bool gedrueckt) {
         if (gedrueckt) { kiSeit = millis(); kiDiktat = false; return; }
         kiSeit = 0;
         if (kiDiktat) { aufnahmeStopp(); return; }
-        modusWunsch = modus == M_HOME ? M_NOTIZ : M_HOME;   // kurz: Home ↔ Notiz, aus dem Bordbuch nach Home
+        if (modus != M_HOME) modusWunsch = M_HOME;   // kurz: immer nach Home
         return;
     }
     if (strcmp(name, "up") == 0) {
         if (gedrueckt) { upSeit = millis(); upLang = false; return; }
         upSeit = 0;
-        if (upLang) return;
-        if (modus == M_BORDBUCH) bbWunsch = bbAktuell - 1;
-        else if (modus == M_BESTELL) { bestellAktuell = (bestellAktuell + bestellAnzahl - 1) % bestellAnzahl; modusWunsch = M_BESTELL; }
-        else modusWunsch = M_BORDBUCH;
+        if (!upLang) blaettern(-1);
         return;
     }
-    if (strcmp(name, "down") == 0 && gedrueckt) {
-        if (modus == M_BORDBUCH) bbWunsch = bbAktuell + 1;
-        else if (modus == M_BESTELL) { bestellAktuell = (bestellAktuell + 1) % bestellAnzahl; modusWunsch = M_BESTELL; }
-        else if (modus == M_HOME) { bestellAktuell = 0; modusWunsch = M_BESTELL; }   // ▼ auf Home = Bestellzettel
+    if (strcmp(name, "down") == 0) {
+        if (gedrueckt) { downSeit = millis(); downLang = false; return; }
+        downSeit = 0;
+        if (!downLang) blaettern(+1);
     }
 }
 
@@ -247,7 +314,17 @@ static void modusLoop() {
     if (upSeit && !upLang && millis() - upSeit > 1000) {
         upLang = true;
         tone(PIN_BUZZER, 2000, 60);
-        if (modus == M_BORDBUCH) bbWunsch = bbToc;   // ▲ 1 s im Bordbuch = Inhaltsverzeichnis
+        protokoll("Taste up lang");
+        // ▲ 1 s: an den Anfang des Eintrags, steht man schon dort: voriger Eintrag
+        if (modus == M_BORDBUCH && bbAktuell != bbToc) bbWunsch = bbToc;
+        else if (modus == M_BESTELL && bestellAktuell != 0) { bestellAktuell = 0; modusWunsch = M_BESTELL; }
+        else karussellSchritt(-1);
+    }
+    if (downSeit && !downLang && millis() - downSeit > 1000) {
+        downLang = true;                 // ▼ 1 s: nächster Eintrag im Karussell
+        tone(PIN_BUZZER, 2000, 60);
+        protokoll("Taste down lang");
+        karussellSchritt(+1);
     }
     if (bestellWunsch >= 0) {
         if (bestellWunsch < bestellAnzahl) bestellAktuell = bestellWunsch;
