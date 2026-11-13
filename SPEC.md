@@ -332,6 +332,16 @@ in eine Tagesdatei zum Teilen. Funktioniert, ist aber ein einziger Topf.
   4. Claude-Nachbearbeitung, 5. Ziele Kalender/Vault/Bubble Log anbinden); Zettel aus Diktat = Bestellzettel oder
   eigener Erledigungszettel?
 
+### Push-to-Talk (Markus, 13.11.2026)
+- Ziel: KI am Sticky halten, sprechen, loslassen, und der Text landet dort, wo Markus ihn braucht, nicht nur in der Notiz
+- fest **Weg 1, über die eigene App** (umgesetzt 13.11.2026): Schalter „Diktat zusätzlich in die Zwischenablage“ in
+  „Mehr → Push-to-Talk“. Frisch und sicher erkannter Text geht in die Zwischenablage, die Notiz bleibt. Keine Firmware
+- geparkt **Weg 2, Sticky als BLE-Taste fürs Handy**: zweites BLE-Profil (HID, Consumer-Taste „Sprachbefehl“ bzw.
+  Diktiertaste der Tastatur) neben dem eigenen Dienst. KI halten löst dann am Handy Assistent oder Tastatur-Diktat in
+  jeder App aus; gesprochen wird ins Handy-Mikro. Mittlerer Aufwand (Kopplung, zweites Profil, Tastenregel)
+- geparkt **Weg 3, Funk-PTT** (z. B. Zello): solche Apps kennen eigene BLE-PTT-Tasten; nur, wenn eine App unsere Taste
+  annimmt. Eher Bastelei
+
 ### Spickzettel und Handbücher trennen (Markus, 13.11.2026)
 Heute steckt beides im Bordbuch (Spickzettel, Handgriffe und PDF-Seiten mit einem Inhaltsverzeichnis). Künftig zwei
 Seitentypen, beide eigene Seiten (gehen ohne Handy):

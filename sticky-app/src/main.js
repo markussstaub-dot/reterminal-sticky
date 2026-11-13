@@ -14,6 +14,8 @@ const woerter = () => $('woerter').value.trim();
 /** Lernendes Wörterbuch (SPEC „lokales Modell flott machen“): Paare aus „Mehr → Wörterbuch“ */
 const woerterbuch = () => paareLesen(document.getElementById('woerterbuch')?.value ?? WOERTERBUCH_STANDARD);
 /** Erkennung mit Wächter: kurze/leise Aufnahmen und nachgeplapperte Wortliste werden „(unklar)“, der Ton bleibt */
+const pttAblage = () => { try { return localStorage.getItem('sticky.pttAblage') === '1'; } catch { return false; } };
+
 async function erkenne(pcm) {
   const p = sprachPruefung(pcm);
   if (!p.ok) return { text: '(unklar)', unklar: p.grund, ms: 0, ladeMs: 0, modell: $('modell').value, pruefung: p };
@@ -238,6 +240,10 @@ async function zeigeAufnahme(a) {
     werte.textContent += zusatz;
     console.info('[sticky] sprache', JSON.stringify({ dauer: a.dauerMs, gesamt, erkennung: r.ms, laden: r.ladeMs, modell: r.modell, zweiter: r.zweiterLauf, text: r.text, umweg: Math.round(tErk - a.tLos) }));
     const spaet = Date.now() - a.start - a.dauerMs > VERSPAETET_MS;
+    // Push-to-Talk (SPEC „Push-to-Talk“, Weg 1): frischer, sicher erkannter Text gleich in die Zwischenablage
+    if (pttAblage() && r.text && !r.unklar && !spaet) {
+      Clipboard.write({ string: r.text }).then(() => { kopieren.textContent = 'Kopiert ✓'; eintrag('Diktat in der Zwischenablage'); }).catch((e) => eintrag(`Zwischenablage: ${e.message}`, true));
+    }
     neueNotiz({ t: a.start, art: 'diktat', text: r.text || '', ...(zwilling.geraet.fahrt ? { faehrt: true } : {}), ...(r.roh ? { roh: r.roh } : {}), ...(r.unklar ? { unklar: r.unklar } : {}), audio: nativ ? `aufnahmen/${name}` : name, dauerMs: a.dauerMs, ...(spaet ? { offline: true } : {}) },
       spaet ? null : a.ort, 'Diktat');
   }).catch((e) => {
@@ -753,6 +759,9 @@ $('dreh180').onchange = () => {
   try { localStorage.setItem('sticky.dreh180', $('dreh180').checked ? '1' : '0'); } catch { /* egal */ }
   if (zwilling.verbunden && fwAb('0.21.0')) einstellungenAufspielen().then((n) => n && eintrag(`Sticky ${$('dreh180').checked ? 'auf dem Kopf' : 'normal'}`)).catch((e) => eintrag(`Lage: ${e.message}`, true));
 };
+
+$('pttAblage').checked = pttAblage();
+$('pttAblage').onchange = () => { try { localStorage.setItem('sticky.pttAblage', $('pttAblage').checked ? '1' : '0'); } catch { /* egal */ } };
 
 $('karussell').value = localStorage.getItem('sticky.karussell') || KARUSSELL_STANDARD;
 $('karussell').onchange = () => {
