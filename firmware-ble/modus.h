@@ -185,6 +185,8 @@ static void meldeModus() {
 // 800 × 480 wie ein Bild), die App holt es ab. Wiederkommen = neues Blatt.
 static int kzLetztX = -1, kzLetztY = -1, kzX0 = W, kzY0 = H, kzX1 = 0, kzY1 = 0;
 static bool kzBemalt = false;
+extern bool gfxPartialWachHalten;   // Seeed_GFX2 mit Sticky-Patch (bibliothek-patch/)
+static void kzPanelSchlaf();
 static uint32_t kzZuletzt = 0;
 static portMUX_TYPE kzSperre = portMUX_INITIALIZER_UNLOCKED;
 static TaskHandle_t kzAufgabe = nullptr;
@@ -226,6 +228,45 @@ static void kritzelPunkt(int x, int y, bool neu) {
 }
 static void kritzelLos() { kzLetztX = kzLetztY = -1; }
 
+// Knöpfe links oben in der Statuszeilen-Höhe (dort wird nicht gemalt): ✓ Speichern bei x 8–80, ✕ Leeren bei x 96–168
+static const int KZ_KN_Y0 = 2, KZ_KN_Y1 = 30, KZ_SP_X0 = 8, KZ_SP_X1 = 80, KZ_LE_X0 = 96, KZ_LE_X1 = 168;
+static volatile bool kzSpeichernWunsch = false, kzLeerenWunsch = false;
+
+static void kzStrich(int x0, int y0, int x1, int y1) {   // 3 px dicke Linie direkt in imgBuf (für die Knopfsymbole)
+    int dx = abs(x1 - x0), dy = -abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1, e = dx + dy;
+    while (true) {
+        for (int a = -1; a <= 1; a++) for (int b = -1; b <= 1; b++) {
+            int px = x0 + a, py = y0 + b;
+            if (px >= 0 && px < W && py >= 0 && py < H) imgBuf[py * (W / 8) + px / 8] |= 0x80 >> (px & 7);
+        }
+        if (x0 == x1 && y0 == y1) break;
+        int e2 = 2 * e;
+        if (e2 >= dy) { e += dy; x0 += sx; }
+        if (e2 <= dx) { e += dx; y0 += sy; }
+    }
+}
+
+static void kzKnoepfeZeichnen() {
+    for (int k = 0; k < 2; k++) {
+        int x0 = k ? KZ_LE_X0 : KZ_SP_X0, x1 = k ? KZ_LE_X1 : KZ_SP_X1;
+        bildRechteck(x0, KZ_KN_Y0, x1 - x0, KZ_KN_Y1 - KZ_KN_Y0, true);
+        bildRechteck(x0 + 3, KZ_KN_Y0 + 3, x1 - x0 - 6, KZ_KN_Y1 - KZ_KN_Y0 - 6, false);
+    }
+    int m = (KZ_SP_X0 + KZ_SP_X1) / 2;       // ✓
+    kzStrich(m - 12, 16, m - 4, 24); kzStrich(m - 4, 24, m + 12, 8);
+    m = (KZ_LE_X0 + KZ_LE_X1) / 2;           // ✕
+    kzStrich(m - 9, 7, m + 9, 25); kzStrich(m + 9, 7, m - 9, 25);
+}
+
+/** Touch im Knopfstreifen (aus der Kritzel-Aufgabe): true = war ein Knopf, nicht malen */
+static bool kzKnopf(int x, int y, bool neu) {
+    if (y >= 32) return false;
+    if (!neu) return true;                   // nur beim Aufsetzen auslösen
+    if (x >= KZ_SP_X0 && x < KZ_SP_X1) kzSpeichernWunsch = true;
+    else if (x >= KZ_LE_X0 && x < KZ_LE_X1) kzLeerenWunsch = true;
+    return true;
+}
+
 // Eigene Aufgabe liest den Touch (eigener I2C-Bus wireTp), auch während loop() im Teil-Refresh wartet (~0,3 s).
 // Vorher gingen in dieser Zeit alle Punkte verloren, die Striche wurden zäh und eckig (Markus, 13.11.2026).
 static void kzAufgabeFn(void*) {
@@ -237,7 +278,7 @@ static void kzAufgabeFn(void*) {
                 uint8_t p[7];
                 tpRead(0x814F, p, 7);
                 int x = p[1] | p[2] << 8, y = p[3] | p[4] << 8;
-                kritzelPunkt(799 - y, 479 - x, !unten);
+                if (!kzKnopf(799 - y, 479 - x, !unten)) kritzelPunkt(799 - y, 479 - x, !unten);
                 unten = true;
             } else if (unten) { unten = false; kritzelLos(); }
             tpWrite(0x814E, 0);
@@ -249,6 +290,7 @@ static void kzAufgabeFn(void*) {
 }
 static void kritzelStart() {
     setCpuFrequencyMhz(240);   // im Kritzelblock zählt jede Millisekunde, sonst sparsam 80 MHz
+    gfxPartialWachHalten = true;   // ohne Neuwecken und Tiefschlaf je Refresh (gemessen vorher ~840 ms)
     if (kzAufgabe) return;
     kzAn = true;
     xTaskCreatePinnedToCore(kzAufgabeFn, "kritzel", 4096, nullptr, 4, &kzAufgabe, 0);
@@ -256,12 +298,34 @@ static void kritzelStart() {
 static void kritzelStopp() {
     kzAn = false;
     for (int i = 0; i < 30 && kzAufgabe; i++) delay(5);
+    kzPanelSchlaf();
     setCpuFrequencyMhz(80);
 }
 
 /** Aus modusLoop: gesammelte Striche zeigen */
 static uint8_t* kzAusschnitt = nullptr;
+static uint8_t* kzBlatt = nullptr;   // Sicherung des Blatts, solange die Hilfe offen ist
+static bool kzBlattGesichert = false;
+extern bool gfxPartialWachHalten;    // Seeed_GFX2 mit Sticky-Patch (firmware-ble/bibliothek-patch): Panel bleibt wach
+
+/** Panel aus dem Wach-Modus holen und schlafen legen (vor Voll-Refreshs und beim Verlassen) */
+static void kzPanelSchlaf() {
+    if (!gfxPartialWachHalten) return;
+    gfxPartialWachHalten = false;
+    display.panel().sleep();
+}
+static void kzBlattNeu();
+static void kritzelSpeichern();
 static void kritzelLoop() {
+    if (modus == M_KRITZEL && (kzSpeichernWunsch || kzLeerenWunsch)) {
+        bool speichern = kzSpeichernWunsch;
+        kzSpeichernWunsch = kzLeerenWunsch = false;
+        if (speichern && !kzBemalt) { tone(PIN_BUZZER, 900, 80); return; }   // leeres Blatt: nichts zu speichern
+        if (speichern) kritzelSpeichern();
+        tone(PIN_BUZZER, speichern ? 3300 : 1500, 40);
+        kzBlattNeu();
+        return;
+    }
     // sofort auffrischen, sobald neue Striche da sind (vorher 150 ms gesammelt); der Refresh selbst dauert ohnehin
     if (modus != M_KRITZEL || kzX1 <= kzX0 || millis() - kzZuletzt < 15) return;
     kzZuletzt = millis();
@@ -302,6 +366,20 @@ static void kritzelSpeichern() {
     protokoll(ok ? "Kritzel gespeichert: %s" : "Kritzel nicht gespeichert (%s)", pfad + 13);
 }
 
+/** Leeres Blatt mit Knöpfen und Statuszeile zeigen (Voll-Refresh, damit nichts nachleuchtet) */
+static void kzBlattNeu() {
+    memset(imgBuf, 0, IMG_BYTES);
+    kzBemalt = false;
+    kritzelLos();
+    portENTER_CRITICAL(&kzSperre);
+    kzX0 = W; kzY0 = H; kzX1 = 0; kzY1 = 0;
+    portEXIT_CRITICAL(&kzSperre);
+    kzKnoepfeZeichnen();
+    statusPruefen(false, true);
+    display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+    display.update();
+}
+
 static void setzeModus(Modus m) {
     if ((m == M_BORDBUCH && bbSeiten == 0) || (m == M_BESTELL && bestellAnzahl == 0)) {
         tone(PIN_BUZZER, 900, 120);   // tiefer Ton: kein Bordbuch aufgespielt
@@ -327,12 +405,14 @@ static void setzeModus(Modus m) {
         display.update();
         seite = "bild";
     } else if (m == M_KRITZEL) {
-        memset(imgBuf, 0, IMG_BYTES);   // neues, leeres Blatt
-        kzBemalt = false; kritzelLos();
-        kzX0 = W; kzY0 = H; kzX1 = 0; kzY1 = 0;
-        statusPruefen(false, true);
-        display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
-        display.update();
+        if (kzBlattGesichert && kzBlatt) {   // zurück aus der Hilfe: Blatt wiederherstellen
+            memcpy(imgBuf, kzBlatt, IMG_BYTES);
+            kzBlattGesichert = false;
+            kritzelLos();
+            statusPruefen(false, true);
+            display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+            display.update();
+        } else kzBlattNeu();
         seite = "kritzel";
         kritzelStart();
     } else if (m == M_BORDBUCH) {
@@ -479,6 +559,11 @@ static const char* hilfeName() {
 }
 
 static void hilfeZeigen() {
+    if (modus == M_KRITZEL) {          // Blatt sichern, die Hilfe überschreibt imgBuf
+        if (!kzBlatt) kzBlatt = (uint8_t*)ps_malloc(IMG_BYTES);
+        if (kzBlatt) { memcpy(kzBlatt, imgBuf, IMG_BYTES); kzBlattGesichert = true; }
+        kzPanelSchlaf();
+    }
     if (!sollLesen(hilfeName(), imgBuf, IMG_BYTES)) { tone(PIN_BUZZER, 900, 120); return; }   // noch keine Hilfe aufgespielt
     hilfeAn = true;
     protokoll("Hilfe %s", hilfeName() + 6);

@@ -3,7 +3,7 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.16.3 – Kritzelblock, Tastenhilfe (▲+▼), Rahmen beim Tippen, Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
+version: FW 0.16.7 – Kritzelblock, Tastenhilfe (▲+▼), Rahmen beim Tippen, Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
 wartet: Markus: Bewegungswecken von Hand prüfen (USB ab, 3 min liegen lassen, hochnehmen) und Fahrterkennung bei der nächsten Microlino-Fahrt; Offline-Diktat auf /ist/puffer einmal prüfen; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
@@ -270,6 +270,10 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   Ursache in Seeed_GFX2: vor jedem Teil-Refresh `wakePartial()` mit kompletter Init, danach `ePaperSleep()` mit
   `delay(100)`; SSD1683 ohne Temperatur-Kompensation in der Bibliothek. Schneller nur mit eigener Kopie der Bibliothek
   (Panel wach lassen, Pause weg), geschätzt ~0,5 s. Markus: „schon nutzbar, schneller wär schön“
+- **Kritzelblock fertig (FW 0.16.7, 13.11.2026):** Knöpfe links oben ✓ Speichern (Blatt auf die Karte, neues Blatt)
+  und ✕ Leeren (verwerfen); Hilfe im Kritzelblock behält das Blatt. Refresh 840 → 742 ms durch Patch an Seeed_GFX2
+  (`firmware-ble/bibliothek-patch/`, zwei 100-ms-Pausen beim Schlafenlegen weg). Wach-Modus ohne Schlafen war 617 ms,
+  ließ aber das Notizbild durchblitzen → verworfen. **Nach Updates von Seeed_GFX2 den Patch neu einspielen**
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik
