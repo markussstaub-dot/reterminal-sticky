@@ -14,7 +14,7 @@
 static const int SCH_N_MAX = 48, SCH_V_MAX = 48, SCH_G_MAX = 48;
 static const int SCH_TEILUNG_X = 560;            // rechts ab x 560 Ziffern (SCH_FELD_Y steht in modus.h)
 static const int SCH_TEXT_X = 16, SCH_TEXT_Y = 72, SCH_ZW = 32, SCH_ZH = 48, SCH_SICHTBAR = 24;
-static const float SCH_GRENZE = 0.18f;
+static float SCH_GRENZE = 0.20f;   // Abstandsgrenze; „grenze 0.20“ in alphabet.txt stellt sie ohne Flashen (FW 0.27.1)
 
 static int schN = 32, schVAnzahl = 0, schGAnzahl = 0;
 static float (*schV)[SCH_N_MAX][2] = nullptr;      // Vorlagen
@@ -57,6 +57,7 @@ static bool schriftLaden() {
         start = ende + 1;
         char feld[8], zeichen[8];
         if (z.startsWith("n ")) { schN = constrain(z.substring(2).toInt(), 8, SCH_N_MAX); continue; }
+        if (z.startsWith("grenze ")) { SCH_GRENZE = constrain(z.substring(7).toFloat(), 0.05f, 0.5f); continue; }
         if (z.startsWith("glyphen ")) {
             int p = 8;
             while (p < (int)z.length() && schGAnzahl < SCH_G_MAX) {

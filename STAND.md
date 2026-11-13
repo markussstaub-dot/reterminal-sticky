@@ -3,7 +3,7 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.27.0 – EDC-Sticky: Strichschrift, Braun-Optik, Hoch/Quer (auch per Sensor, 180°), Rechner, Timer, Waage, Lineal, Zettel mit QR, Gegenseitig suchen, Push-to-Talk, Fahrtenschreiber, SD-Karte als Vertrag; MIT-Lizenz (13.11.2026)
+version: FW 0.27.1 – EDC-Sticky: Strichschrift, Braun-Optik, Hoch/Quer (auch per Sensor, 180°), Rechner, Timer, Waage, Lineal, Zettel mit QR, Gegenseitig suchen, Push-to-Talk, Fahrtenschreiber, SD-Karte als Vertrag; MIT-Lizenz (13.11.2026)
 wartet: Markus: Lineal nachmessen, Einfügen in WhatsApp probieren, Fotos für den Seeed Playground (Einreichen um den 20.11.); Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
@@ -347,7 +347,8 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   Erkennung im Sticky („$1“ ohne Drehung, 32 Punkte, Grenze 0,18; im Test 99,7 % richtig bei 200 verwackelten Strichen
   je Zeichen). Alphabet, Glyphenblatt (Braun-Schrift), Hintergrund und Alphabet-Hilfe liefert die App
   (`sticky-app/src/strichschrift.js` → `/soll/schrift/`), Formen also ohne Flashen änderbar. ✓ speichert nach
-  `/ist/schrift/…txt`, die App macht daraus Notizen „✍ …“. Am Gerät: „klappt gut“
+  `/ist/schrift/…txt`, die App macht daraus Notizen „✍ …“. Am Gerät: „klappt gut“. FW 0.27.1: Zweitformen für B (Stamm runter, wieder hoch) und F (Stamm hoch, dann rechts),
+  Abstandsgrenze 0,20 kommt als „grenze“ aus alphabet.txt (Feintuning ohne Flashen); im Test 99,8 % richtig
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

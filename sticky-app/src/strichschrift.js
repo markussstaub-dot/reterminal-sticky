@@ -47,13 +47,22 @@ export const ZIFFERN = {
   8: [[1, 0.1], [0.5, 0], [0.05, 0.2], [0.95, 0.8], [0.5, 1], [0.05, 0.8], [0.95, 0.2], [0.5, 0]],
   9: [[1, 0.3], [0.5, 0], [0.05, 0.25], [0.5, 0.5], [1, 0.3], [1, 1]],
 };
+/**
+ * Zweite, natürlichere Formen (Markus, 13.11.2026: „wie mach ich ein B?“). Der Erkenner nimmt die passendere;
+ * auf dem Spickzettel steht die erste Form aus BUCHSTABEN.
+ */
+export const ZWEITFORMEN = {
+  B: [[0, 0], [0, 1], [0, 0.03], [0.8, 0.08], [0.85, 0.35], [0.1, 0.5], [0.95, 0.65], [0.9, 0.95], [0, 1]],   // Stamm runter, wieder hoch, Bäuche
+  F: [[0, 1], [0, 0], [1, 0]],                                                                            // Stamm hoch, dann oben nach rechts
+};
 /** Gesten in beiden Feldern: waagrecht nach rechts = Leerzeichen, nach links = löschen, Tipp = Umlaut bzw. Punkt */
 export const GESTEN = { ' ': [[0, 0.5], [1, 0.5]], '⌫': [[1, 0.5], [0, 0.5]] };
 export const UMLAUT = { A: 'Ä', O: 'Ö', U: 'Ü', S: 'ß' };
 
 export const N = 32;
-/** Abstandsgrenze: bei 200 verwackelten Strichen je Zeichen 99,7 % richtig, 0,1 % verwechselt, Gekritzel abgelehnt (13.11.2026) */
-export const GRENZE = 0.18;
+/** Abstandsgrenze: mit Zweitformen bei 200 verwackelten Strichen je Zeichen 99,8 % richtig, 0,1 % verwechselt, Gekritzel
+ * abgelehnt (13.11.2026). Geht als „grenze“ mit in alphabet.txt (FW ≥ 0.27.1). */
+export const GRENZE = 0.2;
 
 /** Strich (Punkte [x, y]) auf n gleich weit entfernte Punkte nachziehen */
 export function nachziehen(punkte, n = N) {
@@ -95,7 +104,7 @@ function abstand(a, b) {
 }
 
 const VORLAGEN = {
-  links: Object.entries({ ...BUCHSTABEN, ...GESTEN }).map(([z, p]) => [z, vorbereiten(p)]),
+  links: [...Object.entries({ ...BUCHSTABEN, ...GESTEN }), ...Object.entries(ZWEITFORMEN)].map(([z, p]) => [z, vorbereiten(p)]),
   rechts: Object.entries({ ...ZIFFERN, ...GESTEN }).map(([z, p]) => [z, vorbereiten(p)]),
 };
 
@@ -129,7 +138,7 @@ export function schreibe(text, zeichen) {
 /** Reihenfolge im Glyphenblatt (zeichen.bin); „_“ steht in der Datei für das Leerzeichen */
 export const GLYPHEN = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜß0123456789', ' ', '.'];
 export function alphabetDatei() {
-  const zeilen = [`n ${N}`, `glyphen ${GLYPHEN.map((g) => (g === ' ' ? '_' : g)).join(' ')}`,
+  const zeilen = [`n ${N}`, `grenze ${GRENZE}`, `glyphen ${GLYPHEN.map((g) => (g === ' ' ? '_' : g)).join(' ')}`,
     ...Object.entries(UMLAUT).map(([a, b]) => `umlaut ${a} ${b}`)];
   for (const [feld, liste] of Object.entries(VORLAGEN)) {
     for (const [z, p] of liste) zeilen.push(`${feld} ${z === ' ' ? 'leer' : z === '⌫' ? 'weg' : z} ${p.map(([x, y]) => `${Math.round(x * 1000)},${Math.round(y * 1000)}`).join(' ')}`);

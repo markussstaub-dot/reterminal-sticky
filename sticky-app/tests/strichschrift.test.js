@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BUCHSTABEN, ZIFFERN, GESTEN, erkenne, schreibe, alphabetDatei, nachziehen, N } from '../src/strichschrift.js';
+import { BUCHSTABEN, ZIFFERN, GESTEN, ZWEITFORMEN, erkenne, schreibe, alphabetDatei, nachziehen, N } from '../src/strichschrift.js';
 
 // Zufall mit festem Samen, damit der Test reproduzierbar ist
 let samen = 42;
@@ -34,6 +34,12 @@ function trefferquote(vorlagen, feld, runden = 200) {
 
 test('Buchstaben trotz Wackeln sicher erkannt (≥ 97 %)', () => {
   const { quote, fehler } = trefferquote({ ...BUCHSTABEN, ...GESTEN }, 'links');
+  if (quote < 0.97) console.log('Verwechslungen:', fehler);
+  assert.ok(quote >= 0.97, `nur ${(quote * 100).toFixed(1)} %`);
+});
+
+test('Zweitformen (B, F von der natürlichen Seite) sicher erkannt (≥ 97 %)', () => {
+  const { quote, fehler } = trefferquote(ZWEITFORMEN, 'links');
   if (quote < 0.97) console.log('Verwechslungen:', fehler);
   assert.ok(quote >= 0.97, `nur ${(quote * 100).toFixed(1)} %`);
 });
