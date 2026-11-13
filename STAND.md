@@ -263,7 +263,8 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   0.16.1 am Gerät, Abholen eines echten Blatts, Heimfahrt mit dem 3-s-Bewegungsfilter
 - **Heimfahrt 13.11. (11:58–12:10):** Fahrt erkannt 25 mg, Fahrt vorbei pünktlich 2 min nach dem Parken, Diktat live mit
   Ort, USB-Anstecken ohne Hänger. Fehlalarm im Café (11:54, „Fahrt erkannt“ bei 11 mg, Tippen/Packen) → FW 0.16.2:
-  „rüttelt“ erst ab 15 mg (vorher 8). Kritzelblock 0.16.1 noch nicht am Gerät probiert
+  „rüttelt“ erst ab 15 mg (vorher 8). Kritzelblock am Gerät geprüft (12:20): Striche lückenlos, Blatt beim Verlassen
+  gespeichert, von der App abgeholt und als Bild-Notiz gezeigt (PNG in `files/kritzel/`)
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik
