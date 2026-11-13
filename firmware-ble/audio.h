@@ -162,11 +162,14 @@ static void audioTask(void*) {
     vTaskDelete(nullptr);
 }
 
+static uint64_t offlineStartMs = 0;
+
 static void aufnahmeStart() {
     if (audioLaeuft) return;
     if (!appDa() || mtu < AUDIO_PAKET + 3) {
         // Ohne Handy bzw. ohne zuhörende App: in den Puffer aufnehmen, die App holt es später ab
         if (!offlineAufnahmeOeffnen()) return;
+        offlineStartMs = jetztMs();   // Zeit der Notiz = Beginn der Aufnahme (wie live), nicht ihr Ende
         if (!micAn()) { audioDatei.close(); return; }
         audioOffline = true;
         audioStopp = false;
@@ -202,7 +205,7 @@ static void audioLoop() {
         audioDatei.close();
         char j[200];
         snprintf(j, sizeof j, "{\"t\":%llu,\"typ\":\"notiz\",\"quelle\":\"sticky\",\"art\":\"diktat\",\"audio\":\"%s\",\"dauerMs\":%lu,\"offline\":true}",
-                 (unsigned long long)jetztMs(), audioName, (unsigned long)audioMs);
+                 (unsigned long long)offlineStartMs, audioName, (unsigned long)audioMs);
         notizAnhaengen(j);
         Serial.printf("Offline-Diktat: %s\n", j);
         protokoll("Diktat gepuffert: %s, %lu ms", audioName, (unsigned long)audioMs);

@@ -4,7 +4,7 @@ import { Clipboard } from '@capacitor/clipboard';
 import { Spracherkennung, MODELLE, WOERTER_STANDARD, pcmBase64 } from './sprache.js';
 import { registerPlugin } from '@capacitor/core';
 // Vordergrund-Dienst (Android), damit die App bei verbundenem Sticky nicht eingefroren wird
-const Hintergrund = registerPlugin('Hintergrund', { web: { async start() {}, async stop() {} } });
+import { Hintergrund } from './hintergrund.js';
 const p2 = (n, l = 2) => String(n).padStart(l, '0');
 /** Ortszeit mit Millisekunden für Dateinamen: 2026-11-11-22-27-50-123 */
 const dateiZeit = (t) => { const d = new Date(t); return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}-${p2(d.getHours())}-${p2(d.getMinutes())}-${p2(d.getSeconds())}-${p2(d.getMilliseconds(), 3)}`; };

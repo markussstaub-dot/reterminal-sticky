@@ -11,5 +11,8 @@
         "noDeviceFound": "Kein Sticky gefunden"
       }
     }
+  },
+  "android": {
+    "useLegacyBridge": true
   }
 }

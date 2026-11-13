@@ -40,6 +40,21 @@ public class Hintergrund extends Plugin {
         }
     }
 
+    /** Letzter Ort, den der Dienst passiv mitbekommen hat (z. B. von Bubble Logs GPS): lat, lon, gen, tempo, alterMs */
+    @PluginMethod
+    public void letzterOrt(PluginCall call) {
+        android.location.Location o = StickyDienst.letzterOrt;
+        JSObject r = new JSObject();
+        if (o != null) {
+            r.put("lat", o.getLatitude());
+            r.put("lon", o.getLongitude());
+            r.put("gen", Math.round(o.getAccuracy()));
+            if (o.hasSpeed()) r.put("tempo", o.getSpeed());
+            r.put("alterMs", (android.os.SystemClock.elapsedRealtimeNanos() - o.getElapsedRealtimeNanos()) / 1000000);
+        }
+        call.resolve(r);
+    }
+
     @PluginMethod
     public void stop(PluginCall call) {
         getContext().stopService(new Intent(getContext(), StickyDienst.class));

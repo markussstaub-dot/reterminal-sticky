@@ -3,7 +3,7 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.14.0 – Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
+version: FW 0.14.1 – Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
 wartet: Markus: Bewegungswecken von Hand prüfen (USB ab, 3 min liegen lassen, hochnehmen) und Fahrterkennung bei der nächsten Microlino-Fahrt; Offline-Diktat auf /ist/puffer einmal prüfen; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
@@ -220,6 +220,15 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   Teil-Refresh nur bei Änderung. App: Kopfzeilen rechts freigeräumt (Zähler darunter), Notiz-Titel „Notiz“, Home-Hinweis
   auf die neuen Tasten. Am Gerät geprüft (Foto): Handy und Akku mit Blitz auf Home, Hinweis neu; Symbole nach
   Teil-Refresh etwas blass
+- **App im Hintergrund (13.11.2026, aus dem Fahrt-Abgleich `auswertungen/2026-11-13-fahrt.md`):** Mit Bubble Log
+  vorne kamen BLE-Meldungen (Tasten, Audio, Zustand) nach ~1 min nicht mehr in JS an, erst beim Öffnen der App. Folgen:
+  „App hört nicht zu“ nach dem Wiederverbinden, Diktate erst später verarbeitet und dann als offline ohne Ort gespeichert.
+  Ursache: Capacitors Zustellweg über `postMessage` (WebMessageListener) stockt im Hintergrund, Antworten auf eigene
+  Aufrufe kamen dagegen an. **Fix:** `android.useLegacyBridge: true` in `capacitor.config.json` (gemessen: Zustand
+  weiter alle 30 s), dazu Renderer-Priorität „wichtig“ auch unsichtbar und WebView nach onPause/onStop wieder an
+  (`MainActivity.java`), Ort-Rückfall aus dem passiven GPS des Dienstes (`Hintergrund.letzterOrt`, ≤ 2 min alt).
+  Geprüft: zwei Diktate mit Homescreen vorne kamen sofort mit Text und Ort an. FW 0.14.1: Offline-Diktat trägt die
+  Startzeit der Aufnahme statt des Endes
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

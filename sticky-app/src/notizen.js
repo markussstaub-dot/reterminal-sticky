@@ -3,6 +3,7 @@
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Geolocation } from '@capacitor/geolocation';
+import { Hintergrund as HintergrundOrt } from './hintergrund.js';
 import { Share } from '@capacitor/share';
 
 const NATIV = Capacitor.isNativePlatform();
@@ -18,6 +19,11 @@ export async function standort() {
     const p = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 4000, maximumAge: 15000 });
     return { lat: +p.coords.latitude.toFixed(6), lon: +p.coords.longitude.toFixed(6), gen: Math.round(p.coords.accuracy), tempo: p.coords.speed ?? null };
   } catch {
+    // Rückfall: letzter Ort, den der StickyDienst passiv mitbekommen hat (läuft Bubble Log, kommt jede Sekunde einer)
+    try {
+      const o = await HintergrundOrt.letzterOrt();
+      if (o?.lat != null && o.alterMs < 120000) return { lat: +o.lat.toFixed(6), lon: +o.lon.toFixed(6), gen: o.gen, tempo: o.tempo ?? null, ortAlterS: Math.round(o.alterMs / 1000) };
+    } catch { /* kein Dienst (Browser) */ }
     return null;
   }
 }

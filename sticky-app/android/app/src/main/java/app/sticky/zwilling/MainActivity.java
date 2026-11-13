@@ -1,5 +1,6 @@
 package app.sticky.zwilling;
 
+import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.Log;
@@ -32,5 +33,28 @@ public class MainActivity extends BridgeActivity {
                 return true;   // App nicht abstürzen lassen
             }
         });
+        // 13.11.2026: Mit Bubble Log im Vordergrund lief die Sticky-App nicht weiter (Fahrt 08:20–08:36): kein Zuhören nach
+        // dem Wiederverbinden, Diktate erst beim Öffnen verarbeitet, ohne Ort. Renderer bleibt wichtig, auch unsichtbar.
+        if (Build.VERSION.SDK_INT >= 26) bridge.getWebView().setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false);
+    }
+
+    /** Nach dem Pausieren durch Activity/Capacitor die WebView gleich wieder laufen lassen (der StickyDienst hält den Prozess) */
+    private void wachHalten() {
+        WebView w = bridge != null ? bridge.getWebView() : null;
+        if (w == null) return;
+        w.onResume();
+        w.resumeTimers();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        wachHalten();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        wachHalten();
     }
 }

@@ -61,10 +61,12 @@ public class StickyDienst extends Service {
     private boolean weckerVerbunden;
     private long fahrtBis = 0, letztesWach = 0;
     private LocationManager orte;
+    static volatile Location letzterOrt;
 
     private final LocationListener ortRuf = new LocationListener() {
         @Override
         public void onLocationChanged(Location o) {
+            letzterOrt = o;   // Rückfall für den Ort an Diktaten (Hintergrund.letzterOrt)
             if (o.hasSpeed() && o.getSpeed() > 2) {
                 if (System.currentTimeMillis() >= fahrtBis) Log.i(TAG, "Fahrt erkannt (" + o.getSpeed() + " m/s), halte Sticky wach");
                 fahrtBis = System.currentTimeMillis() + 10 * 60 * 1000;
