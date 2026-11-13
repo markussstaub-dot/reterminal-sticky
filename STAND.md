@@ -4,7 +4,7 @@ tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
 version: FW 0.9.1 – Puffer auf microSD, Akku lädt, Schlummermodus, Home mit Uhr, Datum, Akku, Wetter, Karten, Notizen (auch offline), Bordbuch, Bestellzettel, App in Tabs mit Spiegel/Fernbedienung (12.11.2026)
-wartet: Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Schlummermodus auf Akku testen, Nachtverbrauch messen
+wartet: Markus prüft SPEC „Zwilling 2.0“ (Soll/Ist, SD als Vertrag, Sensoren), dann Umbau in frischer Session; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Schlummermodus auf Akku testen, Nachtverbrauch messen
 ---
 
 Repo: github.com/markussstaub-dot/reterminal-sticky (privat, seit 11.11.2026). `backup/`, Modelle und

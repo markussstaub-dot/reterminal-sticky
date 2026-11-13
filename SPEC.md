@@ -215,6 +215,59 @@ nehmen, die im Auto wirklich gefehlt hat, statt zu sammeln (Pflege!).
     „External project“ (eigene Richtlinie: Ablauf erklären, Berechtigungen und Datenfluss offenlegen)
 - Forum/Ankündigung nicht ins Repo, sondern nach `uhrenbox/Vermarktung/`
 
+## Zwilling 2.0: Soll/Ist, SD-Karte als Vertrag, eigene Sensoren (Markus, 13.11.2026)
+
+Anlass: seit 13.11. steckt eine 32-GB-microSD (Puffer läuft darauf, FW 0.9.1). Markus will das Zwillingsprinzip
+verallgemeinern, mit sauberer Arbeitsteilung, und der Sticky soll alles nutzen, was er selbst mitbringt.
+Vorbild: Device Shadow / Device Twin aus der Industrie (AWS IoT, Azure).
+
+### Leitbild
+- fest: **App = Gehirn, Sticky = Hand und Ohr.** Die App hat die Hoheit über Inhalte, Rendering (pixelgenau, das
+  Zwillingsprinzip bleibt), Texte, Ort, Wetter. Der Sticky hat die Hoheit über seine Hardware und seine Roheingaben,
+  bis die App sie quittiert hat
+- fest: **Jeder kommt ohne den anderen aus.** Ohne Handy laufen Anzeige, Diktat, Notiz, Uhr, Sensoren weiter; ohne
+  Sticky sind die Daten der App vollständig, er ist nur „nicht erreichbar“
+- Vorschlag **Soll/Ist**: Soll (App → Sticky) = was er zeigen und können soll: Karten, Zettel, Bordbuch, Layouts,
+  Einstellungen, Firmware. Ist (Sticky → App) = was er erlebt hat: Diktate, Notizen, Fahrtenschreiber, Messreihen,
+  Zustand. Der Zwilling in der App = Soll + zuletzt gemeldetes Ist; Abgleich = Differenzen ausgleichen, beide Richtungen
+- Vorschlag **Sensorhoheit beim Sticky, eigene Logik nur für sich selbst**: Entscheidungen über seine Energie und
+  seine Reaktion (wach bleiben, schlafen, warnen) trifft er aus seinen Sensoren selbst. Inhaltliches bleibt in der App.
+  Die App veredelt Ist-Daten (Ort, Fahrt aus Bubble Log, Wetter) und zeigt Verläufe
+
+### SD-Karte als Vertrag
+- Vorschlag **alles ist eine Datei**, zwei Bereiche:
+  - `/soll/…` schreibt nur die App (z. B. `/soll/home/`, `/soll/zettel/`, `/soll/bordbuch/`, `/soll/layout/`,
+    `/soll/einstellungen.json`, `/soll/firmware.bin`)
+  - `/ist/…` schreibt nur der Sticky (z. B. `/ist/puffer/` wie heute, `/ist/log/`, `/ist/mess/`, `/ist/zustand.json`).
+    Die App holt ab, quittiert, dann löscht der Sticky
+- Vorschlag **ein allgemeines Sync-Protokoll** statt der Spezialbefehle (HOME_VERSION, PUFFER_*, Bordbuch-Upload, …):
+  `LISTE pfad` (Name, Größe, CRC) · `SCHREIBEN pfad` (in Stücken, CRC am Ende, erst dann umbenennen) · `HOLEN pfad
+  offset` (wie PUFFER_HOLEN heute) · `LOESCHEN pfad`. Neue Funktionen = neue Dateien, kein neuer Befehl
+- Vorschlag **Flash nur noch als Rückfall** ohne Karte (Home-Karte, Uhr-Ziffern, Visitenkarte), alles andere auf SD.
+  Ganzes Handbuch (~150 Bildschirme) statt Auszügen wird damit möglich (bleibt privat auf der Karte)
+- Vorschlag **Fahrtenschreiber** `/ist/log/JJJJ-MM-TT.txt`: Tasten, Verbindungen, App hört zu/nicht, Schlummern,
+  Akku, Fehler. Erster kleiner Schritt, hätte die Rätsel vom 12./13.11. in einer Minute gelöst
+- fest: SD am SPI-Bus des E-Paper, gleiche SPIClass wie das Display (`karte.h`); Karte vor dem Leichtschlaf stromlos
+
+### Eigene Sensoren (laut Schaltplan, Bus MISC_I2C)
+| Baustein | Adresse | heute | Vorschlag |
+|---|---|---|---|
+| Bewegung LSM6DS3TR-C (6 Achsen) | 0x6A, Interrupt 6D_INTn | ungenutzt | Fahrt selbst erkennen → wach bleiben ohne GPS-Umweg im Dienst; Wecken per Bewegung aus dem Schlaf (fast null Verbrauch im Stand, sofort da beim Losfahren); Klopfgeste; hoch/quer |
+| Temperatur/Feuchte SHT40 | 0x44 | ungenutzt | Innenraumklima Microlino als Messreihe; Warnung „lädt nicht, zu kalt/heiß“ (Lader nur 0–45 °C); Taupunkt → „Scheibe beschlägt gleich“ |
+| Uhr PCF8563 | 0x51, Interrupt RTC_INTn | Uhrzeit | Zeitstempel aller Ist-Daten auch ohne Handy; Wecker für geplantes Aufwachen |
+| Akku BQ27220 | 0x55 | Prozent | Verlauf, Restlaufzeit; Strom-Register 0x0C liefert Unsinn (mehrere A), klären |
+| Lade-LED rot/grün, Summer, Mikro, Tasten, Touch | – | teils | LED als stille Rückmeldung (z. B. „Diktat gepuffert“) |
+
+### Offen
+- offen: Pins von MISC_I2C, 6D_INTn, RTC_INTn, RED_LED im Schaltplan nachsehen (GPIO0/1 ist der Akku-Bus, die Uhr
+  hängt schon daran – vermutlich alle dort)
+- offen: Umbau in einem Rutsch oder schrittweise (Vorschlag: 1. Fahrtenschreiber, 2. Sync-Protokoll mit /soll /ist
+  und Umzug von Puffer/Home/Bordbuch, 3. Sensoren)
+- offen: Messintervalle und was davon im Schlummermodus läuft (Akkuziel über Nacht < 5 %)
+- offen: Ob die App die Fahrt künftig vom Sticky (Bewegung) statt vom GPS übernimmt; der GPS-Weg im `StickyDienst`
+  (seit 12.11.) bliebe dann nur Rückfall
+- offen: Firmware-Update von der Karte (`/soll/firmware.bin`, OTA-Partitionen sind da) – macht ihn übergebbar
+
 ## Zusammenhang mit dem Microlino-Knopf
 Beide Geräte sind ESP32-S3 mit BLE, beide folgen dem Muster „Handy rechnet, Gerät zeigt“.
 - Vorschlag **Rollen im Microlino**: Der **Knopf** (rundes AMOLED, schnell, leuchtet) zeigt live, was beim
