@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.13.0";
+static const char* FW_VERSION = "0.14.0";
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "Markus";
@@ -54,6 +54,8 @@ static const int PIN_CHG_EN_N = 39;
 static volatile uint32_t letzteAktivitaet = 0, letzteTaste = 0;
 static void aktiv() { letzteAktivitaet = millis(); }
 static void protokoll(const char* fmt, ...);   // Fahrtenschreiber, fahrtenschreiber.h
+static void statusPruefen(bool teil, bool erzwingen);   // Statuszeile, status.h
+static void statusLaden();
 
 // ---- BLE ---------------------------------------------------------------------
 #define UUID_SVC   "b1e50001-7374-6963-6b79-7465726d6e6c"
@@ -620,6 +622,7 @@ static void bleInit() {
 }
 
 #include "schlaf.h"
+#include "status.h"
 
 // ---- Ablauf ----------------------------------------------------------------------
 void setup() {

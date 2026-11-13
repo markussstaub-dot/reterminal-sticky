@@ -20,7 +20,7 @@ async function erkenne(pcm) {
   return { ...r, pruefung: p };
 }
 import { zeichneFahrt, trefferKnopf, rueckmeldung, layoutText, STANDARD_KNOEPFE } from './fahrtseite.js';
-import { zeichneHome, zeichneZiffern } from './homeseite.js';
+import { zeichneHome, zeichneZiffern, statusGlyphen } from './homeseite.js';
 import { holeWetter, letztesWetter } from './wetter.js';
 import { BESTELL_STANDARD, zettel, zeichneZettel } from './bestellung.js';
 import { KARTEN_STANDARD, karten, zeichneKarte } from './karten.js';
@@ -533,7 +533,9 @@ async function abgleich() {
   const homeV = crc32(new Uint8Array(alle.flatMap((b) => [...b]))).toString(16).padStart(8, '0') + ';' + zettelBilder.length;
   if (zwilling.geraet.homev !== homeV && fwAb('0.11.0')) {
     // Datei-Abgleich: nur geänderte Bilder (Bestandsliste auf der Karte), version.txt zuletzt löst das Neuladen aus
-    const dateien = alle.map((b, i) => ({ n: `${i}.bin`, daten: b })).concat([{ n: 'version.txt', daten: new TextEncoder().encode(homeV) }]);
+    const st = statusGlyphen();
+    const dateien = alle.map((b, i) => ({ n: `${i}.bin`, daten: b }))
+      .concat([{ n: 'status-quer.bin', daten: st.quer }, { n: 'status-hoch.bin', daten: st.hoch }, { n: 'version.txt', daten: new TextEncoder().encode(homeV) }]);
     const n = await zwilling.sollAbgleich('home', dateien);
     eintrag(`Home: ${n} Dateien aufgespielt`);
   } else if (zwilling.geraet.homev !== homeV) {

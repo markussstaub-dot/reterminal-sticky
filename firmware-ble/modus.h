@@ -74,6 +74,7 @@ static void homeLesen() {
     File f = sollOeffnen("home/version.txt");
     if (f) { size_t n = f.readBytes(homeVersion, sizeof homeVersion - 1); homeVersion[n] = 0; f.close(); }
     bestellZaehlen();
+    statusLaden();
 }
 
 static void karussellLaden();
@@ -195,20 +196,21 @@ static void setzeModus(Modus m) {
         else bbAktuell = bbToc;
     }
     if (m == M_BESTELL && homeLaden(3 + bestellAktuell, imgBuf)) {
+        statusPruefen(false, true);
         display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
         display.update();
         seite = "bild";
     } else if (m == M_BORDBUCH) {
         bbZeige(bbAktuell);
     } else if (m == M_NOTIZ && notizDa && homeLaden(1, imgBuf)) {
+        statusPruefen(false, true);
         display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
         display.update();
         seite = "bild";
     } else if (m == M_HOME && homeDa && homeLaden(0, imgBuf)) {
         uhrMinute = -1;
         uhrZeichnen();
-        akkuStufe = -1;
-        akkuPruefen(false);   // ins Bild, kommt mit dem Voll-Refresh
+        statusPruefen(false, true);   // Statuszeile ins Bild, kommt mit dem Voll-Refresh
         uhrAuffrischen(true);
         seite = "home";
     } else if (m != M_NOTIZ || !notizDa) {
@@ -338,5 +340,6 @@ static void modusLoop() {
     if (modus != M_HOME && !audioLaeuft && millis() - letzteBedienung > ZURUECK_MS) setzeModus(M_HOME);
     if (modus == M_HOME && homeDa && !audioLaeuft && uhrZeichnen()) uhrAuffrischen(uhrMinute == 0);
     static uint32_t akkuZuletzt = 0;
-    if (modus == M_HOME && homeDa && !audioLaeuft && millis() - akkuZuletzt > 60000) { akkuZuletzt = millis(); akkuPruefen(true); }
+    (void)akkuZuletzt;
+    statusPruefen(true, false);           // Statuszeile auf jeder Seite (Akku, Uhr, Handy, Notizen, Warnung)
 }

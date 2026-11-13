@@ -2,7 +2,7 @@
 // setzt die Uhr jede Minute selbst aus dem Ziffernblatt zusammen (firmware-ble/modus.h) – auch ohne Handy.
 // Gleiche Lage wie die Notiz-Seite: Tasten oben rechts, USB unten.
 import qrcode from 'qrcode-generator';
-import { BREITE, HOEHE } from './protokoll.js';
+import { BREITE, HOEHE, rgbaZu1bpp } from './protokoll.js';
 import { drehe, PB, PH } from './fahrtseite.js';
 import { wetterZeile } from './wetter.js';
 
@@ -36,8 +36,8 @@ export function homeHochkant(karte = KARTE, beispielZeit = null, wetter = null) 
   p.fillText(karte.name, PB / 2, 92);
   p.fillRect(60, 160, PB - 120, 4);
   p.font = '22px system-ui, sans-serif';
-  p.fillText('KI = Notiz · ▲ = Bordbuch · ▼ = Bestellen', PB / 2, 192);
-  p.fillText('KI halten = Diktat', PB / 2, 220);
+  p.fillText('▲▼ blättern · ▼ lang = weiter', PB / 2, 192);
+  p.fillText('KI = Home · KI halten = Diktat', PB / 2, 220);
   // Datum (Markus, 12.11.2026); um Mitternacht schickt der Abgleich im Stundenfenster die neue Karte
   p.font = 'bold 30px system-ui, sans-serif';
   p.fillText(new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }), PB / 2, 260);
@@ -79,6 +79,46 @@ function zeichneZeit(p, text) {
 }
 
 /** Ziffernblatt: Zeichen z liegt gedreht bei Display x = (z / 6 | 0) * 112, Zeilen (z % 6) * 80 */
+/**
+ * Glyphen der Statuszeile (firmware-ble/status.h): 336 × 32, Ziffern 0–9 je 16 breit, „:“ bei 160, dann je 32 breit
+ * Handy, Zzz, Notiz, Tropfen, Thermometer. Einmal quer (Zeilen à 42 Byte) und einmal gedreht für hochkante Seiten.
+ * → { quer, hoch } als 1 bpp
+ */
+export function statusGlyphen() {
+  const B = 336, H = 32;
+  const c = leinwand(B, H);
+  const p = c.getContext('2d');
+  p.fillStyle = '#fff';
+  p.fillRect(0, 0, B, H);
+  p.fillStyle = '#000';
+  p.strokeStyle = '#000';
+  p.textAlign = 'center';
+  p.textBaseline = 'middle';
+  p.font = 'bold 25px system-ui, sans-serif';
+  for (let i = 0; i <= 9; i++) p.fillText(String(i), i * 16 + 8, 17);
+  p.fillText(':', 168, 15);
+  p.lineWidth = 3;
+  // Handy
+  p.beginPath(); p.roundRect(186, 4, 13, 24, 3); p.stroke(); p.fillRect(190, 23, 5, 2);
+  // Zzz
+  p.font = 'bold 15px system-ui, sans-serif';
+  p.fillText('z', 214, 22); p.fillText('z', 223, 15); p.font = 'bold 19px system-ui, sans-serif'; p.fillText('Z', 233, 9);
+  // Notiz: Blatt mit Zeilen
+  p.strokeRect(246, 5, 18, 22); p.fillRect(250, 11, 10, 2); p.fillRect(250, 16, 10, 2); p.fillRect(250, 21, 7, 2);
+  // Tropfen (Beschlag)
+  p.beginPath(); p.moveTo(288, 4); p.bezierCurveTo(281, 14, 278, 19, 278, 22); p.arc(288, 21, 10, Math.PI, 0, true); p.bezierCurveTo(298, 19, 295, 14, 288, 4); p.fill();
+  // Thermometer (Laden zu kalt/heiß)
+  p.beginPath(); p.roundRect(316, 3, 8, 20, 4); p.stroke(); p.beginPath(); p.arc(320, 25, 5, 0, Math.PI * 2); p.fill(); p.fillRect(318, 10, 4, 14);
+  const quer = rgbaZu1bpp(p.getImageData(0, 0, B, H).data, B, H);
+  const d = leinwand(H, B);
+  const q = d.getContext('2d');
+  q.fillStyle = '#fff';
+  q.fillRect(0, 0, H, B);
+  drehe(c, q, B, H);
+  const hoch = rgbaZu1bpp(q.getImageData(0, 0, H, B).data, H, B);
+  return { quer, hoch };
+}
+
 export function zeichneZiffern(g) {
   g.fillStyle = '#fff';
   g.fillRect(0, 0, BREITE, HOEHE);

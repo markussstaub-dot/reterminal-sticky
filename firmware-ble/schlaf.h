@@ -104,6 +104,7 @@ static void schlafPruefen() {
         funkAus();
     }
     if (touchAn) touchAus();
+    statusPruefen(true, false);                    // Zzz in die Statuszeile, bevor das Bild stehen bleibt
     protokollSchreiben();
     sdAus();                                       // Karte stromlos, pfs() bindet sie beim nächsten Zugriff ein
     Weckgrund grund = leichtSchlaf();

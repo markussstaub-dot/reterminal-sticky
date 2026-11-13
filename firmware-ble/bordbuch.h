@@ -75,7 +75,8 @@ static void bbZeige(int n) {
     if (!sollLesen(pfad, bbBuf, IMG_BYTES)) { Serial.printf("Bordbuch: Seite %d fehlt\n", n); return; }
     bbAktuell = n;
     memcpy(imgBuf, bbBuf, IMG_BYTES);   // imgBuf = was gerade zu sehen ist (für Hinweise und Wiederherstellen)
-    display.drawBitmap(0, 0, bbBuf, W, H, TFT_BLACK, TFT_WHITE);
+    statusPruefen(false, true);         // Statuszeile ins Bild
+    display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
     // update() statt updateFast(): der schnelle Modus gab am Gerät eine falsche Anzeige (11.11.2026);
     // update() ist nach dem ersten Bild ohnehin nur ~0,4 s
     uint32_t t0 = millis();

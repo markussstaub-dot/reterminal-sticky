@@ -82,9 +82,9 @@ function kopf(g, titel, rechts) {
   g.textAlign = 'left';
   g.font = `bold 30px ${FONT}`;
   g.fillText(titel, 18, 29);
-  g.textAlign = 'right';
-  g.font = `22px ${FONT}`;
-  g.fillText(rechts, BREITE - 18, 29);
+  g.textAlign = 'right';   // rechts oben sitzt die Statuszeile des Sticky (288 × 32), der Text darunter
+  g.font = `16px ${FONT}`;
+  g.fillText(rechts, BREITE - 18, 45);
   g.textAlign = 'left';
   g.fillStyle = '#000';
 }

@@ -51,7 +51,7 @@ export function fahrtHochkant(knoepfe = STANDARD_KNOEPFE) {
   p.textBaseline = 'middle';
   p.textAlign = 'left';
   p.font = 'bold 32px system-ui, sans-serif';
-  p.fillText('Fahrt · Notiz', 18, 34);
+  p.fillText('Notiz', 18, 34);   // rechts davon die Statuszeile des Sticky
   STREIFEN.forEach((k, i) => {
     const t = knoepfe[i];
     if (!t) return;

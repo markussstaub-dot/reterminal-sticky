@@ -32,9 +32,9 @@ export function zeichneZettel(g, z, nr, von) {
   g.textAlign = 'left';
   g.font = `bold 26px ${FONT}`;
   g.fillText(z.titel, 24, 30);
-  g.textAlign = 'right';
-  g.font = `22px ${FONT}`;
-  g.fillText(`Bestellung ${nr}/${von}`, BREITE - 24, 30);
+  g.textAlign = 'right';   // rechts oben sitzt die Statuszeile des Sticky (288 × 32), der Zähler darunter
+  g.font = `16px ${FONT}`;
+  g.fillText(`Bestellung ${nr}/${von}`, BREITE - 24, 44);
   g.fillRect(24, 54, BREITE - 48, 3);
   const oben = 70, unten = HOEHE - 16;
   const n = z.zeilen.length;
