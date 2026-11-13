@@ -592,9 +592,16 @@ static void rahmenLoop() {
 static bool upUnten = false, downUnten = false, kombi = false;
 static volatile bool hilfeWunsch = false;
 
+/** Hilfe je Widget: hilfe/w-<name>.bin (z. B. w-timer, w-waage) */
+static const char* widgetHilfe() {
+    static char p[40];
+    snprintf(p, sizeof p, "hilfe/w-%s.bin", widgetName);
+    return p;
+}
+
 static const char* hilfeName() {
     return modus == M_HOME ? "hilfe/home.bin" : modus == M_NOTIZ ? "hilfe/notiz.bin" : modus == M_BORDBUCH ? "hilfe/bordbuch.bin"
-         : modus == M_KRITZEL ? "hilfe/kritzel.bin" : modus == M_WIDGET ? "hilfe/widget.bin" : "hilfe/zettel.bin";
+         : modus == M_KRITZEL ? "hilfe/kritzel.bin" : modus == M_WIDGET ? widgetHilfe() : "hilfe/zettel.bin";
 }
 
 static void hilfeZeigen() {

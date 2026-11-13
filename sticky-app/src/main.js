@@ -665,8 +665,8 @@ async function abgleich() {
 }
 
 // ---- Karussell (SPEC „Bedienung und Oberfläche“): Reihe, durch die ▲/▼ am Sticky blättern -------------------------
-const KARUSSELL_STANDARD = 'Home, Timer, Notiz, Kritzel, Rechner, Bordbuch, Zettel';
-const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'bordbuch', zettel: 'zettel', bestellzettel: 'zettel', kritzel: 'kritzel', kritzelblock: 'kritzel', app: 'app', rechner: 'app', timer: 'widget timer' };
+const KARUSSELL_STANDARD = 'Home, Timer, Waage, Notiz, Kritzel, Rechner, Bordbuch, Zettel';
+const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'bordbuch', zettel: 'zettel', bestellzettel: 'zettel', kritzel: 'kritzel', kritzelblock: 'kritzel', app: 'app', rechner: 'app', timer: 'widget timer', waage: 'widget waage', wasserwaage: 'widget waage' };
 function karussellText() {
   const roh = (localStorage.getItem('sticky.karussell') || KARUSSELL_STANDARD).split(/[,;\n]/).map((w) => KARUSSELL_WOERTER[w.trim().toLowerCase()]).filter(Boolean);
   return [...new Set(roh)].join('\n') + '\n';

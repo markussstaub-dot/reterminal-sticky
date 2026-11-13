@@ -25,10 +25,21 @@ export const HILFE = {
     zeilen: ['!Zeichnen', 'mit dem Finger auf das Blatt', '!Speichern', 'Seite verlassen (▲ ▼ oder KI) = Blatt speichern',
       'wiederkommen = neues, leeres Blatt', 'die App holt es ab, es erscheint als Notiz', '!Zurück', 'beliebige Taste schließt diese Hilfe'],
   },
-  widget: {
+  'w-timer': {
     titel: 'Hilfe · Timer',
     zeilen: ['!Tippen', 'Start / Stopp, ± 1 min, Vorlage (1, 3, 5, 10, 25 min), Reset', '!Tasten', '▲ ▼   blättern wie überall · KI   Home', '!Läuft weiter', 'auch wenn du die Seite verlässt; beim Ablauf piept er',
       'und holt die Timer-Seite nach vorn (auch ohne Handy)', '!Zurück', 'beliebige Taste schließt diese Hilfe'],
+  },
+  'w-waage': {
+    titel: 'Hilfe · Wasserwaage',
+    zeilen: ['!Messen', 'Sticky flach hinlegen, die Blase zeigt die Neigung', '↔ und ↕: Neigung in Grad für beide Richtungen',
+      '!Null setzen', 'aktuelle Lage als Null (schräge Unterlage ausgleichen)', '!Halten', 'Wert einfrieren, zum Ablesen wegnehmen',
+      '!Tasten', '▲ ▼   blättern · KI   Home', '!Zurück', 'beliebige Taste schließt diese Hilfe'],
+  },
+  'w-menue': {
+    titel: 'Hilfe · Menü',
+    zeilen: ['!Öffnen', 'KI kurz auf Home', '!Tippen', 'auf eine Kachel = direkt dorthin', '!Kacheln', 'kommen aus dem Karussell (App → Mehr → Karussell)',
+      '!Zurück', 'beliebige Taste schließt diese Hilfe'],
   },
   zettel: {
     titel: 'Hilfe · Zettel',

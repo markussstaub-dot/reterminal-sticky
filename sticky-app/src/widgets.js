@@ -20,18 +20,19 @@ function knopf(g, x0, y0, x1, y1, text, dunkel = false, gr = 30) {
   g.fillText(text, (x0 + x1) / 2, (y0 + y1) / 2 + 2);
 }
 
-/** Ziffern 0–9 und „:“ nebeneinander, je Zelle w × h → 1 bpp */
-function ziffernBlatt(w, h) {
-  const c = leinwand(11 * w, h);
+/** Ziffern 0–9, „:“ (und für die Waage „-“, „.“, „°“) nebeneinander, je Zelle w × h → 1 bpp */
+function ziffernBlatt(w, h, zeichen = '0123456789:') {
+  const n = zeichen.length;
+  const c = leinwand(n * w, h);
   const g = c.getContext('2d', { willReadFrequently: true });
   g.fillStyle = '#fff';
-  g.fillRect(0, 0, 11 * w, h);
+  g.fillRect(0, 0, n * w, h);
   g.fillStyle = '#000';
   g.textAlign = 'center';
   g.textBaseline = 'middle';
   g.font = `bold ${Math.round(h * 0.95)}px ${FONT}`;
-  for (let i = 0; i <= 10; i++) g.fillText(i === 10 ? ':' : String(i), i * w + w / 2, h / 2 + h * 0.04);
-  return rgbaZu1bpp(g.getImageData(0, 0, 11 * w, h).data, 11 * w, h);
+  [...zeichen].forEach((z, i) => g.fillText(z === '-' ? '−' : z, i * w + w / 2, h / 2 + h * 0.04));
+  return rgbaZu1bpp(g.getImageData(0, 0, n * w, h).data, n * w, h);
 }
 
 /** Timer (Countdown): große Knöpfe zum Tippen (±1 min, Start/Stopp, Vorlagen), ▲/▼ blättern wie überall. → [{ n, daten }] mit felder.txt zuletzt */
@@ -96,4 +97,39 @@ export function menueWidget(eintraege) {
   ];
 }
 
-export const WIDGETS = { timer: timerWidget };
+/** Wasserwaage: Blase im Kreis (1° = r/15 px, Ringe bei 1°, 5°, 10°), Grad für beide Achsen, Null setzen, Halten */
+export function waageWidget() {
+  const K = { x: 232, y: 272, r: 190 };
+  const Z = { w: 48, h: 72 };
+  const felder = ['typ waage', `ziffern ${Z.w} ${Z.h}`, `blase ${K.x} ${K.y} ${K.r}`, 'wert1 496 92', 'wert2 496 196', 'achsen x y'];
+  const c = leinwand(BREITE, HOEHE);
+  const g = c.getContext('2d', { willReadFrequently: true });
+  g.fillStyle = '#fff';
+  g.fillRect(0, 0, BREITE, HOEHE);
+  g.fillStyle = '#000';
+  g.textAlign = 'left';
+  g.textBaseline = 'middle';
+  g.font = `bold 24px ${FONT}`;
+  g.fillText('Wasserwaage', 16, 18);
+  g.font = `16px ${FONT}`;
+  g.fillText('flach hinlegen · ▲▼ = blättern · KI = Home', 180, 19);
+  g.strokeStyle = '#000';
+  g.lineWidth = 4;
+  g.beginPath(); g.arc(K.x, K.y, K.r, 0, Math.PI * 2); g.stroke();
+  g.lineWidth = 2;
+  for (const grad of [1, 5, 10]) { g.beginPath(); g.arc(K.x, K.y, (grad * K.r) / 15 + 24, 0, Math.PI * 2); g.stroke(); }
+  g.beginPath(); g.moveTo(K.x - K.r, K.y); g.lineTo(K.x + K.r, K.y); g.moveTo(K.x, K.y - K.r); g.lineTo(K.x, K.y + K.r); g.stroke();
+  g.font = `bold 40px ${FONT}`;
+  g.fillText('↔', 448, 128);
+  g.fillText('↕', 448, 232);
+  const k = (x0, y0, x1, y1, text, aktion, dunkel, gr) => { knopf(g, x0, y0, x1, y1, text, dunkel, gr); felder.push(`knopf ${x0} ${y0} ${x1} ${y1} ${aktion}`); };
+  k(448, 296, 784, 380, 'Null setzen', 'null', true, 32);
+  k(448, 386, 784, 470, 'Halten', 'halten', false, 32);
+  return [
+    { n: 'ziffern.bin', daten: ziffernBlatt(Z.w, Z.h, '0123456789:-.°') },
+    { n: 'bild.bin', daten: rgbaZu1bpp(g.getImageData(0, 0, BREITE, HOEHE).data) },
+    { n: 'felder.txt', daten: new TextEncoder().encode(felder.join('\n') + '\n') },
+  ];
+}
+
+export const WIDGETS = { timer: timerWidget, waage: waageWidget };
