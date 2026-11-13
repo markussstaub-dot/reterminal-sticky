@@ -293,6 +293,14 @@ in eine Tagesdatei zum Teilen. Funktioniert, ist aber ein einziger Topf.
   Datei-Upload; die offizielle API (REST/WebSocket, 16-kHz-WAV) gibt es nur nach Freischaltung für Firmenkunden;
   inoffizielle Nachbauten zu wackelig. Gut als eigenes Diktierwerkzeug am Zenbook und am Fold (Android-App seit 2026),
   ohne Sticky. Ton geht in deren Cloud (gleiche Abwägung wie Schicht 3)
+- fest **lokales Modell flott machen** (Markus, 13.11.2026), Reihenfolge:
+  1. Ton säubern: Pegel so, dass nichts kappt (6/16 Fahrt-Aufnahmen übersteuert), Hochpass ~100 Hz gegen Brummen,
+     leichte Rauschunterdrückung auf dem Fold vor whisper. Prüfstand: die 16 Fahrt-Aufnahmen vom 11.11.
+  2. lernendes Ersetzungswörterbuch nach der Erkennung (jede Korrektur von Markus oder aus Schicht 2 wird ein Paar,
+     z. B. „Mikrolino → Microlino“), dazu Zahlenregeln (unplausible Prozente markieren). Wortliste im Prompt kurz halten
+  3. nebenbei: deutsch nachtrainierte Whisper-Varianten in small-Größe gegen den Prüfstand testen (reiner Modelltausch)
+  4. später: eigenes Nachtrainieren auf dem Zenbook, wenn genug Daten da sind (einige Stunden); Schicht 2 liefert die
+     sauberen Texte als Trainingsdaten nebenbei
 - fest **kein Weckwort** („Hey Sticky“): kostet Strom, die KI-Taste reicht
 - offen: Reihenfolge (Vorschlag: 1. Sortieren mit Stichwort + Eingang, 2. Rückmeldung am Sticky, 3. Seite „Heute“,
   4. Claude-Nachbearbeitung, 5. Ziele Kalender/Vault/Bubble Log anbinden); Zettel aus Diktat = Bestellzettel oder
