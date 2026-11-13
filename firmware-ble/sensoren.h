@@ -6,7 +6,7 @@
  *   Warnungen in den Fahrtenschreiber: Beschlag droht (Abstand zum Taupunkt < 2 K), Laden zu kalt/heiß (Lader 0–45 °C)
  *
  * Bewegung LSM6DS3TR-C (0x6A): Beschleunigung 26 Hz im Stromsparmodus (±2 g, Kreisel aus). Wake-up-Interrupt
- * (Schwelle 62 mg, gehalten bis WAKE_UP_SRC gelesen) auf INT1 = 6D_INTn = GPIO7, offener Drain, aktiv low – die Leitung
+ * (Schwelle 31 mg, gehalten bis WAKE_UP_SRC gelesen) auf INT1 = 6D_INTn = GPIO7, offener Drain, aktiv low – die Leitung
  * teilt er sich mit dem Akku-Chip (BFG_INT).
  *   - weckt aus dem Schlummern (Funk an, dann normale Schlummerregel)
  *   - Fahrt: wach alle 100 ms lesen, je 2-s-Fenster Unruhe (Streuung des Betrags) und Lageänderung bestimmen.
@@ -165,7 +165,7 @@ static void bewegungInit() {
     i2cSchreib(LSM, 0x10, 0x20);   // CTRL1_XL: 26 Hz, ±2 g
     i2cSchreib(LSM, 0x11, 0x00);   // CTRL2_G: Kreisel aus
     i2cSchreib(LSM, 0x15, 0x10);   // CTRL6_C: XL_HM_MODE = Stromsparmodus
-    i2cSchreib(LSM, 0x5B, 0x02);   // WAKE_UP_THS: 2 × 31,25 mg
+    i2cSchreib(LSM, 0x5B, 0x01);   // WAKE_UP_THS: 1 × 31,25 mg (Minimum; Micro rüttelt beim Fahren nur ~21 mg, 62 mg weckte nicht, 13.11.2026)
     i2cSchreib(LSM, 0x5C, 0x00);   // WAKE_UP_DUR
     i2cSchreib(LSM, 0x58, 0x91);   // TAP_CFG: Interrupts an, Steigungsfilter, gehalten (LIR)
     i2cSchreib(LSM, 0x5E, 0x20);   // MD1_CFG: Wake-up auf INT1

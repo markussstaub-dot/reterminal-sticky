@@ -3,7 +3,7 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.14.1 – Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
+version: FW 0.14.2 – Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
 wartet: Markus: Bewegungswecken von Hand prüfen (USB ab, 3 min liegen lassen, hochnehmen) und Fahrterkennung bei der nächsten Microlino-Fahrt; Offline-Diktat auf /ist/puffer einmal prüfen; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
@@ -236,6 +236,10 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   sauber (0 gekappt, 23–38 dB), Fehler kommen vom Modell. **Panne beim Test:** der Android-Dialog von `window.prompt`
   verschwand und speicherte leer (3 Notizen, aus `roh` wiederhergestellt) → ersetzt durch Textfeld, leer = Abbrechen.
   Am Fold geprüft: Korrektur gespeichert, „Mikrohogen → Mikrofon“ gelernt
+- **Fahrt ins Café (13.11.2026, ~10:17–10:23):** Sticky schlief und wurde von der Fahrt nicht geweckt (erst per Taste
+  10:23:40). Ursache: Weckschwelle 62 mg, der Micro rüttelt beim Fahren nur ~21 mg (Wert aus „Fahrt erkannt“ am
+  Morgen); dazu die 5-min-Sperre nach „getragen“ bis 10:19. FW 0.14.2: Schwelle auf das Minimum 31 mg. Anstecken an
+  USB diesmal ohne I2C-Hänger. Zu prüfen: wacht er jetzt beim Fahren auf, und nicht zu oft auf dem Tisch
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik
