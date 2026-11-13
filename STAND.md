@@ -3,8 +3,8 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.26.0 – Lineal, Karussell bis 12, Gegenseitig suchen, Zettel mit QR, Braun-Optik für alle Bedienelemente, 180° gedreht (Schalter), Hoch/Quer je Seite, auch automatisch per Lagesensor, Wasserwaage, Menü (KI auf Home), Umrechner, Widget-Maschine mit Timer, App-Seite mit Rechner, Kritzelblock, Tastenhilfe (▲+▼), Rahmen beim Tippen, Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
-wartet: Markus: Lineal einmal mit echtem Lineal nachmessen; Bewegungswecken von Hand prüfen (USB ab, 3 min liegen lassen, hochnehmen) und Fahrterkennung bei der nächsten Microlino-Fahrt; Offline-Diktat auf /ist/puffer einmal prüfen; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
+version: FW 0.26.0 – EDC-Sticky: Braun-Optik, Hoch/Quer (auch per Sensor, 180°), Rechner, Timer, Waage, Lineal, Zettel mit QR, Gegenseitig suchen, Push-to-Talk, Fahrtenschreiber, SD-Karte als Vertrag; MIT-Lizenz (13.11.2026)
+wartet: Markus: Lineal nachmessen, Einfügen in WhatsApp probieren, Fotos für den Seeed Playground (Einreichen um den 20.11.); Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
 Repo: github.com/markussstaub-dot/reterminal-sticky (privat, seit 11.11.2026). `backup/`, Modelle und
