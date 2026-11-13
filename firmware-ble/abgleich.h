@@ -93,6 +93,10 @@ static void sollGeaendert(const char* rel) {
         bool vorher = gedreht180;
         lageLaden();
         if (modus == M_APP || modus == M_KRITZEL || modus == M_SCHRIFT || modus == M_WIDGET || gedreht180 != vorher) neuZeichnen = true;
+    } else if (!strcmp(rel, "einstellungen/zeit.txt")) {
+        uhrFormatLaden();                              // 12/24 h vom Handy (der Sticky kann es selbst überstimmen)
+        uhrMinute = -1;
+        neuZeichnen = true;
     } else if (!strcmp(rel, "schrift/alphabet.txt")) {
         schBereit = false;                             // Strichschrift neu laden (Alphabet, Glyphen, Hintergrund)
         if (modus == M_SCHRIFT) neuZeichnen = true;

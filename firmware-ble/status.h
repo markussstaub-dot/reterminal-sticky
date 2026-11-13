@@ -10,8 +10,8 @@
  *   Thermometer 304 (je 32)
  * Liegt unter dem Feld ein schwarzer Kopfbalken, zeichnet er weiß auf schwarz.
  */
-static const int ST_B = 288, ST_H = 32, SH_B = 336;
-static const int G_DOPPEL = 160, G_HANDY = 176, G_ZZZ = 208, G_NOTIZ = 240, G_TROPFEN = 272, G_THERMO = 304;
+static const int ST_B = 288, ST_H = 32, SH_B = 368;   // 368: dazu „a“ und „p“ für 12 h (FW 0.30.0)
+static const int G_DOPPEL = 160, G_HANDY = 176, G_ZZZ = 208, G_NOTIZ = 240, G_TROPFEN = 272, G_THERMO = 304, G_AM = 336, G_PM = 352;
 static uint8_t* stQuer = nullptr;
 static uint8_t* stHoch = nullptr;
 static bool statusDa = false;
@@ -100,10 +100,12 @@ static void statusZeichnen() {
         time_t s = time(nullptr);
         tm t;
         localtime_r(&s, &t);
+        if (uhr12) { x -= 16; stGlyphe(hoch, t.tm_hour >= 12 ? G_PM : G_AM, 16, x, invers); }
         x = stZahl(hoch, t.tm_min, x, invers, 2);
         x -= 16;
         stGlyphe(hoch, G_DOPPEL, 16, x, invers);
-        x = stZahl(hoch, t.tm_hour, x, invers, 2);
+        int st = stundeZeigen(t.tm_hour);
+        x = stZahl(hoch, st, x, invers, uhr12 && st < 10 ? 1 : 2);
         x -= 8;
     }
     // Handy oder Zzz

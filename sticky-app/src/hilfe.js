@@ -65,6 +65,11 @@ export const HILFE = {
     zeilen: ['!Stellen', '± 1 h, ± 10 min, ± 1 min · Stellen schaltet ihn ein', '!An / Aus', 'unten, „an“/„aus“ steht unter der Zeit',
       '!Klingeln', 'auch im Schlummer, bis zu 1 min · jede Taste stellt ab', '!Zurück', 'beliebige Taste schließt diese Hilfe'],
   },
+  'w-einstellungen': {
+    titel: 'Hilfe · Einstellungen',
+    zeilen: ['!Uhrzeit', 'auto = wie das Handy · 24 h · 12 h (AM/PM)', '!Gilt für', 'Home-Uhr, Statuszeile, Weltzeit und Wecker',
+      '!Gespeichert', 'auf dem Sticky, gilt auch ohne Handy', '!Zurück', 'beliebige Taste schließt diese Hilfe'],
+  },
   'w-menue': {
     titel: 'Hilfe · Menü',
     zeilen: ['!Öffnen', 'KI kurz auf Home', '!Tippen', 'auf eine Kachel = direkt dorthin', '!Kacheln', 'kommen aus dem Karussell (App → Mehr → Karussell)',

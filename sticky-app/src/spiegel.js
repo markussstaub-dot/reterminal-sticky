@@ -1,6 +1,7 @@
 // Vorschau = Spiegel des Sticky (Markus, 11.11.2026: „Vorschau mit dem Sticky synchronisieren“ + Fernbedienung).
 // Der Sticky meldet nur Modus und Seite (kleine Ereignisse), die App zeichnet das Bild aus ihrem eigenen Vorrat –
 // es fließen keine Bilder zurück. Tipps auf die Vorschau und ▲/▼ werden zu kleinen Befehlen an den Sticky.
+import { uhrzeit } from './zeit.js';
 import { BREITE, HOEHE } from './protokoll.js';
 import { homeHochkant, KARTE } from './homeseite.js';
 import { fahrtHochkant, vonHochkant, PB, PH, RUECK_HOCH } from './fahrtseite.js';
@@ -31,7 +32,7 @@ export function spiegelEinrichten({ canvas, hinweisEl, quelle, befehl, notizTipp
     const m = z.modus;
     if (m === 'home' || m === 'notiz') {
       const g = ziel(PB, PH);
-      const jetzt = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+      const jetzt = uhrzeit(new Date());
       g.drawImage(m === 'home' ? homeHochkant(KARTE, jetzt, quelle.wetter?.()) : fahrtHochkant(quelle.knoepfe()), 0, 0);
       if (m === 'home' && z.bat >= 0) akkuSymbol(g, Math.floor((z.bat + 12) / 25), z.usb);
       // Überlagerungen unten im Rückmeldefeld, wie am Sticky

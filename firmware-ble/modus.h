@@ -63,6 +63,29 @@ static void lageLaden() {
         }
     }
 }
+// ---- 12/24 h (FW 0.30.0): Standard vom Handy (einstellungen/zeit.txt „format 12|24“), am Sticky umschaltbar
+// (Einstellungs-Seite, gespeichert in /ist/zeit.txt „lokal -1|0|1“: -1 = wie das Handy). Der Sticky gewinnt.
+static bool uhr12Soll = false, uhr12 = false;
+static int uhr12Lokal = -1;
+static void uhrFormatLaden() {
+    String t;
+    uhr12Soll = sollText("einstellungen/zeit.txt", t) && t.indexOf("12") >= 0;
+    if (sdEin()) {
+        File f = SD.open("/ist/zeit.txt", FILE_READ);
+        if (f) { String z = f.readStringUntil('\n'); f.close(); int v; if (sscanf(z.c_str(), "lokal %d", &v) == 1) uhr12Lokal = constrain(v, -1, 1); }
+    }
+    uhr12 = uhr12Lokal >= 0 ? uhr12Lokal == 1 : uhr12Soll;
+}
+/** Einstellungs-Seite: automatisch → 24 h → 12 h → automatisch */
+static void uhrFormatWeiter() {
+    uhr12Lokal = uhr12Lokal == -1 ? 0 : uhr12Lokal == 0 ? 1 : -1;
+    uhr12 = uhr12Lokal >= 0 ? uhr12Lokal == 1 : uhr12Soll;
+    if (sdEin()) { SD.mkdir("/ist"); File f = SD.open("/ist/zeit.txt", FILE_WRITE); if (f) { f.printf("lokal %d\n", uhr12Lokal); f.close(); } }
+    protokoll("Uhr: %s", uhr12Lokal < 0 ? "wie das Handy" : uhr12 ? "12 h" : "24 h");
+}
+/** Stunde für die Anzeige (12 h: 1–12) */
+static int stundeZeigen(int h) { if (!uhr12) return h; int s = h % 12; return s ? s : 12; }
+
 static bool lageAuto(const char* seite) {
     for (int i = 0; i < lageAnzahl; i++) if (!strcmp(lageSeite[i], seite)) return lageAutoFlag[i];
     return false;
@@ -158,6 +181,7 @@ static void homeInit() {
     homeLesen();
     karussellLaden();
     lageLaden();
+    uhrFormatLaden();
     // Ortszeit Deutschland (die Uhr läuft in UTC)
     setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
     tzset();
@@ -173,13 +197,16 @@ static bool uhrZeichnen() {
     localtime_r(&s, &t);
     if (t.tm_min == uhrMinute) return false;
     uhrMinute = t.tm_min;
-    const int zeichen[5] = {t.tm_hour / 10, t.tm_hour % 10, 10, t.tm_min / 10, t.tm_min % 10};
+    int st = stundeZeigen(t.tm_hour);
+    // 12 h: keine führende Null, nachmittags der Doppelpunkt mit „PM“ (Zelle 11, wie der PM-Punkt am Radiowecker)
+    const int zeichen[5] = {uhr12 && st < 10 ? -1 : st / 10, st % 10, uhr12 && t.tm_hour >= 12 ? 11 : 10, t.tm_min / 10, t.tm_min % 10};
     for (int k = 0; k < 5; k++) {
         // Ziffer z liegt im Ziffernblatt in Spalte z / 6 (x = 0 bzw. 112), Zeilen (z % 6) * 80
         int z = zeichen[k];
-        int quelleX = (z / 6) * UHR_W, quelleY = (z % 6) * ZIFFER_ZEILEN;
+        int quelleX = (max(0, z) / 6) * UHR_W, quelleY = (max(0, z) % 6) * ZIFFER_ZEILEN;
         // Feld k (hochkant von links) liegt auf dem Display von unten nach oben
         int zielY = UHR_Y + UHR_H - (k + 1) * ZIFFER_ZEILEN;
+        if (z < 0) { for (int r = 0; r < ZIFFER_ZEILEN; r++) memset(imgBuf + (zielY + r) * (W / 8) + UHR_X / 8, 0, UHR_W / 8); continue; }
         for (int r = 0; r < ZIFFER_ZEILEN; r++)
             memcpy(imgBuf + (zielY + r) * (W / 8) + UHR_X / 8, ziffernBuf + (quelleY + r) * (W / 8) + quelleX / 8, UHR_W / 8);
     }

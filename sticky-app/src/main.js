@@ -29,6 +29,7 @@ import { zeichneHome, zeichneZiffern, statusGlyphen } from './homeseite.js';
 import { holeWetter, letztesWetter } from './wetter.js';
 import { BESTELL_STANDARD, zeichneZettel } from './bestellung.js';
 import { zettelListe, zettelUmzug } from './zettel.js';
+import { uhrzeit, zeitDatei } from './zeit.js';
 import { alphabetDatei, glyphenBlatt, schriftHintergrund, schriftHilfe } from './strichschrift.js';
 import { KARTEN_STANDARD, zeichneKarte } from './karten.js';
 import { Aufnahme, wav, sprachPruefung, nurWortliste, angehoben } from './audio.js';
@@ -80,7 +81,7 @@ function muster() {
   const jetzt = new Date();
   g.textAlign = 'right';
   g.font = '28px system-ui, sans-serif';
-  g.fillText(jetzt.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }), BREITE - 24, 37);
+  g.fillText(uhrzeit(jetzt), BREITE - 24, 37);
   g.textAlign = 'left';
   g.fillStyle = '#000';
   g.font = '30px system-ui, sans-serif';
@@ -167,7 +168,7 @@ function eintrag(text, fehler = false) {
   const li = document.createElement('li');
   li.className = fehler ? 'neu fehler' : 'neu';
   const zeit = document.createElement('time');
-  zeit.textContent = new Date().toLocaleTimeString('de-DE');
+  zeit.textContent = uhrzeit(new Date(), true);
   li.append(zeit, text);
   $('ereignisse').prepend(li);
   while ($('ereignisse').children.length > 60) $('ereignisse').lastChild.remove();
@@ -202,7 +203,7 @@ async function zeigeAufnahme(a) {
   const url = URL.createObjectURL(new Blob([a.wav], { type: 'audio/wav' }));
   const li = document.createElement('li');
   const kopf = document.createElement('div');
-  kopf.textContent = `${(a.dauerMs / 1000).toFixed(1)} s · ${new Date().toLocaleTimeString('de-DE')}`;
+  kopf.textContent = `${(a.dauerMs / 1000).toFixed(1)} s · ${uhrzeit(new Date(), true)}`;
   const player = document.createElement('audio');
   player.controls = true;
   player.src = url;
@@ -540,7 +541,7 @@ async function neueNotiz(teile, ortPromise, kurz) {
   try { n = await notizen.notiere(teile, ort); } catch (e) { eintrag(`Notiz nicht gespeichert: ${e.message}`, true); return; }
   zeigeNotiz(n, true);
   if (stickyModus === 'notiz' || stickyModus === 'home') {   // Rückmeldefeld gibt es auf beiden Seiten
-    const zeit = new Date(n.t).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    const zeit = uhrzeit(n.t);
     const r = rueckmeldung(`✓ ${kurz} ${zeit}`);
     spiegel.meldung(`✓ ${kurz} ${zeit}`);
     zwilling.sendeBild(r.bytes, { bereich: r.bereich }).catch((e) => eintrag(`Rückmeldung: ${e.message}`, true));
@@ -553,7 +554,7 @@ function zeigeNotiz(n, neu = false) {
   const kopf = document.createElement('div');
   kopf.className = 'kopf';
   const ort = n.lat != null ? `${n.lat.toFixed(5)}, ${n.lon.toFixed(5)} (±${n.gen} m)` : n.offline ? 'ohne Handy aufgenommen' : 'ohne GPS';
-  kopf.textContent = `${new Date(n.t).toLocaleTimeString('de-DE')} · ${ort}`;
+  kopf.textContent = `${uhrzeit(n.t, true)} · ${ort}`;
   // Sorte als Schild; Antippen schaltet weiter (von Hand gilt dann)
   const schild = document.createElement('span');
   schild.className = `sorte ${n.sorte ?? 'eingang'}`;
@@ -655,7 +656,7 @@ async function abgleich() {
     try { localStorage.setItem('sticky.homecrcs', JSON.stringify({ version: homeV, crcs })); } catch { /* egal */ }
     eintrag(`Home-Karte, Notiz-Seite, Uhr und ${zettelBilder.length} Zettel/Karten aufgespielt`);
   }
-  zeichneHome(g, undefined, new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }), wetter);
+  zeichneHome(g, undefined, uhrzeit(new Date()), wetter);
   pruefeAbgleich();
   if (zwilling.geraet.modus) stickyModus = zwilling.geraet.modus;
   if (zwilling.geraet.fahrtv !== version && fwAb('0.11.0')) {
@@ -696,8 +697,8 @@ async function abgleich() {
 }
 
 // ---- Karussell (SPEC „Bedienung und Oberfläche“): Reihe, durch die ▲/▼ am Sticky blättern -------------------------
-const KARUSSELL_STANDARD = 'Home, Timer, Wecker, Weltzeit, Waage, Lineal, Notiz, Kritzel, Schrift, Rechner, Umrechner, Bordbuch, Zettel';
-const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'bordbuch', zettel: 'zettel', bestellzettel: 'zettel', kritzel: 'kritzel', kritzelblock: 'kritzel', schrift: 'schrift', strichschrift: 'schrift', app: 'app', rechner: 'app', umrechner: 'app', timer: 'widget timer', waage: 'widget waage', wasserwaage: 'widget waage', lineal: 'widget lineal', wecker: 'widget wecker', weltzeit: 'widget weltzeit' };
+const KARUSSELL_STANDARD = 'Home, Timer, Wecker, Weltzeit, Waage, Lineal, Notiz, Kritzel, Schrift, Rechner, Umrechner, Bordbuch, Zettel, Einstellungen';
+const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'bordbuch', zettel: 'zettel', bestellzettel: 'zettel', kritzel: 'kritzel', kritzelblock: 'kritzel', schrift: 'schrift', strichschrift: 'schrift', app: 'app', rechner: 'app', umrechner: 'app', timer: 'widget timer', waage: 'widget waage', wasserwaage: 'widget waage', lineal: 'widget lineal', wecker: 'widget wecker', weltzeit: 'widget weltzeit', einstellungen: 'widget einstellungen' };
 function karussellText() {
   // Rechner/Umrechner rechnen ab FW 0.28.0 im Sticky (Widgets); vorher über die App-Seite
   const lokal = fwAb('0.28.0'), wort = (w) => (lokal && (w === 'rechner' || w === 'umrechner') ? `widget ${w}` : KARUSSELL_WOERTER[w]);
@@ -726,6 +727,7 @@ function einstellungenAufspielen() {
   return zwilling.sollAbgleich('einstellungen', [
     { n: 'karussell.txt', daten: enc.encode(karussellText()) },
     ...(fwAb('0.21.0') ? [{ n: 'lage.txt', daten: enc.encode(lageText()) }] : []),
+    ...(fwAb('0.30.0') ? [{ n: 'zeit.txt', daten: zeitDatei() }] : []),   // 12/24 h wie das Handy
   ]);
 }
 

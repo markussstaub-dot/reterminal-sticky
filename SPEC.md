@@ -262,6 +262,12 @@ Einrichten, Abholen, Rechner/Umrechner.
 - Aufwand grob ein halber Tag, ein Flash. Danach braucht der Sticky das Handy nur noch für Spracherkennung und GPS;
   die App-Seite (Thin Client) bleibt als Technik erhalten
 
+#### Einstellungen am Sticky (Markus, 13.11.2026, umgesetzt FW 0.30.1)
+- fest: Einstellungen, die man ohne Handy braucht, liegen auf einer eigenen Sticky-Seite „Einstellungen“; Standard
+  kommt vom Handy, die Wahl am Sticky gewinnt und liegt auf seiner Karte
+- umgesetzt: Uhrzeit auto/24 h/12 h, einheitlich für Home-Uhr, Statuszeile, Weltzeit, Wecker und App
+- Vorschlag später auf derselben Seite: 180° gedreht, im Schlummer findbar, Lage je Seite
+
 #### Nächstes Flash-Paket: mehr lokal (Markus, 13.11.2026, geparkt)
 Alles als neue Widget-Typen der Widget-Maschine: die App liefert Optik (Braun-Stil) und Einstellungen in `felder.txt`,
 die Firmware rechnet. Ein Flash für alles.

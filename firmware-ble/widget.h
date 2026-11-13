@@ -21,6 +21,8 @@
  *       3 +10 min, 4 −10 min, 5 +1 min, 6 −1 min, 9 an/aus). Die Weckzeit liegt in /ist/wecker.txt; geprüft wird jede
  *       Minute, auch aus dem Schlummer (der Sticky wacht zur vollen Minute ohnehin auf); klingelt bis zu 1 min, jede
  *       Taste beendet es
+ *     typ einstellungen (FW 0.30.0): Einstellungen am Sticky, ohne Handy. Aktion set <code> (1 = Uhr: automatisch →
+ *       24 h → 12 h); text 1 zeigt den Wert („auto“, „24 h“, „12 h“)
  * Karussell-Eintrag „widget <name>“. Ein Uhrwerk für alle Widgets: der Timer läuft weiter, wenn man die Seite verlässt;
  * beim Ablauf weckt er den Sticky (leichtSchlaf), piept und holt die Timer-Seite nach vorn.
  */
@@ -37,7 +39,7 @@ static WKnopf wKnoepfe[W_KNOPF_MAX];
 static bool wRechner = false, wUmrechner = false, wTextNeu = false, wPaarNeu = false;
 static int wTx = -1, wTy = 0, wTn = 0, wGlyphAnzahl = 0, wTastenAnzahl = 0;
 static int wTxA[6], wTyA[6], wTnA[6], wTextAnzahl = 0;    // alle text-Zeilen; wTx/wTy/wTn ist die gerade gezeichnete
-static bool wWeltzeit = false, wWecker = false;
+static bool wWeltzeit = false, wWecker = false, wEinst = false;
 static int wStadtOff[6], wStadtAnzahl = 0, wMinuteGezeigt = -1;
 // Wecker
 static int weckH = 7, weckM = 0, weckGefeuert = -1;
@@ -88,7 +90,7 @@ static bool widgetLaden(const char* name) {
     wKnopfAnzahl = 0; wzX = -1; wTaste[0][0] = wTaste[1][0] = 0; wHatUhr = false; wWaage = false; wbR = 0; wW1x = wW2x = -1;
     wzSchrittGesetzt = false;
     wRechner = wUmrechner = false; wTx = -1; wGlyphAnzahl = wTastenAnzahl = 0;
-    wWeltzeit = wWecker = false; wTextAnzahl = 0; wStadtAnzahl = 0; wMinuteGezeigt = -1;
+    wWeltzeit = wWecker = wEinst = false; wTextAnzahl = 0; wStadtAnzahl = 0; wMinuteGezeigt = -1;
     if (!wReBereit) { rNeu(wRe); wReBereit = true; }
     if (!wUmBereit) { uNeu(wUm); wUmBereit = true; }
     int altPaar = wUm.paar;
@@ -100,13 +102,13 @@ static bool widgetLaden(const char* name) {
         String z = t.substring(start, ende);
         start = ende + 1;
         z.trim();
-        char a[12] = "", b[12] = "";
+        char a[16] = "", b[12] = "";   // a: auch lange Typnamen wie „einstellungen“ (FW 0.30.1)
         int v[5] = {0, 0, 0, 0, 0};
-        if (sscanf(z.c_str(), "typ %11s", a) == 1) {
+        if (sscanf(z.c_str(), "typ %15s", a) == 1) {
             wCountdown = strcmp(a, "stoppuhr") != 0; wWaage = !strcmp(a, "waage");
             wRechner = !strcmp(a, "rechner"); wUmrechner = !strcmp(a, "umrechner");
-            wWeltzeit = !strcmp(a, "weltzeit"); wWecker = !strcmp(a, "wecker");
-            wHatUhr = strcmp(a, "menue") && !wWaage && !wRechner && !wUmrechner && !wWeltzeit && !wWecker;
+            wWeltzeit = !strcmp(a, "weltzeit"); wWecker = !strcmp(a, "wecker"); wEinst = !strcmp(a, "einstellungen");
+            wHatUhr = strcmp(a, "menue") && !wWaage && !wRechner && !wUmrechner && !wWeltzeit && !wWecker && !wEinst;
         }
         else if (z.startsWith("glyphen ") || z.startsWith("tasten ")) {   // Wortliste (UTF-8), „_“ = Leerzeichen
             bool g = z.startsWith("glyphen ");
@@ -217,19 +219,22 @@ static void wAnzeigeZeichnen() {
             tm t;
             gmtime_r(&s, &t);
             char z[16];
-            snprintf(z, sizeof z, "%02d:%02d %s", t.tm_hour, t.tm_min, t.tm_hour >= 7 && t.tm_hour < 19 ? "☀" : "☾");
+            if (uhr12) snprintf(z, sizeof z, "%d:%02d%c %s", stundeZeigen(t.tm_hour), t.tm_min, t.tm_hour >= 12 ? 'p' : 'a', t.tm_hour >= 7 && t.tm_hour < 19 ? "☀" : "☾");
+            else snprintf(z, sizeof z, "%02d:%02d %s", t.tm_hour, t.tm_min, t.tm_hour >= 7 && t.tm_hour < 19 ? "☀" : "☾");
             wTextZeichnen(z, nullptr);
         }
         wFeld(0);
     }
     if (wWecker) {
         weckerLaden();
-        char z[8];
-        snprintf(z, sizeof z, "%02d:%02d", weckH, weckM);
+        char z[10];
+        if (uhr12) snprintf(z, sizeof z, "%d:%02d%c", stundeZeigen(weckH), weckM, weckH >= 12 ? 'p' : 'a');
+        else snprintf(z, sizeof z, "%02d:%02d", weckH, weckM);
         if (wFeld(0)) wTextZeichnen(z, nullptr);
         if (wFeld(1)) wTextZeichnen(weckAn ? "an" : "aus", nullptr);
         wFeld(0);
     }
+    if (wEinst && wFeld(0)) { wTextZeichnen(uhr12Lokal < 0 ? "auto" : uhr12 ? "12 h" : "24 h", nullptr); wFeld(0); }
     if (wRechner) wTextZeichnen(wRe.anzeige, wRe.mem != 0 ? "M" : nullptr);
     if (wUmrechner) { char a[64]; uAnzeige(wUm, a, sizeof a); wTextZeichnen(a, nullptr); }
 }
@@ -381,7 +386,7 @@ static void widgetZeigen() {
         memset(imgBuf, 0, IMG_BYTES);
         tone(PIN_BUZZER, 900, 120);           // Widget noch nicht aufgespielt
     }
-    if (wRechner || wUmrechner || wWeltzeit || wWecker) {
+    if (wRechner || wUmrechner || wWeltzeit || wWecker || wEinst) {
         if (!wHintergrund) wHintergrund = (uint8_t*)ps_malloc(IMG_BYTES);
         if (wHintergrund) memcpy(wHintergrund, imgBuf, IMG_BYTES);
         wPaarMarkieren();
@@ -419,6 +424,11 @@ static void widgetAktion(const char* a, int wert) {
         return;
     }
     if (wUmrechner && !strcmp(a, "paar")) { uWaehle(wUm, wert); wPaarNeu = wTextNeu = true; return; }
+    if (wEinst && !strcmp(a, "set")) {
+        if (wert == 1) { uhrFormatWeiter(); uhrMinute = -1; }
+        wTextNeu = true;
+        return;
+    }
     if (wWecker && !strcmp(a, "weck")) {
         int m = weckH * 60 + weckM;
         if (wert == 9) weckAn = !weckAn;

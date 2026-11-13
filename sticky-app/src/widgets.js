@@ -7,6 +7,7 @@ import { groesse, zuDisplay, punktZuDisplay, aufsDisplay } from './lage.js';
 import { braunKnopf, BRAUN_FONT } from './braun.js';
 import { TASTEN as R_TASTEN, ROLLE as R_ROLLE } from './rechner.js';
 import { PAARE } from './umrechner.js';
+import { HANDY_12H } from './zeit.js';
 
 const FONT = BRAUN_FONT;
 const leinwand = (b, h) => (typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(b, h) : Object.assign(document.createElement('canvas'), { width: b, height: h }));
@@ -332,8 +333,8 @@ export const STAEDTE = [
 export function weltzeitWidget(hoch = false, staedte = STAEDTE) {
   const p = seite(hoch, 'Weltzeit', 'Zeiten zählt der Sticky selbst · ▲▼ = blättern · KI = Home');
   const { g } = p;
-  const Z = { w: 40, h: 64 }, n = 7;                   // „23:52 ☾“
-  const glyphen = [...'0123456789:', ' ', '☀', '☾'];
+  const Z = { w: 40, h: 64 }, n = 8;                   // „23:52 ☾“ bzw. 12 h „11:52p ☾“
+  const glyphen = [...'0123456789:ap', ' ', '☀', '☾'];
   const zeilen = [];
   staedte.slice(0, 4).forEach((s, i) => {
     const y = hoch ? 56 + i * 184 : 52 + i * 106;
@@ -359,8 +360,8 @@ export function weckerWidget(hoch = false) {
   const p = seite(hoch, 'Wecker', 'klingelt auch im Schlummer · jede Taste stellt ab');
   const { g } = p;
   const Z = { w: 64, h: 96 }, Zk = Z;   // ein Glyphenblatt je Widget: „an/aus“ in derselben Zellgröße
-  const glyphen = [...'0123456789:ansu', ' '];
-  const tx = ((p.W - 5 * Z.w) / 2) & ~7, ty = hoch ? 64 : 56;
+  const glyphen = [...'0123456789:ansup', ' '];
+  const tx = ((p.W - 6 * Z.w) / 2) & ~7, ty = hoch ? 64 : 56;   // 6 Zellen: 12 h „12:30p“
   const kx = ((p.W - 3 * Zk.w) / 2) & ~7, ky = hoch ? 168 : 160;
   const z = p.ziffernPos(tx, ty, Z.w), zk = p.ziffernPos(kx, ky, Zk.w);
   const knoepfe = hoch
@@ -371,7 +372,7 @@ export function weckerWidget(hoch = false) {
   knoepfe.forEach(([x0, y0, x1, y1, t, c]) => p.k(x0, y0, x1, y1, t, `weck ${c}`, 'werkzeug', 30));
   if (hoch) p.k(16, 684, 464, 790, 'An / Aus', 'weck 9', 'haupt', 36); else p.k(16, 372, 784, 472, 'An / Aus', 'weck 9', 'haupt', 36);
   p.felder.unshift('typ wecker', hoch ? `ziffern ${Z.h} ${Z.w}` : `ziffern ${Z.w} ${Z.h}`, ...(hoch ? [`schritt 0 ${-Z.w}`] : []),
-    `glyphen ${glyphen.map((x) => (x === ' ' ? '_' : x)).join(' ')}`, `text ${z.x} ${z.y} 5`, `text ${zk.x} ${zk.y} 3`);
+    `glyphen ${glyphen.map((x) => (x === ' ' ? '_' : x)).join(' ')}`, `text ${z.x} ${z.y} 6`, `text ${zk.x} ${zk.y} 3`);
   return [
     { n: 'ziffern.bin', daten: textBlatt(Z.w, Z.h, glyphen, hoch) },
     { n: 'bild.bin', daten: p.bild() },
@@ -379,7 +380,30 @@ export function weckerWidget(hoch = false) {
   ];
 }
 
+/** Einstellungen am Sticky (FW ≥ 0.30.0): umschaltbar ohne Handy; Standard kommt vom Handy */
+export function einstellungenWidget(hoch = false, handy12 = false) {
+  const p = seite(hoch, 'Einstellungen', 'gelten sofort · ▲▼ = blättern · KI = Home');
+  const { g } = p;
+  const Z = { w: 40, h: 64 }, glyphen = [...'auto24h1', ' '];
+  g.fillStyle = '#000'; g.textAlign = 'left'; g.textBaseline = 'top';
+  g.font = `500 34px ${FONT}`; g.fillText('Uhrzeit', 24, 70);
+  g.font = `400 18px ${FONT}`;
+  g.fillText(`auto = wie das Handy (jetzt ${handy12 ? '12 h' : '24 h'}) · antippen: auto → 24 h → 12 h`, 24, 114);
+  const tx = 600, ty = 64;   // Wert rechts: „auto“, „24 h“, „12 h“
+  g.lineWidth = 3; g.strokeRect(tx - 10, ty - 6, 4 * Z.w + 20, Z.h + 12);
+  p.k(16, 150, 784, 250, 'Uhrzeit umschalten', 'set 1', 'haupt', 32);
+  g.font = `400 18px ${FONT}`; g.fillStyle = '#000'; g.textAlign = 'left'; g.textBaseline = 'top';
+  g.fillText('Weitere Einstellungen folgen (180°, im Schlummer findbar …)', 24, 280);
+  const z = p.ziffernPos(tx, ty, Z.w);
+  p.felder.unshift('typ einstellungen', `ziffern ${Z.w} ${Z.h}`, `glyphen ${glyphen.map((x) => (x === ' ' ? '_' : x)).join(' ')}`, `text ${z.x} ${z.y} 4`);
+  return [
+    { n: 'ziffern.bin', daten: textBlatt(Z.w, Z.h, glyphen, false) },
+    { n: 'bild.bin', daten: p.bild() },
+    { n: 'felder.txt', daten: text(p.felder) },
+  ];
+}
+
 export const WIDGETS = { timer: timerWidget, waage: waageWidget, lineal: () => linealWidget(linealEcht()), rechner: rechnerWidget, umrechner: umrechnerWidget,
-  weltzeit: weltzeitWidget, wecker: weckerWidget };
+  weltzeit: weltzeitWidget, wecker: weckerWidget, einstellungen: () => einstellungenWidget(false, HANDY_12H) };
 /** Kalibrierung aus der App (Mehr → Lineal): so viele echte mm misst die 80-mm-Marke */
 function linealEcht() { try { return parseFloat(localStorage.getItem('sticky.lineal80')) || 80; } catch { return 80; } }

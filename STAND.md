@@ -3,7 +3,7 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.29.0 – EDC-Sticky: Weltzeit, Wecker, Rechner/Umrechner im Sticky, Strichschrift, Braun-Optik, Hoch/Quer (auch per Sensor, 180°), Rechner, Timer, Waage, Lineal, Zettel mit QR, Gegenseitig suchen, Push-to-Talk, Fahrtenschreiber, SD-Karte als Vertrag; MIT-Lizenz (13.11.2026)
+version: FW 0.30.1 – EDC-Sticky: Einstellungen am Sticky (12/24 h), Weltzeit, Wecker, Rechner/Umrechner im Sticky, Strichschrift, Braun-Optik, Hoch/Quer (auch per Sensor, 180°), Rechner, Timer, Waage, Lineal, Zettel mit QR, Gegenseitig suchen, Push-to-Talk, Fahrtenschreiber, SD-Karte als Vertrag; MIT-Lizenz (13.11.2026)
 wartet: Markus: Lineal nachmessen, Einfügen in WhatsApp probieren, Fotos für den Seeed Playground (Einreichen um den 20.11.); Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
@@ -360,6 +360,12 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   ±1 h/±10/±1, An/Aus, Weckzeit in `/ist/wecker.txt`; geprüft wird jede Minute, auch nach dem Minuten-Wecken im
   Schlummer; klingelt bis 1 min über das Suchen-Piepen (`suchenStill`), jede Taste stellt ab. Mehrere `text`-Zeilen
   je Widget, Karussell bis 16 Einträge, Menü bei > 12 mit 4 (quer) bzw. 3 (hochkant) Spalten. Am Gerät: „klingelt“
+- **12/24 h einheitlich, Einstellungen am Sticky (FW 0.30.1, 13.11.2026):** Standard vom Handy (`sticky-app/src/zeit.js`,
+  `einstellungen/zeit.txt` „format 12|24“), am Sticky überstimmbar auf der neuen Seite „Einstellungen“ (Widget
+  `einstellungen`, auto → 24 h → 12 h, gespeichert in `/ist/zeit.txt`). 12 h: Home-Uhr ohne führende Null, PM als
+  kleines „PM“ am Doppelpunkt (Ziffernblatt-Zelle 11), Statuszeile „7:30p“ (Glyphenblatt 368 breit mit a/p), Weltzeit
+  und Wecker „7:30a“. Die App zeigt ihre Zeiten im Format des Handys. Fehler gefunden: Widget-Typen über 11 Zeichen
+  wurden abgeschnitten (jetzt 15). Am Gerät: „klappt“
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

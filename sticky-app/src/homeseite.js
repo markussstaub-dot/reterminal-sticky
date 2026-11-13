@@ -1,6 +1,7 @@
 // Home (Markus, 11.11.2026): Visitenkarte hochkant mit Uhrzeit. Die App rendert Karte und Ziffern einmalig, der Sticky
 // setzt die Uhr jede Minute selbst aus dem Ziffernblatt zusammen (firmware-ble/modus.h) – auch ohne Handy.
 // Gleiche Lage wie die Notiz-Seite: Tasten oben rechts, USB unten.
+import { uhrzeit } from './zeit.js';
 import qrcode from 'qrcode-generator';
 import { BREITE, HOEHE, rgbaZu1bpp } from './protokoll.js';
 import { drehe, PB, PH } from './fahrtseite.js';
@@ -10,7 +11,7 @@ export const KARTE = { name: 'Markus', qr: 'https://github.com/markussstaub-dot'
 
 // Uhrfeld hochkant: 5 Felder à 80 × 112 ab x = 40, y = 352 („HH:MM“). Muss zu firmware-ble/modus.h passen.
 export const UHR = { x: 40, y: 352, feldB: 80, h: 112 };
-const ZEICHEN = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':'];
+const ZEICHEN = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', 'PM:'];   // PM: Doppelpunkt mit „PM“ für 12 h (FW ≥ 0.30.0)
 
 const leinwand = (b, h) => (typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(b, h) : Object.assign(document.createElement('canvas'), { width: b, height: h }));
 
@@ -48,7 +49,7 @@ export function homeHochkant(karte = KARTE, beispielZeit = null, wetter = null) 
     do { p.font = `${gr}px system-ui, sans-serif`; gr -= 2; } while (p.measureText(zeile).width > PB - 30 && gr > 16);
     p.fillText(zeile, PB / 2, 300);
     p.font = '16px system-ui, sans-serif';
-    p.fillText(`Wetter, Stand ${new Date(wetter.zeit).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`, PB / 2, 330);
+    p.fillText(`Wetter, Stand ${uhrzeit(wetter.zeit)}`, PB / 2, 330);
   }
   // QR-Code unter der Uhr
   const qr = qrcode(0, 'M');
@@ -69,6 +70,13 @@ function zeichneZiffer(p, z, x, y) {
   p.fillStyle = '#000';
   p.textAlign = 'center';
   p.textBaseline = 'middle';
+  if (z === 'PM:') {                       // Doppelpunkt etwas tiefer, „PM“ klein darüber (wie der PM-Punkt am Radiowecker)
+    p.font = 'bold 96px system-ui, sans-serif';
+    p.fillText(':', x + UHR.feldB / 2, y + UHR.h / 2 + 14);
+    p.font = 'bold 22px system-ui, sans-serif';
+    p.fillText('PM', x + UHR.feldB / 2, y + 16);
+    return;
+  }
   p.font = `bold ${z === ':' ? 96 : 104}px system-ui, sans-serif`;
   p.fillText(z, x + UHR.feldB / 2, y + UHR.h / 2 + 4);
 }
@@ -85,7 +93,7 @@ function zeichneZeit(p, text) {
  * → { quer, hoch } als 1 bpp
  */
 export function statusGlyphen() {
-  const B = 336, H = 32;
+  const B = 368, H = 32;   // ab FW 0.30.0 mit „a“ und „p“ (12 h) bei 336 und 352
   const c = leinwand(B, H);
   const p = c.getContext('2d');
   p.fillStyle = '#fff';
@@ -109,6 +117,9 @@ export function statusGlyphen() {
   p.beginPath(); p.moveTo(288, 4); p.bezierCurveTo(281, 14, 278, 19, 278, 22); p.arc(288, 21, 10, Math.PI, 0, true); p.bezierCurveTo(298, 19, 295, 14, 288, 4); p.fill();
   // Thermometer (Laden zu kalt/heiß)
   p.beginPath(); p.roundRect(316, 3, 8, 20, 4); p.stroke(); p.beginPath(); p.arc(320, 25, 5, 0, Math.PI * 2); p.fill(); p.fillRect(318, 10, 4, 14);
+  // a / p für 12 h
+  p.font = 'bold 21px system-ui, sans-serif';
+  p.fillText('a', 344, 17); p.fillText('p', 360, 16);
   const quer = rgbaZu1bpp(p.getImageData(0, 0, B, H).data, B, H);
   const d = leinwand(H, B);
   const q = d.getContext('2d');
