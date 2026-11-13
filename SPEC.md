@@ -265,6 +265,25 @@ Vorbild: Device Shadow / Device Twin aus der Industrie (AWS IoT, Azure).
   nicht in einem Topf landen
 - offen: Halterung/Hülle zum Mitnehmen (Druckteil Bambu: Clip für Microlino, Gürtel, Magnet für die Werkstatt)
 
+### Sprachnotizen 2.0 (Markus, 13.11.2026, abgenommen)
+Heute: KI halten = Diktat, live an die App bzw. offline gepuffert, das Fold tippt offline ab, Ort und Zeit dran, alles
+in eine Tagesdatei zum Teilen. Funktioniert, ist aber ein einziger Topf.
+- fest **Ziele je Sorte**: Testnotiz → zur Fahrt in Bubble Log · Erledigung → Zettel · Idee/Gedanke → Obsidian-Vault
+  (`Desktop\Claude\Wissen`) · Erinnerung → Kalender · Erzählung (länger) → Vault, Lebensstationen/Memoiren
+- fest **Sortieren: das Handy entscheidet, Stichwort als Abkürzung**: aus Inhalt und Lage (fährt gerade → Fahrt-Notiz,
+  klingt nach Einkauf → Zettel); Stichwort am Anfang („Einkauf:“, „Idee:“, „Erinnere mich …“) geht immer vor;
+  unsicher → „Eingang“, abends räumt Claude auf
+- Vorschlag **Kontext automatisch**: Ort (gibt es), dazu Fahrt ja/nein, Tempo und Akku aus Bubble Log, Szene, Klima
+- Vorschlag **Rückmeldung am Sticky**: 5 s erkannter Text plus Ziel („→ Zettel: Milch, Schrauben M4“) als Teilbild;
+  ▼ in diesen 5 s = „falsch, in den Eingang“. Offline weiter nur „✓ gespeichert“, die Rückmeldung kommt beim Abholen
+- Vorschlag **Wiederfinden**: Seite „Heute“ im Karussell mit den letzten 5 Notizen als Text (ohne Handy nachlesen)
+- Vorschlag **Qualität, Stufe 2**: offline abtippen wie heute; mit Netz glättet Claude nach (Eigennamen, Ortsnamen,
+  Satzzeichen) und bestätigt Sorte und Ziel. Audio bleibt lokal, nur Text geht raus
+- fest **kein Weckwort** („Hey Sticky“): kostet Strom, die KI-Taste reicht
+- offen: Reihenfolge (Vorschlag: 1. Sortieren mit Stichwort + Eingang, 2. Rückmeldung am Sticky, 3. Seite „Heute“,
+  4. Claude-Nachbearbeitung, 5. Ziele Kalender/Vault/Bubble Log anbinden); Zettel aus Diktat = Bestellzettel oder
+  eigener Erledigungszettel?
+
 ### Widgets (Markus, 13.11.2026, Ideensammlung)
 - Vorschlag **Weiche**: Was sich sekündlich ändert, rechnet und zeichnet der Sticky selbst (offline); die App liefert
   nur Hintergrundbild und Ziffernsatz, der Sticky setzt die Ziffern ein (wie heute die Uhr)
