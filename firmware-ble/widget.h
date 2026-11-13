@@ -10,13 +10,16 @@
  *     typ waage: Lagesensor live (FW 0.20.0) – blase <cx> <cy> <r> · wert1/wert2 <x> <y> (Grad, Zellen „-12.3°“) ·
  *       achsen <a> <b> (Sensorachse für Bild-x/-y, z. B. „-y x“) · Aktionen null, halten
  *     ziffern.bin: Zellen 0–9, „:“, „-“, „.“, „°“ (Timer braucht nur die ersten 11)
+ *     schritt <dx> <dy>: Abstand von Zelle zu Zelle auf dem Display (Standard w 0; hochkant 0 −h, FW 0.21.0)
  * Karussell-Eintrag „widget <name>“. Ein Uhrwerk für alle Widgets: der Timer läuft weiter, wenn man die Seite verlässt;
  * beim Ablauf weckt er den Sticky (leichtSchlaf), piept und holt die Timer-Seite nach vorn.
  */
+static bool statusHoch();
 struct WKnopf { int x0, y0, x1, y1; char aktion[12]; int wert; };
 static char tWidget[16] = "";   // widgetName steht in modus.h
 static uint8_t* wzZiffern = nullptr;
-static int wzW = 64, wzH = 96, wzX = -1, wzY = 0;
+static int wzW = 64, wzH = 96, wzX = -1, wzY = 0, wzDx = 64, wzDy = 0;
+static bool wzSchrittGesetzt = false;
 static WKnopf wKnoepfe[12];
 static int wKnopfAnzahl = 0;
 static char wTaste[2][12] = {"", ""};
@@ -51,6 +54,7 @@ static bool widgetLaden(const char* name) {
     if (!sollText(rel, t)) return false;
     strlcpy(widgetName, name, sizeof widgetName);
     wKnopfAnzahl = 0; wzX = -1; wTaste[0][0] = wTaste[1][0] = 0; wHatUhr = false; wWaage = false; wbR = 0; wW1x = wW2x = -1;
+    wzSchrittGesetzt = false;
     int start = 0;
     while (start < (int)t.length()) {
         int ende = t.indexOf('\n', start);
@@ -70,6 +74,7 @@ static bool widgetLaden(const char* name) {
         else if (sscanf(z.c_str(), "dauer %d", &v[0]) == 1) wDauerS = v[0];
         else if (sscanf(z.c_str(), "zeit %d %d", &v[0], &v[1]) == 2) { wzX = v[0] & ~7; wzY = v[1]; }
         else if (sscanf(z.c_str(), "ziffern %d %d", &v[0], &v[1]) == 2) { wzW = v[0] & ~7; wzH = v[1]; }
+        else if (sscanf(z.c_str(), "schritt %d %d", &v[0], &v[1]) == 2) { wzDx = v[0]; wzDy = v[1]; wzSchrittGesetzt = true; }
         else if (sscanf(z.c_str(), "knopf %d %d %d %d %11s %d", &v[0], &v[1], &v[2], &v[3], a, &v[4]) >= 5 && wKnopfAnzahl < 12) {
             WKnopf& k = wKnoepfe[wKnopfAnzahl++];
             k.x0 = v[0]; k.y0 = v[1]; k.x1 = v[2]; k.y1 = v[3]; strlcpy(k.aktion, a, sizeof k.aktion); k.wert = v[4];
@@ -78,6 +83,7 @@ static bool widgetLaden(const char* name) {
             if (i >= 0) { strlcpy(wTaste[i], a, sizeof wTaste[i]); wTasteWert[i] = v[0]; }
         }
     }
+    if (!wzSchrittGesetzt) { wzDx = wzW; wzDy = 0; }
     if (!wzZiffern) wzZiffern = (uint8_t*)ps_malloc(14 * 128 * 160 / 8);
     snprintf(rel, sizeof rel, "widgets/%s/ziffern.bin", name);
     wZellen = wWaage ? 14 : 11;
@@ -98,10 +104,10 @@ static bool widgetZeitZeichnen(bool immer) {
     const int zeichen[5] = {s / 600, s / 60 % 10, 10, s % 60 / 10, s % 10};
     int bz = wZellen * wzW / 8;
     for (int k = 0; k < 5; k++) {
-        int qx = zeichen[k] * wzW / 8, zx = (wzX + k * wzW) / 8;
+        int qx = zeichen[k] * wzW / 8, zx = (wzX + k * wzDx) / 8, zy = wzY + k * wzDy;
         for (int r = 0; r < wzH; r++) {
-            if (wzY + r >= H || zx + wzW / 8 > W / 8) continue;
-            memcpy(imgBuf + (wzY + r) * (W / 8) + zx, wzZiffern + r * bz + qx, wzW / 8);
+            if (zy + r < 0 || zy + r >= H || zx < 0 || zx + wzW / 8 > W / 8) continue;
+            memcpy(imgBuf + (zy + r) * (W / 8) + zx, wzZiffern + r * bz + qx, wzW / 8);
         }
     }
     return true;
@@ -111,7 +117,9 @@ static bool widgetZeitZeichnen(bool immer) {
 /** Zelle idx (0–9, 10 „:“, 11 „-“, 12 „.“, 13 „°“, -1 leer) an x, y ins Bild */
 static void wZelle(int x, int y, int idx) {
     int bz = wZellen * wzW / 8, zx = x / 8;
+    if (zx < 0 || zx + wzW / 8 > W / 8) return;
     for (int r = 0; r < wzH && y + r < H; r++) {
+        if (y + r < 0) continue;
         uint8_t* ziel = imgBuf + (y + r) * (W / 8) + zx;
         if (idx < 0) memset(ziel, 0, wzW / 8);
         else memcpy(ziel, wzZiffern + r * bz + idx * wzW / 8, wzW / 8);
@@ -124,7 +132,7 @@ static void wWinkelZeichnen(int x, int y, float g) {
     int z = (int)lroundf(fabsf(g) * 10);
     if (z > 999) z = 999;
     int zellen[6] = {g <= -0.05f ? 11 : -1, z >= 100 ? z / 100 : -1, z / 10 % 10, 12, z % 10, 13};
-    for (int k = 0; k < 6; k++) wZelle(x + k * wzW, y, zellen[k]);
+    for (int k = 0; k < 6; k++) wZelle(x + k * wzDx, y + k * wzDy, zellen[k]);
 }
 
 static float wAchseWert(const char* a, float x, float y, float z) {
@@ -183,7 +191,7 @@ static void waageLoop() {
     if (fabsf(wWinkel[0] - alt0) < 0.05f && fabsf(wWinkel[1] - alt1) < 0.05f && wBlaseX != -999) return;
     waageZeichnen();
     display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
-    display.updatePartial(0, 62, W, H - 62);
+    if (statusHoch()) display.updatePartial(62, 0, W - 62, H); else display.updatePartial(0, 62, W, H - 62);
 }
 
 /** Aus setzeModus: Seite aufbauen */
@@ -294,6 +302,7 @@ static void widgetLoop() {
     if (tLaeuft) aktiv();                     // auf der Timer-Seite nicht einschlafen, solange er läuft
     if (widgetZeitZeichnen(false)) {
         display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
-        display.updatePartial(wzX, wzY, 5 * wzW, wzH);
+        int x0 = min(wzX, wzX + 4 * wzDx), y0 = min(wzY, wzY + 4 * wzDy);
+        display.updatePartial(max(0, x0), max(0, y0), abs(4 * wzDx) + wzW, abs(4 * wzDy) + wzH);
     }
 }

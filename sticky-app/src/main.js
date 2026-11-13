@@ -34,6 +34,7 @@ import { HILFE } from './hilfe.js';
 import { HANDGRIFFE_STANDARD } from './handgriffe.js';
 import { AppSeite } from './appseite.js';
 import { WIDGETS, menueWidget } from './widgets.js';
+import { LAGE_STANDARD, LAGE_NAMEN, vomDisplay } from './lage.js';
 import { WOERTERBUCH_STANDARD, paareLesen, paareText, korrigiere, lernen, einpflegen } from './woerterbuch.js';
 import * as bb from './bordbuch.js';
 import { tabsEinrichten } from './tabs.js';
@@ -655,11 +656,12 @@ async function abgleich() {
   if (fwAb('0.13.0')) await karussellAufspielen().catch((e) => eintrag(`Karussell: ${e.message}`, true));
   if (fwAb('0.15.0')) await hilfeAufspielen().catch((e) => eintrag(`Hilfe: ${e.message}`, true));
   if (fwAb('0.18.0')) {   // Widget-Maschine: nur Geändertes geht rüber (Bestandsliste je Widget)
-    const menue = () => menueWidget(karussellText().trim().split('\n'));   // Kacheln = Karussell (KI auf Home)
-    for (const [name, bauen] of Object.entries({ ...WIDGETS, menue })) {
+    appSeite.hoch = hochkant('app');
+    for (const [name, bauen] of Object.entries(widgetBauer())) {   // in ihrer Lage; Menü-Kacheln = Karussell
       const n = await zwilling.sollAbgleich(`widgets/${name}`, bauen()).catch((e) => { eintrag(`Widget ${name}: ${e.message}`, true); return 0; });
       if (n) eintrag(`Widget „${name}“ aufgespielt`);
     }
+    if (fwAb('0.21.0')) await zwilling.sollAbgleich('einstellungen', [{ n: 'lage.txt', daten: new TextEncoder().encode(lageText()) }]).catch((e) => eintrag(`Lage: ${e.message}`, true));
   }
   if (fwAb('0.10.0')) await fahrtenschreiberAbholen().catch((e) => eintrag(`Fahrtenschreiber: ${e.message}`, true));
 }
@@ -687,8 +689,44 @@ async function karussellAufspielen() {
   const n = await zwilling.sollAbgleich('einstellungen', [{ n: 'karussell.txt', daten: new TextEncoder().encode(karussellText()) }]);
   if (n) eintrag(`Karussell: ${karussellText().trim().split('\n').join(' → ')}`);
   // Menü-Kacheln folgen dem Karussell (FW ≥ 0.19.0)
-  if (n && fwAb('0.19.0')) await zwilling.sollAbgleich('widgets/menue', menueWidget(karussellText().trim().split('\n')));
+  if (n && fwAb('0.19.0')) await zwilling.sollAbgleich('widgets/menue', widgetBauer().menue());
 }
+// ---- Lage der Seiten (SPEC „Hoch/Quer in zwei Stufen“, Stufe 1, FW ≥ 0.21.0) -------------------------------------
+function lagen() {
+  try { return { ...LAGE_STANDARD, ...JSON.parse(localStorage.getItem('sticky.lagen') || '{}') }; } catch { return { ...LAGE_STANDARD }; }
+}
+const hochkant = (seite) => fwAb('0.21.0') && lagen()[seite] === 'hoch';
+const lageText = () => Object.entries(lagen()).map(([s, l]) => `${s} ${l}`).join('\n') + '\n';
+/** Widgets in ihrer Lage bauen; das Menü folgt dem Karussell */
+const widgetBauer = () => ({
+  ...Object.fromEntries(Object.entries(WIDGETS).map(([n, f]) => [n, () => f(hochkant(n))])),
+  menue: () => menueWidget(karussellText().trim().split('\n'), hochkant('menue')),
+});
+/** erst die Bilder (in neuer Lage), dann lage.txt: deren Änderung lässt den Sticky neu zeichnen */
+async function lageAufspielen() {
+  appSeite.hoch = hochkant('app');
+  if (!zwilling.verbunden || !fwAb('0.21.0')) return;
+  for (const [name, bauen] of Object.entries(widgetBauer())) await zwilling.sollAbgleich(`widgets/${name}`, bauen());
+  const n = await zwilling.sollAbgleich('einstellungen', [{ n: 'lage.txt', daten: new TextEncoder().encode(lageText()) }]);
+  if (n) eintrag(`Lage: ${Object.entries(lagen()).map(([s, l]) => `${LAGE_NAMEN[s]} ${l === 'hoch' ? 'hochkant' : 'quer'}`).join(', ')}`);
+  if (stickyModus === 'app') await appSeite.zeigen();
+}
+for (const [seite, name] of Object.entries(LAGE_NAMEN)) {
+  const zeile = document.createElement('label');
+  zeile.className = 'lage';
+  const wahl = document.createElement('select');
+  wahl.innerHTML = '<option value="hoch">hochkant</option><option value="quer">quer</option>';
+  wahl.value = lagen()[seite];
+  wahl.onchange = () => {
+    const l = lagen();
+    l[seite] = wahl.value;
+    try { localStorage.setItem('sticky.lagen', JSON.stringify(l)); } catch { /* egal */ }
+    lageAufspielen().catch((e) => eintrag(`Lage: ${e.message}`, true));
+  };
+  zeile.append(`${name} `, wahl);
+  $('lagen').append(zeile);
+}
+
 $('karussell').value = localStorage.getItem('sticky.karussell') || KARUSSELL_STANDARD;
 $('karussell').onchange = () => {
   localStorage.setItem('sticky.karussell', $('karussell').value);
@@ -745,7 +783,7 @@ async function istAbholen(quelle, ziel) {
 }
 
 /** 1 bpp (800 × 480, Bit 1 = schwarz) → PNG als base64 */
-function kritzelPng(bits) {
+function kritzelPng(bits, hoch = false) {
   const c = typeof OffscreenCanvas !== 'undefined' ? null : Object.assign(document.createElement('canvas'), { width: BREITE, height: HOEHE });
   const k = c ?? document.createElement('canvas');
   k.width = BREITE; k.height = HOEHE;
@@ -757,6 +795,12 @@ function kritzelPng(bits) {
     bild.data[i * 4 + 3] = 255;
   }
   h.putImageData(bild, 0, 0);
+  if (hoch) {   // hochkant gemalt (Datei „…-h.bin“, FW ≥ 0.21.0): aufrecht drehen
+    const a = document.createElement('canvas');
+    a.width = 480; a.height = 800;
+    a.getContext('2d').drawImage(vomDisplay(k), 0, 0);
+    return a.toDataURL('image/png').split(',')[1];
+  }
   return k.toDataURL('image/png').split(',')[1];
 }
 const kritzelSim = {};   // im Browser statt Filesystem
@@ -766,8 +810,8 @@ async function kritzelAbholen() {
   const liste = (await zwilling.liste('/ist/kritzel')).filter((d) => !d.ordner && d.n.endsWith('.bin'));
   for (const d of liste) {
     const bits = await zwilling.holen(`/ist/kritzel/${d.n}`, d.b);
-    const png = kritzelPng(bits);
-    const name = d.n.replace('.bin', '.png');
+    const png = kritzelPng(bits, d.n.endsWith('-h.bin'));
+    const name = d.n.replace('-h.bin', '.bin').replace('.bin', '.png');
     if (nativ) await Filesystem.writeFile({ path: `kritzel/${name}`, data: png, directory: Directory.Data, recursive: true });
     else kritzelSim[name] = png;
     const m = d.n.match(/(\d{4})-(\d{2})-(\d{2})-(\d{2})(\d{2})(\d{2})/);

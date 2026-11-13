@@ -124,3 +124,4 @@ footer { padding: 0; }
 
 /* Kritzel vom Sticky als Bild-Notiz */
 #notizen img.kritzel { display: block; width: 100%; max-width: 400px; margin-top: 6px; border: 1px solid var(--leise, #888); border-radius: 6px; background: #fff; }
+label.lage { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 6px 0; }

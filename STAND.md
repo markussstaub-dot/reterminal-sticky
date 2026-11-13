@@ -3,8 +3,8 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.20.0 – Wasserwaage, Menü (KI auf Home), Umrechner, Widget-Maschine mit Timer, App-Seite mit Rechner, Kritzelblock, Tastenhilfe (▲+▼), Rahmen beim Tippen, Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
-wartet: Markus: Bewegungswecken von Hand prüfen (USB ab, 3 min liegen lassen, hochnehmen) und Fahrterkennung bei der nächsten Microlino-Fahrt; Offline-Diktat auf /ist/puffer einmal prüfen; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
+version: FW 0.21.0 – Hoch/Quer je Seite (Stufe 1), Wasserwaage, Menü (KI auf Home), Umrechner, Widget-Maschine mit Timer, App-Seite mit Rechner, Kritzelblock, Tastenhilfe (▲+▼), Rahmen beim Tippen, Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
+wartet: Markus: eine Seite hochkant am Gerät testen (Rechner ist jetzt Standard hochkant); Bewegungswecken von Hand prüfen (USB ab, 3 min liegen lassen, hochnehmen) und Fahrterkennung bei der nächsten Microlino-Fahrt; Offline-Diktat auf /ist/puffer einmal prüfen; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
 Repo: github.com/markussstaub-dot/reterminal-sticky (privat, seit 11.11.2026). `backup/`, Modelle und
@@ -300,6 +300,12 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   (1° = r/15 px, Ringe 1°/5°/10°), Grad für beide Achsen, „Null setzen“ (schräge Unterlage) und „Halten“. Achsen per
   `achsen x y` in felder.txt einstellbar (Standard passte). Hilfe je Widget (`hilfe/w-<name>.bin`). Karussell-Standard
   Home, Timer, Waage, Notiz, Kritzel, Rechner, Bordbuch, Zettel. Markus: „geht super … bin begeistert“
+- **Hoch/Quer Stufe 1 (FW 0.21.0, 13.11.2026):** Lage je Seite in „Mehr → Lage der Seiten“ (Menü, Timer, Waage,
+  Rechner/Umrechner, Kritzelblock), Ablage `/soll/einstellungen/lage.txt` („<seite> hoch|quer“). Vorgabe: Rechner
+  hochkant, Rest quer. Die App zeichnet logisch 480 × 800 und dreht (`sticky-app/src/lage.js`); Widget-Ziffern als
+  gedrehte Zellen mit `schritt 0 −w` in felder.txt. Firmware: Statuszeile und Kritzelblock lage-abhängig (Knöpfe,
+  Kopfstreifen), hochkant gemalte Kritzel heißen `…-h.bin`, die App dreht sie aufrecht. In der Browser-Simulation
+  geprüft, geflasht, App aufgespielt; Test am Gerät steht aus. „180° gedreht“ und Stufe 2 (automatisch) folgen
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

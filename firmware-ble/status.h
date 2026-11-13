@@ -25,7 +25,13 @@ static void statusLaden() {
     statusSig = 0;
 }
 
-static bool statusHoch() { return modus == M_HOME || modus == M_NOTIZ; }   // Kritzelblock ist quer
+static bool statusHoch() {
+    if (modus == M_HOME || modus == M_NOTIZ) return true;
+    if (modus == M_APP) return lageHoch("app");
+    if (modus == M_KRITZEL) return lageHoch("kritzel");
+    if (modus == M_WIDGET) return lageHoch(widgetName);
+    return false;
+}
 
 /** Rechteck in Seitenkoordinaten (hochkant oder quer) */
 static void stRechteck(bool hoch, int x, int y, int w, int h, bool schwarz) {

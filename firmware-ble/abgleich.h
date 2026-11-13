@@ -89,6 +89,9 @@ static void sollGeaendert(const char* rel) {
         bbIndexMelden();
     } else if (!strncmp(rel, "widgets/", 8) && strstr(rel, "/felder.txt")) {
         if (modus == M_WIDGET && !strncmp(rel + 8, widgetName, strlen(widgetName))) neuZeichnen = true;   // neu aufspielen
+    } else if (!strcmp(rel, "einstellungen/lage.txt")) {
+        lageLaden();
+        if (modus == M_APP || modus == M_KRITZEL || modus == M_WIDGET) neuZeichnen = true;
     } else if (!strcmp(rel, "einstellungen/karussell.txt")) {
         karussellLaden();
     } else if (!strcmp(rel, "notiz/layout.txt")) {

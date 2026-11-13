@@ -34,6 +34,32 @@ static volatile int modusWunsch = -1;     // von der App (OP_BB_MODUS) oder Tast
 static int bestellAnzahl = 0, bestellAktuell = 0;
 static bool hilfeAn = false;          // Tastenhilfe gerade sichtbar (▲+▼)
 static char widgetName[16] = "";       // aktuelles Widget (widget.h)
+
+// Lage je Seite (SPEC „Hoch/Quer in zwei Stufen“, Stufe 1, FW 0.21.0): /soll/einstellungen/lage.txt, je Zeile
+// „<seite> hoch|quer“ (Seiten: app, kritzel, Widget-Namen wie menue, timer, waage). Home und Notiz bleiben hochkant,
+// Bordbuch und Zettel quer. Die App rendert in der gewählten Lage; die Firmware braucht sie für Statuszeile,
+// Ziffern und die Kritzel-Knöpfe.
+static char lageSeite[12][16];
+static bool lageHochFlag[12];
+static int lageAnzahl = 0;
+static void lageLaden() {
+    lageAnzahl = 0;
+    String t;
+    if (!sollText("einstellungen/lage.txt", t)) return;
+    int start = 0;
+    while (start < (int)t.length() && lageAnzahl < 12) {
+        int ende = t.indexOf('\n', start);
+        if (ende < 0) ende = t.length();
+        String z = t.substring(start, ende);
+        start = ende + 1;
+        char a[16], b[8];
+        if (sscanf(z.c_str(), "%15s %7s", a, b) == 2) { strlcpy(lageSeite[lageAnzahl], a, 16); lageHochFlag[lageAnzahl++] = !strcmp(b, "hoch"); }
+    }
+}
+static bool lageHoch(const char* seite) {
+    for (int i = 0; i < lageAnzahl; i++) if (!strcmp(lageSeite[i], seite)) return lageHochFlag[i];
+    return false;
+}
 static volatile bool neuZeichnen = false;   // Seite neu aufbauen (Hilfe zu, anderes Widget)
 static void widgetZeigen();
 static bool widgetTaste(int i);
@@ -90,6 +116,7 @@ static void homeInit() {
     LittleFS.mkdir("/einstellungen");
     homeLesen();
     karussellLaden();
+    lageLaden();
     // Ortszeit Deutschland (die Uhr läuft in UTC)
     setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
     tzset();
@@ -192,6 +219,7 @@ static int kzLetztX = -1, kzLetztY = -1, kzX0 = W, kzY0 = H, kzX1 = 0, kzY1 = 0;
 static bool kzBemalt = false;
 extern bool gfxPartialWachHalten;   // Seeed_GFX2 mit Sticky-Patch (bibliothek-patch/)
 static void kzPanelSchlaf();
+static bool kzHoch();
 static uint32_t kzZuletzt = 0;
 static portMUX_TYPE kzSperre = portMUX_INITIALIZER_UNLOCKED;
 static TaskHandle_t kzAufgabe = nullptr;
@@ -202,7 +230,7 @@ static void kzPunkt(int x, int y) {
     for (int dy = -KZ_STIFT; dy <= KZ_STIFT; dy++)
         for (int dx = -KZ_STIFT; dx <= KZ_STIFT; dx++) {
             int px = x + dx, py = y + dy;
-            if (px < 0 || px >= W || py < 62 || py >= H) continue;   // oben bleiben Knöpfe (KZ_KOPF) und Statuszeile frei
+            if (px < 0 || px >= W || py < 0 || py >= H || (kzHoch() ? px < 62 : py < 62)) continue;   // Kopfstreifen (Knöpfe, Statuszeile) frei
             imgBuf[py * (W / 8) + px / 8] |= 0x80 >> (px & 7);
         }
     portENTER_CRITICAL(&kzSperre);
@@ -234,11 +262,20 @@ static void kritzelPunkt(int x, int y, bool neu) {
 static void kritzelLos() { kzLetztX = kzLetztY = -1; }
 
 // Knöpfe links oben in der Statuszeilen-Höhe (dort wird nicht gemalt): ✓ Speichern bei x 8–80, ✕ Leeren bei x 96–168
-// gleiche Größe wie die Reiter der App-Seite (58 px hoch, für Finger; 13.11.2026), rechts ab x 512 die Statuszeile
+// gleiche Größe wie die Reiter der App-Seite (58 px hoch, für Finger; 13.11.2026), rechts ab x 512 die Statuszeile.
+// Koordinaten logisch (wie die Seite liegt); hochkant (FW 0.21.0): logisch (lx, ly) ↔ Display (ly, 479 − lx)
 static const int KZ_KN_Y0 = 2, KZ_KN_Y1 = 58, KZ_SP_X0 = 16, KZ_SP_X1 = 176, KZ_LE_X0 = 184, KZ_LE_X1 = 344, KZ_KOPF = 62;
 static volatile bool kzSpeichernWunsch = false, kzLeerenWunsch = false;
 
-static void kzStrich(int x0, int y0, int x1, int y1) {   // 3 px dicke Linie direkt in imgBuf (für die Knopfsymbole)
+static bool kzHoch() { return lageHoch("kritzel"); }
+/** logisch → Display */
+static void kzD(int lx, int ly, int& x, int& y) { if (kzHoch()) { x = ly; y = H - 1 - lx; } else { x = lx; y = ly; } }
+/** logisches Rechteck in imgBuf (schwarz/weiß) */
+static void kzRechteck(int lx, int ly, int w, int h, bool schwarz) {
+    if (kzHoch()) bildRechteck(ly, H - lx - w, h, w, schwarz); else bildRechteck(lx, ly, w, h, schwarz);
+}
+static void kzStrich(int x0, int y0, int x1, int y1) {   // 3 px dicke Linie direkt in imgBuf (für die Knopfsymbole), logisch
+    kzD(x0, y0, x0, y0); kzD(x1, y1, x1, y1);
     int dx = abs(x1 - x0), dy = -abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1, e = dx + dy;
     while (true) {
         for (int a = -1; a <= 1; a++) for (int b = -1; b <= 1; b++) {
@@ -255,8 +292,8 @@ static void kzStrich(int x0, int y0, int x1, int y1) {   // 3 px dicke Linie dir
 static void kzKnoepfeZeichnen() {
     for (int k = 0; k < 2; k++) {
         int x0 = k ? KZ_LE_X0 : KZ_SP_X0, x1 = k ? KZ_LE_X1 : KZ_SP_X1;
-        bildRechteck(x0, KZ_KN_Y0, x1 - x0, KZ_KN_Y1 - KZ_KN_Y0, true);
-        bildRechteck(x0 + 3, KZ_KN_Y0 + 3, x1 - x0 - 6, KZ_KN_Y1 - KZ_KN_Y0 - 6, false);
+        kzRechteck(x0, KZ_KN_Y0, x1 - x0, KZ_KN_Y1 - KZ_KN_Y0, true);
+        kzRechteck(x0 + 3, KZ_KN_Y0 + 3, x1 - x0 - 6, KZ_KN_Y1 - KZ_KN_Y0 - 6, false);
     }
     int m = (KZ_SP_X0 + KZ_SP_X1) / 2, c = (KZ_KN_Y0 + KZ_KN_Y1) / 2;   // ✓
     kzStrich(m - 20, c, m - 6, c + 14); kzStrich(m - 6, c + 14, m + 20, c - 14);
@@ -266,6 +303,7 @@ static void kzKnoepfeZeichnen() {
 
 /** Touch im Knopfstreifen (aus der Kritzel-Aufgabe): true = war ein Knopf, nicht malen */
 static bool kzKnopf(int x, int y, bool neu) {
+    if (kzHoch()) { int lx = H - 1 - y, ly = x; x = lx; y = ly; }   // Display → logisch
     if (y >= KZ_KOPF) return false;
     if (!neu) return true;                   // nur beim Aufsetzen auslösen
     if (x >= KZ_SP_X0 && x < KZ_SP_X1) kzSpeichernWunsch = true;
@@ -362,7 +400,8 @@ static void kritzelSpeichern() {
     tm t;
     localtime_r(&s, &t);
     char pfad[48];
-    snprintf(pfad, sizeof pfad, "/ist/kritzel/%04d-%02d-%02d-%02d%02d%02d.bin", t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
+    snprintf(pfad, sizeof pfad, "/ist/kritzel/%04d-%02d-%02d-%02d%02d%02d%s.bin", t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec,
+             kzHoch() ? "-h" : "");   // -h: hochkant gemalt, die App dreht das Bild
     bool ok = false;
     if (sdEin()) {
         SD.mkdir("/ist"); SD.mkdir("/ist/kritzel");
