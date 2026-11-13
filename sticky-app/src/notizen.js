@@ -40,6 +40,17 @@ export async function notiere(teile, ort = null) {
   return zeile;
 }
 
+/** Text einer Notiz von heute ändern (Zeit t ist der Schlüssel); die erste erkannte Fassung bleibt als „roh“ erhalten */
+export async function aendern(t, text) {
+  if (!String(text ?? '').trim()) throw new Error('leerer Text');
+  const neu = (z) => { const n = JSON.parse(z); if (n.t !== t) return z; if (n.roh == null) n.roh = n.text; n.text = text; n.korrigiert = true; return JSON.stringify(n); };
+  if (!NATIV) { web = web.map(neu); return; }
+  const pfad = `${ORDNER}/${tagesName()}`;
+  const alt = (await Filesystem.readFile({ path: pfad, directory: Directory.Data, encoding: Encoding.UTF8 })).data;
+  const zeilen = alt.split('\n').filter(Boolean).map((z) => { try { return neu(z); } catch { return z; } });
+  await Filesystem.writeFile({ path: pfad, data: zeilen.join('\n') + '\n', directory: Directory.Data, encoding: Encoding.UTF8 });
+}
+
 /** Notizen von heute (neueste zuerst) */
 export async function heute() {
   let text = '';

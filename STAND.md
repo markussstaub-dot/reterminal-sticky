@@ -229,6 +229,13 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   (`MainActivity.java`), Ort-Rückfall aus dem passiven GPS des Dienstes (`Hintergrund.letzterOrt`, ≤ 2 min alt).
   Geprüft: zwei Diktate mit Homescreen vorne kamen sofort mit Text und Ort an. FW 0.14.1: Offline-Diktat trägt die
   Startzeit der Aufnahme statt des Endes
+- **Lernendes Wörterbuch (13.11.2026, `sticky-app/src/woerterbuch.js`, SPEC „lokales Modell flott machen“ Schritt 2):**
+  nach jeder Erkennung „falsch → richtig“ ersetzen (ganze Wörter) und Prozente über 100 mit „(?)“ markieren; die
+  erkannte Fassung bleibt als `roh` in der Notiz. Notiz antippen → Textfeld in der Liste → Speichern lernt neue Paare
+  (nicht: Zahlen, Wörter der Wortliste). Liste unter „Mehr → Wörterbuch“. Ton gemessen: seit ×2/Hochpass/Begrenzer
+  sauber (0 gekappt, 23–38 dB), Fehler kommen vom Modell. **Panne beim Test:** der Android-Dialog von `window.prompt`
+  verschwand und speicherte leer (3 Notizen, aus `roh` wiederhergestellt) → ersetzt durch Textfeld, leer = Abbrechen.
+  Am Fold geprüft: Korrektur gespeichert, „Mikrohogen → Mikrofon“ gelernt
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

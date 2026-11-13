@@ -11,13 +11,16 @@ const dateiZeit = (t) => { const d = new Date(t); return `${d.getFullYear()}-${p
 /** GPS nur, wenn das Ereignis frisch ist; was mehr als 60 s zu spät ankommt, bekommt keinen (falschen) Ort */
 const VERSPAETET_MS = 60000;
 const woerter = () => $('woerter').value.trim();
+/** Lernendes Wörterbuch (SPEC „lokales Modell flott machen“): Paare aus „Mehr → Wörterbuch“ */
+const woerterbuch = () => paareLesen(document.getElementById('woerterbuch')?.value ?? WOERTERBUCH_STANDARD);
 /** Erkennung mit Wächter: kurze/leise Aufnahmen und nachgeplapperte Wortliste werden „(unklar)“, der Ton bleibt */
 async function erkenne(pcm) {
   const p = sprachPruefung(pcm);
   if (!p.ok) return { text: '(unklar)', unklar: p.grund, ms: 0, ladeMs: 0, modell: $('modell').value, pruefung: p };
   const r = await Spracherkennung.erkennen({ pcm: pcmBase64(angehoben(pcm)), modell: $('modell').value, threads: 6, hinweis: woerter() });
   if (r.text && nurWortliste(r.text, woerter())) return { ...r, text: '(unklar)', unklar: 'nur Wörter der Liste', pruefung: p };
-  return { ...r, pruefung: p };
+  const text = korrigiere(r.text, woerterbuch());
+  return { ...r, text, ...(text !== r.text ? { roh: r.text } : {}), pruefung: p };
 }
 import { zeichneFahrt, trefferKnopf, rueckmeldung, layoutText, STANDARD_KNOEPFE } from './fahrtseite.js';
 import { zeichneHome, zeichneZiffern, statusGlyphen } from './homeseite.js';
@@ -26,6 +29,7 @@ import { BESTELL_STANDARD, zettel, zeichneZettel } from './bestellung.js';
 import { KARTEN_STANDARD, karten, zeichneKarte } from './karten.js';
 import { Aufnahme, wav, sprachPruefung, nurWortliste, angehoben } from './audio.js';
 import * as notizen from './notizen.js';
+import { WOERTERBUCH_STANDARD, paareLesen, paareText, korrigiere, lernen, einpflegen } from './woerterbuch.js';
 import * as bb from './bordbuch.js';
 import { tabsEinrichten } from './tabs.js';
 import { spiegelEinrichten } from './spiegel.js';
@@ -228,7 +232,7 @@ async function zeigeAufnahme(a) {
     werte.textContent += zusatz;
     console.info('[sticky] sprache', JSON.stringify({ dauer: a.dauerMs, gesamt, erkennung: r.ms, laden: r.ladeMs, modell: r.modell, zweiter: r.zweiterLauf, text: r.text, umweg: Math.round(tErk - a.tLos) }));
     const spaet = Date.now() - a.start - a.dauerMs > VERSPAETET_MS;
-    neueNotiz({ t: a.start, art: 'diktat', text: r.text || '', ...(r.unklar ? { unklar: r.unklar } : {}), audio: nativ ? `aufnahmen/${name}` : name, dauerMs: a.dauerMs, ...(spaet ? { offline: true } : {}) },
+    neueNotiz({ t: a.start, art: 'diktat', text: r.text || '', ...(r.roh ? { roh: r.roh } : {}), ...(r.unklar ? { unklar: r.unklar } : {}), audio: nativ ? `aufnahmen/${name}` : name, dauerMs: a.dauerMs, ...(spaet ? { offline: true } : {}) },
       spaet ? null : a.ort, 'Diktat');
   }).catch((e) => {
     text.className = 'text';
@@ -506,6 +510,39 @@ function zeigeNotiz(n, neu = false) {
   const was = document.createElement('div');
   was.className = 'was';
   was.textContent = n.art === 'diktat' ? `🎙 ${n.text || '(nichts erkannt)'}` : n.knopf;
+  if (n.art === 'diktat' && n.text) {
+    // Korrigieren direkt in der Liste (13.11.2026: der Android-Dialog von window.prompt verschwand und speicherte leer)
+    was.title = 'Antippen zum Korrigieren';
+    was.onclick = () => {
+      if (li.querySelector('textarea')) return;
+      const feld = Object.assign(document.createElement('textarea'), { value: n.text, rows: 3 });
+      feld.style.width = '100%';
+      const ok = Object.assign(document.createElement('button'), { textContent: 'Speichern', className: 'haupt' });
+      const weg = Object.assign(document.createElement('button'), { textContent: 'Abbrechen' });
+      const leiste = document.createElement('div');
+      leiste.className = 'leiste';
+      leiste.append(ok, weg);
+      was.hidden = true;
+      li.append(feld, leiste);
+      feld.focus();
+      const schliessen = () => { feld.remove(); leiste.remove(); was.hidden = false; };
+      weg.onclick = schliessen;
+      ok.onclick = async () => {
+        const neu = feld.value.replace(/\s*\n\s*/g, ' ').trim();   // Enter im Feld ist kein Absatz
+        if (!neu || neu === n.text) { schliessen(); return; }   // leer zählt als Abbrechen
+        const gelernt = lernen(n.text, neu, woerter().split(','));
+        try { await notizen.aendern(n.t, neu); } catch (e) { eintrag(`Ändern fehlgeschlagen: ${e.message}`, true); return; }
+        n.text = neu;
+        was.textContent = `🎙 ${n.text}`;
+        schliessen();
+        if (gelernt.length) {
+          $('woerterbuch').value = paareText(einpflegen(woerterbuch(), gelernt));
+          $('woerterbuch').onchange();
+          eintrag(`Gelernt: ${gelernt.map((p) => `${p.falsch} → ${p.richtig}`).join(', ')}`);
+        }
+      };
+    };
+  }
   li.append(kopf, was);
   $('notizen').prepend(li);
 }
@@ -819,10 +856,12 @@ $('bbAufspielen').onclick = async () => {
   }
 };
 $('bbZeigen').onclick = () => zwilling.modusSetzen(1).catch((e) => eintrag(e.message, true));
-window.__sticky = { ladePdf, zwilling, pufferAbholen, fahrtenschreiberAbholen, erkenne, sprachPruefung };   // zum Prüfen per WebView-Fernsteuerung (adb)
+window.__sticky = { ladePdf, zwilling, pufferAbholen, fahrtenschreiberAbholen, erkenne, sprachPruefung, zeigeNotiz, notizen };   // zum Prüfen per WebView-Fernsteuerung (adb)
 
 try { $('woerter').value = localStorage.getItem('sticky.woerter') ?? WOERTER_STANDARD; } catch { $('woerter').value = WOERTER_STANDARD; }
 $('woerter').onchange = () => { try { localStorage.setItem('sticky.woerter', $('woerter').value); } catch { /* egal */ } };
+try { $('woerterbuch').value = localStorage.getItem('sticky.woerterbuch') ?? WOERTERBUCH_STANDARD; } catch { $('woerterbuch').value = WOERTERBUCH_STANDARD; }
+$('woerterbuch').onchange = () => { try { localStorage.setItem('sticky.woerterbuch', $('woerterbuch').value); } catch { /* egal */ } };
 
 // ---- Spiegel: Vorschau folgt dem Sticky, Tipps und ▲▼ steuern ihn ----------------------
 const bbCache = new Map();
