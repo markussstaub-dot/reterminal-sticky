@@ -18,12 +18,29 @@ test('Kette ohne „=“ rechnet laufend, Operator ersetzt Operator', () => {
 
 test('Sondertasten', () => {
   assert.equal(tippe(new Rechner(), ['5', '0', '%']), '0,5');
-  assert.equal(tippe(new Rechner(), ['2', '0', '0', '+', '1', '0', '%']), '20');
+  assert.equal(tippe(new Rechner(), ['9', '√']), '3');
   assert.equal(tippe(new Rechner(), ['1', '2', '3', '⌫']), '12');
   assert.equal(tippe(new Rechner(), ['4', '±']), '-4');
   assert.equal(tippe(new Rechner(), ['1', '÷', '0', '=']), 'Fehler');
   assert.equal(tippe(new Rechner(), ['1', '÷', '0', '=', '5']), '5');
   assert.equal(tippe(new Rechner(), ['8', 'C']), '0');
+});
+
+test('Prozent wie beim Braun (Rückseite des BNE001)', () => {
+  assert.equal(tippe(new Rechner(), ['8', '0', '×', '1', '1', '%']), '8,8');
+  assert.equal(tippe(new Rechner(), ['8', '0', '+', '1', '1', '%']), '88,8');
+  assert.equal(tippe(new Rechner(), ['8', '0', '−', '1', '1', '%']), '71,2');
+});
+
+test('Speicher wie beim Braun', () => {
+  const r = new Rechner();
+  assert.equal(tippe(r, ['8', '0', '×', '2', '0', 'M+']), '1600');
+  assert.equal(r.mem, 1600);
+  tippe(r, ['8', '0', '×', '5', 'M−']);
+  assert.equal(r.mem, 1200);
+  assert.equal(tippe(r, ['C', 'MR']), '1200');
+  tippe(r, ['MC']);
+  assert.equal(r.mem, 0);
 });
 
 test('Anzeige bleibt kurz', () => {

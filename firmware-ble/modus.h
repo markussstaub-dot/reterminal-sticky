@@ -331,12 +331,36 @@ static void kzStrich(int x0, int y0, int x1, int y1) {   // 3 px dicke Linie dir
     }
 }
 
-static void kzKnoepfeZeichnen() {
-    for (int k = 0; k < 2; k++) {
-        int x0 = k ? KZ_LE_X0 : KZ_SP_X0, x1 = k ? KZ_LE_X1 : KZ_SP_X1;
-        kzRechteck(x0, KZ_KN_Y0, x1 - x0, KZ_KN_Y1 - KZ_KN_Y0, true);
-        kzRechteck(x0 + 3, KZ_KN_Y0 + 3, x1 - x0 - 6, KZ_KN_Y1 - KZ_KN_Y0 - 6, false);
+/** ein logisches Pixel setzen bzw. löschen */
+static void kzSetze(int lx, int ly, bool schwarz) {
+    int x, y;
+    kzD(lx, ly, x, y);
+    if (x < 0 || x >= W || y < 0 || y >= H) return;
+    uint8_t& b = imgBuf[y * (W / 8) + x / 8];
+    uint8_t m = 0x80 >> (x & 7);
+    if (schwarz) b |= m; else b &= ~m;
+}
+/**
+ * Pille im Braun-Stil wie in der App (sticky-app/src/braun.js, 13.11.2026), logische Koordinaten.
+ * haupt: Doppelring (6 px außen, 2 px innen) · werkzeug: dünner Rand plus gerastertes Band (Braun-Braun)
+ */
+static void kzPille(int x0, int y0, int w, int h, bool haupt) {
+    float r = h / 2.0f, ax = x0 + r, bx = x0 + w - r, cy = y0 + r;
+    for (int ly = y0; ly < y0 + h; ly++) for (int lx = x0; lx < x0 + w; lx++) {
+        float px = lx + 0.5f, py = ly + 0.5f;
+        float qx = px < ax ? ax : px > bx ? bx : px;
+        float d = sqrtf((px - qx) * (px - qx) + (py - cy) * (py - cy)) - r;   // < 0 innen
+        if (d >= 0) continue;
+        bool s;
+        if (haupt) s = d >= -6 || (d < -10 && d >= -12);
+        else s = d >= -2 || (d >= -10 && ((lx + ly) & 1));
+        kzSetze(lx, ly, s);
     }
+}
+static void kzKnoepfeZeichnen() {
+    kzRechteck(KZ_SP_X0, KZ_KN_Y0, KZ_LE_X1 - KZ_SP_X0, KZ_KN_Y1 - KZ_KN_Y0, false);
+    kzPille(KZ_SP_X0 + 3, KZ_KN_Y0 + 3, KZ_SP_X1 - KZ_SP_X0 - 6, KZ_KN_Y1 - KZ_KN_Y0 - 6, true);    // ✓ Hauptaktion
+    kzPille(KZ_LE_X0 + 3, KZ_KN_Y0 + 3, KZ_LE_X1 - KZ_LE_X0 - 6, KZ_KN_Y1 - KZ_KN_Y0 - 6, false);   // ✕ Werkzeug
     int m = (KZ_SP_X0 + KZ_SP_X1) / 2, c = (KZ_KN_Y0 + KZ_KN_Y1) / 2;   // ✓
     kzStrich(m - 20, c, m - 6, c + 14); kzStrich(m - 6, c + 14, m + 20, c - 14);
     m = (KZ_LE_X0 + KZ_LE_X1) / 2;           // ✕

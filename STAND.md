@@ -3,7 +3,7 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.23.1 – 180° gedreht (Schalter), Hoch/Quer je Seite, auch automatisch per Lagesensor, Wasserwaage, Menü (KI auf Home), Umrechner, Widget-Maschine mit Timer, App-Seite mit Rechner, Kritzelblock, Tastenhilfe (▲+▼), Rahmen beim Tippen, Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
+version: FW 0.24.0 – Braun-Optik für alle Bedienelemente, 180° gedreht (Schalter), Hoch/Quer je Seite, auch automatisch per Lagesensor, Wasserwaage, Menü (KI auf Home), Umrechner, Widget-Maschine mit Timer, App-Seite mit Rechner, Kritzelblock, Tastenhilfe (▲+▼), Rahmen beim Tippen, Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
 wartet: Markus: Bewegungswecken von Hand prüfen (USB ab, 3 min liegen lassen, hochnehmen) und Fahrterkennung bei der nächsten Microlino-Fahrt; Offline-Diktat auf /ist/puffer einmal prüfen; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
@@ -320,6 +320,11 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
 - **Push-to-Talk Weg 1 (App, 13.11.2026):** Schalter „Diktat zusätzlich in die Zwischenablage“ (Mehr → Push-to-Talk),
   frisch und sicher erkannter Text geht auch im Hintergrund in die Zwischenablage. Am Gerät: Text landet in der
   Zwischenablage; Einfügen in WhatsApp noch nicht probiert. Weg 2 (BLE-Taste) und 3 (Funk-PTT) nur in der SPEC „180° gedreht“ und Stufe 2 (automatisch) folgen
+- **Braun-Optik (FW 0.24.0, 13.11.2026):** Vorbild Braun BNE001 (ET66, Lubs/Rams). Gemeinsames Modul
+  `sticky-app/src/braun.js`, Rollen statt Farben: haupt = Doppelring (Braun-Gelb), wahl = schwarz, werkzeug =
+  gerasterter Rand (Braun-Braun), neben = dünner Ring (Braun-Grün). Gilt für Rechner, Umrechner, Reiter, Timer,
+  Waage, Menü und (Firmware) die Kritzel-Knöpfe. Rechner im 5er-Raster mit M+/M−/MR/MC und √, % wie beim Braun
+  (80 + 11 % = 88,8). Ruhige Schrift statt Fett. Am Gerät: „passt“
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

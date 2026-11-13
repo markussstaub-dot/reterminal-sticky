@@ -2,11 +2,12 @@
 // meldet Tipper. Widgets: Taschenrechner und Umrechner, ▲/▼ kurz wechselt. Quer 800 × 480, rechts oben bleibt die
 // Statuszeile (288 × 32) frei. Nach einem Tipp geht nur das Nötige als Teilbild rüber.
 import { BREITE, HOEHE, rgbaZu1bpp } from './protokoll.js';
-import { Rechner, TASTEN } from './rechner.js';
+import { Rechner, TASTEN, ROLLE } from './rechner.js';
+import { braunKnopf, BRAUN_FONT } from './braun.js';
 import { Umrechner, PAARE } from './umrechner.js';
 import { groesse, vonDisplay, aufsDisplay, ausschnittAufsDisplay } from './lage.js';
 
-const FONT = 'system-ui, sans-serif';
+const FONT = BRAUN_FONT;
 // Maße je Lage (logisch). Teil-Refresh: auf dem Display x und w Vielfache von 8 (hochkant: logisch y und h).
 // Quer: Reiter oben links, rechts ab x 512 die Statuszeile. Hochkant: Statuszeile oben rechts (x 192–480, y 0–32),
 // darunter die Reiter über die ganze Breite.
@@ -28,40 +29,12 @@ let L = LAGEN.quer;
 export const ANZEIGE = LAGEN.quer.ANZEIGE;
 const leinwand = (b, h) => (typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(b, h) : Object.assign(document.createElement('canvas'), { width: b, height: h }));
 
-function taste(g, x, y, w, h, t, dunkel, gr = 34) {
-  g.lineWidth = 3;
-  g.strokeStyle = '#000';
-  g.fillStyle = dunkel ? '#000' : '#fff';
-  g.beginPath();
-  g.roundRect(x + 4, y + 4, w - 8, h - 8, 10);
-  g.fill();
-  g.stroke();
-  g.fillStyle = dunkel ? '#fff' : '#000';
-  g.textAlign = 'center';
-  g.textBaseline = 'middle';
-  g.font = `bold ${gr}px ${FONT}`;
-  g.fillText(t, x + w / 2, y + h / 2 + 2);
-}
-
-/** Kopf mit Reitern zum Antippen (▲/▼ blättern im Karussell wie überall) */
+/** Kopf mit Reitern zum Antippen (▲/▼ blättern im Karussell wie überall); aktiver Reiter schwarz, sonst dünner Ring */
 function kopf(g, aktiv) {
   g.fillStyle = '#fff';
   g.fillRect(0, 0, 800, 800);
   const { REITER, REITER_Y, REITER_H } = L;
-  REITER.forEach((r, i) => {
-    g.fillStyle = i === aktiv ? '#000' : '#fff';
-    g.strokeStyle = '#000';
-    g.lineWidth = 2;
-    g.beginPath();
-    g.roundRect(r.x0, REITER_Y + 2, r.x1 - r.x0 - 4, REITER_H - 4, 10);
-    g.fill();
-    g.stroke();
-    g.fillStyle = i === aktiv ? '#fff' : '#000';
-    g.textAlign = 'center';
-    g.textBaseline = 'middle';
-    g.font = `bold 28px ${FONT}`;
-    g.fillText(r.text, (r.x0 + r.x1 - 4) / 2, REITER_Y + REITER_H / 2 + 1);
-  });
+  REITER.forEach((r, i) => braunKnopf(g, r.x0, REITER_Y, r.x1 - r.x0, REITER_H, r.text, i === aktiv ? 'wahl' : 'neben', { rand: 3, gr: 26 }));
 }
 
 function anzeigeRahmen(g, oben, gross) {
@@ -78,7 +51,7 @@ function anzeigeRahmen(g, oben, gross) {
   g.fillText(oben, x + 14, y + 20);
   g.textAlign = 'right';
   let gr = 56;
-  do { g.font = `bold ${gr}px ${FONT}`; gr -= 4; } while (g.measureText(gross).width > w - 40 && gr > 24);
+  do { g.font = `500 ${gr}px ${FONT}`; gr -= 4; } while (g.measureText(gross).width > w - 40 && gr > 24);
   g.fillText(gross, x + w - 18, y + h / 2 + 10);
 }
 
@@ -88,19 +61,19 @@ function anzeigeRahmen(g, oben, gross) {
 export const rechnerWidget = {
   name: 'Rechner',
   neu() { return new Rechner(); },
-  anzeige(g, r) { anzeigeRahmen(g, r.zeile, r.anzeige); },
+  anzeige(g, r) { anzeigeRahmen(g, `${r.mem ? 'M   ' : ''}${r.zeile}`, r.anzeige); },
   seite(g, r) {
     kopf(g, 0);
     this.anzeige(g, r);
     const { R_FELD } = L;
-    const tw = R_FELD.w / 4, th = R_FELD.h / TASTEN.length;
-    TASTEN.forEach((zeile, ze) => zeile.forEach((t, sp) => taste(g, R_FELD.x + sp * tw, R_FELD.y + ze * th, tw, th, t, /[÷×−+=]/.test(t), t.length > 1 ? 26 : 34)));
+    const tw = R_FELD.w / TASTEN[0].length, th = R_FELD.h / TASTEN.length;
+    TASTEN.forEach((zeile, ze) => zeile.forEach((t, sp) => braunKnopf(g, R_FELD.x + sp * tw, R_FELD.y + ze * th, tw, th, t, ROLLE(t), { rund: true })));
   },
   /** → 'anzeige' | 'seite' | null */
   tipp(r, x, y) {
     const { R_FELD } = L;
     if (x < R_FELD.x || x >= R_FELD.x + R_FELD.w || y < R_FELD.y || y >= R_FELD.y + R_FELD.h) return null;
-    const t = TASTEN[Math.floor((y - R_FELD.y) / (R_FELD.h / TASTEN.length))]?.[Math.floor((x - R_FELD.x) / (R_FELD.w / 4))];
+    const t = TASTEN[Math.floor((y - R_FELD.y) / (R_FELD.h / TASTEN.length))]?.[Math.floor((x - R_FELD.x) / (R_FELD.w / TASTEN[0].length))];
     if (!t) return null;
     r.taste(t);
     return 'anzeige';
@@ -119,9 +92,9 @@ export const umrechnerWidget = {
     this.anzeige(g, u);
     const { U_LISTE, U_FELD } = L;
     const lw = U_LISTE.w / 2, lh = U_LISTE.h / Math.ceil(PAARE.length / 2);
-    PAARE.forEach((p, i) => taste(g, U_LISTE.x + (i % 2) * lw, U_LISTE.y + Math.floor(i / 2) * lh, lw, lh, `${p.a}↔${p.b}`, i === u.paar, 23));
+    PAARE.forEach((p, i) => braunKnopf(g, U_LISTE.x + (i % 2) * lw, U_LISTE.y + Math.floor(i / 2) * lh, lw, lh, `${p.a}↔${p.b}`, i === u.paar ? 'wahl' : 'neben', { rand: 4, gr: 22 }));
     const tw = U_FELD.w / 4, th = U_FELD.h / U_TASTEN.length;
-    U_TASTEN.forEach((zeile, ze) => zeile.forEach((t, sp) => { if (t) taste(g, U_FELD.x + sp * tw, U_FELD.y + ze * th, tw, th, t, t === '⇄'); }));
+    U_TASTEN.forEach((zeile, ze) => zeile.forEach((t, sp) => { if (t) braunKnopf(g, U_FELD.x + sp * tw, U_FELD.y + ze * th, tw, th, t, t === '⇄' ? 'haupt' : /^[\d,]$/.test(t) ? 'wahl' : 'werkzeug', { rund: true }); }));
   },
   tipp(u, x, y) {
     const { U_LISTE, U_FELD } = L;

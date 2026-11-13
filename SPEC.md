@@ -423,6 +423,9 @@ Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzu
 - fest **eine Statuszeile**: links Uhr (bzw. Seitenname), rechts Handy verbunden, offene Notizen mit Zahl, Akku, bei
   Bedarf Warnzeichen (Beschlag, Laden zu kalt/heiß), im Schlaf Zzz statt Handy. Zeichnet der Sticky selbst
 - fest **Menü** (umgesetzt 13.11., FW 0.19): KI kurz auf Home öffnet Kacheln je Karussell-Eintrag, Tipp springt hin
+- fest **Braun-Stil für alle Bedienelemente** (Markus, 13.11.2026, Vorbild Braun BNE001/ET66): runde Tasten bzw.
+  Pillen, Rolle statt Farbe (Hauptaktion Doppelring, Zahlen/Auswahl schwarz, Werkzeug gerasterter Rand, Nebensache
+  dünner Ring), ruhige Helvetica-artige Schrift. Ein Modul für alle Seiten (`sticky-app/src/braun.js`)
 - fest **Knöpfe einheitlich groß** (Markus, „Wurstfinger“): Kopf-Knöpfe/Reiter 58 px hoch, mind. ~120 × 58 px
 - fest **Tastenhilfe**: ▲ und ▼ gleichzeitig zeigt, was die Tasten auf dieser Seite tun (auch für Übergabe)
 - Vorschlag **Rückmeldung**: Klick sofort (gibt es), dazu Rahmen ums gedrückte Feld per Teil-Refresh (~0,3 s),
