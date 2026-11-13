@@ -361,6 +361,17 @@ Was der Sticky als Immer-dabei-Helfer noch können könnte, sortiert nach Aufwan
 - Kaffee (Markus, 13.11.2026): **Timer-Vorlage „Kaffee“** mit fester Zieh-/Rührzeit, ein Tipp startet; passt zur
   USB-Rührtasse im EDC. Ohne Flashen machbar (Timer-Widget mit Vorgabe)
 
+### Einfach-Profil für ältere Angehörige (Markus, 13.11.2026, geparkt)
+Ein Sticky für jemanden, der mit Technik nichts zu tun haben will; gepflegt von einem Angehörigen aus der Ferne.
+- Vorschlag **wenig statt viel**: 3–4 Seiten, große Schrift, jede Taste tut immer dasselbe, keine Menüs, keine Strichschrift
+- Vorschlag **Uhr in Worten**: „Freitag, 13. November, Nachmittag“, groß auf E-Ink
+- Vorschlag **Erinnerungen mit „Erledigt“**: Termine u. Ä., ein Tipp bestätigt; Angehörige sehen beim nächsten Abgleich,
+  was bestätigt ist
+- Vorschlag **Finden in beide Richtungen** und Notfallkarte mit Kontakt
+- Vorschlag kein Konto, keine Cloud, keine Pflicht-Updates
+- offen: eigene Firmware oder nur ein Profil (andere Seiten/Schrift) auf der bestehenden? Hängt davon ab, wer pflegt
+  und ob ein Android-Handy in der Nähe ist (sonst Pflege nur beim Besuch per USB/Karte)
+
 ### Sprachnotizen 2.0 (Markus, 13.11.2026, abgenommen)
 Heute: KI halten = Diktat, live an die App bzw. offline gepuffert, das Fold tippt offline ab, Ort und Zeit dran, alles
 in eine Tagesdatei zum Teilen. Funktioniert, ist aber ein einziger Topf.
