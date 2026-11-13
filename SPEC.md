@@ -289,6 +289,10 @@ in eine Tagesdatei zum Teilen. Funktioniert, ist aber ein einziger Topf.
      verlässt das Haus
 - verworfen/geparkt: turbo auf dem Fold (6–60 s, Schleifen) · Android-Erkennung auf dem Gerät (Ton kommt per BLE,
   kaum Wortliste) · Vosk/sherpa-onnx (schwächer als small) · Whisper auf dem NPU des Fold (reizvoll, viel Pflege)
+- geprüft **Wispr Flow** (Markus, 13.11.2026): passt nicht in die Sticky-Kette. Nimmt nur live vom Mikro auf, kein
+  Datei-Upload; die offizielle API (REST/WebSocket, 16-kHz-WAV) gibt es nur nach Freischaltung für Firmenkunden;
+  inoffizielle Nachbauten zu wackelig. Gut als eigenes Diktierwerkzeug am Zenbook und am Fold (Android-App seit 2026),
+  ohne Sticky. Ton geht in deren Cloud (gleiche Abwägung wie Schicht 3)
 - fest **kein Weckwort** („Hey Sticky“): kostet Strom, die KI-Taste reicht
 - offen: Reihenfolge (Vorschlag: 1. Sortieren mit Stichwort + Eingang, 2. Rückmeldung am Sticky, 3. Seite „Heute“,
   4. Claude-Nachbearbeitung, 5. Ziele Kalender/Vault/Bubble Log anbinden); Zettel aus Diktat = Bestellzettel oder
