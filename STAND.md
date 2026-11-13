@@ -325,6 +325,9 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   gerasterter Rand (Braun-Braun), neben = dünner Ring (Braun-Grün). Gilt für Rechner, Umrechner, Reiter, Timer,
   Waage, Menü und (Firmware) die Kritzel-Knöpfe. Rechner im 5er-Raster mit M+/M−/MR/MC und √, % wie beim Braun
   (80 + 11 % = 88,8). Ruhige Schrift statt Fett. Am Gerät: „passt“
+- **Zettel mit QR (13.11.2026):** ein Feld „Zettel“ für Bestellzettel und QR-Karten (bis zu 6, Reihenfolge wie im
+  Text), Kurzformen `wlan: Name | Passwort`, `link: …`, `qr: …` (`sticky-app/src/zettel.js`). Alte Felder einmalig
+  umgezogen (Schlüssel `sticky.bestellung`/`sticky.karten` bleiben als Sicherung). Warnung bei mehr als 6. Am Gerät: „passt“
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

@@ -131,14 +131,12 @@
         <div class="leiste">
           <button id="bestellZeigen" disabled>Bestellzettel zeigen</button>
         </div>
-        <h2>Zettel (bis zu 3, „## Titel“ beginnt einen)</h2>
-        <textarea id="bestellText" rows="14" spellcheck="false"></textarea>
-        <button id="bestellStandard">Standard wiederherstellen</button>
-        <h2>Karten zum Vorzeigen (bis zu 3: „## Titel“, dann „qr: Inhalt“)</h2>
-        <p class="klein">Inhalt des QR-Codes einmal mit einer Scanner-App aus der Lidl-App auslesen und hier eintragen.
-          Bleibt nur in der App und im Sticky. Am Sticky: ▼ auf Home, die Karten folgen nach den Bestellzetteln.</p>
-        <textarea id="kartenText" rows="6" spellcheck="false"></textarea>
-        <button id="kartenStandard">Platzhalter wiederherstellen</button>
+        <h2>Zettel (bis zu 6, „## Titel“ beginnt einen)</h2>
+        <p class="klein">Reihenfolge am Sticky wie hier. Mit einer dieser Zeilen wird der Zettel ein QR-Code:
+          <code>wlan: Name | Passwort</code> (Gast-WLAN), <code>link: https://…</code>, <code>qr: Inhalt</code>
+          (z. B. Kundenkarte, Inhalt einmal mit einer Scanner-App auslesen). Bleibt nur in der App und im Sticky.</p>
+        <textarea id="zettelText" rows="18" spellcheck="false"></textarea>
+        <button id="zettelStandard">Beispiel wiederherstellen</button>
       </section>
     </div>
 

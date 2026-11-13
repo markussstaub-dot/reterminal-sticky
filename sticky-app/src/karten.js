@@ -4,6 +4,7 @@
 // im Sticky, nie im Repo; hier nur ein Platzhalter.
 import qrcode from 'qrcode-generator';
 import { BREITE, HOEHE } from './protokoll.js';
+import { BRAUN_FONT } from './braun.js';
 
 export const KARTEN_STANDARD = `## Lidl Plus
 qr: DUMMY-LIDL-PLUS-0000000000
@@ -38,10 +39,10 @@ export function zeichneKarte(g, k, nr, von) {
   g.textAlign = 'left';
   g.textBaseline = 'middle';
   let gr = 52;
-  do { g.font = `bold ${gr}px system-ui, sans-serif`; gr -= 2; } while (g.measureText(k.titel).width > tb && gr > 18);
+  do { g.font = `500 ${gr}px ${BRAUN_FONT}`; gr -= 2; } while (g.measureText(k.titel).width > tb && gr > 18);
   g.fillText(k.titel, tx, HOEHE / 2 - 40);
-  g.font = '22px system-ui, sans-serif';
-  k.zeilen.slice(0, 3).forEach((z, i) => g.fillText(z, tx, HOEHE / 2 + 10 + i * 30));
-  g.font = '18px system-ui, sans-serif';
-  g.fillText(`Karte ${nr}/${von}`, tx, HOEHE - 30);
+  g.font = `26px ${BRAUN_FONT}`;
+  k.zeilen.slice(0, 3).forEach((z, i) => g.fillText(z, tx, HOEHE / 2 + 14 + i * 36));
+  g.font = `18px ${BRAUN_FONT}`;
+  g.fillText(`Zettel ${nr}/${von}`, tx, HOEHE - 30);
 }
