@@ -164,8 +164,8 @@ static void audioTask(void*) {
 
 static void aufnahmeStart() {
     if (audioLaeuft) return;
-    if (!connected) {
-        // Ohne Handy: in den Puffer aufnehmen, die App holt es später ab
+    if (!appDa() || mtu < AUDIO_PAKET + 3) {
+        // Ohne Handy bzw. ohne zuhörende App: in den Puffer aufnehmen, die App holt es später ab
         if (!offlineAufnahmeOeffnen()) return;
         if (!micAn()) { audioDatei.close(); return; }
         audioOffline = true;

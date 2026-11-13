@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.8.2";
+static const char* FW_VERSION = "0.9.1";
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "Markus";
@@ -82,6 +82,8 @@ TwoWire wireTp = TwoWire(1);
 static NimBLEServer* server;
 static NimBLECharacteristic *chEvt, *chState;
 static volatile bool connected = false;
+static volatile bool appHoert = false;   // Abo auf AUDIO gesetzt, s. AboCb
+static bool appDa() { return connected && appHoert; }
 static volatile uint16_t connHandle = 0xFFFF;
 static volatile uint16_t mtu = 23;
 static volatile uint8_t phy = 1;
@@ -385,10 +387,10 @@ static void zeigeKarte() {
 }
 
 #include "bordbuch.h"
+#include "karte.h"
 #include "puffer.h"
 #include "audio.h"
 #include "modus.h"
-#include "karte.h"
 
 // ---- Zustand -------------------------------------------------------------------
 static void sendState() {
@@ -423,6 +425,7 @@ class ServerCb : public NimBLEServerCallbacks {
     }
     void onDisconnect(NimBLEServer*, NimBLEConnInfo&, int reason) override {
         connected = false;
+        appHoert = false;
         connHandle = 0xFFFF;
         imgActive = false;
         Serial.printf("Getrennt (Grund 0x%02X)\n", reason);
@@ -442,6 +445,16 @@ class ServerCb : public NimBLEServerCallbacks {
     void onPhyUpdate(NimBLEConnInfo&, uint8_t tx, uint8_t rx) override {
         phy = tx;
         Serial.printf("PHY tx %u rx %u\n", tx, rx);
+    }
+};
+
+// Hört die App zu? Seit dem Wecker (StickyDienst) hält das Fold auch ohne App eine GATT-Verbindung: „connected“
+// allein heißt nicht mehr, dass jemand Audio abnimmt (13.11.2026: drei Diktate mit „err mtu“ verloren statt gepuffert).
+// Maßstab ist das Abo auf AUDIO, das nur die App setzt.
+class AboCb : public NimBLECharacteristicCallbacks {
+    void onSubscribe(NimBLECharacteristic*, NimBLEConnInfo&, uint16_t sub) override {
+        appHoert = sub != 0;
+        Serial.printf("App %s\n", appHoert ? "hört zu" : "hört nicht mehr zu");
     }
 };
 
@@ -580,6 +593,7 @@ static void bleInit() {
     chEvt = svc->createCharacteristic(UUID_EVT, NIMBLE_PROPERTY::NOTIFY);
     chState = svc->createCharacteristic(UUID_STATE, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
     chAudio = svc->createCharacteristic(UUID_AUDIO, NIMBLE_PROPERTY::NOTIFY);
+    chAudio->setCallbacks(new AboCb());
     chDatei = svc->createCharacteristic(UUID_DATEI, NIMBLE_PROPERTY::NOTIFY);
     svc->start();
     NimBLEAdvertising* adv = NimBLEDevice::getAdvertising();
@@ -619,7 +633,6 @@ void setup() {
     hinweisBuf = (uint8_t*)ps_malloc(IMG_BYTES);
     if (!imgBuf || !rxBuf || !hinweisBuf) Serial.println("Kein PSRAM!");
 
-    sdPruefen();
     if (!display.begin()) {
         Serial.println(display.lastResult().message);
     } else {
@@ -629,6 +642,7 @@ void setup() {
     }
     // Tasten und Touch erst nach display.begin(): vorher eingerichtet, kamen keine Tastendrücke an (11.11.2026)
     bbInit();
+    sdStart();
     pufferInit();
     homeInit();
     tastenInit();

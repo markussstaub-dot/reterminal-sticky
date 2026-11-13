@@ -3,7 +3,7 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.8.2 – Akku lädt jetzt, Schlummermodus, Home mit Uhr, Datum, Akku, Wetter, Karten, Notizen (auch offline), Bordbuch, Bestellzettel, App in Tabs mit Spiegel/Fernbedienung (12.11.2026)
+version: FW 0.9.1 – Puffer auf microSD, Akku lädt, Schlummermodus, Home mit Uhr, Datum, Akku, Wetter, Karten, Notizen (auch offline), Bordbuch, Bestellzettel, App in Tabs mit Spiegel/Fernbedienung (12.11.2026)
 wartet: Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Schlummermodus auf Akku testen, Nachtverbrauch messen
 ---
 
@@ -171,9 +171,13 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   `StickyDienst` WACH: liest GPS passiv mit (was Bubble Log ohnehin anfordert), bei > 2 m/s bis 10 min danach alle
   45 s über die Wecker-Verbindung (App 2026.11.12-1612). **Offen:** auf der nächsten Fahrt prüfen (Log „Wach an
   Sticky: ok“); fährt man ohne Bubble Log, greift nur der alte Weg mit der App vorne
-- **microSD (13.11.)**: 32-GB-Karte (SDHC, FAT32, leer) läuft im SPI-Modus am E-Paper-Bus: SCK 13, MOSI 14, MISO 12,
-  CS 8, Strom GPIO10 (HIGH = an), Erkennung GPIO11 (LOW = steckt). `karte.h` (nicht `sd.h`, kollidiert unter Windows
-  mit `SD.h`) prüft beim Start nur lesend, danach Karte stromlos. Noch keine Nutzung
+- **microSD als Puffer (13.11., FW 0.9.0/0.9.1)**: 32-GB-Karte (SDHC, FAT32) im SPI-Modus am E-Paper-Bus: SCK 13,
+  MOSI 14, MISO 12, CS 8, Strom GPIO10 (HIGH = an), Erkennung GPIO11 (LOW = steckt). `karte.h` (nicht `sd.h`, kollidiert
+  unter Windows mit `SD.h`) hängt sich wie im Seeed-Beispiel an die SPIClass des Displays. Offline-Diktate und -Notizen
+  liegen in `/puffer` auf der Karte, ohne Karte im Flash; Flash-Reste ziehen beim Start um; vor dem Leichtschlaf
+  stromlos. **Fehler dabei gefunden:** Über die Wecker-Verbindung allein (MTU 23, keine App) galt der Sticky als
+  verbunden, Diktate gingen mit `err mtu` verloren. Jetzt zählt nur „App hört zu“ (Abo auf AUDIO), sonst Puffer.
+  Getestet: App ferngetrennt, 2 Diktate auf SD, nach dem Verbinden abgeholt und abgetippt
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

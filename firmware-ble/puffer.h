@@ -2,7 +2,7 @@
  * Notizen puffern (ohne Handy): Ist die App nicht verbunden, legt der Sticky Knopf-Notizen und Diktate selbst ab
  * und die App holt sie beim nächsten Verbinden ab (SPEC „Notizen puffern“).
  *
- * Ablage im Flash (LittleFS, dasselbe wie das Bordbuch):
+ * Ablage auf der microSD (karte.h), ohne Karte im Flash (LittleFS, dasselbe wie das Bordbuch):
  *   /puffer/notizen.jsonl   je Zeile {"t":ms,"typ":"notiz","quelle":"sticky","art":"knopf|diktat","knopf"|"audio",…,"offline":true}
  *   /puffer/aNNNN.adp       Diktat: aneinandergereihte Audio-Pakete (je 245 Byte, wie über BLE)
  *   /fahrt/layout.txt       Streifen der Fahrt-Seite in Display-Koordinaten („e x0 y0 x1 y1 Name“), von der App
@@ -130,7 +130,7 @@ static volatile int offlineKnopf = -1;     // Touch-Treffer, umgesetzt in loop()
 static int offeneNotizen = 0;
 
 static void notizAnhaengen(const char* json) {
-    File f = LittleFS.open("/puffer/notizen.jsonl", "a");
+    File f = pfs().open("/puffer/notizen.jsonl", "a");
     if (!f) return;
     f.println(json);
     f.close();
@@ -139,7 +139,7 @@ static void notizAnhaengen(const char* json) {
 
 /** Touch ohne Verbindung auf der Fahrt-Seite */
 static void pufferTouch(int x, int y) {
-    if (connected || modus != M_NOTIZ) return;
+    if (appDa() || modus != M_NOTIZ) return;
     for (int i = 0; i < streifenAnzahl; i++)
         if (x >= streifen[i].x0 && x < streifen[i].x1 && y >= streifen[i].y0 && y < streifen[i].y1) { offlineKnopf = i; return; }
 }
@@ -154,8 +154,8 @@ static bool offlineAufnahmeOeffnen() {
         snprintf(audioName, sizeof audioName, "a%04d.adp", i);
         char pfad[32];
         snprintf(pfad, sizeof pfad, "/puffer/%s", audioName);
-        if (!LittleFS.exists(pfad)) {
-            audioDatei = LittleFS.open(pfad, "w");
+        if (!pfs().exists(pfad)) {
+            audioDatei = pfs().open(pfad, "w");
             return (bool)audioDatei;
         }
     }
@@ -163,10 +163,10 @@ static bool offlineAufnahmeOeffnen() {
 }
 
 static void pufferInit() {
-    LittleFS.mkdir("/puffer");
+    pfs().mkdir("/puffer");
     LittleFS.mkdir("/fahrt");
     fahrtLayoutLaden();
-    File d = LittleFS.open("/puffer");
+    File d = pfs().open("/puffer");
     for (File f = d.openNextFile(); f; f = d.openNextFile())
         if (String(f.name()).endsWith(".jsonl")) { while (f.available()) if (f.read() == '\n') offeneNotizen++; }
     Serial.printf("Puffer: %d offene Notizen\n", offeneNotizen);
@@ -181,7 +181,7 @@ static volatile bool loeschWunsch = false;
 
 static void pufferListe() {
     String j = "{\"t\":\"puffer\",\"dateien\":[";
-    File d = LittleFS.open("/puffer");
+    File d = pfs().open("/puffer");
     bool erst = true;
     for (File f = d.openNextFile(); f; f = d.openNextFile()) {
         if (!erst) j += ",";
@@ -201,7 +201,7 @@ static void pufferStueck(const char* name, uint32_t off) {
     snprintf(pfad, sizeof pfad, "/puffer/%s", name);
     static uint8_t paket[4 + 480];
     int n = 0;
-    File f = LittleFS.open(pfad, "r");
+    File f = pfs().open(pfad, "r");
     if (f) {
         if (f.seek(off)) n = f.read(paket + 4, 480);
         f.close();
@@ -240,7 +240,7 @@ static void pufferLoop() {
         loeschWunsch = false;
         char pfad[48];
         snprintf(pfad, sizeof pfad, "/puffer/%s", loeschName);
-        LittleFS.remove(pfad);
+        pfs().remove(pfad);
         if (strcmp(loeschName, "notizen.jsonl") == 0) offeneNotizen = 0;
         wantState = true;
     }

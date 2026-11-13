@@ -94,6 +94,7 @@ static void schlafPruefen() {
         funkAus();
     }
     if (touchAn) touchAus();
+    sdAus();                                       // Karte stromlos, pfs() bindet sie beim nächsten Zugriff ein
     if (leichtSchlaf()) {                          // Taste: ganz wach (Touch folgt nach dem Tastendruck, s. o.)
         funkEin(true);
         aktiv();
