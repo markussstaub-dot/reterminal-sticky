@@ -3,7 +3,7 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.16.2 – Kritzelblock, Tastenhilfe (▲+▼), Rahmen beim Tippen, Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
+version: FW 0.16.3 – Kritzelblock, Tastenhilfe (▲+▼), Rahmen beim Tippen, Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
 wartet: Markus: Bewegungswecken von Hand prüfen (USB ab, 3 min liegen lassen, hochnehmen) und Fahrterkennung bei der nächsten Microlino-Fahrt; Offline-Diktat auf /ist/puffer einmal prüfen; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
@@ -265,6 +265,11 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   Ort, USB-Anstecken ohne Hänger. Fehlalarm im Café (11:54, „Fahrt erkannt“ bei 11 mg, Tippen/Packen) → FW 0.16.2:
   „rüttelt“ erst ab 15 mg (vorher 8). Kritzelblock am Gerät geprüft (12:20): Striche lückenlos, Blatt beim Verlassen
   gespeichert, von der App abgeholt und als Bild-Notiz gezeigt (PNG in `files/kritzel/`)
+- **Kritzelblock-Tempo (FW 0.16.3, 13.11.2026):** sofort auffrischen statt 150 ms sammeln, nur den bemalten Ausschnitt an die
+  Bibliothek, 240 MHz im Kritzelblock. Gemessen: Zeichnen 0–33 ms, **Refresh fest ~840 ms** (auch bei 8 × 5 Pixeln).
+  Ursache in Seeed_GFX2: vor jedem Teil-Refresh `wakePartial()` mit kompletter Init, danach `ePaperSleep()` mit
+  `delay(100)`; SSD1683 ohne Temperatur-Kompensation in der Bibliothek. Schneller nur mit eigener Kopie der Bibliothek
+  (Panel wach lassen, Pause weg), geschätzt ~0,5 s. Markus: „schon nutzbar, schneller wär schön“
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

@@ -248,6 +248,7 @@ static void kzAufgabeFn(void*) {
     vTaskDelete(nullptr);
 }
 static void kritzelStart() {
+    setCpuFrequencyMhz(240);   // im Kritzelblock zählt jede Millisekunde, sonst sparsam 80 MHz
     if (kzAufgabe) return;
     kzAn = true;
     xTaskCreatePinnedToCore(kzAufgabeFn, "kritzel", 4096, nullptr, 4, &kzAufgabe, 0);
@@ -255,19 +256,32 @@ static void kritzelStart() {
 static void kritzelStopp() {
     kzAn = false;
     for (int i = 0; i < 30 && kzAufgabe; i++) delay(5);
+    setCpuFrequencyMhz(80);
 }
 
 /** Aus modusLoop: gesammelte Striche zeigen */
+static uint8_t* kzAusschnitt = nullptr;
 static void kritzelLoop() {
-    if (modus != M_KRITZEL || kzX1 <= kzX0 || millis() - kzZuletzt < 150) return;
+    // sofort auffrischen, sobald neue Striche da sind (vorher 150 ms gesammelt); der Refresh selbst dauert ohnehin
+    if (modus != M_KRITZEL || kzX1 <= kzX0 || millis() - kzZuletzt < 15) return;
     kzZuletzt = millis();
     portENTER_CRITICAL(&kzSperre);
     int x0 = max(0, kzX0) & ~7, x1 = min(W, (kzX1 + 7) & ~7), y0 = max(0, kzY0), y1 = min(H, kzY1);
     kzX0 = W; kzY0 = H; kzX1 = 0; kzY1 = 0;
     portEXIT_CRITICAL(&kzSperre);
     if (x1 <= x0 || y1 <= y0) return;
-    display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
-    display.updatePartial(x0, y0, x1 - x0, y1 - y0);
+    // nur den bemalten Ausschnitt an die Bibliothek geben (das ganze Bild kostete jedes Mal Rechenzeit)
+    if (!kzAusschnitt) kzAusschnitt = (uint8_t*)ps_malloc(IMG_BYTES);
+    int bpz = (x1 - x0) / 8, h = y1 - y0;
+    uint32_t t0 = millis();
+    if (kzAusschnitt) {
+        for (int r = 0; r < h; r++) memcpy(kzAusschnitt + r * bpz, imgBuf + (y0 + r) * (W / 8) + x0 / 8, bpz);
+        display.drawBitmap(x0, y0, kzAusschnitt, x1 - x0, h, TFT_BLACK, TFT_WHITE);
+    } else display.drawBitmap(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
+    uint32_t t1 = millis();
+    display.updatePartial(x0, y0, x1 - x0, h);
+    static uint32_t gemeldet = 0;
+    if (millis() - gemeldet > 2000) { gemeldet = millis(); Serial.printf("Kritzel: zeichnen %lu ms, Refresh %lu ms (%dx%d)\n", (unsigned long)(t1 - t0), (unsigned long)(millis() - t1), x1 - x0, h); }
 }
 
 /** Bemaltes Blatt auf die Karte (beim Verlassen) */
