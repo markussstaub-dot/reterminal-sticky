@@ -357,6 +357,16 @@ Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzu
   - geparkt: BLE-Tastatur am Sticky (geht technisch, ESP32 als HID-Empfänger; Bastelprojekt); USB-Tastatur geht nicht
     (USB hängt am CH343-Wandler, nicht am ESP32)
 - Vorschlag **erster Schwung**: Timer/Stoppuhr, Parkuhr, Wasserwaage (billig, zeigen die Mechanik, im Micro nützlich)
+- fest **Widgets ohne ständiges Flashen** (Markus, 13.11.2026):
+  - **mit Handy**: geht im Prinzip schon heute (App bekommt Tipper und Tasten, schickt Bilder/Teilbilder; ~1 s je Tipp).
+    Fehlt ein Karussell-Eintrag „App-Seite“, der ▲/▼ und Touch an die App durchreicht, statt weiterzublättern →
+    letztes kleines Firmware-Update, danach Taschenrechner, Tastatur u. Ä. rein in der App
+  - **ohne Handy** (Timer im Micro): einmal eine **Widget-Maschine mit festen Bausteinen** (Countdown, Stoppuhr,
+    Zähler, Zahlenfeld, Rechner); die App liefert Bild + `felder.txt` unter `/soll/widgets/<name>/`, neue Widgets sind
+    danach nur Dateien
+  - dazu **Firmware-Update von der Karte** (`/soll/firmware.bin`, OTA-Partitionen vorhanden) als Sicherheitsnetz:
+    künftige Updates per App statt Kabel
+  - geparkt: Skriptsprache auf dem Sticky (z. B. Berry wie in Tasmota), maximal flexibel, aber zu viel Dauerpflege
 - offen: Wie man zwischen Widgets wechselt (eigener Modus mit ▲/▼ wie die Bestellzettel?); Reihenfolge nach den Szenen
   oder davor
 
