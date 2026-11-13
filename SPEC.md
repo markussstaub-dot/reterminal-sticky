@@ -320,6 +320,18 @@ in eine Tagesdatei zum Teilen. Funktioniert, ist aber ein einziger Topf.
   4. Claude-Nachbearbeitung, 5. Ziele Kalender/Vault/Bubble Log anbinden); Zettel aus Diktat = Bestellzettel oder
   eigener Erledigungszettel?
 
+### Handgriff-Spickzettel (Markus, 13.11.2026, Idee)
+Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzufügen“), solche Handgriffe vergisst man.
+- Vorschlag **Was einmal gelöst ist, wird ein Spickzettel**: kurze Anleitungen für Geräte und Abläufe, 3–6 Schritte,
+  als Seiten im Bordbuch-Bereich (eigenes Kapitel „Handgriffe“) bzw. später als Szene „Unterwegs“/„Werkstatt“
+- Vorschlag Kandidaten: Bose QC Ultra Earbuds an weiteres Gerät koppeln (Multipoint) · Fold per USB-Debugging ans
+  Zenbook · Sticky flashen/Reset (Ab- und Anstecken, wenn GPIO0 klemmt) · Microlino Ladeziegel-Muster und Pannenhilfe ·
+  NAS-Backup prüfen · Bambu/Laser-Grundeinstellungen · Wi-Fi im Café
+- Vorschlag **Claude schreibt sie**: nach einer gelösten Frage bietet Claude an, den Handgriff als Spickzettel
+  (Format „## Titel“ + Zeilen wie im Spickzettel-Feld der App) abzulegen; die App spielt ihn beim nächsten Abgleich auf
+- offen: Ablage (eigene Datei `spickzettel/handgriffe.md` im Projekt, privat, nicht im Repo?) und ob sie im Karussell
+  einen eigenen Eintrag bekommen
+
 ### Widgets (Markus, 13.11.2026, Ideensammlung)
 - Vorschlag **Weiche**: Was sich sekündlich ändert, rechnet und zeichnet der Sticky selbst (offline); die App liefert
   nur Hintergrundbild und Ziffernsatz, der Sticky setzt die Ziffern ein (wie heute die Uhr)
