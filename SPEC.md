@@ -348,6 +348,14 @@ Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzu
 - Ideen, gemischt: **Weltzeituhr** (Tokio, New Jersey, Jacksonville, L.A.; Karte aus der App, Ziffern vom Sticky) ·
   **Klimaverlauf** 24 h mit Taupunkt-Linie (Daten aus `/ist/mess`)
 - Ideen, aus der App: **Tagesübersicht** (Termine, Wetter, Micro-Akku aus Bubble Log) · **Hanshin-Tigers-Ergebnis**
+- fest **Eingabe am Sticky nur für Kleinkram** (Markus, 13.11.2026): längere Texte tippt man am Fold/Zenbook oder
+  diktiert. Am Sticky:
+  - **Zahlenfeld** (Touch, große Tasten, Teil-Refresh je Taste): Minuten für den Timer, Zähler, kurze Zahlen
+  - **Kritzelblock**: mit dem Finger auf dem E-Paper zeichnen (Striche gesammelt alle ~200 ms per Teil-Refresh),
+    ▼ = speichern nach `/ist/kritzel/JJJJ-MM-TT-hhmmss.bin`, die App holt es ab und legt es als Bild-Notiz ab
+    (später ggf. Handschrift erkennen). Eigener Eintrag im Karussell
+  - geparkt: BLE-Tastatur am Sticky (geht technisch, ESP32 als HID-Empfänger; Bastelprojekt); USB-Tastatur geht nicht
+    (USB hängt am CH343-Wandler, nicht am ESP32)
 - Vorschlag **erster Schwung**: Timer/Stoppuhr, Parkuhr, Wasserwaage (billig, zeigen die Mechanik, im Micro nützlich)
 - offen: Wie man zwischen Widgets wechselt (eigener Modus mit ▲/▼ wie die Bestellzettel?); Reihenfolge nach den Szenen
   oder davor
