@@ -1,13 +1,21 @@
+/* Braun-Optik (Vorbild BNE001/ET66 von Dietrich Lubs und Dieter Rams, 13.11.2026): mattschwarzes Gehäuse, gewölbte
+   Pillen-Tasten, Farbe nur als Bedeutung – Gelb-Orange = Hauptaktion („=“), Grün = eingeschaltet (Speichertasten),
+   Braun = Werkzeug (Rechenzeichen), Grün/Rot = die zwei Punkte für An/Aus. */
 :root {
-  --grund: #1d1f21;
-  --flaeche: #2a2d30;
-  --linie: #3b3f44;
-  --text: #e8e6e1;
-  --leise: #9a9fa6;
-  --akzent: #e0b34a;
-  --gut: #6cc08a;
-  --schlecht: #e07a6a;
+  --grund: #151515;
+  --flaeche: #232322;
+  --taste: #0f0f0f;
+  --linie: #343432;
+  --text: #f1efe9;
+  --leise: #9b998f;
+  --akzent: #f0a63a;
+  --braun: #5e4637;
+  --gruen: #2f4b37;
+  --gut: #5fae6e;
+  --schlecht: #e0483c;
   --papier: #f4f1ea;
+  --wolbung: inset 0 1px 0 rgba(255, 255, 255, .13), inset 0 -2px 4px rgba(0, 0, 0, .5), 0 2px 4px rgba(0, 0, 0, .55);
+  --schrift: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -15,29 +23,33 @@ body {
   margin: 0;
   background: var(--grund);
   color: var(--text);
-  font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font: 16px/1.4 var(--schrift);
   padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
 }
 header, footer {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding: 12px 16px;
 }
-header h1 { margin: 0; font-size: 22px; letter-spacing: .02em; }
+header h1 { margin: 0; font-size: 22px; font-weight: 500; letter-spacing: .04em; }
 footer { color: var(--leise); font-size: 13px; flex-wrap: wrap; }
 main { max-width: 900px; margin: 0 auto; padding: 0 16px; display: grid; gap: 14px; }
-h2 { font-size: 14px; color: var(--leise); font-weight: 600; margin: 6px 0; text-transform: uppercase; letter-spacing: .06em; }
+h2 { font-size: 13px; color: var(--leise); font-weight: 500; margin: 8px 0 6px; text-transform: uppercase; letter-spacing: .12em; }
 
 .leiste, .werkzeuge { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 button {
-  font: inherit; color: var(--text); background: var(--flaeche);
-  border: 1px solid var(--linie); border-radius: 10px; padding: 10px 14px; min-height: 44px;
+  font: inherit; color: var(--text); background: var(--taste);
+  border: 1px solid #000; border-radius: 999px; padding: 10px 18px; min-height: 44px;
+  box-shadow: var(--wolbung);
 }
-button.an { border-color: var(--akzent); color: var(--akzent); }
-button.haupt { background: var(--akzent); color: #1d1f21; border-color: var(--akzent); font-weight: 600; padding: 10px 22px; }
-button:disabled { opacity: .4; }
+button:active:not(:disabled) { transform: translateY(1px); box-shadow: inset 0 2px 4px rgba(0, 0, 0, .6); }
+button.an { background: var(--gruen); color: #fff; }
+button.haupt { background: var(--akzent); color: #1a1408; font-weight: 600; padding: 10px 24px; }
+button.werkzeug { background: var(--braun); color: #fff; }
+button:disabled { opacity: .35; box-shadow: none; }
 input:not([type]) , input[type=text] {
-  font: inherit; color: var(--text); background: var(--flaeche);
-  border: 1px solid var(--linie); border-radius: 10px; padding: 10px 12px; min-height: 44px; flex: 1; min-width: 0;
+  font: inherit; color: var(--text); background: #0b0b0b;
+  border: 1px solid var(--linie); border-radius: 8px; padding: 10px 12px; min-height: 44px; flex: 1; min-width: 0;
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, .6);
 }
 .schalter { display: inline-flex; align-items: center; gap: 6px; color: var(--leise); }
 .schalter input { width: 20px; height: 20px; accent-color: var(--akzent); }
@@ -45,6 +57,8 @@ input:not([type]) , input[type=text] {
 
 .pille { font-size: 13px; padding: 4px 10px; border-radius: 999px; background: var(--flaeche); border: 1px solid var(--linie); color: var(--leise); }
 .pille.ein { color: var(--gut); border-color: var(--gut); }
+.pille.ein::before, .pille.aus::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; background: var(--gut); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .4); }
+.pille.aus::before { background: var(--schlecht); }
 .pille.aus { color: var(--leise); }
 .pille.gleich { color: var(--gut); border-color: var(--gut); }
 
@@ -62,8 +76,8 @@ input:not([type]) , input[type=text] {
 #balken { flex: 1; height: 6px; background: var(--flaeche); border-radius: 3px; overflow: hidden; }
 #balken div { height: 100%; width: 0; background: var(--akzent); transition: width .1s; }
 
-.dateiwahl span { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--linie); background: var(--flaeche); }
-textarea { width: 100%; font: 14px/1.4 ui-monospace, Consolas, monospace; color: var(--text); background: var(--flaeche); border: 1px solid var(--linie); border-radius: 10px; padding: 10px; margin: 8px 0; }
+.dateiwahl span { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 18px; border-radius: 999px; border: 1px solid #000; background: var(--taste); box-shadow: var(--wolbung); }
+textarea { width: 100%; font: 14px/1.4 ui-monospace, Consolas, monospace; color: var(--text); background: #0b0b0b; border: 1px solid var(--linie); border-radius: 8px; padding: 10px; margin: 8px 0; box-shadow: inset 0 2px 3px rgba(0, 0, 0, .6); }
 details summary { cursor: pointer; padding: 6px 0; }
 #notizen { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 45vh; overflow: auto; }
 #notizen li { background: var(--flaeche); border-radius: 8px; padding: 8px 10px; display: grid; gap: 2px; }
@@ -77,7 +91,7 @@ details summary { cursor: pointer; padding: 6px 0; }
 #aufnahmen .text { font-size: 17px; color: var(--text); white-space: pre-wrap; }
 #aufnahmen .text.warte { color: var(--leise); font-style: italic; }
 #aufnahmen .zeile { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-select { font: inherit; color: var(--text); background: var(--flaeche); border: 1px solid var(--linie); border-radius: 8px; padding: 6px 8px; min-height: 40px; }
+select { font: inherit; color: var(--text); background: var(--taste); border: 1px solid #000; border-radius: 999px; padding: 6px 14px; min-height: 40px; box-shadow: var(--wolbung); }
 #aufnahmeStatus { color: var(--schlecht); margin: 0 0 6px; }
 #ereignisse { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 40vh; overflow: auto; }
 #ereignisse li {
@@ -100,10 +114,10 @@ main { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 }
 #tabs button {
   display: grid; justify-items: center; gap: 2px; min-height: 60px; padding: 6px 2px;
-  background: none; border: 0; border-radius: 12px; color: var(--leise); font-size: 12px;
+  background: none; border: 0; border-radius: 14px; color: var(--leise); font-size: 12px; box-shadow: none;
 }
 #tabs button span { font-size: 22px; line-height: 1; }
-#tabs button.an { color: var(--akzent); background: var(--grund); }
+#tabs button.an { color: var(--akzent); background: var(--grund); box-shadow: inset 0 2px 4px rgba(0, 0, 0, .6); }
 .werkstatt { border: 1px solid var(--linie); border-radius: 12px; padding: 8px 12px; display: grid; gap: 10px; }
 .werkstatt[open] summary { margin-bottom: 6px; }
 footer { padding: 0; }
