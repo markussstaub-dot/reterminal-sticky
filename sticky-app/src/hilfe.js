@@ -54,6 +54,17 @@ export const HILFE = {
       '!⇄', 'Richtung tauschen, das Ergebnis wird die neue Eingabe', '!Tasten', '▲ ▼   blättern · KI   Home',
       '!Zurück', 'beliebige Taste schließt diese Hilfe'],
   },
+  'w-weltzeit': {
+    titel: 'Hilfe · Weltzeit',
+    zeilen: ['!Städte', 'Zuhause, Tokio, New York, Los Angeles · ☀ = Tag, ☾ = Nacht', '!Ohne Handy',
+      'der Sticky zählt selbst weiter; Sommerzeit-Wechsel kommen beim nächsten Abgleich', '!Tasten', '▲ ▼   blättern · KI   Home',
+      '!Zurück', 'beliebige Taste schließt diese Hilfe'],
+  },
+  'w-wecker': {
+    titel: 'Hilfe · Wecker',
+    zeilen: ['!Stellen', '± 1 h, ± 10 min, ± 1 min · Stellen schaltet ihn ein', '!An / Aus', 'unten, „an“/„aus“ steht unter der Zeit',
+      '!Klingeln', 'auch im Schlummer, bis zu 1 min · jede Taste stellt ab', '!Zurück', 'beliebige Taste schließt diese Hilfe'],
+  },
   'w-menue': {
     titel: 'Hilfe · Menü',
     zeilen: ['!Öffnen', 'KI kurz auf Home', '!Tippen', 'auf eine Kachel = direkt dorthin', '!Kacheln', 'kommen aus dem Karussell (App → Mehr → Karussell)',

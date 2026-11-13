@@ -267,8 +267,8 @@ Alles als neue Widget-Typen der Widget-Maschine: die App liefert Optik (Braun-St
 die Firmware rechnet. Ein Flash für alles.
 - fest **im Paket:**
   - **Rechner und Umrechner** (siehe oben) – umgesetzt 13.11.2026, FW 0.28.0
-  - **Weltzeit**: z. B. Tokio und zwei weitere Städte, Versätze aus `felder.txt`
-  - **Wecker/Erinnerung**: Uhrzeit oder „in 2 h“, piept auch im Schlummer (Uhrwerk des Timers)
+  - **Weltzeit**: z. B. Tokio und zwei weitere Städte, Versätze aus `felder.txt` – umgesetzt 13.11.2026, FW 0.29.0
+  - **Wecker/Erinnerung**: Uhrzeit oder „in 2 h“, piept auch im Schlummer (Uhrwerk des Timers) – umgesetzt 13.11.2026, FW 0.29.0
   - **Strichliste**: Tippen zählt hoch, lang tippen setzt zurück
   - **Klimakurve**: letzte 24 h Temperatur, Feuchte, Taupunkt als Grafik aus `/ist/mess` (Beschlag im Micro)
   - **Würfel/Münze** durch Schütteln (nebenbei)

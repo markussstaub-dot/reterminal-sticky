@@ -3,7 +3,7 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.28.0 – EDC-Sticky: Rechner/Umrechner im Sticky, Strichschrift, Braun-Optik, Hoch/Quer (auch per Sensor, 180°), Rechner, Timer, Waage, Lineal, Zettel mit QR, Gegenseitig suchen, Push-to-Talk, Fahrtenschreiber, SD-Karte als Vertrag; MIT-Lizenz (13.11.2026)
+version: FW 0.29.0 – EDC-Sticky: Weltzeit, Wecker, Rechner/Umrechner im Sticky, Strichschrift, Braun-Optik, Hoch/Quer (auch per Sensor, 180°), Rechner, Timer, Waage, Lineal, Zettel mit QR, Gegenseitig suchen, Push-to-Talk, Fahrtenschreiber, SD-Karte als Vertrag; MIT-Lizenz (13.11.2026)
 wartet: Markus: Lineal nachmessen, Einfügen in WhatsApp probieren, Fotos für den Seeed Playground (Einreichen um den 20.11.); Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
@@ -354,7 +354,12 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   38 Fälle, 0 Fehler). Neue Widget-Typen `rechner`/`umrechner`: App liefert Braun-Tasten, Glyphen und Felder
   (`glyphen`, `text`, `tasten`, `knopf … taste i`, `paar von nach a b`, `knopf … paar i`), Knöpfe bis 48. Gewähltes
   Paar invertiert. Lage übernimmt die der App-Seite (auto). Karussell: Rechner und Umrechner als eigene Einträge;
-  die App-Seite (Thin Client) bleibt als Technik. Am Gerät: „rechnet“
+  die App-Seite (Thin Client) bleibt als Technik. Am Gerät: „rechnet“ (auch mit getrenntem Fold)
+- **Weltzeit und Wecker (FW 0.29.0, 13.11.2026):** Widget `weltzeit` (HIER, TYO, NYC, LAX mit ☀/☾): die App liefert je
+  Stadt den UTC-Versatz (mit Sommerzeit, `versatzMin` über Intl), der Sticky zählt jede Minute selbst. Widget `wecker`:
+  ±1 h/±10/±1, An/Aus, Weckzeit in `/ist/wecker.txt`; geprüft wird jede Minute, auch nach dem Minuten-Wecken im
+  Schlummer; klingelt bis 1 min über das Suchen-Piepen (`suchenStill`), jede Taste stellt ab. Mehrere `text`-Zeilen
+  je Widget, Karussell bis 16 Einträge, Menü bei > 12 mit 4 (quer) bzw. 3 (hochkant) Spalten. Am Gerät: „klingelt“
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

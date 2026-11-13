@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.28.0";
+static const char* FW_VERSION = "0.29.0";
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "Markus";
@@ -90,6 +90,7 @@ static bool appDa() { return connected && appHoert; }
 // Gegenseitig suchen (SPEC „EDC-Ideen“, FW 0.25.0): suchenBis = Sticky piept bis dahin; handySuchenBis = KI 3× wartet
 // so lange auf die App, um das Handy klingeln zu lassen
 static volatile uint32_t suchenBis = 0, handySuchenBis = 0;
+static bool suchenStill = false;   // klingelt für den Wecker: Ende nicht an die App melden
 static volatile uint16_t connHandle = 0xFFFF;
 static volatile uint16_t mtu = 23;
 static volatile uint8_t phy = 1;

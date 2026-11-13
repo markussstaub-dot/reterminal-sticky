@@ -113,7 +113,7 @@ const NAMEN = { home: 'Home', notiz: 'Notiz', bordbuch: 'Bordbuch', zettel: 'Zet
 export function menueWidget(eintraege, hoch = false) {
   const p = seite(hoch, 'Menü', 'Tippen = hin · KI = Home · ▲▼ = blättern');
   p.felder.push('typ menue');
-  const spalten = !hoch && eintraege.length > 6 ? 3 : 2;
+  const spalten = hoch ? (eintraege.length > 12 ? 3 : 2) : eintraege.length > 12 ? 4 : eintraege.length > 6 ? 3 : 2;
   const zeilen = Math.ceil(eintraege.length / spalten);
   const x0 = 16, y0 = hoch ? 48 : 44, w = (p.W - 32) / spalten, h = Math.min(hoch ? 180 : 140, (p.H - y0 - 12) / zeilen);
   eintraege.forEach((e, i) => {
@@ -311,6 +311,75 @@ export function umrechnerWidget(hoch = false) {
   ];
 }
 
-export const WIDGETS = { timer: timerWidget, waage: waageWidget, lineal: () => linealWidget(linealEcht()), rechner: rechnerWidget, umrechner: umrechnerWidget };
+// ---- Weltzeit und Wecker (FW ≥ 0.29.0) ------------------------------------------------------------------------------
+
+/** Versatz einer Zeitzone zu UTC in Minuten, jetzt (mit Sommerzeit) – die App kennt das, der Sticky addiert nur */
+export function versatzMin(zone, wann = new Date()) {
+  const teile = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: zone, hourCycle: 'h23', year: 'numeric', month: 'numeric',
+    day: 'numeric', hour: 'numeric', minute: 'numeric' }).formatToParts(wann).map((t) => [t.type, t.value]));
+  const dort = Date.UTC(+teile.year, teile.month - 1, +teile.day, +teile.hour, +teile.minute);
+  return Math.round((dort - Math.floor(wann.getTime() / 60000) * 60000) / 60000);
+}
+/** Standard-Städte: Lebensstationen (Kürzel wie auf dem Weltzeitring) */
+export const STAEDTE = [
+  { kurz: 'HIER', name: 'Zuhause', zone: 'Europe/Berlin' },
+  { kurz: 'TYO', name: 'Tokio', zone: 'Asia/Tokyo' },
+  { kurz: 'NYC', name: 'New York', zone: 'America/New_York' },
+  { kurz: 'LAX', name: 'Los Angeles', zone: 'America/Los_Angeles' },
+];
+
+/** Weltzeit: je Stadt Kürzel und Name links, Uhrzeit mit ☀/☾ rechts (der Sticky zählt jede Minute selbst weiter) */
+export function weltzeitWidget(hoch = false, staedte = STAEDTE) {
+  const p = seite(hoch, 'Weltzeit', 'Zeiten zählt der Sticky selbst · ▲▼ = blättern · KI = Home');
+  const { g } = p;
+  const Z = { w: 40, h: 64 }, n = 7;                   // „23:52 ☾“
+  const glyphen = [...'0123456789:', ' ', '☀', '☾'];
+  const zeilen = [];
+  staedte.slice(0, 4).forEach((s, i) => {
+    const y = hoch ? 56 + i * 184 : 52 + i * 106;
+    g.fillStyle = '#000'; g.textAlign = 'left'; g.textBaseline = 'top';
+    g.font = `500 44px ${FONT}`; g.fillText(s.kurz, 24, y + 6);
+    g.font = `400 20px ${FONT}`; g.fillText(s.name, 24, y + 56);
+    if (i) { g.fillRect(16, y - 6, p.W - 32, 1); }
+    const tx = (p.W - 24 - n * Z.w) & ~7, ty = hoch ? (y + 96) & ~7 : y + 14;
+    const z = p.ziffernPos(tx, ty, Z.w);
+    zeilen.push(`stadt ${versatzMin(s.zone)}`, `text ${z.x} ${z.y} ${n}`);
+  });
+  p.felder.unshift('typ weltzeit', hoch ? `ziffern ${Z.h} ${Z.w}` : `ziffern ${Z.w} ${Z.h}`, ...(hoch ? [`schritt 0 ${-Z.w}`] : []),
+    `glyphen ${glyphen.map((x) => (x === ' ' ? '_' : x)).join(' ')}`, ...zeilen);
+  return [
+    { n: 'ziffern.bin', daten: textBlatt(Z.w, Z.h, glyphen, hoch) },
+    { n: 'bild.bin', daten: p.bild() },
+    { n: 'felder.txt', daten: text(p.felder) },
+  ];
+}
+
+/** Wecker: Weckzeit groß, darunter an/aus, Knöpfe ±1 h, ±10 min, ±1 min und An/Aus (der Sticky merkt sich die Zeit) */
+export function weckerWidget(hoch = false) {
+  const p = seite(hoch, 'Wecker', 'klingelt auch im Schlummer · jede Taste stellt ab');
+  const { g } = p;
+  const Z = { w: 64, h: 96 }, Zk = Z;   // ein Glyphenblatt je Widget: „an/aus“ in derselben Zellgröße
+  const glyphen = [...'0123456789:ansu', ' '];
+  const tx = ((p.W - 5 * Z.w) / 2) & ~7, ty = hoch ? 64 : 56;
+  const kx = ((p.W - 3 * Zk.w) / 2) & ~7, ky = hoch ? 168 : 160;
+  const z = p.ziffernPos(tx, ty, Z.w), zk = p.ziffernPos(kx, ky, Zk.w);
+  const knoepfe = hoch
+    ? [[16, 280, 240, 410, '− 1 h', 2], [240, 280, 464, 410, '+ 1 h', 1], [16, 410, 240, 540, '− 10', 4], [240, 410, 464, 540, '+ 10', 3],
+      [16, 540, 240, 670, '− 1', 6], [240, 540, 464, 670, '+ 1', 5]]
+    : [[16, 264, 144, 368, '− 1 h', 2], [144, 264, 272, 368, '+ 1 h', 1], [272, 264, 400, 368, '− 10', 4], [400, 264, 528, 368, '+ 10', 3],
+      [528, 264, 656, 368, '− 1', 6], [656, 264, 784, 368, '+ 1', 5]];
+  knoepfe.forEach(([x0, y0, x1, y1, t, c]) => p.k(x0, y0, x1, y1, t, `weck ${c}`, 'werkzeug', 30));
+  if (hoch) p.k(16, 684, 464, 790, 'An / Aus', 'weck 9', 'haupt', 36); else p.k(16, 372, 784, 472, 'An / Aus', 'weck 9', 'haupt', 36);
+  p.felder.unshift('typ wecker', hoch ? `ziffern ${Z.h} ${Z.w}` : `ziffern ${Z.w} ${Z.h}`, ...(hoch ? [`schritt 0 ${-Z.w}`] : []),
+    `glyphen ${glyphen.map((x) => (x === ' ' ? '_' : x)).join(' ')}`, `text ${z.x} ${z.y} 5`, `text ${zk.x} ${zk.y} 3`);
+  return [
+    { n: 'ziffern.bin', daten: textBlatt(Z.w, Z.h, glyphen, hoch) },
+    { n: 'bild.bin', daten: p.bild() },
+    { n: 'felder.txt', daten: text(p.felder) },
+  ];
+}
+
+export const WIDGETS = { timer: timerWidget, waage: waageWidget, lineal: () => linealWidget(linealEcht()), rechner: rechnerWidget, umrechner: umrechnerWidget,
+  weltzeit: weltzeitWidget, wecker: weckerWidget };
 /** Kalibrierung aus der App (Mehr → Lineal): so viele echte mm misst die 80-mm-Marke */
 function linealEcht() { try { return parseFloat(localStorage.getItem('sticky.lineal80')) || 80; } catch { return 80; } }

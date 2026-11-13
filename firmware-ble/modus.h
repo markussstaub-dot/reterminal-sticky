@@ -586,8 +586,8 @@ static int kiTipps = 0;
 static bool kiDiktat = false, upLang = false, downLang = false;
 
 // ---- Karussell -------------------------------------------------------------------------------
-static Modus karussell[12];   // bis 12 Einträge (FW 0.26.0, vorher 8)
-static char kWidget[12][16];   // Name zum Eintrag „widget <name>“
+static Modus karussell[16];   // bis 16 Einträge (FW 0.29.0; 0.26.0: 12, vorher 8)
+static char kWidget[16][16];   // Name zum Eintrag „widget <name>“
 static int kAnzahl = 0;
 
 static void karussellLaden() {
@@ -595,7 +595,7 @@ static void karussellLaden() {
     String t;
     if (sollText("einstellungen/karussell.txt", t)) {
         int start = 0;
-        while (start < (int)t.length() && kAnzahl < 12) {
+        while (start < (int)t.length() && kAnzahl < 16) {
             int ende = t.indexOf('\n', start);
             if (ende < 0) ende = t.length();
             String z = t.substring(start, ende);
@@ -615,7 +615,7 @@ static void karussellLaden() {
     bool homeDrin = false;
     for (int i = 0; i < kAnzahl; i++) homeDrin |= karussell[i] == M_HOME;
     if (kAnzahl == 0) { const Modus std[] = {M_HOME, M_NOTIZ, M_BORDBUCH, M_BESTELL}; for (auto m : std) karussell[kAnzahl++] = m; }
-    else if (!homeDrin && kAnzahl < 12) {
+    else if (!homeDrin && kAnzahl < 16) {
         memmove(karussell + 1, karussell, kAnzahl * sizeof(Modus));
         memmove(kWidget + 1, kWidget, kAnzahl * sizeof kWidget[0]);
         karussell[0] = M_HOME; kAnzahl++;
@@ -756,9 +756,10 @@ static void hilfeZeigen() {
 
 static void tasteAktion(const char* name, bool gedrueckt) {
     letzteBedienung = millis();
-    if (suchenBis && gedrueckt) {                 // gefunden: irgendeine Taste beendet das Piepen
+    if (suchenBis && gedrueckt) {                 // gefunden bzw. Wecker aus: irgendeine Taste beendet das Piepen
         suchenBis = 0;
-        sendEvt("{\"t\":\"suche\",\"a\":\"gefunden\"}");
+        if (!suchenStill) sendEvt("{\"t\":\"suche\",\"a\":\"gefunden\"}");
+        suchenStill = false;
         return;
     }
     bool up = strcmp(name, "up") == 0, down = strcmp(name, "down") == 0;
@@ -844,7 +845,7 @@ static void suchenLoop() {
         else if ((int32_t)(millis() - handySuchenBis) > 0) { handySuchenBis = 0; tone(PIN_BUZZER, 900, 400); }   // App kam nicht
     }
     if (!suchenBis) return;
-    if ((int32_t)(millis() - suchenBis) > 0) { suchenBis = 0; return; }
+    if ((int32_t)(millis() - suchenBis) > 0) { suchenBis = 0; suchenStill = false; return; }
     aktiv();
     static uint32_t zuletzt = 0;
     if (millis() - zuletzt < 1200) return;
