@@ -34,10 +34,10 @@ function ziffernBlatt(w, h) {
   return rgbaZu1bpp(g.getImageData(0, 0, 11 * w, h).data, 11 * w, h);
 }
 
-/** Timer (Countdown): ▲/▼ = ±1 min, große Knöpfe zum Tippen, Vorlagen. → [{ n, daten }] mit felder.txt zuletzt */
+/** Timer (Countdown): große Knöpfe zum Tippen (±1 min, Start/Stopp, Vorlagen), ▲/▼ blättern wie überall. → [{ n, daten }] mit felder.txt zuletzt */
 export function timerWidget() {
   const Z = { w: 96, h: 144, x: 160, y: 60 };   // 5 Zellen „MM:SS“ = 480 px breit
-  const felder = ['typ countdown', 'dauer 300', `ziffern ${Z.w} ${Z.h}`, `zeit ${Z.x} ${Z.y}`, 'taste up plus 60', 'taste down minus 60'];
+  const felder = ['typ countdown', 'dauer 300', `ziffern ${Z.w} ${Z.h}`, `zeit ${Z.x} ${Z.y}`];   // ▲/▼ blättern wie überall, Bedienung per Tippen
   const c = leinwand(BREITE, HOEHE);
   const g = c.getContext('2d', { willReadFrequently: true });
   g.fillStyle = '#fff';
@@ -48,7 +48,7 @@ export function timerWidget() {
   g.font = `bold 24px ${FONT}`;
   g.fillText('Timer', 16, 18);
   g.font = `16px ${FONT}`;
-  g.fillText('▲▼ = ±1 min · ▼ 1 s = weiter · KI = Home', 100, 19);
+  g.fillText('Tippen zum Bedienen · ▲▼ = blättern · KI = Home', 100, 19);
   const k = (x0, y0, x1, y1, text, aktion, dunkel, gr) => { knopf(g, x0, y0, x1, y1, text, dunkel, gr); felder.push(`knopf ${x0} ${y0} ${x1} ${y1} ${aktion}`); };
   k(16, 222, 208, 330, '− 1 min', 'minus 60');
   k(224, 222, 576, 330, 'Start / Stopp', 'start_stopp', true, 36);

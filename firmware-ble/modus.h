@@ -425,7 +425,7 @@ static void setzeModus(Modus m) {
         widgetZeigen();
     } else if (m == M_APP) {
         // App-Seite (SPEC „Widgets ohne ständiges Flashen“): die App zeichnet, sobald sie „modus app“ hört;
-        // Tipper und ▲/▼ kurz gehen nur an die App, ▲/▼ 1 s und KI bleiben der Notausgang
+        // Tipper gehen an die App, ▲/▼ blättern wie überall
         seite = "app";
     } else if (m == M_BORDBUCH) {
         bbZeige(bbAktuell);
@@ -632,13 +632,13 @@ static void tasteAktion(const char* name, bool gedrueckt) {
     if (strcmp(name, "up") == 0) {
         if (gedrueckt) { upSeit = millis(); upLang = false; return; }
         upSeit = 0;
-        if (!upLang && modus != M_APP && !widgetTaste(0)) blaettern(-1);   // App-Seite: kurz gehört der App (kommt als Ereignis an)
+        if (!upLang && !widgetTaste(0)) blaettern(-1);   // ▲/▼ kurz blättern überall (Widgets nur per Tippen, 13.11.2026)
         return;
     }
     if (strcmp(name, "down") == 0) {
         if (gedrueckt) { downSeit = millis(); downLang = false; return; }
         downSeit = 0;
-        if (!downLang && modus != M_APP && !widgetTaste(1)) blaettern(+1);
+        if (!downLang && !widgetTaste(1)) blaettern(+1);
     }
 }
 

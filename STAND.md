@@ -3,7 +3,7 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.18.1 – Widget-Maschine mit Timer, App-Seite mit Rechner, Kritzelblock, Tastenhilfe (▲+▼), Rahmen beim Tippen, Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
+version: FW 0.18.3 – Umrechner, Widget-Maschine mit Timer, App-Seite mit Rechner, Kritzelblock, Tastenhilfe (▲+▼), Rahmen beim Tippen, Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
 wartet: Markus: Bewegungswecken von Hand prüfen (USB ab, 3 min liegen lassen, hochnehmen) und Fahrterkennung bei der nächsten Microlino-Fahrt; Offline-Diktat auf /ist/puffer einmal prüfen; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
@@ -289,6 +289,10 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   das Timer-Widget (`sticky-app/src/widgets.js`: MM:SS groß, Start/Stopp, ±1 min, Vorlagen 1/3/5/10/25, Reset,
   ▲/▼ = ±1 min). Klick-Ton sofort beim Treffer, Anzeige ~0,7 s danach. Am Gerät geprüft (Markus): Ablauf piept und
   springt zur Timer-Seite
+- **Umrechner und Tastenregel (FW 0.18.3, 13.11.2026):** App-Seite trägt zwei Widgets, Reiter oben links „Rechner |
+  Umrechner“ (`umrechner.js` mit Tests: km/mi, m/ft, cm/in, km/h/mph, °C/°F, kg/lb, l/gal, bar/psi; ⇄ dreht die
+  Richtung). ▲/▼ kurz blättern wieder überall im Karussell (auch Timer und App-Seite), Widget-Funktionen nur per Tippen;
+  App-Seite piept sofort bei jedem Tipp
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

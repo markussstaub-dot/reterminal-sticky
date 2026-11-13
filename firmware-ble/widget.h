@@ -129,6 +129,8 @@ static void widgetAktion(const char* a, int wert) {
 
 /** Aus sendTouch (down): Knopf getroffen? */
 static void widgetTipp(int x, int y) {
+    // App-Seite: welche Taste getroffen ist, weiß nur die App; der Klick kommt trotzdem sofort vom Sticky
+    if (modus == M_APP && !hilfeAn) { tone(PIN_BUZZER, 2700, 25); return; }
     if (modus != M_WIDGET || hilfeAn) return;
     for (int i = 0; i < wKnopfAnzahl; i++) {
         const WKnopf& k = wKnoepfe[i];

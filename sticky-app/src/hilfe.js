@@ -27,8 +27,7 @@ export const HILFE = {
   },
   widget: {
     titel: 'Hilfe · Timer',
-    zeilen: ['!Tippen', 'Start / Stopp, ± 1 min, Vorlage (1, 3, 5, 10, 25 min), Reset', '!Tasten', '▲ ▼ kurz   ± 1 Minute',
-      '▼ 1 s halten   nächster Eintrag · KI   Home', '!Läuft weiter', 'auch wenn du die Seite verlässt; beim Ablauf piept er',
+    zeilen: ['!Tippen', 'Start / Stopp, ± 1 min, Vorlage (1, 3, 5, 10, 25 min), Reset', '!Tasten', '▲ ▼   blättern wie überall · KI   Home', '!Läuft weiter', 'auch wenn du die Seite verlässt; beim Ablauf piept er',
       'und holt die Timer-Seite nach vorn (auch ohne Handy)', '!Zurück', 'beliebige Taste schließt diese Hilfe'],
   },
   zettel: {
