@@ -3,7 +3,7 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.17.0 – App-Seite mit Rechner, Kritzelblock, Tastenhilfe (▲+▼), Rahmen beim Tippen, Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
+version: FW 0.18.1 – Widget-Maschine mit Timer, App-Seite mit Rechner, Kritzelblock, Tastenhilfe (▲+▼), Rahmen beim Tippen, Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
 wartet: Markus: Bewegungswecken von Hand prüfen (USB ab, 3 min liegen lassen, hochnehmen) und Fahrterkennung bei der nächsten Microlino-Fahrt; Offline-Diktat auf /ist/puffer einmal prüfen; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
@@ -282,6 +282,13 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   Home). ▲/▼ kurz und Tipper gehen nur an die App, ▲/▼ 1 s und KI bleiben Notausgang. Die App zeichnet; erstes Widget
   Taschenrechner (`sticky-app/src/rechner.js` mit Tests, `appseite.js`), nach jedem Tipp nur das Anzeigefeld als
   Teilbild. Karussell-Standard jetzt Home, Notiz, Kritzel, Rechner, Bordbuch, Zettel. Am Gerät: ~1 s je Tipp
+- **Widget-Maschine mit Timer (FW 0.18.1, 13.11.2026, `firmware-ble/widget.h`):** Widgets als Dateien unter
+  `/soll/widgets/<name>/` (bild.bin, ziffern.bin, felder.txt mit typ, dauer, zeit, ziffern, knopf …, taste …),
+  Karussell-Eintrag „widget <name>“. Aktionen start_stopp, reset, plus/minus/setze. Ein Uhrwerk läuft weiter, wenn man
+  die Seite verlässt; der Leichtschlaf weckt rechtzeitig zum Ablauf, dann piepen und Timer-Seite nach vorn. App zeichnet
+  das Timer-Widget (`sticky-app/src/widgets.js`: MM:SS groß, Start/Stopp, ±1 min, Vorlagen 1/3/5/10/25, Reset,
+  ▲/▼ = ±1 min). Klick-Ton sofort beim Treffer, Anzeige ~0,7 s danach. Am Gerät geprüft (Markus): Ablauf piept und
+  springt zur Timer-Seite
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

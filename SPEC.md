@@ -376,6 +376,7 @@ Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzu
   - **ohne Handy** (Timer im Micro): einmal eine **Widget-Maschine mit festen Bausteinen** (Countdown, Stoppuhr,
     Zähler, Zahlenfeld, Rechner); die App liefert Bild + `felder.txt` unter `/soll/widgets/<name>/`, neue Widgets sind
     danach nur Dateien
+    → umgesetzt 13.11. (FW 0.18.x) mit Countdown/Stoppuhr; erstes Widget Timer
   - dazu **Firmware-Update von der Karte** (`/soll/firmware.bin`, OTA-Partitionen vorhanden) als Sicherheitsnetz:
     künftige Updates per App statt Kabel
   - geparkt: Skriptsprache auf dem Sticky (z. B. Berry wie in Tasmota), maximal flexibel, aber zu viel Dauerpflege

@@ -87,6 +87,8 @@ static void sollGeaendert(const char* rel) {
         ziffernDa = homeLaden(2, ziffernBuf);
     } else if (!strcmp(rel, "bordbuch/index.txt")) {
         bbIndexMelden();
+    } else if (!strncmp(rel, "widgets/", 8) && strstr(rel, "/felder.txt")) {
+        if (modus == M_WIDGET && !strncmp(rel + 8, widgetName, strlen(widgetName))) neuZeichnen = true;   // neu aufspielen
     } else if (!strcmp(rel, "einstellungen/karussell.txt")) {
         karussellLaden();
     } else if (!strcmp(rel, "notiz/layout.txt")) {

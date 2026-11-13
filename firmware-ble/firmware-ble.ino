@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.17.0";
+static const char* FW_VERSION = "0.18.1";
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "Markus";
@@ -111,7 +111,7 @@ static volatile bool wantFast = false, wantSlow = false, wantKarte = false, want
 static volatile uint32_t slowAt = 0;
 static uint32_t advFastUntil = 0;
 static const char* seite = "karte";
-enum Modus { M_HOME = 0, M_BORDBUCH = 1, M_NOTIZ = 2, M_BESTELL = 3, M_KRITZEL = 4, M_APP = 5 };
+enum Modus { M_HOME = 0, M_BORDBUCH = 1, M_NOTIZ = 2, M_BESTELL = 3, M_KRITZEL = 4, M_APP = 5, M_WIDGET = 6 };
 static Modus modus = M_HOME;
 
 // ---- Hilfen ------------------------------------------------------------------
@@ -260,13 +260,14 @@ static void touchInit() {
 static void bbTouch(int x, int y);
 static void pufferTouch(int x, int y);
 static void rahmenAntippen(int x, int y);
+static void widgetTipp(int x, int y);
 static void kritzelPunkt(int x, int y, bool neu);
 static void kritzelLos();
 static uint64_t jetztMs();
 static void sendTouch(const char* a, int x, int y) {
     aktiv();
     int dx = 799 - y, dy = 479 - x;
-    if (a[0] == 'd') { rahmenAntippen(dx, dy); bbTouch(dx, dy); pufferTouch(dx, dy); }
+    if (a[0] == 'd') { rahmenAntippen(dx, dy); bbTouch(dx, dy); pufferTouch(dx, dy); widgetTipp(dx, dy); }
     char j[128];
     snprintf(j, sizeof j, "{\"t\":\"touch\",\"a\":\"%s\",\"x\":%d,\"y\":%d,\"rx\":%d,\"ry\":%d,\"ms\":%llu}", a, dx, dy, x, y, (unsigned long long)jetztMs());
     sendEvt(j);
@@ -406,6 +407,7 @@ static void zeigeKarte() {
 #include "fahrtenschreiber.h"
 #include "abgleich.h"
 #include "sensoren.h"
+#include "widget.h"
 
 // ---- Zustand -------------------------------------------------------------------
 static void sendState() {

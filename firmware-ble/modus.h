@@ -33,6 +33,11 @@ static const uint32_t ZURUECK_MS = 5UL * 60 * 1000;
 static volatile int modusWunsch = -1;     // von der App (OP_BB_MODUS) oder Tasten, umgesetzt in loop()
 static int bestellAnzahl = 0, bestellAktuell = 0;
 static bool hilfeAn = false;          // Tastenhilfe gerade sichtbar (▲+▼)
+static char widgetName[16] = "";       // aktuelles Widget (widget.h)
+static volatile bool neuZeichnen = false;   // Seite neu aufbauen (Hilfe zu, anderes Widget)
+static void widgetZeigen();
+static bool widgetTaste(int i);
+static void widgetLoop();
 
 static void bestellZaehlen() {
     const char* semi = strchr(homeVersion, ';');
@@ -47,7 +52,7 @@ static void bestellZaehlen() {
 }
 
 static const char* modusName() {
-    return modus == M_HOME ? "home" : modus == M_NOTIZ ? "notiz" : modus == M_BESTELL ? "bestell" : modus == M_KRITZEL ? "kritzel" : modus == M_APP ? "app" : "bordbuch";
+    return modus == M_HOME ? "home" : modus == M_NOTIZ ? "notiz" : modus == M_BESTELL ? "bestell" : modus == M_KRITZEL ? "kritzel" : modus == M_APP ? "app" : modus == M_WIDGET ? "widget" : "bordbuch";
 }
 
 static bool homeLaden(int n, uint8_t* ziel) {
@@ -387,7 +392,8 @@ static void setzeModus(Modus m) {
     }
     hilfeAn = false;
     if (modus == M_KRITZEL && m != M_KRITZEL) { kritzelStopp(); kritzelSpeichern(); }   // Blatt verlassen = speichern
-    if (m != modus) protokoll("Modus %s", m == M_HOME ? "home" : m == M_BORDBUCH ? "bordbuch" : m == M_NOTIZ ? "notiz" : m == M_KRITZEL ? "kritzel" : m == M_APP ? "app" : "bestell");
+    if (modus == M_WIDGET && m != M_WIDGET) gfxPartialWachHalten = false;
+    if (m != modus) protokoll("Modus %s", m == M_HOME ? "home" : m == M_BORDBUCH ? "bordbuch" : m == M_NOTIZ ? "notiz" : m == M_KRITZEL ? "kritzel" : m == M_APP ? "app" : m == M_WIDGET ? "widget" : "bestell");
     modus = m;
     bordbuch = m == M_BORDBUCH;
     letzteBedienung = millis();
@@ -415,6 +421,8 @@ static void setzeModus(Modus m) {
         } else kzBlattNeu();
         seite = "kritzel";
         kritzelStart();
+    } else if (m == M_WIDGET) {
+        widgetZeigen();
     } else if (m == M_APP) {
         // App-Seite (SPEC „Widgets ohne ständiges Flashen“): die App zeichnet, sobald sie „modus app“ hört;
         // Tipper und ▲/▼ kurz gehen nur an die App, ▲/▼ 1 s und KI bleiben der Notausgang
@@ -444,6 +452,7 @@ static bool kiDiktat = false, upLang = false, downLang = false;
 
 // ---- Karussell -------------------------------------------------------------------------------
 static Modus karussell[8];
+static char kWidget[8][16];   // Name zum Eintrag „widget <name>“
 static int kAnzahl = 0;
 
 static void karussellLaden() {
@@ -464,12 +473,17 @@ static void karussellLaden() {
             else if (z == "zettel") karussell[kAnzahl++] = M_BESTELL;
             else if (z == "kritzel") karussell[kAnzahl++] = M_KRITZEL;
             else if (z == "app") karussell[kAnzahl++] = M_APP;
+            else if (z.startsWith("widget ")) { strlcpy(kWidget[kAnzahl], z.substring(7).c_str(), 16); karussell[kAnzahl++] = M_WIDGET; }
         }
     }
     bool homeDrin = false;
     for (int i = 0; i < kAnzahl; i++) homeDrin |= karussell[i] == M_HOME;
     if (kAnzahl == 0) { const Modus std[] = {M_HOME, M_NOTIZ, M_BORDBUCH, M_BESTELL}; for (auto m : std) karussell[kAnzahl++] = m; }
-    else if (!homeDrin && kAnzahl < 8) { memmove(karussell + 1, karussell, kAnzahl * sizeof(Modus)); karussell[0] = M_HOME; kAnzahl++; }
+    else if (!homeDrin && kAnzahl < 8) {
+        memmove(karussell + 1, karussell, kAnzahl * sizeof(Modus));
+        memmove(kWidget + 1, kWidget, kAnzahl * sizeof kWidget[0]);
+        karussell[0] = M_HOME; kAnzahl++;
+    }
     Serial.printf("Karussell: %d Einträge\n", kAnzahl);
 }
 
@@ -480,14 +494,22 @@ static bool karussellDa(Modus m) {
     if (m == M_APP) return appDa();   // ohne zuhörende App gibt es nichts zu zeigen
     return true;
 }
+static bool karussellDaI(int i) {
+    if (karussell[i] != M_WIDGET) return karussellDa(karussell[i]);
+    char rel[48];
+    snprintf(rel, sizeof rel, "widgets/%s/felder.txt", kWidget[i]);
+    return sollDa(rel);
+}
 
 /** Zum nächsten (richtung +1) bzw. vorigen (−1) Eintrag; rückwärts landet man auf dessen letzter Seite */
 static void karussellSchritt(int richtung) {
     int pos = 0;
-    for (int i = 0; i < kAnzahl; i++) if (karussell[i] == modus) { pos = i; break; }
+    for (int i = 0; i < kAnzahl; i++) if (karussell[i] == modus && (modus != M_WIDGET || !strcmp(kWidget[i], widgetName))) { pos = i; break; }
     for (int i = 1; i <= kAnzahl; i++) {
-        Modus m = karussell[((pos + richtung * i) % kAnzahl + kAnzahl) % kAnzahl];
-        if (!karussellDa(m) || m == modus) continue;
+        int k = ((pos + richtung * i) % kAnzahl + kAnzahl) % kAnzahl;
+        Modus m = karussell[k];
+        if (!karussellDaI(k) || (m == modus && (m != M_WIDGET || !strcmp(kWidget[k], widgetName)))) continue;
+        if (m == M_WIDGET) { strlcpy(widgetName, kWidget[k], sizeof widgetName); if (modus == M_WIDGET) neuZeichnen = true; }
         if (m == M_BORDBUCH) bbWunsch = richtung > 0 ? bbToc : bbSeiten - 1;
         if (m == M_BESTELL) bestellAktuell = richtung > 0 ? 0 : bestellAnzahl - 1;
         modusWunsch = m;
@@ -557,11 +579,11 @@ static void rahmenLoop() {
 
 // ---- Tastenhilfe (SPEC „Bedienung und Oberfläche“): ▲ und ▼ zusammen zeigen /soll/hilfe/<modus>.bin -----------
 static bool upUnten = false, downUnten = false, kombi = false;
-static volatile bool hilfeWunsch = false, neuZeichnen = false;
+static volatile bool hilfeWunsch = false;
 
 static const char* hilfeName() {
     return modus == M_HOME ? "hilfe/home.bin" : modus == M_NOTIZ ? "hilfe/notiz.bin" : modus == M_BORDBUCH ? "hilfe/bordbuch.bin"
-         : modus == M_KRITZEL ? "hilfe/kritzel.bin" : "hilfe/zettel.bin";
+         : modus == M_KRITZEL ? "hilfe/kritzel.bin" : modus == M_WIDGET ? "hilfe/widget.bin" : "hilfe/zettel.bin";
 }
 
 static void hilfeZeigen() {
@@ -610,13 +632,13 @@ static void tasteAktion(const char* name, bool gedrueckt) {
     if (strcmp(name, "up") == 0) {
         if (gedrueckt) { upSeit = millis(); upLang = false; return; }
         upSeit = 0;
-        if (!upLang && modus != M_APP) blaettern(-1);   // App-Seite: kurz gehört der App (kommt als Ereignis an)
+        if (!upLang && modus != M_APP && !widgetTaste(0)) blaettern(-1);   // App-Seite: kurz gehört der App (kommt als Ereignis an)
         return;
     }
     if (strcmp(name, "down") == 0) {
         if (gedrueckt) { downSeit = millis(); downLang = false; return; }
         downSeit = 0;
-        if (!downLang && modus != M_APP) blaettern(+1);
+        if (!downLang && modus != M_APP && !widgetTaste(1)) blaettern(+1);
     }
 }
 
@@ -647,6 +669,7 @@ static void modusLoop() {
     }
     rahmenLoop();
     kritzelLoop();
+    widgetLoop();
     if (hilfeWunsch) { hilfeWunsch = false; hilfeZeigen(); }
     if (neuZeichnen) {                    // Hilfe zu: dieselbe Seite wieder zeigen
         neuZeichnen = false;

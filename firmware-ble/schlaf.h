@@ -57,6 +57,8 @@ static Weckgrund leichtSchlaf() {
     struct tm t;
     localtime_r(&jetzt, &t);
     uint64_t ms = t.tm_year > 120 ? (60 - t.tm_sec) * 1000ULL + 300 : 60000ULL;
+    uint32_t timer = widgetWeckenInMs();          // laufender Countdown: rechtzeitig zum Ablauf wach sein
+    if (timer && timer + 20 < ms) ms = timer + 20;
     for (auto& x : tasten) {
         detachInterrupt(digitalPinToInterrupt(x.pin));
         gpio_wakeup_enable((gpio_num_t)x.pin, x.ruhe == HIGH ? GPIO_INTR_LOW_LEVEL : GPIO_INTR_HIGH_LEVEL);
