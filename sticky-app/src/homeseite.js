@@ -6,6 +6,9 @@ import qrcode from 'qrcode-generator';
 import { BREITE, HOEHE, rgbaZu1bpp } from './protokoll.js';
 import { drehe, PB, PH } from './fahrtseite.js';
 import { wetterZeile } from './wetter.js';
+/** °F statt °C (Einheit am Sticky bzw. vom Handy, FW ≥ 0.31.0) */
+let einheitUs = false;
+export const setzeEinheitUs = (v) => { einheitUs = !!v; };
 
 export const KARTE = { name: 'Markus', qr: 'https://github.com/markussstaub-dot', zeile: 'github.com/markussstaub-dot' };
 
@@ -43,7 +46,7 @@ export function homeHochkant(karte = KARTE, beispielZeit = null, wetter = null) 
   p.font = 'bold 30px system-ui, sans-serif';
   p.fillText(new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }), PB / 2, 260);
   // Wetter zwischen Datum und Uhr (Uhrfeld beginnt bei y = 352)
-  const zeile = wetterZeile(wetter);
+  const zeile = wetterZeile(wetter, einheitUs);
   if (zeile) {
     let gr = 26;
     do { p.font = `${gr}px system-ui, sans-serif`; gr -= 2; } while (p.measureText(zeile).width > PB - 30 && gr > 16);

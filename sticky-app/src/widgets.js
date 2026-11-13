@@ -7,7 +7,7 @@ import { groesse, zuDisplay, punktZuDisplay, aufsDisplay } from './lage.js';
 import { braunKnopf, BRAUN_FONT } from './braun.js';
 import { TASTEN as R_TASTEN, ROLLE as R_ROLLE } from './rechner.js';
 import { PAARE } from './umrechner.js';
-import { HANDY_12H } from './zeit.js';
+import { HANDY_12H, HANDY_US } from './zeit.js';
 
 const FONT = BRAUN_FONT;
 const leinwand = (b, h) => (typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(b, h) : Object.assign(document.createElement('canvas'), { width: b, height: h }));
@@ -169,8 +169,9 @@ export function waageWidget(hoch = false) {
 // Statische Seite ohne Uhr (typ menue, keine Knöpfe): mm-Skala am unteren Rand (0 links unten, bis ~8 cm) und am linken
 // Rand (nach oben, bis ~5 cm). Panel 3,97″ bei 800 × 480 → 9,25 px/mm; kalibriert über „80 mm messen in echt …“.
 export const PX_PRO_MM = 9.25;
-export function linealWidget(echtBei80 = 80) {
+export function linealWidget(echtBei80 = 80, zoll = false) {
   const pxmm = PX_PRO_MM * 80 / (echtBei80 || 80);
+  if (zoll) return linealZoll(pxmm);
   const p = seite(false, 'Lineal', '0 = Ecke links unten · mm');
   const { g } = p;
   p.felder.push('typ menue');
@@ -380,22 +381,36 @@ export function weckerWidget(hoch = false) {
   ];
 }
 
-/** Einstellungen am Sticky (FW ≥ 0.30.0): umschaltbar ohne Handy; Standard kommt vom Handy */
-export function einstellungenWidget(hoch = false, handy12 = false) {
-  const p = seite(hoch, 'Einstellungen', 'gelten sofort · ▲▼ = blättern · KI = Home');
+/**
+ * Einstellungen am Sticky (FW ≥ 0.31.0): umschaltbar ohne Handy; „auto“ = wie das Handy.
+ * Zeile 1 Uhrzeit-Format (set 1), Zeile 2 Einheiten (set 2), darunter Uhr stellen für den Notfall (set 11–26).
+ * Textfelder in dieser Reihenfolge: Format, Datum/Uhrzeit, Einheiten (so liest sie firmware-ble/widget.h).
+ */
+export function einstellungenWidget(hoch = false, handy12 = false, handyUs = false) {
+  const p = seite(false, 'Einstellungen', 'gelten sofort, auch ohne Handy · ▲+▼ = Hilfe');
   const { g } = p;
-  const Z = { w: 40, h: 64 }, glyphen = [...'auto24h1', ' '];
-  g.fillStyle = '#000'; g.textAlign = 'left'; g.textBaseline = 'top';
-  g.font = `500 34px ${FONT}`; g.fillText('Uhrzeit', 24, 70);
-  g.font = `400 18px ${FONT}`;
-  g.fillText(`auto = wie das Handy (jetzt ${handy12 ? '12 h' : '24 h'}) · antippen: auto → 24 h → 12 h`, 24, 114);
-  const tx = 600, ty = 64;   // Wert rechts: „auto“, „24 h“, „12 h“
-  g.lineWidth = 3; g.strokeRect(tx - 10, ty - 6, 4 * Z.w + 20, Z.h + 12);
-  p.k(16, 150, 784, 250, 'Uhrzeit umschalten', 'set 1', 'haupt', 32);
-  g.font = `400 18px ${FONT}`; g.fillStyle = '#000'; g.textAlign = 'left'; g.textBaseline = 'top';
-  g.fillText('Weitere Einstellungen folgen (180°, im Schlummer findbar …)', 24, 280);
-  const z = p.ziffernPos(tx, ty, Z.w);
-  p.felder.unshift('typ einstellungen', `ziffern ${Z.w} ${Z.h}`, `glyphen ${glyphen.map((x) => (x === ' ' ? '_' : x)).join(' ')}`, `text ${z.x} ${z.y} 4`);
+  const Z = { w: 40, h: 56 }, glyphen = [...'0123456789:.-autohmeUS', ' '];
+  const zeile = (y, titel, unter) => {
+    g.fillStyle = '#000'; g.textAlign = 'left'; g.textBaseline = 'top';
+    g.font = `500 30px ${FONT}`; g.fillText(titel, 24, y + 6);
+    g.font = `400 16px ${FONT}`; g.fillText(unter, 24, y + 42);
+  };
+  const kasten = (x, y, n) => { g.lineWidth = 3; g.strokeStyle = '#000'; g.strokeRect(x - 8, y - 4, n * Z.w + 16, Z.h + 8); };
+  zeile(44, 'Uhrzeit', `auto = wie das Handy (${handy12 ? '12 h' : '24 h'})`);
+  kasten(336, 52, 4);
+  p.k(560, 44, 784, 112, 'ändern', 'set 1', 'werkzeug', 26);
+  zeile(116, 'Einheiten', `°C/°F, Lineal · auto = ${handyUs ? 'US' : 'metrisch'}`);
+  kasten(336, 124, 4);
+  p.k(560, 116, 784, 184, 'ändern', 'set 2', 'werkzeug', 26);
+  g.fillRect(16, 192, BREITE - 32, 1);
+  g.font = `500 22px ${FONT}`; g.textAlign = 'left'; g.textBaseline = 'top'; g.fillStyle = '#000';
+  g.fillText('Uhr', 24, 204); g.font = `400 16px ${FONT}`; g.fillText('stellen', 24, 232);
+  const reihe1 = [['− 1 h', 12], ['+ 1 h', 11], ['− 10', 14], ['+ 10', 13], ['− 1', 16], ['+ 1', 15]];
+  const reihe2 = [['− Tag', 22], ['+ Tag', 21], ['− Mon', 24], ['+ Mon', 23], ['− Jahr', 26], ['+ Jahr', 25]];
+  [reihe1, reihe2].forEach((r, ze) => r.forEach(([t, c], i) => p.k(16 + i * 128, 264 + ze * 104, 144 + i * 128, 364 + ze * 104, t, `set ${c}`, 'neben', 22)));
+  // Textfelder: 0 = Format (x 336, y 52), 1 = Datum/Uhrzeit (x 208, y 200), 2 = Einheiten (x 336, y 124)
+  p.felder.unshift('typ einstellungen', `ziffern ${Z.w} ${Z.h}`, `glyphen ${glyphen.map((x) => (x === ' ' ? '_' : x)).join(' ')}`,
+    'text 336 52 4', 'text 208 200 14', 'text 336 124 4');
   return [
     { n: 'ziffern.bin', daten: textBlatt(Z.w, Z.h, glyphen, false) },
     { n: 'bild.bin', daten: p.bild() },
@@ -403,7 +418,39 @@ export function einstellungenWidget(hoch = false, handy12 = false) {
   ];
 }
 
+/** Zoll-Fassung (Einheiten US am Sticky): Striche alle 1/16″, Zahl je Zoll; der Sticky nimmt widgets/lineal-us/ */
+function linealZoll(pxmm) {
+  const pxz = pxmm * 25.4;
+  const p = seite(false, 'Lineal', '0 = Ecke links unten · Zoll');
+  const { g } = p;
+  p.felder.push('typ menue');
+  const x0 = 8, y0 = HOEHE - 8;
+  g.strokeStyle = '#000'; g.fillStyle = '#000';
+  const strich = (s) => (s % 16 === 0 ? 46 : s % 8 === 0 ? 34 : s % 4 === 0 ? 26 : s % 2 === 0 ? 18 : 11);
+  g.lineWidth = 2; g.beginPath(); g.moveTo(x0, y0 + 1); g.lineTo(BREITE, y0 + 1); g.stroke();
+  for (let s = 0; x0 + s * pxz / 16 <= BREITE - 2; s++) {
+    const x = Math.round(x0 + s * pxz / 16) + 0.5;
+    g.lineWidth = s % 16 === 0 ? 3 : 1.5;
+    g.beginPath(); g.moveTo(x, y0); g.lineTo(x, y0 - strich(s)); g.stroke();
+    if (s % 16 === 0 && s > 0) { g.font = `500 26px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'bottom'; g.fillText(String(s / 16), x, y0 - 50); }
+  }
+  g.lineWidth = 2; g.beginPath(); g.moveTo(x0 - 1, y0); g.lineTo(x0 - 1, 40); g.stroke();
+  for (let s = 1; y0 - s * pxz / 16 >= 44; s++) {
+    const y = Math.round(y0 - s * pxz / 16) + 0.5;
+    g.lineWidth = s % 16 === 0 ? 3 : 1.5;
+    g.beginPath(); g.moveTo(x0, y); g.lineTo(x0 + strich(s), y); g.stroke();
+    if (s % 16 === 0) { g.font = `500 26px ${FONT}`; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText(String(s / 16), x0 + 54, y); }
+  }
+  g.font = `400 20px ${FONT}`; g.textAlign = 'right'; g.textBaseline = 'middle';
+  g.fillText('in', BREITE - 16, y0 - 100);
+  return [
+    { n: 'bild.bin', daten: p.bild() },
+    { n: 'felder.txt', daten: text(p.felder) },
+  ];
+}
+
 export const WIDGETS = { timer: timerWidget, waage: waageWidget, lineal: () => linealWidget(linealEcht()), rechner: rechnerWidget, umrechner: umrechnerWidget,
-  weltzeit: weltzeitWidget, wecker: weckerWidget, einstellungen: () => einstellungenWidget(false, HANDY_12H) };
+  weltzeit: weltzeitWidget, wecker: weckerWidget, einstellungen: () => einstellungenWidget(false, HANDY_12H, HANDY_US),
+  'lineal-us': () => linealWidget(linealEcht(), true) };
 /** Kalibrierung aus der App (Mehr → Lineal): so viele echte mm misst die 80-mm-Marke */
 function linealEcht() { try { return parseFloat(localStorage.getItem('sticky.lineal80')) || 80; } catch { return 80; } }

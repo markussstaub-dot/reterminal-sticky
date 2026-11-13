@@ -67,20 +67,47 @@ static void lageLaden() {
 // (Einstellungs-Seite, gespeichert in /ist/zeit.txt „lokal -1|0|1“: -1 = wie das Handy). Der Sticky gewinnt.
 static bool uhr12Soll = false, uhr12 = false;
 static int uhr12Lokal = -1;
+// Einheiten (FW 0.31.0): metrisch oder US (°F, Zoll), gleiches Muster: Standard vom Handy („einheiten us|metrisch“ in
+// zeit.txt), am Sticky überstimmbar (/ist/zeit.txt „einh -1|0|1“). Wirkt auf Widgets mit US-Fassung (widgets/<name>-us/,
+// z. B. Lineal in Zoll) und über den Zustand („us“) auf das, was die App zeichnet (Home-Wetter in °F).
+static bool einhUsSoll = false, einhUs = false;
+static int einhUsLokal = -1;
 static void uhrFormatLaden() {
     String t;
-    uhr12Soll = sollText("einstellungen/zeit.txt", t) && t.indexOf("12") >= 0;
+    bool da = sollText("einstellungen/zeit.txt", t);
+    uhr12Soll = da && t.indexOf("format 12") >= 0;
+    einhUsSoll = da && t.indexOf("einheiten us") >= 0;
     if (sdEin()) {
         File f = SD.open("/ist/zeit.txt", FILE_READ);
-        if (f) { String z = f.readStringUntil('\n'); f.close(); int v; if (sscanf(z.c_str(), "lokal %d", &v) == 1) uhr12Lokal = constrain(v, -1, 1); }
+        if (f) {
+            while (f.available()) {
+                String z = f.readStringUntil('\n');
+                int v;
+                if (sscanf(z.c_str(), "lokal %d", &v) == 1) uhr12Lokal = constrain(v, -1, 1);
+                if (sscanf(z.c_str(), "einh %d", &v) == 1) einhUsLokal = constrain(v, -1, 1);
+            }
+            f.close();
+        }
     }
     uhr12 = uhr12Lokal >= 0 ? uhr12Lokal == 1 : uhr12Soll;
+    einhUs = einhUsLokal >= 0 ? einhUsLokal == 1 : einhUsSoll;
+}
+static void lokalSichern() {
+    if (sdEin()) { SD.mkdir("/ist"); File f = SD.open("/ist/zeit.txt", FILE_WRITE); if (f) { f.printf("lokal %d\neinh %d\n", uhr12Lokal, einhUsLokal); f.close(); } }
+}
+/** Einstellungs-Seite: Einheiten automatisch → metrisch → US → automatisch */
+static void einheitenWeiter() {
+    einhUsLokal = einhUsLokal == -1 ? 0 : einhUsLokal == 0 ? 1 : -1;
+    einhUs = einhUsLokal >= 0 ? einhUsLokal == 1 : einhUsSoll;
+    lokalSichern();
+    wantState = true;                               // die App zeichnet Home dann in °F bzw. °C
+    protokoll("Einheiten: %s", einhUsLokal < 0 ? "wie das Handy" : einhUs ? "US" : "metrisch");
 }
 /** Einstellungs-Seite: automatisch → 24 h → 12 h → automatisch */
 static void uhrFormatWeiter() {
     uhr12Lokal = uhr12Lokal == -1 ? 0 : uhr12Lokal == 0 ? 1 : -1;
     uhr12 = uhr12Lokal >= 0 ? uhr12Lokal == 1 : uhr12Soll;
-    if (sdEin()) { SD.mkdir("/ist"); File f = SD.open("/ist/zeit.txt", FILE_WRITE); if (f) { f.printf("lokal %d\n", uhr12Lokal); f.close(); } }
+    lokalSichern();
     protokoll("Uhr: %s", uhr12Lokal < 0 ? "wie das Handy" : uhr12 ? "12 h" : "24 h");
 }
 /** Stunde für die Anzeige (12 h: 1–12) */

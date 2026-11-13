@@ -23,6 +23,9 @@
  *       Taste beendet es
  *     typ einstellungen (FW 0.30.0): Einstellungen am Sticky, ohne Handy. Aktion set <code> (1 = Uhr: automatisch →
  *       24 h → 12 h); text 1 zeigt den Wert („auto“, „24 h“, „12 h“)
+ *       Uhr stellen (FW 0.31.0, für den Fall: Akku ganz leer und kein Handy da): text 2 zeigt „TT.MM.JJ hh:mm“ bzw.
+ *       „--.--.-- --:--“, set 11/12 ±1 h, 13/14 ±10 min, 15/16 ±1 min, 21/22 ±Tag, 23/24 ±Monat, 25/26 ±Jahr
+ *       (Sekunden auf 0, geht in den Uhrenchip; das Handy korrigiert beim nächsten Verbinden sekundengenau)
  * Karussell-Eintrag „widget <name>“. Ein Uhrwerk für alle Widgets: der Timer läuft weiter, wenn man die Seite verlässt;
  * beim Ablauf weckt er den Sticky (leichtSchlaf), piept und holt die Timer-Seite nach vorn.
  */
@@ -76,6 +79,10 @@ static int32_t tJetztMs() {
 
 /** Datei eines Widgets; bei Lage „auto“ und hochkant aus widgets/<name>-h/ (die App legt beide Lagen ab, FW 0.22.0) */
 static void wPfad(char* rel, size_t n, const char* name, const char* datei) {
+    if (einhUs) {                                  // US-Fassung (z. B. Lineal in Zoll), FW 0.31.0
+        snprintf(rel, n, "widgets/%s-us/felder.txt", name);
+        if (sollDa(rel)) { snprintf(rel, n, "widgets/%s-us/%s", name, datei); return; }
+    }
     snprintf(rel, n, "widgets/%s-h/felder.txt", name);
     if (lageAuto(name) && lageHoch(name) && sollDa(rel)) snprintf(rel, n, "widgets/%s-h/%s", name, datei);
     else snprintf(rel, n, "widgets/%s/%s", name, datei);
@@ -235,6 +242,18 @@ static void wAnzeigeZeichnen() {
         wFeld(0);
     }
     if (wEinst && wFeld(0)) { wTextZeichnen(uhr12Lokal < 0 ? "auto" : uhr12 ? "12 h" : "24 h", nullptr); wFeld(0); }
+    if (wEinst && wFeld(2)) { wTextZeichnen(einhUsLokal < 0 ? "auto" : einhUs ? "US" : "metr", nullptr); wFeld(0); }
+    if (wEinst && wFeld(1)) {
+        char z[20] = "--.--.-- --:--";
+        if (zeitGesetzt) {
+            time_t s = time(nullptr);
+            tm t;
+            localtime_r(&s, &t);
+            snprintf(z, sizeof z, "%02d.%02d.%02d %02d:%02d", t.tm_mday, t.tm_mon + 1, t.tm_year % 100, t.tm_hour, t.tm_min);
+        }
+        wTextZeichnen(z, nullptr);
+        wFeld(0);
+    }
     if (wRechner) wTextZeichnen(wRe.anzeige, wRe.mem != 0 ? "M" : nullptr);
     if (wUmrechner) { char a[64]; uAnzeige(wUm, a, sizeof a); wTextZeichnen(a, nullptr); }
 }
@@ -426,6 +445,29 @@ static void widgetAktion(const char* a, int wert) {
     if (wUmrechner && !strcmp(a, "paar")) { uWaehle(wUm, wert); wPaarNeu = wTextNeu = true; return; }
     if (wEinst && !strcmp(a, "set")) {
         if (wert == 1) { uhrFormatWeiter(); uhrMinute = -1; }
+        if (wert == 2) einheitenWeiter();
+        if (wert >= 11 && wert <= 26) {   // Uhr von Hand stellen (Ortszeit), ohne gültige Zeit ab heute 12:00 laut Firmware-Datum
+            tm t;
+            if (zeitGesetzt) { time_t s = time(nullptr); localtime_r(&s, &t); }
+            else {
+                t = {};
+                static const char* mon = "JanFebMarAprMayJunJulAugSepOctNovDec";
+                char m[4] = {__DATE__[0], __DATE__[1], __DATE__[2], 0};
+                t.tm_mon = (strstr(mon, m) - mon) / 3; t.tm_mday = atoi(__DATE__ + 4); t.tm_year = atoi(__DATE__ + 7) - 1900; t.tm_hour = 12;
+            }
+            switch (wert) {
+                case 11: t.tm_hour++; break;  case 12: t.tm_hour--; break;
+                case 13: t.tm_min += 10; break; case 14: t.tm_min -= 10; break;
+                case 15: t.tm_min++; break;   case 16: t.tm_min--; break;
+                case 21: t.tm_mday++; break;  case 22: t.tm_mday--; break;
+                case 23: t.tm_mon++; break;   case 24: t.tm_mon--; break;
+                case 25: t.tm_year++; break;  case 26: t.tm_year--; break;
+            }
+            t.tm_sec = 0; t.tm_isdst = -1;
+            time_t neu = mktime(&t);                     // TZ ist Ortszeit (CET/CEST)
+            zeitSetzen((uint64_t)neu * 1000);
+            uhrMinute = -1;
+        }
         wTextNeu = true;
         return;
     }
@@ -520,7 +562,7 @@ static void widgetLoop() {
     }
     if (modus == M_WIDGET && !hilfeAn && wTextNeu) { wTextNeu = false; wAnzeigeZeigen(); }
     weckerPruefen();
-    if (modus == M_WIDGET && !hilfeAn && wWeltzeit) {   // Weltzeit: jede Minute neu
+    if (modus == M_WIDGET && !hilfeAn && (wWeltzeit || wEinst)) {   // Weltzeit, Einstellungen (Uhr): jede Minute neu
         time_t jetzt = time(nullptr);
         int min_ = (int)(jetzt / 60);
         if (min_ != wMinuteGezeigt) { wMinuteGezeigt = min_; wAnzeigeZeigen(); }

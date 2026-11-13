@@ -36,7 +36,7 @@ static void zeitSetzen(uint64_t ms) {
         Wire.write(bcd(u.tm_mday)); Wire.write(u.tm_wday); Wire.write(bcd(u.tm_mon + 1)); Wire.write(bcd(u.tm_year - 100));
         Wire.endTransmission();
     }
-    if (!vorher) protokoll("Uhr von der App gestellt");
+    if (!vorher) protokoll("Uhr gestellt");
 }
 
 static void zeitInit() {

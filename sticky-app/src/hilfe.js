@@ -67,8 +67,10 @@ export const HILFE = {
   },
   'w-einstellungen': {
     titel: 'Hilfe · Einstellungen',
-    zeilen: ['!Uhrzeit', 'auto = wie das Handy · 24 h · 12 h (AM/PM)', '!Gilt für', 'Home-Uhr, Statuszeile, Weltzeit und Wecker',
-      '!Gespeichert', 'auf dem Sticky, gilt auch ohne Handy', '!Zurück', 'beliebige Taste schließt diese Hilfe'],
+    zeilen: ['!Uhrzeit', 'auto = wie das Handy · 24 h · 12 h (AM/PM) – Home-Uhr, Statuszeile, Weltzeit, Wecker',
+      '!Einheiten', 'auto · metr · US – Wetter in °C/°F, Lineal in mm/Zoll',
+      '!Uhr stellen', 'nur nötig, wenn der Akku ganz leer war und kein Handy da ist · das Handy korrigiert später',
+      '!Gespeichert', 'auf dem Sticky, gilt auch ohne Handy · beliebige Taste schließt diese Hilfe'],
   },
   'w-menue': {
     titel: 'Hilfe · Menü',

@@ -265,7 +265,8 @@ Einrichten, Abholen, Rechner/Umrechner.
 #### Einstellungen am Sticky (Markus, 13.11.2026, umgesetzt FW 0.30.1)
 - fest: Einstellungen, die man ohne Handy braucht, liegen auf einer eigenen Sticky-Seite „Einstellungen“; Standard
   kommt vom Handy, die Wahl am Sticky gewinnt und liegt auf seiner Karte
-- umgesetzt: Uhrzeit auto/24 h/12 h, einheitlich für Home-Uhr, Statuszeile, Weltzeit, Wecker und App
+- umgesetzt: Uhrzeit auto/24 h/12 h, einheitlich für Home-Uhr, Statuszeile, Weltzeit, Wecker und App; Einheiten
+  auto/metrisch/US (°C/°F, Lineal mm/Zoll); Uhr von Hand stellen (FW 0.31.0)
 - Vorschlag später auf derselben Seite: 180° gedreht, im Schlummer findbar, Lage je Seite
 
 #### Nächstes Flash-Paket: mehr lokal (Markus, 13.11.2026, geparkt)

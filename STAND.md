@@ -3,7 +3,7 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.30.1 – EDC-Sticky: Einstellungen am Sticky (12/24 h), Weltzeit, Wecker, Rechner/Umrechner im Sticky, Strichschrift, Braun-Optik, Hoch/Quer (auch per Sensor, 180°), Rechner, Timer, Waage, Lineal, Zettel mit QR, Gegenseitig suchen, Push-to-Talk, Fahrtenschreiber, SD-Karte als Vertrag; MIT-Lizenz (13.11.2026)
+version: FW 0.31.0 – EDC-Sticky: Einstellungen am Sticky (12/24 h, Einheiten, Uhr stellen), Weltzeit, Wecker, Rechner/Umrechner im Sticky, Strichschrift, Braun-Optik, Hoch/Quer (auch per Sensor, 180°), Rechner, Timer, Waage, Lineal, Zettel mit QR, Gegenseitig suchen, Push-to-Talk, Fahrtenschreiber, SD-Karte als Vertrag; MIT-Lizenz (13.11.2026)
 wartet: Markus: Lineal nachmessen, Einfügen in WhatsApp probieren, Fotos für den Seeed Playground (Einreichen um den 20.11.); Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
@@ -366,6 +366,11 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   kleines „PM“ am Doppelpunkt (Ziffernblatt-Zelle 11), Statuszeile „7:30p“ (Glyphenblatt 368 breit mit a/p), Weltzeit
   und Wecker „7:30a“. Die App zeigt ihre Zeiten im Format des Handys. Fehler gefunden: Widget-Typen über 11 Zeichen
   wurden abgeschnitten (jetzt 15). Am Gerät: „klappt“
+- **Einheiten und Uhr stellen (FW 0.31.0, 13.11.2026):** Einstellungs-Seite mit drei Teilen: Uhrzeit-Format, Einheiten
+  (auto/metr/US; Standard aus der Region des Handys, „einheiten us|metrisch“ in zeit.txt, am Sticky überstimmbar in
+  `/ist/zeit.txt` „einh“), Uhr stellen (±1 h/±10/±1 min, ±Tag/Monat/Jahr, Sekunden 0, in den Uhrenchip; für den Fall
+  „Akku ganz leer, kein Handy“). US wirkt auf Widgets mit US-Fassung (`widgets/<name>-us/`, Lineal in Zoll mit
+  1/16″-Strichen) und über das Zustandsfeld `us` auf das Home-Wetter (°F, die App zeichnet neu). Am Gerät: „klappt“
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

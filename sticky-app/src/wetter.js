@@ -18,11 +18,11 @@ export function wetterWort(code) {
   return 'Gewitter';
 }
 
-/** Eine Zeile für die Karte, z. B. „bewölkt 12° · 4–14° · Regen 20 %“ */
-export function wetterZeile(w) {
+/** Eine Zeile für die Karte, z. B. „bewölkt 12° · 4–14° · Regen 20 %“; us = °F (Einstellung am Sticky bzw. Handy) */
+export function wetterZeile(w, us = false) {
   if (!w) return null;
-  const r = (v) => Math.round(v);
-  return `${wetterWort(w.code)} ${r(w.temp)}° · ${r(w.min)}–${r(w.max)}° · Regen ${r(w.regen)} %`;
+  const r = (v) => Math.round(us ? v * 9 / 5 + 32 : v), e = us ? '°F' : '°';
+  return `${wetterWort(w.code)} ${r(w.temp)}${e} · ${r(w.min)}–${r(w.max)}${e} · Regen ${Math.round(w.regen)} %`;
 }
 
 export function letztesWetter() {

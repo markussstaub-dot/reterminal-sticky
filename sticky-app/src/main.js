@@ -25,11 +25,13 @@ async function erkenne(pcm) {
   return { ...r, text, ...(text !== r.text ? { roh: r.text } : {}), pruefung: p };
 }
 import { zeichneFahrt, trefferKnopf, rueckmeldung, layoutText, STANDARD_KNOEPFE } from './fahrtseite.js';
-import { zeichneHome, zeichneZiffern, statusGlyphen } from './homeseite.js';
+import { zeichneHome, zeichneZiffern, statusGlyphen, setzeEinheitUs } from './homeseite.js';
 import { holeWetter, letztesWetter } from './wetter.js';
 import { BESTELL_STANDARD, zeichneZettel } from './bestellung.js';
 import { zettelListe, zettelUmzug } from './zettel.js';
-import { uhrzeit, zeitDatei } from './zeit.js';
+import { uhrzeit, zeitDatei, HANDY_US } from './zeit.js';
+let letzteEinheitUs = null;
+setzeEinheitUs(HANDY_US);   // bis der Sticky seine Einheit meldet
 import { alphabetDatei, glyphenBlatt, schriftHintergrund, schriftHilfe } from './strichschrift.js';
 import { KARTEN_STANDARD, zeichneKarte } from './karten.js';
 import { Aufnahme, wav, sprachPruefung, nurWortliste, angehoben } from './audio.js';
@@ -273,6 +275,10 @@ zwilling.beobachte((art, d) => {
   if (art === 'zustand') stickySchlaeft = false;
   if (art === 'aufnahmeLaeuft') { $('aufnahmeStatus').hidden = false; ortBeiAufnahme = notizen.standort(); }
   if (art === 'aufnahme') { $('aufnahmeStatus').hidden = true; d.ort = ortBeiAufnahme; zeigeAufnahme(d); }
+  if (art === 'zustand' && d.us != null && fwAb('0.31.0')) {   // Einheiten am Sticky geändert: Home neu zeichnen (°C/°F)
+    const us = !!d.us;
+    if (us !== letzteEinheitUs) { const vorher = letzteEinheitUs; letzteEinheitUs = us; setzeEinheitUs(us); if (vorher != null && zwilling.verbunden) abgleich().catch((e) => eintrag(e.message, true)); }
+  }
   if (art === 'zustand') { zeigeZustand(d); if (d.modus) spiegelSetze({ modus: d.modus, bb: d.bb ?? 0, zettel: d.zettel ?? 0, bat: d.bat, usb: !!d.usb, verbunden: true }); }
   else if (art === 'log') { if (!(stickySchlaeft && /^Verbinde mit/.test(d))) eintrag(d); }   // schlummert: Versuche nicht mitschreiben
   else if (art === 'getrennt') {
