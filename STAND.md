@@ -3,7 +3,7 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.14.3 – Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
+version: FW 0.15.0 – Tastenhilfe (▲+▼), Rahmen beim Tippen, Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
 wartet: Markus: Bewegungswecken von Hand prüfen (USB ab, 3 min liegen lassen, hochnehmen) und Fahrterkennung bei der nächsten Microlino-Fahrt; Offline-Diktat auf /ist/puffer einmal prüfen; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
@@ -247,6 +247,11 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   („Einkauf“, „Idee“, „Erinnere mich“, „Fahrt“, „Erzählung“) geht vor und fällt aus dem Text; sonst Zeitangabe →
   Erinnerung, Kaufen/Besorgen → Erledigung, „man könnte/wäre cool“ → Idee, fährt oder Fahrt-Wörter → Fahrt, lang →
   Erzählung, sonst Eingang. Knöpfe = Fahrt. Schild in der Notizliste, Antippen schaltet weiter („von Hand“)
+- **Tastenhilfe und Tipp-Rahmen (FW 0.15.0, 13.11.2026):** ▲ und ▼ zusammen zeigen `/soll/hilfe/<modus>.bin` (App
+  rendert die Seiten aus `sticky-app/src/hilfe.js` wie Spickzettel), jede Taste schließt sie; Uhr und Statuszeile
+  malen währenddessen nicht hinein. Tippen auf Notiz-Streifen oder Kapitel im Inhaltsverzeichnis zeichnet sofort
+  einen dicken Rahmen (Teil-Refresh), nach 1,5 s weg. Am Gerät geprüft (Markus). Tischtest mit 0.14.3: 11:08–11:17
+  durchgeschlafen trotz Tippen am Tisch, wach erst beim Hochnehmen (203 mg)
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

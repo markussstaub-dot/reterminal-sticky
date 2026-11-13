@@ -368,7 +368,7 @@ Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzu
   Sanduhr in der Statuszeile bei allem über 1 s
 - Vorschlag **Lesbarkeit im Micro**: Mindestgröße ~28 px für Fahr-Infos, nur Schwarz/Weiß, dicke Linien
 - später: hoch/quer automatisch über den Bewegungssensor (jede Seite in beiden Lagen, doppeltes Rendern in der App)
-- Tastenregeln und Karussell (FW 0.13.0) und Statuszeile (FW 0.14.0) umgesetzt ( Szenen noch nicht: ein Karussell für alles)
+- Tastenregeln und Karussell (FW 0.13.0), Statuszeile (0.14.0), Tastenhilfe und Tipp-Rahmen (0.15.0) umgesetzt ( Szenen noch nicht: ein Karussell für alles)
 - Reihenfolge: Tastenregeln, Karussell, Statuszeile zuerst (Grundlage für die Widgets), dann Schlafbild-Regel,
   Rückmeldung, Hilfe
 
