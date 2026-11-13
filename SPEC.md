@@ -265,6 +265,25 @@ Vorbild: Device Shadow / Device Twin aus der Industrie (AWS IoT, Azure).
   nicht in einem Topf landen
 - offen: Halterung/Hülle zum Mitnehmen (Druckteil Bambu: Clip für Microlino, Gürtel, Magnet für die Werkstatt)
 
+### Widgets (Markus, 13.11.2026, Ideensammlung)
+- Vorschlag **Weiche**: Was sich sekündlich ändert, rechnet und zeichnet der Sticky selbst (offline); die App liefert
+  nur Hintergrundbild und Ziffernsatz, der Sticky setzt die Ziffern ein (wie heute die Uhr)
+- Vorschlag **Mechanik**: ein Widget = ein Ordner `/soll/widgets/<name>/` mit Hintergrundbild, `felder.txt` (wo Zeit,
+  Zähler, Libelle, Tastenfeld sitzen) und Ziffernsatz. Der Sticky bekommt einmal eine kleine Widget-Maschine, danach
+  ist jedes neue Widget nur ein neuer Ordner („neue Funktion = neue Datei“)
+- Ideen, Sticky allein (offline):
+  - **Timer/Stoppuhr** (▲ Start, ▼ Stopp, KI zurück, Summer am Ende; Vorlagen Eieruhr, Pomodoro, Bambu-Nachkühlen)
+  - **Parkuhr** im Micro: beim Abstellen einmal drücken → „seit 14:05, noch 38 min“ (Erinnerung, keine Parkscheibe)
+  - **Wasserwaage** aus dem Bewegungssensor (Blase + Grad), für Werkstatt und Hütte
+  - **Schrittzähler** (im LSM6DS3 eingebaut, fast stromlos) · **Strichliste** per Touch · **Würfel/Münze** per Schütteln
+  - **Taschenrechner** mit Touch-Tastenfeld, rechnet auf dem Sticky (aufwendigster Punkt)
+- Ideen, gemischt: **Weltzeituhr** (Tokio, New Jersey, Jacksonville, L.A.; Karte aus der App, Ziffern vom Sticky) ·
+  **Klimaverlauf** 24 h mit Taupunkt-Linie (Daten aus `/ist/mess`)
+- Ideen, aus der App: **Tagesübersicht** (Termine, Wetter, Micro-Akku aus Bubble Log) · **Hanshin-Tigers-Ergebnis**
+- Vorschlag **erster Schwung**: Timer/Stoppuhr, Parkuhr, Wasserwaage (billig, zeigen die Mechanik, im Micro nützlich)
+- offen: Wie man zwischen Widgets wechselt (eigener Modus mit ▲/▼ wie die Bestellzettel?); Reihenfolge nach den Szenen
+  oder davor
+
 ### Eigene Sensoren (laut Schaltplan, Bus MISC_I2C)
 | Baustein | Adresse | heute | Vorschlag |
 |---|---|---|---|
