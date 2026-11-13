@@ -249,6 +249,19 @@ Einrichten, Abholen, Rechner/Umrechner.
 - **Grenzen allein:** Akku und Kartenplatz. Denkbarer nächster Schritt: Rechner als Widget in die Firmware holen
   (Logik überschaubar), dann bleibt nur noch Spracherkennung und Ort am Handy
 
+#### Rechner und Umrechner lokal, gekapselt (Markus, 13.11.2026, geparkt)
+- Vorschlag **Aufteilung wie Timer/Waage:** Die App liefert nur die Optik (Braun-Tasten als `bild.bin`, Knöpfe in
+  `felder.txt` mit Aktion `taste <zeichen>`, Ziffernblatt mit `,` `−` `e` `M`); die Firmware rechnet
+- Vorschlag **eigenes Modul `rechner.h`** in reinem C ohne Arduino-Abhängigkeit, schmale Schnittstelle
+  (`rechnerTaste("7")`, `rechnerAnzeige()`), Logik 1:1 aus `rechner.js` (Kette, % wie Braun, M+/M−/MR/MC, √).
+  Auf dem PC mit denselben Fällen testbar; die JS-Tests sind die Spezifikation. Die Widget-Maschine kennt nur
+  „Taste gedrückt, Anzeige neu“
+- Vorschlag **Umrechner** gleich mit: Paare als Zeilen in `felder.txt` (`paar km mi 0.621371`, `paar °C °F 1.8 32`),
+  die Firmware rechnet nur `a · x + b`; neue Paare ohne Flashen
+- offen: kleine Rechenzeile („80 × 20 =“) braucht eine zweite Schrift, erst weglassen
+- Aufwand grob ein halber Tag, ein Flash. Danach braucht der Sticky das Handy nur noch für Spracherkennung und GPS;
+  die App-Seite (Thin Client) bleibt als Technik erhalten
+
 ### Denkmodell: zwei Arten von Seiten (Markus, 13.11.2026)
 - fest **App-Seiten** (z. B. Rechner): der Sticky ist **Thin Client** (Bildschirm + Eingabe, wie ein Terminal am
   Großrechner oder ein X11-Display). Logik und Zeichnen in der App, der Sticky meldet Tipper/Tasten und zeigt, was
