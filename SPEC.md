@@ -262,6 +262,21 @@ Einrichten, Abholen, Rechner/Umrechner.
 - Aufwand grob ein halber Tag, ein Flash. Danach braucht der Sticky das Handy nur noch für Spracherkennung und GPS;
   die App-Seite (Thin Client) bleibt als Technik erhalten
 
+#### Nächstes Flash-Paket: mehr lokal (Markus, 13.11.2026, geparkt)
+Alles als neue Widget-Typen der Widget-Maschine: die App liefert Optik (Braun-Stil) und Einstellungen in `felder.txt`,
+die Firmware rechnet. Ein Flash für alles.
+- fest **im Paket:**
+  - **Rechner und Umrechner** (siehe oben)
+  - **Weltzeit**: z. B. Tokio und zwei weitere Städte, Versätze aus `felder.txt`
+  - **Wecker/Erinnerung**: Uhrzeit oder „in 2 h“, piept auch im Schlummer (Uhrwerk des Timers)
+  - **Strichliste**: Tippen zählt hoch, lang tippen setzt zurück
+  - **Klimakurve**: letzte 24 h Temperatur, Feuchte, Taupunkt als Grafik aus `/ist/mess` (Beschlag im Micro)
+  - **Würfel/Münze** durch Schütteln (nebenbei)
+- später, eigenes Paket: **Schrittzähler** (Hardware-Schrittzähler im LSM6DS3; Zusammenspiel mit Bewegungswecken und
+  Fahrterkennung prüfen), **Tagesbilanz** (Fahrten, Notizen, Diktate von heute aus dem Fahrtenschreiber)
+- nicht lokal: **Spracherkennung** (Espressifs Offline-Befehle nur Englisch/Chinesisch, feste Befehle) und **Wetter
+  über eigenes WLAN** (Akku, WLAN-Zugangsdaten als Pflegebaustelle; das Handy liefert Wetter beim Abgleich)
+
 ### Denkmodell: zwei Arten von Seiten (Markus, 13.11.2026)
 - fest **App-Seiten** (z. B. Rechner): der Sticky ist **Thin Client** (Bildschirm + Eingabe, wie ein Terminal am
   Großrechner oder ein X11-Display). Logik und Zeichnen in der App, der Sticky meldet Tipper/Tasten und zeigt, was
