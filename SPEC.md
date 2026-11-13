@@ -281,7 +281,7 @@ die Firmware rechnet. Ein Flash für alles.
     mit einem Einzelstrich-Erkenner (z. B. „$1-Erkenner“, eine Vorlage je Zeichen), ohne Handy. Passt besser zu E-Ink
     als Tasten: kein Refresh je Tipp, nur der erkannte Buchstabe erscheint. **Eigenes Strich-Alphabet** im gleichen
     Geist (keine Kopie des Palm-Originals), Spickzettel mit dem Alphabet; Wisch nach links = letzten Buchstaben löschen.
-    Tastatur bleibt Plan B
+    Tastatur bleibt Plan B. **Umgesetzt 13.11.2026 (FW 0.27.0), am Gerät „klappt gut“**
 - ohne Flash, reine App-Arbeit: **Kritzel-Texterkennung** – die App liest Kritzel-Notizen per Handschrifterkennung aus
   („Eier, Mehl“ wird zusätzlich eine Textnotiz); für Einkaufslisten schneller als Tippen
 - später, eigenes Paket: **Schrittzähler** (Hardware-Schrittzähler im LSM6DS3; Zusammenspiel mit Bewegungswecken und

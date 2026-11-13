@@ -92,7 +92,10 @@ static void sollGeaendert(const char* rel) {
     } else if (!strcmp(rel, "einstellungen/lage.txt")) {
         bool vorher = gedreht180;
         lageLaden();
-        if (modus == M_APP || modus == M_KRITZEL || modus == M_WIDGET || gedreht180 != vorher) neuZeichnen = true;
+        if (modus == M_APP || modus == M_KRITZEL || modus == M_SCHRIFT || modus == M_WIDGET || gedreht180 != vorher) neuZeichnen = true;
+    } else if (!strcmp(rel, "schrift/alphabet.txt")) {
+        schBereit = false;                             // Strichschrift neu laden (Alphabet, Glyphen, Hintergrund)
+        if (modus == M_SCHRIFT) neuZeichnen = true;
     } else if (!strcmp(rel, "einstellungen/karussell.txt")) {
         karussellLaden();
     } else if (!strcmp(rel, "notiz/layout.txt")) {

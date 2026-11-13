@@ -119,7 +119,7 @@ static void bestellZaehlen() {
 }
 
 static const char* modusName() {
-    return modus == M_HOME ? "home" : modus == M_NOTIZ ? "notiz" : modus == M_BESTELL ? "bestell" : modus == M_KRITZEL ? "kritzel" : modus == M_APP ? "app" : modus == M_WIDGET ? "widget" : "bordbuch";
+    return modus == M_HOME ? "home" : modus == M_NOTIZ ? "notiz" : modus == M_BESTELL ? "bestell" : modus == M_KRITZEL ? "kritzel" : modus == M_SCHRIFT ? "schrift" : modus == M_APP ? "app" : modus == M_WIDGET ? "widget" : "bordbuch";
 }
 
 static bool homeLaden(int n, uint8_t* ziel) {
@@ -266,12 +266,21 @@ static portMUX_TYPE kzSperre = portMUX_INITIALIZER_UNLOCKED;
 static TaskHandle_t kzAufgabe = nullptr;
 // kzAn ist in firmware-ble.ino deklariert (touchPoll braucht es vorher)
 static const int KZ_STIFT = 2;   // halbe Strichbreite in Pixeln
+static const int SCH_FELD_Y = 136;   // Strichschrift: Schreibfeld ab hier (darüber Knöpfe und Textzeile)
+static void schriftPunkt(int x, int y, bool neu);
+static void schriftAbgehoben();
+static bool schriftLoop();
+static void schriftSpeichern();
+static void schriftBlatt();
+static int schLaenge = 0;   // Strichschrift: Zeichen im Text (schrift.h)
+static bool kzModusAktiv() { return modus == M_KRITZEL || modus == M_SCHRIFT; }
 
 static void kzPunkt(int x, int y) {
     for (int dy = -KZ_STIFT; dy <= KZ_STIFT; dy++)
         for (int dx = -KZ_STIFT; dx <= KZ_STIFT; dx++) {
             int px = x + dx, py = y + dy;
             if (px < 0 || px >= W || py < 0 || py >= H || (kzHoch() ? px < 62 : py < 62)) continue;   // Kopfstreifen (Knöpfe, Statuszeile) frei
+            if (modus == M_SCHRIFT && py < SCH_FELD_Y) continue;                                    // Textzeile frei
             imgBuf[py * (W / 8) + px / 8] |= 0x80 >> (px & 7);
         }
     portENTER_CRITICAL(&kzSperre);
@@ -285,6 +294,7 @@ static void kritzelPunkt(int x, int y, bool neu) {
     if (hilfeAn) return;
     aktiv();
     letzteBedienung = millis();
+    if (modus == M_SCHRIFT) { if (y < SCH_FELD_Y) return; schriftPunkt(x, y, neu || kzLetztX < 0); }
     if (neu || kzLetztX < 0) { kzPunkt(x, y); }
     else {
         // Linie vom letzten Punkt (Bresenham)
@@ -300,7 +310,7 @@ static void kritzelPunkt(int x, int y, bool neu) {
     kzLetztX = x; kzLetztY = y;
     kzBemalt = true;
 }
-static void kritzelLos() { kzLetztX = kzLetztY = -1; }
+static void kritzelLos() { kzLetztX = kzLetztY = -1; if (modus == M_SCHRIFT) schriftAbgehoben(); }
 
 // Knöpfe links oben in der Statuszeilen-Höhe (dort wird nicht gemalt): ✓ Speichern bei x 8–80, ✕ Leeren bei x 96–168
 // gleiche Größe wie die Reiter der App-Seite (58 px hoch, für Finger; 13.11.2026), rechts ab x 512 die Statuszeile.
@@ -429,9 +439,16 @@ static void kzPanelSchlaf() {
 static void kzBlattNeu();
 static void kritzelSpeichern();
 static void kritzelLoop() {
-    if (modus == M_KRITZEL && (kzSpeichernWunsch || kzLeerenWunsch)) {
+    if (kzModusAktiv() && (kzSpeichernWunsch || kzLeerenWunsch)) {
         bool speichern = kzSpeichernWunsch;
         kzSpeichernWunsch = kzLeerenWunsch = false;
+        if (modus == M_SCHRIFT) {                       // Strichschrift: ✓ Text speichern, ✕ Text leeren
+            if (!schLaenge) { tone(PIN_BUZZER, 900, 80); return; }
+            if (speichern) schriftSpeichern(); else schLaenge = 0;
+            tone(PIN_BUZZER, speichern ? 3300 : 1500, 40);
+            kzBlattNeu();
+            return;
+        }
         if (speichern && !kzBemalt) { tone(PIN_BUZZER, 900, 80); return; }   // leeres Blatt: nichts zu speichern
         if (speichern) kritzelSpeichern();
         tone(PIN_BUZZER, speichern ? 3300 : 1500, 40);
@@ -439,7 +456,8 @@ static void kritzelLoop() {
         return;
     }
     // sofort auffrischen, sobald neue Striche da sind (vorher 150 ms gesammelt); der Refresh selbst dauert ohnehin
-    if (modus != M_KRITZEL || kzX1 <= kzX0 || millis() - kzZuletzt < 15) return;
+    if (modus == M_SCHRIFT) schriftLoop();          // fertigen Strich erkennen, Text nachziehen
+    if (!kzModusAktiv() || kzX1 <= kzX0 || millis() - kzZuletzt < 15) return;
     kzZuletzt = millis();
     portENTER_CRITICAL(&kzSperre);
     int x0 = max(0, kzX0) & ~7, x1 = min(W, (kzX1 + 7) & ~7), y0 = max(0, kzY0), y1 = min(H, kzY1);
@@ -481,8 +499,9 @@ static void kritzelSpeichern() {
 
 /** Leeres Blatt mit Knöpfen und Statuszeile zeigen (Voll-Refresh, damit nichts nachleuchtet) */
 static void kzBlattNeu() {
-    kzLageHoch = lageHoch("kritzel");
+    kzLageHoch = modus == M_SCHRIFT ? false : lageHoch("kritzel");   // Strichschrift immer quer
     memset(imgBuf, 0, IMG_BYTES);
+    if (modus == M_SCHRIFT) schriftBlatt();
     kzBemalt = false;
     kritzelLos();
     portENTER_CRITICAL(&kzSperre);
@@ -501,9 +520,12 @@ static void setzeModus(Modus m) {
         return;
     }
     hilfeAn = false;
-    if (modus == M_KRITZEL && m != M_KRITZEL) { kritzelStopp(); kritzelSpeichern(); }   // Blatt verlassen = speichern
+    if (kzModusAktiv() && m != modus) {              // Blatt verlassen = speichern
+        kritzelStopp();
+        if (modus == M_KRITZEL) kritzelSpeichern(); else schriftSpeichern();
+    }
     if (modus == M_WIDGET && m != M_WIDGET) gfxPartialWachHalten = false;
-    if (m != modus) protokoll("Modus %s", m == M_HOME ? "home" : m == M_BORDBUCH ? "bordbuch" : m == M_NOTIZ ? "notiz" : m == M_KRITZEL ? "kritzel" : m == M_APP ? "app" : m == M_WIDGET ? "widget" : "bestell");
+    if (m != modus) protokoll("Modus %s", m == M_HOME ? "home" : m == M_BORDBUCH ? "bordbuch" : m == M_NOTIZ ? "notiz" : m == M_KRITZEL ? "kritzel" : m == M_SCHRIFT ? "schrift" : m == M_APP ? "app" : m == M_WIDGET ? "widget" : "bestell");
     modus = m;
     bordbuch = m == M_BORDBUCH;
     letzteBedienung = millis();
@@ -520,7 +542,7 @@ static void setzeModus(Modus m) {
         bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
         display.update();
         seite = "bild";
-    } else if (m == M_KRITZEL) {
+    } else if (m == M_KRITZEL || m == M_SCHRIFT) {
         if (kzBlattGesichert && kzBlatt) {   // zurück aus der Hilfe: Blatt wiederherstellen
             memcpy(imgBuf, kzBlatt, IMG_BYTES);
             kzBlattGesichert = false;
@@ -585,6 +607,7 @@ static void karussellLaden() {
             else if (z == "bordbuch") karussell[kAnzahl++] = M_BORDBUCH;
             else if (z == "zettel") karussell[kAnzahl++] = M_BESTELL;
             else if (z == "kritzel") karussell[kAnzahl++] = M_KRITZEL;
+            else if (z == "schrift") karussell[kAnzahl++] = M_SCHRIFT;
             else if (z == "app") karussell[kAnzahl++] = M_APP;
             else if (z.startsWith("widget ")) { strlcpy(kWidget[kAnzahl], z.substring(7).c_str(), 16); karussell[kAnzahl++] = M_WIDGET; }
         }
@@ -605,6 +628,7 @@ static bool karussellDa(Modus m) {
     if (m == M_BESTELL) return bestellAnzahl > 0;
     if (m == M_NOTIZ) return notizDa;
     if (m == M_APP) return appDa();   // ohne zuhörende App gibt es nichts zu zeigen
+    if (m == M_SCHRIFT) return sollDa("schrift/alphabet.txt");
     return true;
 }
 static bool karussellDaI(int i) {
@@ -713,11 +737,11 @@ static const char* widgetHilfe() {
 
 static const char* hilfeName() {
     return modus == M_HOME ? "hilfe/home.bin" : modus == M_NOTIZ ? "hilfe/notiz.bin" : modus == M_BORDBUCH ? "hilfe/bordbuch.bin"
-         : modus == M_KRITZEL ? "hilfe/kritzel.bin" : modus == M_WIDGET ? widgetHilfe() : "hilfe/zettel.bin";
+         : modus == M_KRITZEL ? "hilfe/kritzel.bin" : modus == M_SCHRIFT ? "hilfe/schrift.bin" : modus == M_WIDGET ? widgetHilfe() : "hilfe/zettel.bin";
 }
 
 static void hilfeZeigen() {
-    if (modus == M_KRITZEL) {          // Blatt sichern, die Hilfe überschreibt imgBuf
+    if (kzModusAktiv()) {              // Blatt sichern, die Hilfe überschreibt imgBuf
         if (!kzBlatt) kzBlatt = (uint8_t*)ps_malloc(IMG_BYTES);
         if (kzBlatt) { memcpy(kzBlatt, imgBuf, IMG_BYTES); kzBlattGesichert = true; }
         kzPanelSchlaf();

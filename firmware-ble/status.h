@@ -28,7 +28,7 @@ static void statusLaden() {
 static bool statusHoch() {
     if (modus == M_HOME || modus == M_NOTIZ) return true;
     if (modus == M_APP) return lageHoch("app");
-    if (modus == M_KRITZEL) return kzHoch();
+    if (modus == M_KRITZEL || modus == M_SCHRIFT) return kzHoch();
     if (modus == M_WIDGET) return lageHoch(widgetName);
     return false;
 }

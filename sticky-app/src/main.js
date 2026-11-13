@@ -29,6 +29,7 @@ import { zeichneHome, zeichneZiffern, statusGlyphen } from './homeseite.js';
 import { holeWetter, letztesWetter } from './wetter.js';
 import { BESTELL_STANDARD, zeichneZettel } from './bestellung.js';
 import { zettelListe, zettelUmzug } from './zettel.js';
+import { alphabetDatei, glyphenBlatt, schriftHintergrund, schriftHilfe } from './strichschrift.js';
 import { KARTEN_STANDARD, zeichneKarte } from './karten.js';
 import { Aufnahme, wav, sprachPruefung, nurWortliste, angehoben } from './audio.js';
 import * as notizen from './notizen.js';
@@ -289,7 +290,7 @@ zwilling.beobachte((art, d) => {
     else if (d.t === 'suchen') handyKlingeln();
     else if (d.t === 'suche') eintrag(d.a === 'gefunden' ? 'Sticky gefunden' : 'Sticky piept');
     else if (d.t === 'schlaf') stickySchlaeft = true;
-    else if (d.t === 'modus') { spiegelSetze({ modus: d.m, ...(d.zettel != null ? { zettel: d.zettel } : {}), verbunden: true }); stickyModus = d.m; imBordbuch = d.m === 'bordbuch'; eintrag(`Modus: ${{ home: 'Home', notiz: 'Notiz', bordbuch: 'Bordbuch', kritzel: 'Kritzelblock', app: 'App-Seite', widget: 'Widget', bestell: `Bestellzettel ${(d.zettel ?? 0) + 1}` }[d.m] ?? d.m}`); if (d.m === 'app') { if (d.hoch != null) appSeite.hoch = !!d.hoch; appSeite.zeigen().catch((e) => eintrag(`App-Seite: ${e.message}`, true)); } }
+    else if (d.t === 'modus') { spiegelSetze({ modus: d.m, ...(d.zettel != null ? { zettel: d.zettel } : {}), verbunden: true }); stickyModus = d.m; imBordbuch = d.m === 'bordbuch'; eintrag(`Modus: ${{ home: 'Home', notiz: 'Notiz', bordbuch: 'Bordbuch', kritzel: 'Kritzelblock', schrift: 'Strichschrift', app: 'App-Seite', widget: 'Widget', bestell: `Bestellzettel ${(d.zettel ?? 0) + 1}` }[d.m] ?? d.m}`); if (d.m === 'app') { if (d.hoch != null) appSeite.hoch = !!d.hoch; appSeite.zeigen().catch((e) => eintrag(`App-Seite: ${e.message}`, true)); } }
     else if (d.t === 'seite') { $('bbStatus').textContent = `Sticky zeigt Bordbuch-Seite ${d.n + 1} von ${d.von}`; spiegelSetze({ bb: d.n }); }
     else if (d.t === 'audio' && (d.a === 'start' || d.a === 'stop')) spiegelSetze({ aufnahme: d.a === 'start' });
     else if (d.t === 'bordbuch') eintrag(`Bordbuch auf dem Sticky: ${d.seiten} Seiten, ${d.belegtKB} KB`);
@@ -568,7 +569,7 @@ function zeigeNotiz(n, neu = false) {
   kopf.append(' ', schild);
   const was = document.createElement('div');
   was.className = 'was';
-  was.textContent = n.art === 'diktat' ? `🎙 ${n.text || '(nichts erkannt)'}` : n.art === 'kritzel' ? '✎ Kritzel' : n.knopf;
+  was.textContent = n.art === 'diktat' ? `🎙 ${n.text || '(nichts erkannt)'}` : n.art === 'kritzel' ? '✎ Kritzel' : n.art === 'schrift' ? `✍ ${n.text}` : n.knopf;
   if (n.art === 'kritzel' && n.bild) {
     const img = document.createElement('img');
     img.className = 'kritzel';
@@ -678,6 +679,11 @@ async function abgleich() {
   await pufferAbholen();
   if (fwAb('0.13.0')) await karussellAufspielen().catch((e) => eintrag(`Karussell: ${e.message}`, true));
   if (fwAb('0.15.0')) await hilfeAufspielen().catch((e) => eintrag(`Hilfe: ${e.message}`, true));
+  if (fwAb('0.27.0')) {   // Strichschrift: Alphabet, Glyphen und Hintergrund (Vorlagen in strichschrift.js)
+    const n = await zwilling.sollAbgleich('schrift', [{ n: 'zeichen.bin', daten: glyphenBlatt() }, { n: 'bild.bin', daten: schriftHintergrund() },
+      { n: 'alphabet.txt', daten: alphabetDatei() }]).catch((e) => { eintrag(`Schrift: ${e.message}`, true); return 0; });
+    if (n) eintrag('Strichschrift aufgespielt');
+  }
   if (fwAb('0.18.0')) {   // Widget-Maschine: nur Geändertes geht rüber (Bestandsliste je Widget)
     appSeite.hoch = hochkant('app');
     for (const [name, bauen] of Object.entries(widgetBauer())) {   // in ihrer Lage; Menü-Kacheln = Karussell
@@ -690,8 +696,8 @@ async function abgleich() {
 }
 
 // ---- Karussell (SPEC „Bedienung und Oberfläche“): Reihe, durch die ▲/▼ am Sticky blättern -------------------------
-const KARUSSELL_STANDARD = 'Home, Timer, Waage, Lineal, Notiz, Kritzel, Rechner, Bordbuch, Zettel';
-const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'bordbuch', zettel: 'zettel', bestellzettel: 'zettel', kritzel: 'kritzel', kritzelblock: 'kritzel', app: 'app', rechner: 'app', timer: 'widget timer', waage: 'widget waage', wasserwaage: 'widget waage', lineal: 'widget lineal' };
+const KARUSSELL_STANDARD = 'Home, Timer, Waage, Lineal, Notiz, Kritzel, Schrift, Rechner, Bordbuch, Zettel';
+const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'bordbuch', zettel: 'zettel', bestellzettel: 'zettel', kritzel: 'kritzel', kritzelblock: 'kritzel', schrift: 'schrift', strichschrift: 'schrift', app: 'app', rechner: 'app', timer: 'widget timer', waage: 'widget waage', wasserwaage: 'widget waage', lineal: 'widget lineal' };
 function karussellText() {
   const roh = (localStorage.getItem('sticky.karussell') || KARUSSELL_STANDARD).split(/[,;\n]/).map((w) => KARUSSELL_WOERTER[w.trim().toLowerCase()]).filter(Boolean);
   return [...new Set(roh)].join('\n') + '\n';
@@ -704,6 +710,7 @@ async function hilfeAufspielen() {
     bb.zeichneTextseite(h, seite, '▲+▼ = Hilfe');
     return { n: `${modus}.bin`, daten: rgbaZu1bpp(h.getImageData(0, 0, BREITE, HOEHE).data) };
   });
+  if (fwAb('0.27.0')) dateien.push({ n: 'schrift.bin', daten: schriftHilfe() });   // Alphabet als Spickzettel
   const n = await zwilling.sollAbgleich('hilfe', dateien);
   if (n) eintrag(`Tastenhilfe aufgespielt (${n} Seiten)`);
 }
@@ -884,11 +891,25 @@ async function kritzelAbholen() {
   if (liste.length) eintrag(`${liste.length} ${liste.length === 1 ? 'Kritzel' : 'Kritzel'} vom Sticky abgeholt`);
 }
 
+/** Strichschrift (FW ≥ 0.27.0): Texte aus /ist/schrift holen, als Notiz eintragen, quittieren */
+async function schriftAbholen() {
+  const liste = (await zwilling.liste('/ist/schrift')).filter((d) => !d.ordner && d.n.endsWith('.txt'));
+  for (const d of liste) {
+    const text = new TextDecoder().decode(await zwilling.holen(`/ist/schrift/${d.n}`, d.b)).trim();
+    const m = d.n.match(/(\d{4})-(\d{2})-(\d{2})-(\d{2})(\d{2})(\d{2})/);
+    const t = m ? new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +m[6]).getTime() : Date.now();
+    if (text) zeigeNotiz(await notizen.notiere({ t, art: 'schrift', text }), true);
+    await zwilling.loeschen(`/ist/schrift/${d.n}`);
+  }
+  if (liste.length) eintrag(`${liste.length} geschriebene ${liste.length === 1 ? 'Notiz' : 'Notizen'} vom Sticky abgeholt`);
+}
+
 async function fahrtenschreiberAbholen() {
   const zeilen = await istAbholen('log', LOG_ORDNER);
   if (zeilen) eintrag(`Fahrtenschreiber: ${zeilen} neue ${zeilen === 1 ? 'Zeile' : 'Zeilen'}`);
   await zeigeFahrtenschreiber();
   if (fwAb('0.16.0')) await kritzelAbholen().catch((e) => eintrag(`Kritzel: ${e.message}`, true));
+  if (fwAb('0.27.0')) await schriftAbholen().catch((e) => eintrag(`Schrift: ${e.message}`, true));
   if (fwAb('0.12.0')) {
     const mess = await istAbholen('mess', 'messreihen');
     if (mess) eintrag(`Messreihen: ${mess} neue Werte`);

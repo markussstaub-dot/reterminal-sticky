@@ -102,7 +102,7 @@ export function timerWidget(hoch = false) {
   ];
 }
 
-const NAMEN = { home: 'Home', notiz: 'Notiz', bordbuch: 'Bordbuch', zettel: 'Zettel', kritzel: 'Kritzel', app: 'Rechner' };
+const NAMEN = { home: 'Home', notiz: 'Notiz', bordbuch: 'Bordbuch', zettel: 'Zettel', kritzel: 'Kritzel', schrift: 'Schrift', app: 'Rechner' };
 
 /**
  * Menü (KI kurz auf Home): eine Kachel je Karussell-Eintrag, Tippen springt direkt hin (Aktion „gehe <i>“).

@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.26.0";
+static const char* FW_VERSION = "0.27.0";
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "Markus";
@@ -151,7 +151,7 @@ static volatile bool wantFast = false, wantSlow = false, wantKarte = false, want
 static volatile uint32_t slowAt = 0;
 static uint32_t advFastUntil = 0;
 static const char* seite = "karte";
-enum Modus { M_HOME = 0, M_BORDBUCH = 1, M_NOTIZ = 2, M_BESTELL = 3, M_KRITZEL = 4, M_APP = 5, M_WIDGET = 6 };
+enum Modus { M_HOME = 0, M_BORDBUCH = 1, M_NOTIZ = 2, M_BESTELL = 3, M_KRITZEL = 4, M_APP = 5, M_WIDGET = 6, M_SCHRIFT = 7 };
 static Modus modus = M_HOME;
 
 // ---- Hilfen ------------------------------------------------------------------
@@ -447,6 +447,7 @@ static void zeigeKarte() {
 #include "puffer.h"
 #include "audio.h"
 #include "modus.h"
+#include "schrift.h"
 #include "fahrtenschreiber.h"
 #include "abgleich.h"
 #include "sensoren.h"
