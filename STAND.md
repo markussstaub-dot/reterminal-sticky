@@ -3,8 +3,8 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.11.0 – SD-Karte als Vertrag (/soll von der App, /ist vom Sticky, Datei-Abgleich mit Bestandsliste), Fahrtenschreiber, Puffer auf microSD, Akku lädt, Schlummermodus, Home, Notizen (auch offline), Bordbuch, Bestellzettel, App mit Spiegel/Fernbedienung (13.11.2026)
-wartet: Zwilling 2.0 läuft schrittweise (1 Fahrtenschreiber und 2 Sync-Protokoll fertig, als Nächstes Sensoren); Offline-Diktat auf /ist/puffer einmal von Hand prüfen; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
+version: FW 0.12.0 – eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
+wartet: Markus: Bewegungswecken von Hand prüfen (USB ab, 3 min liegen lassen, hochnehmen) und Fahrterkennung bei der nächsten Microlino-Fahrt; Offline-Diktat auf /ist/puffer einmal prüfen; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
 Repo: github.com/markussstaub-dot/reterminal-sticky (privat, seit 11.11.2026). `backup/`, Modelle und
@@ -193,6 +193,15 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   Karte, das Bordbuch im Flash wird danach freigegeben. Alte Spezialbefehle laufen weiter.
   Am Gerät geprüft: 100 KB schreiben/lesen/löschen (3,4 s schreiben), Bordbuch-Abgleich (125 Altlasten abgeräumt,
   zweiter Lauf 0 Dateien), Home (2 von 10 Dateien), Notiz nach Löschen von selbst wiederhergestellt, Puffer über /ist
+- **Eigene Sensoren (FW 0.12.0, 13.11.2026, Zwilling 2.0 Schritt 3, `sensoren.h`):** SHT40 (0x44) misst wach jede
+  Minute, im Schlummern alle 15 min → `/ist/mess/klima-JJJJ-MM-TT.csv` (Zeit, °C, %rF, Taupunkt); Warnungen „Beschlag
+  droht“ (< 2 K zum Taupunkt) und „zu kalt/heiß zum Laden“ in den Fahrtenschreiber; Zustand meldet `temp`, `rf`,
+  `taupunkt`, `fahrt`, `sensoren`. LSM6DS3TR-C (0x6A, 26 Hz Stromsparmodus, Kreisel aus): Wake-up auf GPIO7 (offener
+  Drain, geteilt mit BFG_INT) weckt aus dem Schlummern; Fahrt = 15 von 20 Zwei-Sekunden-Fenstern „rütteln“ (8–150 mg
+  Streuung bei gleicher Lage), Ende nach 2 min Ruhe, dazwischen bleibt er wach; getragen (unruhig) sperrt das
+  Bewegungswecken 5 min. Schwellen sind Startwerte. App holt Messreihen ab (`files/messreihen/`) und zeigt Klima im
+  Zustand. Am Gerät geprüft: beide Sensoren erkannt, Lage 1,02 g, Klima 22,9 °C / 39 %, Messreihe abgeholt.
+  **Noch nicht geprüft:** Wecken durch Bewegung im Akkubetrieb, Fahrterkennung bei echter Fahrt
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

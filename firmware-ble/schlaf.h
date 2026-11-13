@@ -49,8 +49,10 @@ static bool tasteGedrueckt() {
     return false;
 }
 
-/** Bis zur nächsten vollen Minute schlafen (oder bis eine Taste kommt). Liefert true, wenn eine Taste geweckt hat. */
-static bool leichtSchlaf() {
+/** Bis zur nächsten vollen Minute schlafen (oder bis eine Taste oder Bewegung kommt).
+ *  Liefert 0 = Zeit (oder Fehlalarm des Akku-Chips auf GPIO7), 1 = Taste, 2 = Bewegung. */
+enum Weckgrund { W_ZEIT = 0, W_TASTE = 1, W_BEWEGUNG = 2 };
+static Weckgrund leichtSchlaf() {
     time_t jetzt = time(nullptr);
     struct tm t;
     localtime_r(&jetzt, &t);
@@ -59,6 +61,8 @@ static bool leichtSchlaf() {
         detachInterrupt(digitalPinToInterrupt(x.pin));
         gpio_wakeup_enable((gpio_num_t)x.pin, x.ruhe == HIGH ? GPIO_INTR_LOW_LEVEL : GPIO_INTR_HIGH_LEVEL);
     }
+    bool bewegungWeckt = bewegungWecktGleich();
+    if (bewegungWeckt) gpio_wakeup_enable((gpio_num_t)PIN_6D_INT, GPIO_INTR_LOW_LEVEL);
     esp_sleep_enable_gpio_wakeup();
     esp_sleep_enable_timer_wakeup(ms * 1000ULL);
     Serial.flush();
@@ -67,7 +71,12 @@ static bool leichtSchlaf() {
     esp_light_sleep_start();
     gpio_hold_dis((gpio_num_t)PIN_CHG_EN_N);
     gpio_hold_dis((gpio_num_t)PIN_PWR_HOLD);
-    bool taste = esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_GPIO;
+    bool gpio = esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_GPIO;
+    if (bewegungWeckt) gpio_wakeup_disable((gpio_num_t)PIN_6D_INT);
+    bool taste = false;
+    for (auto& x : tasten) if (gpio && digitalRead(x.pin) != x.ruhe) taste = true;
+    bool bewegt = gpio && !taste && bewegungWeckt && bewegtSeither();
+    if (gpio && !bewegt && !taste) taste = !bewegungWeckt;   // ohne Bewegungswecken kann nur eine (kurze) Taste geweckt haben
     for (auto& x : tasten) {
         gpio_wakeup_disable((gpio_num_t)x.pin);
         attachInterruptArg(digitalPinToInterrupt(x.pin), tasteIsr, &x, x.ruhe == HIGH ? FALLING : RISING);
@@ -75,7 +84,7 @@ static bool leichtSchlaf() {
     }
     esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
     schlafZaehler++;
-    return taste;
+    return taste ? W_TASTE : bewegt ? W_BEWEGUNG : W_ZEIT;
 }
 
 /** Am Ende von loop(): schlummern, wenn nichts los ist; nach dem Aufwachen Funk/Touch nach Bedarf */
@@ -97,7 +106,15 @@ static void schlafPruefen() {
     if (touchAn) touchAus();
     protokollSchreiben();
     sdAus();                                       // Karte stromlos, pfs() bindet sie beim nächsten Zugriff ein
-    if (leichtSchlaf()) {                          // Taste: ganz wach (Touch folgt nach dem Tastendruck, s. o.)
+    Weckgrund grund = leichtSchlaf();
+    if (grund == W_BEWEGUNG) {                     // Bewegung: Funk an, damit die App gleich da ist; Touch erst mit Taste
+        protokoll("wach durch Bewegung (nach %lu Schlafminuten)", (unsigned long)schlafZaehler);
+        schlafZaehler = 0;
+        funkEin(true);
+        aktiv();
+        return;
+    }
+    if (grund == W_TASTE) {                        // Taste: ganz wach (Touch folgt nach dem Tastendruck, s. o.)
         protokoll("wach durch Taste (nach %lu Schlafminuten)", (unsigned long)schlafZaehler);
         schlafZaehler = 0;
         funkEin(true);
@@ -109,6 +126,7 @@ static void schlafPruefen() {
     time_t jetzt = time(nullptr);
     struct tm t;
     localtime_r(&jetzt, &t);
+    if (t.tm_year > 120 && t.tm_min % 15 == 0) klimaMessen();   // Klima alle 15 min auch im Schlummern
     if (t.tm_year > 120 && t.tm_min == 0) {        // volle Stunde: kurz erreichbar für den Abgleich
         funkEin(true);
         protokoll("Stundenfenster: Funk 1 min an (Akku %d %%)", batPct);

@@ -284,6 +284,8 @@ function zeigeZustand(z) {
   if (z.phy) teile.push(z.phy === 2 ? '2M' : '1M');
   if (z.itvl) teile.push(`${(z.itvl * 1.25).toFixed(1)} ms`);
   if (z.fw) teile.push(`FW ${z.fw}`);
+  if (z.temp > -99) teile.push(`${z.temp.toFixed(1).replace('.', ',')} °C, ${Math.round(z.rf)} %${z.temp - z.taupunkt < 2 ? ' · beschlägt' : ''}`);
+  if (z.fahrt) teile.push('fährt');
   $('geraet').textContent = teile.join(' · ');
   pruefeAbgleich();
 }
@@ -581,9 +583,9 @@ const logStand = () => { try { return JSON.parse(localStorage.getItem('sticky.lo
 const heuteName = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}.txt`; };
 const logSim = {};   // im Browser statt Filesystem
 
-async function logAnhaengen(name, text) {
-  if (!nativ) { logSim[name] = (logSim[name] ?? '') + text; return; }
-  await Filesystem.appendFile({ path: `${LOG_ORDNER}/${name}`, data: text, directory: Directory.Data, encoding: Encoding.UTF8, recursive: true });
+async function logAnhaengen(name, text, ordner = LOG_ORDNER) {
+  if (!nativ) { if (ordner === LOG_ORDNER) logSim[name] = (logSim[name] ?? '') + text; return; }
+  await Filesystem.appendFile({ path: `${ordner}/${name}`, data: text, directory: Directory.Data, encoding: Encoding.UTF8, recursive: true });
 }
 async function logLesen(name) {
   if (!nativ) return logSim[name] ?? '';
@@ -594,27 +596,39 @@ async function logTage() {
   try { return (await Filesystem.readdir({ path: LOG_ORDNER, directory: Directory.Data })).files.map((f) => f.name).sort().reverse(); } catch { return []; }
 }
 
-async function fahrtenschreiberAbholen() {
-  const liste = (await zwilling.liste('/ist/log')).filter((d) => !d.ordner && d.n.endsWith('.txt'));
+/** Tagesdateien aus /ist/<quelle> holen (nur den neuen Teil), an die Kopie in Data/<ziel> anhängen,
+ *  vergangene Tage auf dem Sticky quittieren. → Anzahl neuer Zeilen */
+async function istAbholen(quelle, ziel) {
+  const liste = (await zwilling.liste(`/ist/${quelle}`)).filter((d) => !d.ordner && /\.(txt|csv)$/.test(d.n));
   const stand = logStand();
+  const schluessel = (n) => (quelle === 'log' ? n : `${quelle}/${n}`);
   let zeilen = 0;
   for (const d of liste) {
-    const ab = Math.min(stand[d.n] ?? 0, d.b);
+    const ab = Math.min(stand[schluessel(d.n)] ?? 0, d.b);
     if (d.b > ab) {
-      const neu = new TextDecoder().decode(await zwilling.holen(`/ist/log/${d.n}`, d.b, ab));
-      await logAnhaengen(d.n, neu);
+      const neu = new TextDecoder().decode(await zwilling.holen(`/ist/${quelle}/${d.n}`, d.b, ab));
+      await logAnhaengen(d.n, neu, ziel);
       zeilen += neu.split('\n').filter(Boolean).length;
-      stand[d.n] = d.b;
+      stand[schluessel(d.n)] = d.b;
       localStorage.setItem('sticky.logStand', JSON.stringify(stand));
     }
     // vergangene Tage (und die Zeilen ohne Uhrzeit) sind abgeschlossen: auf dem Sticky quittieren
-    if (d.n !== heuteName() && await zwilling.loeschen(`/ist/log/${d.n}`)) {
-      delete stand[d.n];
+    if (!d.n.includes(heuteName().replace('.txt', '')) && await zwilling.loeschen(`/ist/${quelle}/${d.n}`)) {
+      delete stand[schluessel(d.n)];
       localStorage.setItem('sticky.logStand', JSON.stringify(stand));
     }
   }
-  if (zeilen) eintrag(`Fahrtenschreiber: ${zeilen} neue ${zeilen === 1 ? "Zeile" : "Zeilen"}`);
+  return zeilen;
+}
+
+async function fahrtenschreiberAbholen() {
+  const zeilen = await istAbholen('log', LOG_ORDNER);
+  if (zeilen) eintrag(`Fahrtenschreiber: ${zeilen} neue ${zeilen === 1 ? 'Zeile' : 'Zeilen'}`);
   await zeigeFahrtenschreiber();
+  if (fwAb('0.12.0')) {
+    const mess = await istAbholen('mess', 'messreihen');
+    if (mess) eintrag(`Messreihen: ${mess} neue Werte`);
+  }
 }
 
 async function zeigeFahrtenschreiber(tag = $('logTag').value) {
@@ -624,7 +638,7 @@ async function zeigeFahrtenschreiber(tag = $('logTag').value) {
   wahl.replaceChildren(...tage.map((t) => new Option(t.replace('.txt', ''), t)));
   if (vorher && tage.includes(vorher)) wahl.value = vorher;
   const text = wahl.value ? await logLesen(wahl.value) : '';
-  $('logText').textContent = text ? text.split('\n').reverse().join('\n').trim() : 'noch nichts abgeholt';
+  $('logText').textContent = text ? text.replace(/\r/g, '').split('\n').reverse().join('\n').trim() : 'noch nichts abgeholt';
 }
 $('logTag').onchange = () => zeigeFahrtenschreiber();
 $('logHolen').onclick = () => fahrtenschreiberAbholen().catch((e) => eintrag(`Fahrtenschreiber: ${e.message}`, true));

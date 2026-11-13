@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.11.0";
+static const char* FW_VERSION = "0.12.0";
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "Markus";
@@ -399,16 +399,19 @@ static void zeigeKarte() {
 #include "modus.h"
 #include "fahrtenschreiber.h"
 #include "abgleich.h"
+#include "sensoren.h"
 
 // ---- Zustand -------------------------------------------------------------------
 static void sendState() {
     readBattery();
-    char j[400];
+    char j[480];
     snprintf(j, sizeof j,
-             "{\"fw\":\"%s\",\"seite\":\"%s\",\"bat\":%d,\"mv\":%d,\"ma\":%d,\"chg\":%s,\"mtu\":%u,\"phy\":%u,\"itvl\":%u,\"tp\":\"%ux%u\",\"fahrtv\":\"%08lx\",\"offen\":%d,\"uhr\":%s,\"modus\":\"%s\",\"homev\":\"%s\",\"usb\":%s,\"bb\":%d,\"zettel\":%d}",
+             "{\"fw\":\"%s\",\"seite\":\"%s\",\"bat\":%d,\"mv\":%d,\"ma\":%d,\"chg\":%s,\"mtu\":%u,\"phy\":%u,\"itvl\":%u,\"tp\":\"%ux%u\",\"fahrtv\":\"%08lx\",\"offen\":%d,\"uhr\":%s,\"modus\":\"%s\",\"homev\":\"%s\",\"usb\":%s,\"bb\":%d,\"zettel\":%d,\"temp\":%.1f,\"rf\":%.0f,\"taupunkt\":%.1f,\"fahrt\":%s,\"sensoren\":\"%s%s\"}",
              FW_VERSION, seite, batPct, batMv, batMa, laedt ? "true" : "false", mtu, phy, connItvl, tpResX, tpResY,
              (unsigned long)fahrtVersion, offeneNotizen, rtcDa ? "true" : "false",
-             modusName(), homeVersion, usbDa() ? "true" : "false", bbAktuell, bestellAktuell);
+             modusName(), homeVersion, usbDa() ? "true" : "false", bbAktuell, bestellAktuell,
+             isnan(klimaT) ? -99.0f : klimaT, isnan(klimaRf) ? -1.0f : klimaRf, isnan(klimaTp) ? -99.0f : klimaTp,
+             fahrt ? "true" : "false", lsmDa ? "b" : "", shtDa ? "k" : "");
     if (connected && chState) {
         chState->setValue((const uint8_t*)j, strlen(j));
         chState->notify();
@@ -638,6 +641,7 @@ void setup() {
     Wire.begin(PIN_BFG_SDA, PIN_BFG_SCL, 100000);
     readBattery();
     zeitInit();
+    bewegungInit();
     Serial.printf("Akku: %s %d %% %d mV %d mA %s\n", bfgOk ? "BQ27220" : "nicht gefunden", batPct, batMv, batMa, laedt ? "lädt" : "");
 
     imgBuf = (uint8_t*)ps_malloc(IMG_BYTES);
@@ -762,6 +766,7 @@ void loop() {
     pufferLoop();
     abgleichLoop();
     protokollLoop();
+    sensorenLoop();
     static uint32_t lastTp = 0;
     if (touchAn && millis() - lastTp > 25) { lastTp = millis(); touchPoll(); }
     schlafPruefen();
