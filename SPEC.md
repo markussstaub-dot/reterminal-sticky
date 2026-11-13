@@ -417,6 +417,13 @@ Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzu
 - Vorschlag **Rückmeldung**: Klick sofort (gibt es), dazu Rahmen ums gedrückte Feld per Teil-Refresh (~0,3 s),
   Sanduhr in der Statuszeile bei allem über 1 s
 - Vorschlag **Lesbarkeit im Micro**: Mindestgröße ~28 px für Fahr-Infos, nur Schwarz/Weiß, dicke Linien
+- fest **Hoch/Quer in zwei Stufen** (Markus, 13.11.2026, Mockup im Chat):
+  1. **pro Seite einstellbar in der App** („Mehr“), Vorgaben: Home, Notiz, Rechner hochkant; Bordbuch, Zettel, Timer,
+     Waage quer; Menü nach Wahl. Dazu Schalter „180° gedreht“ (Einbaulage im Micro). Die App rendert ohnehin in
+     Display-Koordinaten und liefert die Knopf-Felder mit; die Firmware braucht je Seite nur die Lage (Statuszeile,
+     Ziffern-Einsetzen bei Timer/Waage, Kritzel-Knöpfe). Ablage: Lage je Seite in `/soll/einstellungen/lage.txt`
+  2. **danach automatisch per Lagesensor**: jede Seite liegt in beiden Lagen auf der Karte, der Sticky nimmt beim
+     Drehen die passende (Voll-Refresh). Baut auf Stufe 1 auf, kostet doppelt Speicher und Übertragung
 - später: hoch/quer automatisch über den Bewegungssensor (jede Seite in beiden Lagen, doppeltes Rendern in der App)
 - Tastenregeln und Karussell (FW 0.13.0), Statuszeile (0.14.0), Tastenhilfe und Tipp-Rahmen (0.15.0) umgesetzt ( Szenen noch nicht: ein Karussell für alles)
 - Reihenfolge: Tastenregeln, Karussell, Statuszeile zuerst (Grundlage für die Widgets), dann Schlafbild-Regel,
