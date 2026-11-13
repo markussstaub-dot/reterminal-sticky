@@ -276,6 +276,12 @@ die Firmware rechnet. Ein Flash für alles.
     Suchbegriff fürs Bordbuch). Quer QWERTZ, 10 Tasten je Reihe (~76 px), Ziffern-/Umlautreihe, Leertaste, Braun-Stil.
     Touch in eigener Aufgabe wie beim Kritzelblock: jeder Tipp sofort erfasst und mit Klick quittiert, die Textzeile
     zieht gesammelt nach (Teil-Refresh ~0,75 s). Ablage als Textnotiz in `/ist/notizen`, auch ohne Handy
+  - **Strichschrift statt Tastatur zuerst probieren** (Markus, 13.11.2026, Anlass: Graffiti am Palm): ein Strich je
+    Buchstabe, nah an der Druckschrift, ins Schreibfeld gemalt (Buchstaben links, Ziffern rechts). Erkennung im Sticky
+    mit einem Einzelstrich-Erkenner (z. B. „$1-Erkenner“, eine Vorlage je Zeichen), ohne Handy. Passt besser zu E-Ink
+    als Tasten: kein Refresh je Tipp, nur der erkannte Buchstabe erscheint. **Eigenes Strich-Alphabet** im gleichen
+    Geist (keine Kopie des Palm-Originals), Spickzettel mit dem Alphabet; Wisch nach links = letzten Buchstaben löschen.
+    Tastatur bleibt Plan B
 - ohne Flash, reine App-Arbeit: **Kritzel-Texterkennung** – die App liest Kritzel-Notizen per Handschrifterkennung aus
   („Eier, Mehl“ wird zusätzlich eine Textnotiz); für Einkaufslisten schneller als Tippen
 - später, eigenes Paket: **Schrittzähler** (Hardware-Schrittzähler im LSM6DS3; Zusammenspiel mit Bewegungswecken und
