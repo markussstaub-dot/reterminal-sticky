@@ -3,7 +3,7 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.16.1 – Kritzelblock, Tastenhilfe (▲+▼), Rahmen beim Tippen, Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
+version: FW 0.16.2 – Kritzelblock, Tastenhilfe (▲+▼), Rahmen beim Tippen, Statuszeile auf jeder Seite, Karussell und einheitliche Tastenregeln, eigene Sensoren (Klima SHT40 mit Taupunkt, Bewegung LSM6DS3 für Fahrt und Wecken), SD-Karte als Vertrag (/soll, /ist), Fahrtenschreiber, Puffer auf microSD, Schlummermodus, Home, Notizen, Bordbuch, Bestellzettel (13.11.2026)
 wartet: Markus: Bewegungswecken von Hand prüfen (USB ab, 3 min liegen lassen, hochnehmen) und Fahrterkennung bei der nächsten Microlino-Fahrt; Offline-Diktat auf /ist/puffer einmal prüfen; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
@@ -261,6 +261,9 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   zäh“: während des Teil-Refreshs (~0,3 s, busyWait) wurde der Touch nicht gelesen. 0.16.1: Touch im Kritzelblock in
   eigener Aufgabe (eigener I2C-Bus), Punkte gehen nicht mehr verloren; Verzögerung bleibt (E-Paper). **Ungeprüft:**
   0.16.1 am Gerät, Abholen eines echten Blatts, Heimfahrt mit dem 3-s-Bewegungsfilter
+- **Heimfahrt 13.11. (11:58–12:10):** Fahrt erkannt 25 mg, Fahrt vorbei pünktlich 2 min nach dem Parken, Diktat live mit
+  Ort, USB-Anstecken ohne Hänger. Fehlalarm im Café (11:54, „Fahrt erkannt“ bei 11 mg, Tippen/Packen) → FW 0.16.2:
+  „rüttelt“ erst ab 15 mg (vorher 8). Kritzelblock 0.16.1 noch nicht am Gerät probiert
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

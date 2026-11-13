@@ -10,7 +10,7 @@
  * teilt er sich mit dem Akku-Chip (BFG_INT).
  *   - weckt aus dem Schlummern (Funk an, dann normale Schlummerregel)
  *   - Fahrt: wach alle 100 ms lesen, je 2-s-Fenster Unruhe (Streuung des Betrags) und Lageänderung bestimmen.
- *     ruhig (< 8 mg) · rüttelt (8–150 mg bei gleicher Lage) · unruhig (getragen, Lage wechselt oder > 150 mg).
+ *     ruhig (< 15 mg) · rüttelt (15–150 mg bei gleicher Lage) · unruhig (getragen, Lage wechselt oder > 150 mg).
  *     Fahrt beginnt nach 15 rüttelnden von 20 Fenstern, endet nach 2 min ohne Rütteln; währenddessen bleibt er wach.
  *   - getragen (unruhig): Bewegungswecken 5 min gesperrt, damit er in der Tasche nicht dauernd aufwacht
  * Schwellen sind Startwerte; der Fahrtenschreiber hält Fensterkennzahlen fest, damit sie sich an echten Fahrten
@@ -198,7 +198,8 @@ static void fensterAuswerten() {
     lageX = mx; lageY = my; lageZ = mz;
     fN = 0; fSum = fSum2 = fX = fY = fZ = 0;
     // ruhig 0 · rüttelt 1 · unruhig 2
-    int art = streu < 0.008f ? 0 : (streu < 0.15f && lage < 0.1f) ? 1 : 2;
+    int art = streu < 0.015f ? 0 :   // unter 15 mg ruhig (Café-Tisch mit Tippen: 11 mg, Fahrten 21–25 mg)
+              (streu < 0.15f && lage < 0.1f) ? 1 : 2;
     fensterRuetteln[fensterPos] = art == 1;
     fensterPos = (fensterPos + 1) % 20;
     if (art == 1) fahrtRuettelnZuletzt = millis();
