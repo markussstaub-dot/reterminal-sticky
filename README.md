@@ -65,6 +65,14 @@ core, Node.js, Android SDK (NDK 28.2, CMake 3.31) and JDK 21.
 
 Most texts, comments and docs are in German – the project grew that way. The code is plain JavaScript and Arduino C++.
 
+## Environmental footprint (rough)
+
+Back-of-the-envelope, not a measurement (November 2026): building this took about **6–45 kWh** – roughly what my small
+electric car (Microlino, ≈ 8 kWh/100 km) needs for **75–560 km**. Most of it, and the most uncertain part, are the AI
+coding sessions (estimated 5–40 kWh over three intensive days; Anthropic publishes no per-request figures), plus about
+1–2 kWh for the laptop. Running it costs almost nothing: the Sticky's battery holds a few watt-hours, so even a daily
+charge stays below 2 kWh a year; the phone app needs no server. The hardware itself is not included.
+
 ## License
 
 MIT, see [`LICENSE`](LICENSE). The Seeed_GFX2 patch applies to Seeed's library under its own license; whisper.cpp
