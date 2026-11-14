@@ -42,6 +42,8 @@ Legende: **fest** = entschieden · **Vorschlag** = Claudes Idee, Markus entschei
     und Text erscheinen kurz im Rückmeldefeld auf Home/Notiz, beim aktiven und bei Hintergrund-Stickys; nichts wird
     gespeichert. Am Gerät geprüft: Test-Meldung kam an. offen: Bubble-Log-Paketname, Symbol in der Statuszeile und Liste
     der letzten Meldungen (Firmware), Anzeige auch auf anderen Seiten
+  - fest (Markus, 14.11.2026): **mehrere Handys/Apps mit mehreren Stickys** (n:m) bauen wir nicht – wer das braucht,
+    baut es selbst (Protokoll und SD-Vertrag stehen unter „Für Fremd-Apps“)
   - offen: Wechsel des aktiven Sticky ohne Neuladen; „Gerät vergessen“ soll auch /soll und /ist auf der Karte leeren
     (vor dem Verschenken); Kopplung/Verschlüsselung
 
