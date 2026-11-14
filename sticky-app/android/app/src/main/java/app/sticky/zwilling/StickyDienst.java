@@ -217,7 +217,20 @@ public class StickyDienst extends Service {
                 .setOngoing(true)
                 .build();
         if (Build.VERSION.SDK_INT >= 34) {
-            startForeground(1, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE | ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
+            // 14.11.2026: Startet Android den Dienst neu, während die App nicht vorne ist (START_STICKY nach Absturz, Neuladen
+            // im Hintergrund), verbietet es den Typ „Standort“ → SecurityException → Absturzschleife. Dann ohne Standort weiter.
+            try {
+                startForeground(1, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE | ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
+            } catch (SecurityException e) {
+                Log.w(TAG, "Vordergrund-Dienst ohne Standort (App nicht vorne): " + e.getMessage());
+                try {
+                    startForeground(1, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE);
+                } catch (RuntimeException e2) {
+                    Log.w(TAG, "Vordergrund-Dienst nicht möglich: " + e2.getMessage());
+                    stopSelf();
+                    return START_NOT_STICKY;
+                }
+            }
         } else {
             startForeground(1, n);
         }
