@@ -16,6 +16,9 @@ Legende: **fest** = entschieden · **Vorschlag** = Claudes Idee, Markus entschei
 - fest: Handy-Erweiterung zuerst; Smart-Home-Anzeige nur nebenbei (siehe `../homeserver/SPEC.md`)
 - fest: Werks-Firmware kann KI-Notizen, ist aber träge → eigene Firmware auf dem Bastel-Sticky
 - Vorschlag: das zweite Gerät bleibt in Folie, bis klar ist, ob es gebraucht wird
+- Merker (Markus, 14.11.2026): **Mehrere Stickys an einer App** („Multiclient“) als nächste Baustelle für die APK, Start
+  15.11.: Geräteliste mit Namen/MAC, je Gerät eigener Zwilling (Soll/Ist), Abgleich je Gerät. Anlass: der zweite
+  Sticky bekommt zum Test die EDC-Firmware aus dem Playground. Vorher ein **Architekturbild** (App, Zwillinge, Stickys, Abgleich) als Grundlage
 
 ## MVP (Markus, 11.11.2026)
 
@@ -201,6 +204,10 @@ nehmen, die im Auto wirklich gefehlt hat, statt zu sammeln (Pflege!).
 - Firmware: einzelne .bin je Offset (Bootloader 0x0, Partitionen 0x8000, otadata 0xE000, App 0x10000), je
   ≤ 16 MB, zusammen ≤ 32 MB → unser 32-MB-Image nicht als Ganzes, LittleFS-Inhalt nicht mitliefern (die App
   spielt die Seiten auf). Die APK kommt als GitHub-Release, auf der Projektseite verlinkt
+  - Merker (Markus, 14.11.2026, Probe mit dem zweiten Sticky): **aus dem Playground geflasht ist der Sticky leer**,
+    nur das Titel-Karussell; Menü, Widgets und Schrift kommen erst mit der APK. Für Fremde ohne APK zu wenig.
+    Vorschlag: Grundausstattung (Menü, Uhr, Timer, Rechner, Umrechner, Strichschrift) in die Firmware backen und
+    beim ersten Start nach /soll schreiben, wenn dort nichts liegt; mindestens im Playground-Text „braucht die APK“ sagen
 - Vorschlag Lizenz: **MIT**. Steht in Seeeds Liste, ist am einfachsten und passt zu den Bausteinen
   (whisper.cpp MIT, NimBLE und pdf.js Apache-2.0). Anders als bei der Uhrenbox (bewusst ohne Lizenz), weil
   Teilen hier heißt: andere dürfen es nutzen. offen: Entscheidung Markus
@@ -583,6 +590,8 @@ Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzu
 - fest (13.11.2026): **schrittweise**: 1. Fahrtenschreiber (fertig, FW 0.10.0), 2. Sync-Protokoll mit /soll /ist
   und Umzug von Puffer/Home/Bordbuch (fertig, FW 0.11.0, Bestandsliste `stand.txt` je Ordner), 3. Sensoren (FW 0.12.0, Fahrterkennung noch an
   echten Fahrten einzustellen), danach Szenen
+  - Merker (Markus, 14.11.2026): **Abgleich in der APK läuft nicht mehr komplett** – z. B. kommt der
+    Home-Screen (Menü) nicht an; beim nächsten Mal Logs vom Fold ziehen (adb logcat) und mit der Bestandsliste `stand.txt` vergleichen
 - Vorschlag **Messintervalle**: Klima wach 1/min, im Schlummern alle 15 min per Timer-Wecken; Bewegungssensor im
   Schlaf im Weck-Modus (~25 µA); Fahrtenschreiber nur Ereignisse. Ziel < 5 % Akku über Nacht
 - Vorschlag **Fahrt**: die Bewegung entscheidet übers Wachbleiben, GPS im `StickyDienst` bleibt Rückfall, bis
