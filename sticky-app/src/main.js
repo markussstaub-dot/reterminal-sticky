@@ -735,7 +735,12 @@ function zeigeNotiz(n, neu = false) {
 
 // ---- Ohne Handy: Abgleich und Puffer abholen ------------------------------------------------
 /** Nach dem Verbinden: Uhr stellen, Fahrt-Layout + Rückmeldungen für den Offline-Betrieb aufspielen, Puffer abholen */
+let vordergrundGleichtAb = false;   // der Hintergrund lässt dem aktiven Sticky den Vortritt (Funk teilen)
 async function abgleich() {
+  vordergrundGleichtAb = true;
+  try { await abgleichKern(); } finally { vordergrundGleichtAb = false; }
+}
+async function abgleichKern() {
   if (!zwilling.geraet.fw || zwilling.geraet.fw === 'sim' || zwilling.geraet.fahrtv == null) return;   // braucht Firmware 0.5
   await zwilling.zeitSetzen();
   const text = layoutText(knoepfe());
@@ -1448,9 +1453,17 @@ async function hgNotizTipp(s, d) {
 async function hintergrundAbgleich(s) {
   const z = s.z;
   if (s.laeuft || !z.verbunden) return;
+  s.laeuft = true;   // gleich belegen: während des Wartens darf kein zweiter Lauf starten
+  try { await hgAbgleichKern(s); } finally { s.laeuft = false; }
+}
+async function hgAbgleichKern(s) {
+  const z = s.z;
+  // direkt nach dem Verbinden kann der Zustand (Firmware-Stand) noch unterwegs sein: kurz warten statt „zu alt“ melden
+  for (let i = 0; i < 20 && !z.geraet.fw && z.verbunden; i++) await new Promise((r) => setTimeout(r, 250));
+  for (let i = 0; i < 120 && vordergrundGleichtAb && z.verbunden; i++) await new Promise((r) => setTimeout(r, 500));   // höchstens 60 s
+  if (!z.geraet.fw) return;
   if (!fwAbZ(s, '0.31.0')) { eintrag(`${s.g.name}: Firmware ${z.geraet.fw ?? '?'} ist zu alt für den Hintergrund (ab 0.31)`, true); return; }
-  s.laeuft = true;
-  try {
+  {
     await z.zeitSetzen();
     const wetter = (await holeWetter(await notizen.standort())) ?? letztesWetter();
     // Seiten aus seinem Profil bauen (synchron, damit der Bau-Kontext nicht in den Vordergrund leckt)
@@ -1488,8 +1501,6 @@ async function hintergrundAbgleich(s) {
       if (n) eintrag(`${s.g.name}: Widget „${name}“ aufgespielt`);
     }
     await fahrtenschreiberAbholen(s).catch((e) => eintrag(`${s.g.name}: Fahrtenschreiber: ${e.message}`, true));
-  } finally {
-    s.laeuft = false;
   }
 }
 
@@ -1569,6 +1580,7 @@ function zipBauen(dateien) {
   return new Blob([...teile, ...zentral, ende], { type: 'application/zip' });
 }
 window.__sticky.grundausstattung = grundausstattung;
+window.__sticky.sitzungen = sitzungen;   // zum Prüfen per WebView-Fernsteuerung (adb)
 window.__sticky.grundZip = () => zipBauen(grundausstattung());
 
 tabsEinrichten();
