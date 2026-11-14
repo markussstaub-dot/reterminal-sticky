@@ -299,7 +299,7 @@ zwilling.beobachte((art, d) => {
     else if (d.t === 'suchen') handyKlingeln();
     else if (d.t === 'suche') eintrag(d.a === 'gefunden' ? 'Sticky gefunden' : 'Sticky piept');
     else if (d.t === 'schlaf') stickySchlaeft = true;
-    else if (d.t === 'modus') { spiegelSetze({ modus: d.m, w: d.w ?? '', lh: d.lh ?? 0, ...(d.zettel != null ? { zettel: d.zettel } : {}), verbunden: true }); stickyModus = d.m; imBordbuch = d.m === 'bordbuch'; fotoAnstossen(); eintrag(`Modus: ${{ home: 'Home', notiz: 'Notiz', bordbuch: 'Bordbuch', kritzel: 'Kritzelblock', schrift: 'Strichschrift', app: 'App-Seite', widget: 'Widget', bestell: `Bestellzettel ${(d.zettel ?? 0) + 1}` }[d.m] ?? d.m}`); if (d.m === 'app') { if (d.hoch != null) appSeite.hoch = !!d.hoch; appSeite.zeigen().catch((e) => eintrag(`App-Seite: ${e.message}`, true)); } }
+    else if (d.t === 'modus') { spiegelSetze({ modus: d.m, w: d.w ?? '', lh: d.lh ?? 0, ...(d.zettel != null ? { zettel: d.zettel } : {}), verbunden: true }); stickyModus = d.m; imBordbuch = d.m === 'bordbuch'; fotoAnstossen(); eintrag(`Modus: ${{ home: 'Home', notiz: 'Notiz', bordbuch: 'Bordbuch', kritzel: 'Kritzelblock', schrift: 'Strichschrift', app: 'App-Seite', widget: 'Widget', bestell: `Bestellzettel ${(d.zettel ?? 0) + 1}` }[d.m] ?? d.m}`); if (d.m === 'app') { if (d.hoch != null) appSeite.hoch = !!d.hoch; } duellPruefen(); if (d.m === 'app' && !imDuell()) appSeite.zeigen().catch((e) => eintrag(`App-Seite: ${e.message}`, true)); }
     else if (d.t === 'seite') { $('bbStatus').textContent = `Sticky zeigt Bordbuch-Seite ${d.n + 1} von ${d.von}`; spiegelSetze({ bb: d.n }); }
     else if (d.t === 'audio' && (d.a === 'start' || d.a === 'stop')) spiegelSetze({ aufnahme: d.a === 'start' });
     else if (d.t === 'bordbuch') eintrag(`Bordbuch auf dem Sticky: ${d.seiten} Seiten, ${d.belegtKB} KB`);
@@ -575,7 +575,39 @@ vorladen();
 let ortBeiAufnahme = null;
 let stickyModus = null;
 // App-Seite im Karussell (FW ≥ 0.17.0): die App zeichnet den Rechner, der Sticky meldet die Tipper
-const appSeite = new AppSeite((bytes, bereich) => zwilling.sendeBild(bytes, bereich ? { bereich } : { schnell: false }));
+// Burgduell auf zwei Stickys (14.11.2026): zeigen beide die Spielseite, spielt West am aktiven, Ost am Hintergrund-Sticky;
+// beide App-Seiten teilen denselben Spielstand, jedes Bild geht dann an beide.
+const appBild = (z, bytes, bereich) => z.sendeBild(bytes, bereich ? { bereich } : { schnell: false });
+const duellSitzung = () => { for (const s of sitzungen.values()) if (s.z.verbunden && s.modus === 'app') return s; return null; };
+const imDuell = () => !!appSeite.zustand[0]?.zweiSticky && appSeite.aktiv === 0;
+const appSeite = new AppSeite(async (bytes, bereich) => {
+  const ziele = stickyModus === 'app' && zwilling.verbunden ? [zwilling] : [];
+  const s = imDuell() ? duellSitzung() : null;
+  if (s) ziele.push(s.z);
+  await Promise.all(ziele.map((z) => appBild(z, bytes, bereich)));
+});
+const appSeiteHg = new AppSeite(async (bytes, bereich) => {
+  const s = appSeiteHg.sitzung, ziele = s?.z.verbunden ? [s.z] : [];
+  if (imDuell() && stickyModus === 'app' && zwilling.verbunden) ziele.push(zwilling);
+  await Promise.all(ziele.map((z) => appBild(z, bytes, bereich)));
+});
+appSeiteHg.zustand = appSeite.zustand;   // derselbe Spielstand
+appSeiteHg.spieler = 1;
+/** Duell an, sobald beide Stickys die Spielseite zeigen; aus, sobald einer sie verlässt */
+function duellPruefen() {
+  const spiel = appSeite.zustand[0], s = duellSitzung();
+  const an = !!s && stickyModus === 'app' && zwilling.verbunden;
+  if (an && !spiel.zweiSticky) {
+    appSeite.aktiv = 0; appSeiteHg.aktiv = 0;
+    appSeiteHg.hoch = appSeite.hoch; appSeiteHg.sitzung = s;
+    spiel.duell([kurz(aktivesGeraet()), kurz(s.g)]);
+    eintrag(`Burgduell: ${kurz(aktivesGeraet())} gegen ${kurz(s.g)}`);
+    appSeite.zeigen().catch((e) => eintrag(`Burgduell: ${e.message}`, true));
+  } else if (!an && spiel.zweiSticky) {
+    spiel.solo();
+    if (stickyModus === 'app') appSeite.zeigen().catch(() => {});
+  }
+}
 let fahrtCrc = null;
 const knoepfe = () => {
   const roh = bauZ ? (localStorage.getItem(schluessel('knoepfe')) ?? '') : $('knoepfe').value;
@@ -1434,8 +1466,14 @@ function hgEreignis(s, art, d) {
     geraeteZeigen();
     if (!s.weg) hgPlanen(s, 3000);
   } else if (art === 'ereignis') {
-    if (d.t === 'modus') s.modus = d.m;
+    if (d.t === 'modus') {
+      s.modus = d.m;
+      if (d.m === 'app') { appSeiteHg.sitzung = s; appSeiteHg.hoch = appSeite.hoch; }
+      duellPruefen();
+      if (d.m === 'app' && !imDuell()) appSeiteHg.zeigen().catch((e) => eintrag(`${s.g.name}: ${e.message}`, true));
+    }
     else if (d.t === 'suchen') handyKlingeln();
+    else if (d.t === 'touch' && d.a === 'down' && s.modus === 'app') { appSeiteHg.sitzung = s; appSeiteHg.tipp(d.x, d.y).catch((e) => eintrag(`${s.g.name}: ${e.message}`, true)); }
     else if (d.t === 'touch' && d.a === 'down' && s.modus === 'notiz') hgNotizTipp(s, d).catch((e) => eintrag(`${s.g.name}: ${e.message}`, true));
   }
 }
@@ -1580,7 +1618,30 @@ function zipBauen(dateien) {
   return new Blob([...teile, ...zentral, ende], { type: 'application/zip' });
 }
 window.__sticky.grundausstattung = grundausstattung;
-window.__sticky.sitzungen = sitzungen;   // zum Prüfen per WebView-Fernsteuerung (adb)
+window.__sticky.sitzungen = sitzungen;
+/** Burgduell Computer gegen Computer auf beiden Stickys (alle 3,5 s ein Schuss) */
+window.__sticky.maschinenDuell = async () => {
+  const spiel = appSeite.zustand[0], warte = (ms) => new Promise((r) => setTimeout(r, ms));
+  // erst warten, bis kein Abgleich mehr funkt (sonst teilen sich Spiel und Abgleich den Funk und reißen ab)
+  for (let i = 0; i < 120 && (vordergrundGleichtAb || [...sitzungen.values()].some((x) => x.laeuft)); i++) await warte(500);
+  stickyModus = zwilling.geraet.modus ?? stickyModus;
+  duellPruefen();
+  spiel.maschinenDuell();
+  eintrag(spiel.text);
+  const zeigen = async () => {   // kurze Abrisse überstehen: auf die Verbindung warten, Fehler nicht durchreichen
+    for (let i = 0; i < 60 && !(zwilling.verbunden && duellSitzung()); i++) await warte(1000);
+    await appSeite.zeigen().catch((e) => eintrag(`Burgduell: ${e.message}`, true));
+  };
+  await zeigen();
+  while (!spiel.vorbei && spiel.cpuBeide) {
+    await warte(3500);
+    if (!spiel.cpuBeide) break;
+    spiel.nachzug();
+    await zeigen();
+  }
+  eintrag(`Burgduell: ${spiel.text}`);
+  return spiel.text;
+};   // zum Prüfen per WebView-Fernsteuerung (adb)
 window.__sticky.grundZip = () => zipBauen(grundausstattung());
 
 tabsEinrichten();

@@ -24,6 +24,18 @@ const TASTEN = [
 export class Burgduell {
   constructor(hoch = false) { this.neu(hoch, true); }
 
+  /** Duell auf zwei Stickys (Markus, 14.11.2026): West spielt am aktiven, Ost am Hintergrund-Sticky; namen = [West, Ost] */
+  duell(namen) { this.zweiSticky = true; this.namen = namen; this.neu(this.hoch, false); this.text = `Duell auf zwei Stickys: ${namen[0]} gegen ${namen[1]}. ${namen[0]} beginnt.`; }
+  /** Computer gegen Computer (14.11.2026): beide Seiten mit demselben Computer-Spieler, wer beginnt, entscheidet ein Münzwurf */
+  maschinenDuell() {
+    this.cpuBeide = true;
+    this.neu(this.hoch, false);
+    this.zug = Math.random() < 0.5 ? 0 : 1;
+    this.text = `Computer gegen Computer: ${this.p[this.zug].name} beginnt (Münzwurf).`;
+  }
+  /** zurück zu einem Sticky gegen den Computer */
+  solo() { if (!this.zweiSticky) return; this.zweiSticky = false; this.namen = null; this.neu(this.hoch, true); this.text = 'Wieder gegen den Computer. West beginnt.'; }
+
   /** Neues Spiel in der Feldgröße der Lage; gegnerCpu bleibt, wie er war */
   neu(hoch = this.hoch, cpu = this.cpu ?? true) {
     this.hoch = hoch;
@@ -47,7 +59,7 @@ export class Burgduell {
     for (let x = 0; x < W; x++) for (let y = Math.max(0, Math.round(h[x])); y < H; y++) mat[y * W + x] = 1;
     cs.forEach((c, i) => this.#burg(c, fys[i]));
     this.p = cs.map((c, i) => ({
-      name: i ? 'Ost' : 'West', c, dir: i ? -1 : 1, winkel: 45, pulver: 20, sel: 0, schuesse: 0,
+      name: this.namen?.[i] ?? (i ? 'Ost' : 'West'), c, dir: i ? -1 : 1, winkel: 45, pulver: 20, sel: 0, schuesse: 0,
       koenig: { x: c, y: fys[i], lebt: true }, kanonen: [-40, 40].map((o) => ({ x: c + o, y: this.#oben(c + o), lebt: true })),
     }));
     this.cpu = cpu;
@@ -56,7 +68,15 @@ export class Burgduell {
     this.bahn = null;
     this.krater = null;
     this.vorbei = false;
-    this.text = 'West beginnt: Winkel und Pulver einstellen, dann FEUER.';
+    this.text = `${this.p[0].name} beginnt: Winkel und Pulver einstellen, dann FEUER.`;
+  }
+
+  /** Darf dieser Spieler (0 = aktiver Sticky, 1 = Hintergrund-Sticky) gerade etwas tun? */
+  #darf(spieler) {
+    if (this.vorbei) return false;
+    if (this.cpuBeide) return false;
+    if (this.zweiSticky) return spieler === this.zug;
+    return spieler === 0 && !(this.cpu && this.zug === 1);
   }
 
   #rechteck(x0, y0, x1, y1, v) { for (let y = Math.max(0, y0); y <= Math.min(this.H - 1, y1); y++) for (let x = Math.max(0, x0); x <= Math.min(this.W - 1, x1); x++) this.mat[y * this.W + x] = v; }
@@ -143,14 +163,14 @@ export class Burgduell {
     const p = this.p[this.zug];
     this.wind = klemme(this.wind + rnd(-0.35, 0.35), -1, 1);
     if (!this.#kanone(p)) { const a = this.#lebende(p); if (a.length) p.sel = a[0]; }
-    this.text = `${text} Jetzt ${p.name}${this.cpu && this.zug === 1 ? ' (Computer)' : ''}.`;
+    this.text = `${text} Jetzt ${p.name}${this.cpuBeide || (this.cpu && this.zug === 1) ? ' (Computer)' : ''}.`;
   }
 
   /** Computer am Zug? Dann zielen und schießen; true, wenn er geschossen hat (die Seite zeigt danach seinen Schuss) */
   nachzug() {
-    if (this.vorbei || !this.cpu || this.zug !== 1) return false;
-    const p = this.p[1], gegner = this.p[0], K = gegner.koenig;
-    if (!this.#lebende(p).length) { this.#weiter('Ost hat keine Kanone mehr.'); return true; }
+    if (this.vorbei || !(this.cpuBeide || (this.cpu && this.zug === 1))) return false;
+    const p = this.p[this.zug], gegner = this.p[1 - this.zug], K = gegner.koenig;   // gleicher Computer-Spieler für jede Seite
+    if (!this.#lebende(p).length) { this.#weiter(`${p.name} hat keine Kanone mehr.`); return true; }
     const kb = [{ x0: K.x - 4, x1: K.x + 4, y0: K.y - 13, y1: K.y - 1 }];
     let best = null;
     for (const idx of this.#lebende(p)) {
@@ -171,9 +191,9 @@ export class Burgduell {
   }
 
   /** Taste der Leiste; → true, wenn sich etwas geändert hat */
-  taste(id) {
-    if (id === 'neu') { this.neu(this.hoch); return true; }
-    if (this.vorbei || (this.cpu && this.zug === 1)) return false;
+  taste(id, spieler = 0) {
+    if (id === 'neu') { this.cpuBeide = false; this.neu(this.hoch); return true; }
+    if (!this.#darf(spieler)) return false;
     const p = this.p[this.zug];
     if (id === 'w-') p.winkel = klemme(p.winkel - 5, 5, 85);
     else if (id === 'w+') p.winkel = klemme(p.winkel + 5, 5, 85);
@@ -185,8 +205,8 @@ export class Burgduell {
   }
 
   /** Tipp ins Feld auf eine eigene Kanone wählt sie aus */
-  feldTipp(x, y) {
-    if (this.vorbei || (this.cpu && this.zug === 1)) return false;
+  feldTipp(x, y, spieler = 0) {
+    if (!this.#darf(spieler)) return false;
     const p = this.p[this.zug];
     let bi = -1, bd = 24;
     p.kanonen.forEach((k, i) => { if (!k.lebt) return; const d = Math.hypot(k.x - x, k.y - 4 - y); if (d < bd) { bd = d; bi = i; } });
@@ -222,7 +242,7 @@ export class Burgduell {
     // Kopfzeile im Feld: wer, Winkel, Pulver, Wind
     const p = this.p[this.zug];
     g.font = `500 22px ${FONT}`; g.textBaseline = 'top'; g.textAlign = 'left';
-    g.fillText(this.vorbei ? 'Spiel vorbei' : `${p.name}${this.cpu && this.zug === 1 ? ' (CPU)' : ''} · Winkel ${p.winkel}° · Pulver ${p.pulver}`, ox + 8, oy + 6);
+    g.fillText(this.vorbei ? 'Spiel vorbei' : `${p.name}${this.cpu && this.zug === 1 ? ' (CPU)' : ''} am Zug · ${p.winkel}° · Pulver ${p.pulver}`, ox + 8, oy + 6);
     const s = Math.round(Math.abs(this.wind) * 10), wx = ox + W - 120;
     g.textAlign = 'right';
     g.fillText(s ? `Wind ${s}` : 'windstill', ox + W - 8, oy + 6);
@@ -266,14 +286,14 @@ export function burgduellWidget(kopf) {
       const proZeile = Math.ceil(TASTEN.length / tasten.zeilen), tw = tasten.w / proZeile, th = tasten.h / tasten.zeilen;
       TASTEN.forEach((t, i) => braunKnopf(g, tasten.x + (i % proZeile) * tw, tasten.y + Math.floor(i / proZeile) * th, tw, th, t.text, t.rolle ?? (t.id === 'neu' ? 'werkzeug' : 'wahl'), { rand: 4, gr: hoch ? 24 : 22 }));
     },
-    tipp(z, x, y, hoch) {
+    tipp(z, x, y, hoch, spieler = 0) {
       const { feld, tasten } = burgMasse(hoch);
       if (y >= tasten.y && y < tasten.y + tasten.h && x >= tasten.x && x < tasten.x + tasten.w) {
         const proZeile = Math.ceil(TASTEN.length / tasten.zeilen);
         const i = Math.floor((y - tasten.y) / (tasten.h / tasten.zeilen)) * proZeile + Math.floor((x - tasten.x) / (tasten.w / proZeile));
-        return TASTEN[i] && z.taste(TASTEN[i].id) ? 'seite' : null;
+        return TASTEN[i] && z.taste(TASTEN[i].id, spieler) ? 'seite' : null;
       }
-      if (y >= feld.y && y < feld.y + feld.h) return z.feldTipp(x - feld.x, y - feld.y) ? 'seite' : null;
+      if (y >= feld.y && y < feld.y + feld.h) return z.feldTipp(x - feld.x, y - feld.y, spieler) ? 'seite' : null;
       return null;
     },
     nachzugBereit(z) { return !z.vorbei && z.cpu && z.zug === 1; },

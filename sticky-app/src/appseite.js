@@ -120,6 +120,7 @@ export class AppSeite {
     this.zustand = this.widgets.map((w) => w.neu());
     this.aktiv = 0;
     this.hoch = false;   // Lage (Mehr → Lage der Seiten), FW ≥ 0.21.0
+    this.spieler = 0;    // Burgduell auf zwei Stickys: 0 = aktiver, 1 = Hintergrund-Sticky
   }
 
   #lage() { L = this.hoch ? LAGEN.hoch : LAGEN.quer; return groesse(this.hoch); }
@@ -165,7 +166,7 @@ export class AppSeite {
       if (reiter !== this.aktiv) { this.aktiv = reiter; await this.zeigen(); }
       return true;
     }
-    const was = this.w.tipp(this.z, x, y, this.hoch);
+    const was = this.w.tipp(this.z, x, y, this.hoch, this.spieler);
     if (was) { const t = this.#ausschnitt(was === 'anzeige' ? 'ANZEIGE' : 'UNTEN'); await this.senden(t.bytes, t.bereich); }
     // Burgduell: der Computer antwortet mit kurzer Pause, damit man den eigenen Schuss erst sieht
     while (this.w.nachzugBereit?.(this.z)) {

@@ -8,10 +8,10 @@ const LISTE = 'sticky.geraete', AKTIV = 'sticky.aktiv', ALT = 'sticky.geraet';
 export const PROFILE = { edc: 'EDC', wand: 'Wand / Test', einfach: 'Einfach' };
 
 /** Einstellungen, die zum Profil gehören (Vorlage) */
-export const PROFIL_SCHLUESSEL = ['karussell', 'lagen', 'dreh180', 'zettel', 'bestellung', 'karten', 'spickzettel', 'handgriffe',
+export const PROFIL_SCHLUESSEL = ['karussell', 'lagen', 'zettel', 'bestellung', 'karten', 'spickzettel', 'handgriffe',
   'woerter', 'woerterbuch', 'knoepfe'];
 /** Zustand eines einzelnen Geräts (was auf seiner Karte liegt, seine Kalibrierung) */
-export const GERAET_SCHLUESSEL = ['homecrcs', 'spiegel', 'logStand', 'lineal80', 'bbplan'];
+export const GERAET_SCHLUESSEL = ['homecrcs', 'spiegel', 'logStand', 'lineal80', 'bbplan', 'dreh180'];   // dreh180: wie das Gerät gehalten wird
 
 const lesen = (k, sonst) => { try { return JSON.parse(localStorage.getItem(k) ?? 'null') ?? sonst; } catch { return sonst; } };
 const schreiben = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* egal */ } };
@@ -98,6 +98,19 @@ export function karteFuer(g, vorlage) {
 
 /** Kurzname fürs Protokoll und für Ist-Daten: „Sticky-559D“ → „559D“ */
 export const kurz = (g) => (g?.name ?? '').replace(/^Sticky-?/, '') || g?.id?.slice(-5).replace(':', '') || '?';
+
+// ---- Umzug (14.11.2026): „180° gedreht“ hing am Profil, gehört aber zum Gerät → dem ersten Sticky geben ------------
+(function drehUmzug() {
+  try {
+    const erster = JSON.parse(localStorage.getItem(LISTE) || '[]')[0];
+    for (const pr of Object.keys(PROFILE)) {
+      const k = `sticky.p.${pr}.dreh180`, v = localStorage.getItem(k);
+      if (v == null) continue;
+      if (erster && localStorage.getItem(`sticky.g.${erster.id}.dreh180`) == null) localStorage.setItem(`sticky.g.${erster.id}.dreh180`, v);
+      localStorage.removeItem(k);
+    }
+  } catch { /* egal */ }
+})();
 
 // ---- Umzug (einmalig): bisher ein Sticky, alle Einstellungen global → Gerät A mit Profil „edc“ ----------------------
 (function umzug() {

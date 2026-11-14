@@ -423,8 +423,10 @@ Was der Sticky als Immer-dabei-Helfer noch können könnte, sortiert nach Aufwan
   - **Umgesetzt als Kür (14.11.2026): „Burgduell lite“** als App-Seite (`src/burgduell.js`, erster Reiter neben Rechner
     und Umrechner; Karussell-Wort „Spiel“): Vorlage Markus' Artefakt „Burgduell“, eigene Grafik. Schuss sofort durchgerechnet,
     gepunktete Bahn + Krater, ein Teilbild pro Zug; je Burg zwei Kanonen und König, Wind; Computer-Gegner in der App.
-    Braucht das Handy. Nächster Schritt (Markus): **zwei Spieler auf zwei Stickys** (West auf 559D, Ost auf Sticky B), App als
-    Schiedsrichter über die Hintergrund-Sitzung
+    Braucht das Handy. **Zwei Stickys (umgesetzt 14.11.2026):** zeigen beide die Spielseite, schaltet die App ins Duell –
+    West am aktiven, Ost am Hintergrund-Sticky, nur wer am Zug ist, darf tippen, jedes Bild geht an beide. Dazu
+    **Computer gegen Computer** (`__sticky.maschinenDuell()`, gleicher Computer-Spieler, Münzwurf entscheidet den Anfang):
+    erstes Spiel Sticky B gegen 559D, Sticky B gewann nach knapp 3 min. „180° gedreht“ gilt jetzt je Gerät statt je Profil
   - Nur Idee (Markus, 14.11.2026): **wenn Spiele, dann richtig**: auch Weltraum-Felsen-Ballern und Städte-Verteidigung
     (Raketen abfangen) im Stil der Arcade-Zeit, eigene Namen und Grafik. Haken E-Paper: Teil-Refresh ~0,3–0,75 s, also
     2–3 Bilder/s mit Geisterbildern. Vorschlag: bewusst langsame Fassungen („Zeitlupen-Arcade“: Welt bewegt sich nur
