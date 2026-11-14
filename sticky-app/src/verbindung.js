@@ -4,10 +4,10 @@ import { BleClient, ConnectionPriority, ScanMode } from '@capacitor-community/bl
 import { Capacitor } from '@capacitor/core';
 import { UUID, BILD_BYTES, BREITE, HOEHE, crc32, lies } from './protokoll.js';
 import { kodiere, SAMPLES_JE_PAKET, RATE } from './audio.js';
+import { aktivesGeraet, geraetMerken, geraete } from './geraete.js';
 
 const dv = (u8) => new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
 const text = (view) => new TextDecoder().decode(new Uint8Array(view.buffer, view.byteOffset, view.byteLength));
-const SPEICHER_ID = 'sticky.geraet';
 
 class Basis {
   constructor() {
@@ -36,8 +36,10 @@ export class BleVerbindung extends Basis {
     this.bereit = true;
   }
 
-  /** Sucht den Sticky (Android: kurzer Scan ohne Auswahl-Dialog; Browser: Web-Bluetooth-Auswahl). */
-  async suchen() {
+  /** Sucht einen Sticky (Android: kurzer Scan ohne Auswahl-Dialog; Browser: Web-Bluetooth-Auswahl).
+   *  nurNeue: bekannte Geräte überspringen (Multiclient: „Sticky hinzufügen“) */
+  async suchen({ nurNeue = false, nurId = null } = {}) {
+    const bekannt = new Set(nurNeue ? geraete().map((g) => g.id) : []);
     await this.init();
     if (!this.nativ) {
       const g = await BleClient.requestDevice({ services: [UUID.dienst], namePrefix: 'Sticky' });
@@ -54,16 +56,16 @@ export class BleVerbindung extends Basis {
       };
       const zeit = setTimeout(() => ende(null, new Error('Kein Sticky gefunden (10 s gesucht). Ist er wach? Eine Taste drücken.')), 10000);
       BleClient.requestLEScan({ services: [UUID.dienst], scanMode: ScanMode.SCAN_MODE_LOW_LATENCY }, (r) => {
+        if (bekannt.has(r.device.deviceId) || (nurId && r.device.deviceId !== nurId)) return;   // nicht den falschen Sticky nehmen
         ende({ id: r.device.deviceId, name: r.device.name || r.localName || 'Sticky' });
       }).catch((e) => ende(null, e));
     });
   }
 
   /** nurGemerkt: beim automatischen Wiederverbinden nur den bekannten Sticky ansprechen, nicht scannen (schont Akku/Funk) */
-  async verbinden({ nurGemerkt = false } = {}) {
+  async verbinden({ nurGemerkt = false, neu = false } = {}) {
     await this.init();
-    let gemerkt = null;
-    try { gemerkt = JSON.parse(localStorage.getItem(SPEICHER_ID) || 'null'); } catch { /* egal */ }
+    const gemerkt = neu ? null : aktivesGeraet();   // Multiclient: der aktive Sticky aus der Geräteliste
     let geraet = null;
     if (gemerkt && this.nativ) {
       try {
@@ -74,9 +76,9 @@ export class BleVerbindung extends Basis {
         this.onLog(`Gemerkter Sticky nicht erreichbar (${e.message}), suche neu …`);
       }
     }
-    geraet = await this.suchen();
+    geraet = await this.suchen({ nurNeue: neu, nurId: gemerkt && this.nativ ? gemerkt.id : null });
     await this.#verbindeMit(geraet);
-    try { localStorage.setItem(SPEICHER_ID, JSON.stringify(geraet)); } catch { /* egal */ }
+    geraetMerken(geraet);
   }
 
   /** Laufenden oder halben Verbindungsversuch lösen (nach Fristablauf) */

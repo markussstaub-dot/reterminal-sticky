@@ -139,3 +139,10 @@ footer { padding: 0; }
 /* Kritzel vom Sticky als Bild-Notiz */
 #notizen img.kritzel { display: block; width: 100%; max-width: 400px; margin-top: 6px; border: 1px solid var(--leise, #888); border-radius: 6px; background: #fff; }
 label.lage { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 6px 0; }
+
+/* Stickys (Multiclient) */
+.geraete { list-style: none; padding: 0; margin: 0 0 8px; }
+.geraete li { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 0; border-bottom: 1px solid #3333; }
+.geraete li.aktiv input { font-weight: 600; }
+.geraete input { flex: 1 1 8em; min-width: 8em; }
+.geraete .klein { flex-basis: 100%; opacity: .7; }

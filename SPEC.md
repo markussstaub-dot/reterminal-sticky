@@ -22,6 +22,14 @@ Legende: **fest** = entschieden · **Vorschlag** = Claudes Idee, Markus entschei
   Profile als Vorlagen, Altdaten zu Sticky A. Erst beide Stickys für Markus selbst, **Familie und Privatsphäre mitdenken**:
   Besitzer je Gerät, persönliche Daten nie auf fremde Geräte, „Gerät vergessen“ vor dem Verschenken, alles lokal.
   **Lücke:** BLE heute ohne Kopplung (jedes Handy in Reichweite könnte /ist lesen) → Kopplung mit Tastenbestätigung, eigener Firmware-Schritt
+  - **Stufe 1 umgesetzt (14.11.2026):** Geräteliste (Mehr → Stickys: Name, Profil, Wechseln, Vergessen, „Sticky
+    hinzufügen“ überspringt bekannte), verbunden ist einer zur Zeit; Wechseln lädt die App neu. Einstellungen je Profil
+    (`sticky.p.<profil>.…`: Karussell, Lage, Zettel, Karten, Spickzettel, Handgriffe, Wörterbuch, Notiz-Knöpfe) bzw. je
+    Gerät (`sticky.g.<mac>.…`: Abgleich-Stand, Spiegel, Lineal-Kalibrierung, Bordbuch-Plan); `src/geraete.js`. Altdaten
+    wandern einmalig zu Sticky A (Profil „EDC“). Notizen tragen `geraet`, Fahrtenschreiber/Messreihen weiterer Geräte
+    liegen in einem Unterordner mit Kurznamen. Wiederverbinden sucht nur den aktiven Sticky, nie einen anderen
+  - offen, **Stufe 2:** gleichzeitig verbunden (Zwilling je Gerät, Wecker je MAC im StickyDienst); „Gerät vergessen“ soll
+    auch /soll und /ist auf der Karte leeren (vor dem Verschenken)
 
 ## MVP (Markus, 11.11.2026)
 
@@ -214,6 +222,9 @@ nehmen, die im Auto wirklich gefehlt hat, statt zu sammeln (Pflege!).
     - Einfacher (Markus, 14.11.2026): **Grundausstattung als ZIP für die SD-Karte** im GitHub-Release, „auspacken, Karte
       rein, fertig“. Geht ohne Firmware-Änderung, die Firmware liest /soll schon von der Karte. Vorlage: /soll vom
       Bastel-Sticky, aber ohne Persönliches (Bordbuch, Zettel, Kundennummern, Visitenkarte)
+    - Befund (14.11.2026): der zweite Sticky kam **ohne microSD-Karte**. Ohne Karte legt die Firmware nur Home, Notiz
+      und Bordbuch im Flash ab; Menü, Widgets, Schrift und Hilfe scheitern („ablage“). Mit Karte (30 GB, FAT32) lief
+      alles durch. Für Fremde: im Playground-Text „microSD-Karte nötig“ sagen; langfristig Widgets auch im Flash ablegen
 - Vorschlag Lizenz: **MIT**. Steht in Seeeds Liste, ist am einfachsten und passt zu den Bausteinen
   (whisper.cpp MIT, NimBLE und pdf.js Apache-2.0). Anders als bei der Uhrenbox (bewusst ohne Lizenz), weil
   Teilen hier heißt: andere dürfen es nutzen. offen: Entscheidung Markus

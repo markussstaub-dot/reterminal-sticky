@@ -8,6 +8,7 @@ import { braunKnopf, BRAUN_FONT } from './braun.js';
 import { TASTEN as R_TASTEN, ROLLE as R_ROLLE } from './rechner.js';
 import { PAARE } from './umrechner.js';
 import { HANDY_12H, HANDY_US } from './zeit.js';
+import { schluessel } from './geraete.js';
 
 const FONT = BRAUN_FONT;
 const leinwand = (b, h) => (typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(b, h) : Object.assign(document.createElement('canvas'), { width: b, height: h }));
@@ -453,4 +454,4 @@ export const WIDGETS = { timer: timerWidget, waage: waageWidget, lineal: () => l
   weltzeit: weltzeitWidget, wecker: weckerWidget, einstellungen: () => einstellungenWidget(false, HANDY_12H, HANDY_US),
   'lineal-us': () => linealWidget(linealEcht(), true) };
 /** Kalibrierung aus der App (Mehr → Lineal): so viele echte mm misst die 80-mm-Marke */
-function linealEcht() { try { return parseFloat(localStorage.getItem('sticky.lineal80')) || 80; } catch { return 80; } }
+function linealEcht() { try { return parseFloat(localStorage.getItem(schluessel('lineal80'))) || 80; } catch { return 80; } }

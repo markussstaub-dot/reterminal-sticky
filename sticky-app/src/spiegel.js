@@ -54,9 +54,19 @@ export function spiegelEinrichten({ canvas, hinweisEl, quelle, befehl, notizTipp
     const nr = ++zeichnet;
     const m = z.modus;
     if (z.verbunden && z.foto) {
-      // echtes Bild vom Sticky (FW ≥ 0.31.3): Statuszeile, Knöpfe, Striche, Ziffern – alles wie am Gerät
-      const hoch = !!z.lh;
-      zeichne1bpp(ziel(hoch ? HOEHE : BREITE, hoch ? BREITE : HOEHE), z.foto, hoch);
+      // echtes Bild vom Sticky (FW ≥ 0.31.3): Statuszeile, Knöpfe, Striche, Ziffern – alles wie am Gerät.
+      // Nach einem Seitenwechsel bleibt das alte Bild blass stehen, bis das neue da ist (kein Platzhalter-Flackern)
+      const hoch = z.fotoAlt ? z.fotoLh : !!z.lh;
+      const g = ziel(hoch ? HOEHE : BREITE, hoch ? BREITE : HOEHE);
+      zeichne1bpp(g, z.foto, hoch);
+      if (z.fotoAlt) {
+        g.fillStyle = 'rgba(255,255,255,0.65)';
+        g.fillRect(0, 0, g.canvas.width, g.canvas.height);
+        g.fillStyle = '#000';
+        g.font = 'bold 30px system-ui, sans-serif';
+        g.textAlign = 'center';
+        g.fillText('Bild kommt …', g.canvas.width / 2, g.canvas.height / 2);
+      }
     } else if (m === 'home' || m === 'notiz') {
       const g = ziel(PB, PH);
       const jetzt = uhrzeit(new Date());
@@ -111,7 +121,7 @@ export function spiegelEinrichten({ canvas, hinweisEl, quelle, befehl, notizTipp
       }
     }
     const was = { bordbuch: `Bordbuch, Seite ${z.bb + 1}`, bestell: `Zettel ${z.zettel + 1}`, widget: WIDGET_NAMEN[z.w] ?? (z.w || 'Widget') }[m] ?? SEITEN_NAMEN[m] ?? '–';
-    hinweisEl.textContent = z.verbunden ? `Sticky zeigt: ${was}${z.foto ? '' : m === 'widget' || m === 'schrift' ? ' (Grundbild)' : ''}` : 'nicht verbunden (letzter Stand)';
+    hinweisEl.textContent = z.verbunden ? `Sticky zeigt: ${was}${z.foto && !z.fotoAlt ? '' : z.fotoAlt ? ' (Bild kommt)' : m === 'widget' || m === 'schrift' ? ' (Grundbild)' : ''}` : 'nicht verbunden (letzter Stand)';
     hinweisEl.classList.toggle('gleich', z.verbunden);
   }
 
@@ -134,13 +144,16 @@ export function spiegelEinrichten({ canvas, hinweisEl, quelle, befehl, notizTipp
   return {
     setze(teile) {
       // neue Seite oder Lage: das alte Foto passt nicht mehr, bis das nächste kommt zeichnet die App selbst
-      if (['modus', 'w', 'lh', 'bb', 'zettel'].some((k) => k in teile && teile[k] !== z[k]) || teile.verbunden === false) z.foto = null;
+      if (teile.verbunden === false) z.foto = null;
+      else if (z.foto && !z.fotoAlt && ['modus', 'w', 'lh', 'bb', 'zettel'].some((k) => k in teile && teile[k] !== z[k])) { z.fotoAlt = true; z.fotoLh = !!z.lh; }
       Object.assign(z, teile);
       zeichne();
     },
     /** Bildschirmfoto vom Sticky (48000 Byte, Display-Lage) */
-    foto(daten) { z.foto = daten; zeichne(); },
+    foto(daten) { z.foto = daten; z.fotoAlt = false; zeichne(); },
     hatFoto: () => !!z.foto,
+    /** Foto kam nicht: dann zeichnet die App selbst, statt das alte Bild blass stehen zu lassen */
+    fotoFehlt() { if (z.fotoAlt) { z.foto = null; z.fotoAlt = false; zeichne(); } },
     meldung(text) {
       z.meldung = text;
       clearTimeout(meldungTimer);

@@ -6,6 +6,7 @@ import { Geolocation } from '@capacitor/geolocation';
 import { Hintergrund as HintergrundOrt } from './hintergrund.js';
 import { Share } from '@capacitor/share';
 import { sortiere } from './sorte.js';
+import { aktivesGeraet, kurz } from './geraete.js';
 
 const NATIV = Capacitor.isNativePlatform();
 const ORDNER = 'notizen';
@@ -38,7 +39,8 @@ export async function notiere(teile, ort = null) {
       teile = { ...teile, text: s.text, sorte: s.sorte, sorteGrund: s.grund, ...(s.text !== teile.text && teile.roh == null ? { roh: teile.text } : {}) };
     } else teile = { ...teile, sorte: teile.art === 'knopf' ? 'fahrt' : 'eingang' };
   }
-  const zeile = { t: Date.now(), typ: 'notiz', quelle: 'sticky', ...teile, ...(ort ?? {}) };
+  // geraet: von welchem Sticky (Multiclient, 14.11.2026) – nur die Quelle markieren, Notizen bleiben zentral
+  const zeile = { t: Date.now(), typ: 'notiz', quelle: 'sticky', geraet: kurz(aktivesGeraet()), ...teile, ...(ort ?? {}) };
   const json = JSON.stringify(zeile);
   if (NATIV) {
     await Filesystem.appendFile({ path: `${ORDNER}/${tagesName()}`, data: json + '\n', directory: Directory.Data, encoding: Encoding.UTF8, recursive: true });

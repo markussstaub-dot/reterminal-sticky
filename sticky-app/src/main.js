@@ -49,6 +49,7 @@ import { spiegelEinrichten } from './spiegel.js';
 import { BREITE, HOEHE, rgbaZu1bpp, crc32, rueckDatei } from './protokoll.js';
 import { BleVerbindung, SimVerbindung } from './verbindung.js';
 import { Zwilling } from './zwilling.js';
+import { schluessel, kurz, geraete, aktivesGeraet, aktivSetzen, geraetAendern, geraetVergessen, PROFILE } from './geraete.js';
 
 const $ = (id) => document.getElementById(id);
 const nativ = Capacitor.isNativePlatform();
@@ -320,6 +321,7 @@ function zeigeZustand(z) {
 }
 
 function zeigeVerbindung() {
+  geraeteZeigen();
   const an = zwilling.verbunden;
   $('status').textContent = an ? verbindung.name : 'getrennt';
   $('status').className = `pille ${an ? 'ein' : 'aus'}`;
@@ -344,7 +346,7 @@ let autoVerbinden = false;
 let wiederTimer = 0;
 /** Bluetooth-Adresse des gemerkten Sticky für den nativen Wecker (StickyDienst) */
 function stickyAdresse() {
-  try { return JSON.parse(localStorage.getItem('sticky.geraet') || 'null')?.id ?? null; } catch { return null; }
+  return aktivesGeraet()?.id ?? null;
 }
 
 // Wecker: Der Dienst merkt per autoConnect, dass der Sticky wieder funkt, und weckt die App (12.11.2026: im Doze
@@ -388,6 +390,73 @@ async function wiederverbinden() {
     verbindeGerade = false;
   }
 }
+
+// ---- Stickys (Multiclient Stufe 1, 14.11.2026): Liste, Profil, Wechseln ---------------------------------------
+// Wechseln lädt die App neu: alle Felder, Bilder und der Abgleich kommen dann sauber aus Profil und Gerät des neuen Sticky.
+async function wechselnZu(id, grund) {
+  autoVerbinden = false;
+  clearTimeout(wiederTimer);
+  wiederTimer = 0;
+  if (zwilling.verbunden) await verbindung.trennen().catch(() => {});
+  await Hintergrund.stop().catch(() => {});
+  if (id) aktivSetzen(id);
+  try { sessionStorage.setItem('sticky.grund', grund); } catch { /* egal */ }
+  location.reload();
+}
+function geraeteZeigen() {
+  const ul = $('geraeteListe');
+  ul.textContent = '';
+  const liste = geraete(), aktiv = aktivesGeraet();
+  if (!liste.length) { ul.innerHTML = '<li class="klein">Noch kein Sticky – auf dem Sticky-Tab „Verbinden“ tippen.</li>'; return; }
+  for (const g of liste) {
+    const istAktiv = g.id === aktiv?.id;
+    const li = document.createElement('li');
+    li.classList.toggle('aktiv', istAktiv);
+    const name = Object.assign(document.createElement('input'), { value: g.name, title: 'Name' });
+    name.onchange = () => { geraetAendern(g.id, { name: name.value.trim() || g.name }); geraeteZeigen(); };
+    const profil = document.createElement('select');
+    profil.title = 'Profil';
+    profil.innerHTML = Object.entries(PROFILE).map(([k, t]) => `<option value="${k}">${t}</option>`).join('');
+    profil.value = g.profil;
+    profil.onchange = () => {
+      geraetAendern(g.id, { profil: profil.value });
+      if (istAktiv) wechselnZu(null, `Profil „${PROFILE[profil.value]}“ für ${g.name}`);
+    };
+    const mac = Object.assign(document.createElement('span'), { className: 'klein', textContent: g.id });
+    const knopf = Object.assign(document.createElement('button'), { textContent: istAktiv ? (zwilling.verbunden ? '● verbunden' : '● aktiv') : 'Wechseln' });
+    knopf.disabled = istAktiv;
+    knopf.onclick = () => wechselnZu(g.id, `Gewechselt zu ${g.name}`);
+    const weg = Object.assign(document.createElement('button'), { textContent: 'Vergessen' });
+    weg.onclick = () => {
+      if (!confirm(`${g.name} vergessen? Sein Abgleich-Stand in der App wird gelöscht; das Profil bleibt. (Die Karte im Sticky bleibt, wie sie ist.)`)) return;
+      geraetVergessen(g.id);
+      if (istAktiv) wechselnZu(null, `${g.name} vergessen`); else geraeteZeigen();
+    };
+    li.append(name, profil, mac, knopf, weg);
+    ul.append(li);
+  }
+}
+$('geraetNeu').onclick = async () => {
+  const knopf = $('geraetNeu');
+  knopf.disabled = true;
+  knopf.textContent = 'Suche neuen Sticky …';
+  try {
+    autoVerbinden = false;
+    clearTimeout(wiederTimer);
+    if (zwilling.verbunden) await verbindung.trennen().catch(() => {});
+    verbindung = new BleVerbindung();
+    zwilling.anbinden(verbindung);
+    await verbindung.verbinden({ neu: true });   // bekannte Stickys werden übersprungen; der neue wird aktiv
+    await verbindung.trennen().catch(() => {});
+    await wechselnZu(null, `${verbindung.name} hinzugefügt (Profil „EDC“, in der Liste änderbar)`);
+  } catch (e) {
+    eintrag(`Sticky hinzufügen: ${e.message || e}`, true);
+    knopf.disabled = false;
+    knopf.textContent = 'Sticky hinzufügen';
+  }
+};
+geraeteZeigen();
+try { const grund = sessionStorage.getItem('sticky.grund'); if (grund) { sessionStorage.removeItem('sticky.grund'); setTimeout(() => eintrag(grund), 0); } } catch { /* egal */ }
 
 $('verbinden').onclick = async () => {
   const knopf = $('verbinden');
@@ -474,9 +543,9 @@ const knoepfe = () => {
   const l = $('knoepfe').value.split(',').map((t) => t.trim()).filter(Boolean).slice(0, 5);
   return l.length ? l : STANDARD_KNOEPFE;
 };
-try { $('knoepfe').value = localStorage.getItem('sticky.knoepfe') || STANDARD_KNOEPFE.join(', '); } catch { $('knoepfe').value = STANDARD_KNOEPFE.join(', '); }
+try { $('knoepfe').value = localStorage.getItem(schluessel('knoepfe')) || STANDARD_KNOEPFE.join(', '); } catch { $('knoepfe').value = STANDARD_KNOEPFE.join(', '); }
 $('knoepfe').onchange = () => {
-  try { localStorage.setItem('sticky.knoepfe', knoepfe().join(', ')); } catch { /* egal */ }
+  try { localStorage.setItem(schluessel('knoepfe'), knoepfe().join(', ')); } catch { /* egal */ }
   if (zwilling.verbunden) abgleich().catch((e) => eintrag(e.message, true));
 };
 
@@ -510,16 +579,16 @@ $('bestellZeigen').onclick = () => zwilling.modusSetzen(3).catch((e) => eintrag(
 // Zettel (13.11.2026): ein Feld für Bestellzettel und QR-Karten; einmaliger Umzug aus den alten zwei Feldern
 function zettelLaden() {
   try {
-    const neu = localStorage.getItem('sticky.zettel');
+    const neu = localStorage.getItem(schluessel('zettel'));
     if (neu != null) return neu;
-    const umgezogen = zettelUmzug(localStorage.getItem('sticky.bestellung') || BESTELL_STANDARD, localStorage.getItem('sticky.karten'), KARTEN_STANDARD);
-    localStorage.setItem('sticky.zettel', umgezogen);   // alte Schlüssel bleiben als Sicherung liegen
+    const umgezogen = zettelUmzug(localStorage.getItem(schluessel('bestellung')) || BESTELL_STANDARD, localStorage.getItem(schluessel('karten')), KARTEN_STANDARD);
+    localStorage.setItem(schluessel('zettel'), umgezogen);   // alte Schlüssel bleiben als Sicherung liegen
     return umgezogen;
   } catch { return BESTELL_STANDARD; }
 }
 $('zettelText').value = zettelLaden();
 $('zettelText').onchange = () => {
-  try { localStorage.setItem('sticky.zettel', $('zettelText').value); } catch { /* egal */ }
+  try { localStorage.setItem(schluessel('zettel'), $('zettelText').value); } catch { /* egal */ }
   const bloecke = ($('zettelText').value.match(/^## /gm) ?? []).length;
   if (bloecke > 6) eintrag(`Zettel: ${bloecke} eingetragen, der Sticky zeigt nur die ersten 6`, true);
   if (zwilling.verbunden) abgleich().catch((e) => eintrag(e.message, true));   // geänderte Zettel gleich aufspielen
@@ -655,12 +724,12 @@ async function abgleich() {
   } else if (zwilling.geraet.homev !== homeV) {
     // Nur geänderte Bilder senden (das Wetter ändert meist nur die Karte); unbekannt → alle
     let alt = null;
-    try { alt = JSON.parse(localStorage.getItem('sticky.homecrcs') || 'null'); } catch { /* egal */ }
+    try { alt = JSON.parse(localStorage.getItem(schluessel('homecrcs')) || 'null'); } catch { /* egal */ }
     const crcs = alle.map((b) => crc32(b));
     const vollstaendig = !alt || alt.version !== zwilling.geraet.homev || alt.crcs.length !== crcs.length;
     for (let i = 0; i < alle.length; i++) if (vollstaendig || alt.crcs[i] !== crcs[i]) await zwilling.sendeBild(alle[i], { home: i });
     await zwilling.homeVersion(homeV);
-    try { localStorage.setItem('sticky.homecrcs', JSON.stringify({ version: homeV, crcs })); } catch { /* egal */ }
+    try { localStorage.setItem(schluessel('homecrcs'), JSON.stringify({ version: homeV, crcs })); } catch { /* egal */ }
     eintrag(`Home-Karte, Notiz-Seite, Uhr und ${zettelBilder.length} Zettel/Karten aufgespielt`);
   }
   zeichneHome(g, undefined, uhrzeit(new Date()), wetter);
@@ -709,7 +778,7 @@ const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'bordbuch', 
 function karussellText() {
   // Rechner/Umrechner rechnen ab FW 0.28.0 im Sticky (Widgets); vorher über die App-Seite
   const lokal = fwAb('0.28.0'), wort = (w) => (lokal && (w === 'rechner' || w === 'umrechner') ? `widget ${w}` : KARUSSELL_WOERTER[w]);
-  const roh = (localStorage.getItem('sticky.karussell') || KARUSSELL_STANDARD).split(/[,;\n]/).map((w) => wort(w.trim().toLowerCase())).filter(Boolean);
+  const roh = (localStorage.getItem(schluessel('karussell')) || KARUSSELL_STANDARD).split(/[,;\n]/).map((w) => wort(w.trim().toLowerCase())).filter(Boolean);
   return [...new Set(roh)].join('\n') + '\n';
 }
 /** Tastenhilfe je Modus (▲+▼ am Sticky): auf eigener Leinwand rendern, damit die Vorschau bleibt, wie sie ist */
@@ -747,14 +816,14 @@ async function karussellAufspielen() {
 // ---- Lage der Seiten (SPEC „Hoch/Quer in zwei Stufen“, Stufe 1, FW ≥ 0.21.0) -------------------------------------
 function lagen() {
   try {
-    const eigen = JSON.parse(localStorage.getItem('sticky.lagen') || '{}');
+    const eigen = JSON.parse(localStorage.getItem(schluessel('lagen')) || '{}');
     // Rechner/Umrechner sind ab FW 0.28.0 eigene Widgets: sie übernehmen die bisherige Lage der App-Seite
     if (eigen.app && !eigen.rechner) { eigen.rechner = eigen.app; eigen.umrechner = eigen.app; }
     return { ...LAGE_STANDARD, ...eigen };
   } catch { return { ...LAGE_STANDARD }; }
 }
 const hochkant = (seite) => fwAb('0.21.0') && lagen()[seite] === 'hoch';
-const dreh180 = () => { try { return localStorage.getItem('sticky.dreh180') === '1'; } catch { return false; } };
+const dreh180 = () => { try { return localStorage.getItem(schluessel('dreh180')) === '1'; } catch { return false; } };
 // „dreh 180“ (FW ≥ 0.23.0): der Sticky dreht alles an der Ausgabe, die App zeichnet wie immer
 const lageText = () => Object.entries(lagen()).map(([s, l]) => `${s} ${l}`).join('\n') + '\n' + (fwAb('0.23.0') ? `dreh ${dreh180() ? 180 : 0}\n` : '');
 /** Widgets in ihrer Lage bauen; das Menü folgt dem Karussell */
@@ -789,7 +858,7 @@ for (const [seite, name] of Object.entries(LAGE_NAMEN)) {
   wahl.onchange = () => {
     const l = lagen();
     l[seite] = wahl.value;
-    try { localStorage.setItem('sticky.lagen', JSON.stringify(l)); } catch { /* egal */ }
+    try { localStorage.setItem(schluessel('lagen'), JSON.stringify(l)); } catch { /* egal */ }
     lageAufspielen().catch((e) => eintrag(`Lage: ${e.message}`, true));
   };
   zeile.append(`${name} `, wahl);
@@ -797,26 +866,26 @@ for (const [seite, name] of Object.entries(LAGE_NAMEN)) {
 }
 
 // Lineal kalibrieren: die 80-mm-Marke mit einem echten Lineal nachmessen und eintragen
-try { $('lineal80').value = localStorage.getItem('sticky.lineal80') || '80'; } catch { $('lineal80').value = '80'; }
+try { $('lineal80').value = localStorage.getItem(schluessel('lineal80')) || '80'; } catch { $('lineal80').value = '80'; }
 $('lineal80').onchange = () => {
   const v = parseFloat(String($('lineal80').value).replace(',', '.'));
   if (!(v > 60 && v < 100)) { eintrag('Lineal: bitte einen Wert um 80 mm eintragen', true); return; }
-  try { localStorage.setItem('sticky.lineal80', String(v)); } catch { /* egal */ }
+  try { localStorage.setItem(schluessel('lineal80'), String(v)); } catch { /* egal */ }
   if (zwilling.verbunden && fwAb('0.18.0')) zwilling.sollAbgleich('widgets/lineal', WIDGETS.lineal()).then((n) => n && eintrag(`Lineal neu kalibriert (80 mm = ${v} mm)`)).catch((e) => eintrag(e.message, true));
 };
 
 $('dreh180').checked = dreh180();
 $('dreh180').onchange = () => {
-  try { localStorage.setItem('sticky.dreh180', $('dreh180').checked ? '1' : '0'); } catch { /* egal */ }
+  try { localStorage.setItem(schluessel('dreh180'), $('dreh180').checked ? '1' : '0'); } catch { /* egal */ }
   if (zwilling.verbunden && fwAb('0.21.0')) einstellungenAufspielen().then((n) => n && eintrag(`Sticky ${$('dreh180').checked ? 'auf dem Kopf' : 'normal'}`)).catch((e) => eintrag(`Lage: ${e.message}`, true));
 };
 
 $('pttAblage').checked = pttAblage();
 $('pttAblage').onchange = () => { try { localStorage.setItem('sticky.pttAblage', $('pttAblage').checked ? '1' : '0'); } catch { /* egal */ } };
 
-$('karussell').value = localStorage.getItem('sticky.karussell') || KARUSSELL_STANDARD;
+$('karussell').value = localStorage.getItem(schluessel('karussell')) || KARUSSELL_STANDARD;
 $('karussell').onchange = () => {
-  localStorage.setItem('sticky.karussell', $('karussell').value);
+  localStorage.setItem(schluessel('karussell'), $('karussell').value);
   if (zwilling.verbunden && fwAb('0.13.0')) karussellAufspielen().catch((e) => eintrag(`Karussell: ${e.message}`, true));
 };
 
@@ -839,7 +908,7 @@ async function fotoRunde() {
   clearTimeout(fotoTimer);
   if (!zwilling.verbunden || !stickyTabOffen() || fotoLaeuft) return;
   fotoLaeuft = true;
-  try { spiegel.foto(await zwilling.bildschirm()); } catch { /* egal: der Spiegel zeichnet dann selbst */ }
+  try { spiegel.foto(await zwilling.bildschirm()); } catch { spiegel.fotoFehlt(); }   // dann zeichnet der Spiegel selbst
   fotoLaeuft = false;
   if (Date.now() < fotoBis && ['kritzel', 'schrift', 'widget'].includes(spiegel.zustand().modus)) fotoTimer = setTimeout(fotoRunde, 3000);
 }
@@ -848,13 +917,16 @@ document.querySelector('#tabs [data-ziel="sticky"]')?.addEventListener('click', 
 const fwAb = (v) => { const f = zwilling.geraet.fw; if (f === 'sim') return true; const a = String(f ?? '0').split('.').map(Number), b = v.split('.').map(Number);
   for (let i = 0; i < 3; i++) if ((a[i] || 0) !== b[i]) return (a[i] || 0) > b[i]; return true; };
 const LOG_ORDNER = 'fahrtenschreiber';
-const logStand = () => { try { return JSON.parse(localStorage.getItem('sticky.logStand') ?? '{}'); } catch { return {}; } };
+const logStand = () => { try { return JSON.parse(localStorage.getItem(schluessel('logStand')) ?? '{}'); } catch { return {}; } };
 const heuteName = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}.txt`; };
 const logSim = {};   // im Browser statt Filesystem
 
 async function logAnhaengen(name, text, ordner = LOG_ORDNER) {
   if (!nativ) { if (ordner === LOG_ORDNER) logSim[name] = (logSim[name] ?? '') + text; return; }
-  await Filesystem.appendFile({ path: `${ordner}/${name}`, data: text, directory: Directory.Data, encoding: Encoding.UTF8, recursive: true });
+  // Multiclient: der erste Sticky (A) schreibt wie bisher, weitere in einen Unterordner mit ihrem Kurznamen
+  const g = aktivesGeraet(), erster = geraete()[0];
+  const pfad = g && erster && g.id !== erster.id ? `${ordner}/${kurz(g)}/${name}` : `${ordner}/${name}`;
+  await Filesystem.appendFile({ path: pfad, data: text, directory: Directory.Data, encoding: Encoding.UTF8, recursive: true });
 }
 async function logLesen(name) {
   if (!nativ) return logSim[name] ?? '';
@@ -879,12 +951,12 @@ async function istAbholen(quelle, ziel) {
       await logAnhaengen(d.n, neu, ziel);
       zeilen += neu.split('\n').filter(Boolean).length;
       stand[schluessel(d.n)] = d.b;
-      localStorage.setItem('sticky.logStand', JSON.stringify(stand));
+      localStorage.setItem(schluessel('logStand'), JSON.stringify(stand));
     }
     // vergangene Tage (und die Zeilen ohne Uhrzeit) sind abgeschlossen: auf dem Sticky quittieren
     if (!d.n.includes(heuteName().replace('.txt', '')) && await zwilling.loeschen(`/ist/${quelle}/${d.n}`)) {
       delete stand[schluessel(d.n)];
-      localStorage.setItem('sticky.logStand', JSON.stringify(stand));
+      localStorage.setItem(schluessel('logStand'), JSON.stringify(stand));
     }
   }
   return zeilen;
@@ -1027,11 +1099,11 @@ notizen.heute().then((l) => l.reverse().forEach((n) => zeigeNotiz(n)));
 // ---- Bordbuch (SPEC „MVP 2“) --------------------------------------------------------
 let imBordbuch = false;
 let pdf = null;
-try { $('spickzettel').value = localStorage.getItem('sticky.spickzettel') || bb.SPICKZETTEL_STANDARD; } catch { $('spickzettel').value = bb.SPICKZETTEL_STANDARD; }
-$('spickzettel').onchange = () => { try { localStorage.setItem('sticky.spickzettel', $('spickzettel').value); } catch { /* egal */ } };
+try { $('spickzettel').value = localStorage.getItem(schluessel('spickzettel')) || bb.SPICKZETTEL_STANDARD; } catch { $('spickzettel').value = bb.SPICKZETTEL_STANDARD; }
+$('spickzettel').onchange = () => { try { localStorage.setItem(schluessel('spickzettel'), $('spickzettel').value); } catch { /* egal */ } };
 $('spickStandard').onclick = () => { $('spickzettel').value = bb.SPICKZETTEL_STANDARD; $('spickzettel').onchange(); };
-try { $('handgriffe').value = localStorage.getItem('sticky.handgriffe') ?? HANDGRIFFE_STANDARD; } catch { $('handgriffe').value = HANDGRIFFE_STANDARD; }
-$('handgriffe').onchange = () => { try { localStorage.setItem('sticky.handgriffe', $('handgriffe').value); } catch { /* egal */ } };
+try { $('handgriffe').value = localStorage.getItem(schluessel('handgriffe')) ?? HANDGRIFFE_STANDARD; } catch { $('handgriffe').value = HANDGRIFFE_STANDARD; }
+$('handgriffe').onchange = () => { try { localStorage.setItem(schluessel('handgriffe'), $('handgriffe').value); } catch { /* egal */ } };
 $('handgriffeStandard').onclick = () => { $('handgriffe').value = HANDGRIFFE_STANDARD; $('handgriffe').onchange(); };
 /** Spickzettel und Handgriffe zusammen, in dieser Reihenfolge (Bordbuch und Vorschau nutzen dieselbe Liste) */
 const spickSeiten = () => [...bb.spickzettelSeiten($('spickzettel').value), ...bb.spickzettelSeiten($('handgriffe').value)];
@@ -1089,7 +1161,7 @@ async function bordbuchBauen(status) {
   const index = [`seiten=${seiten.length}`, 'toc=0', ...felder.map((f) => `e ${f.x0} ${f.y0} ${f.x1} ${f.y1} ${f.seite}`)].join('\n') + '\n';
   // Plan für die Vorschau merken: welche Seite ist was (die Bilder rendert der Spiegel bei Bedarf neu)
   const plan = { links, rechts, felder, seiten: [{ a: 'inhalt' }, ...spick.map((_, i) => ({ a: 'spick', i, n: nSpick, von: gesamt })), ...hb.map((h) => ({ a: 'pdf', p: h.pdfSeite, t: h.teil, n: h.von }))] };
-  try { localStorage.setItem('sticky.bbplan', JSON.stringify(plan)); } catch { /* egal */ }
+  try { localStorage.setItem(schluessel('bbplan'), JSON.stringify(plan)); } catch { /* egal */ }
   bb.zeichneInhalt(g, links, rechts);   // Vorschau zeigt am Ende das Inhaltsverzeichnis
   pruefeAbgleich();
   return { seiten, index };
@@ -1130,16 +1202,16 @@ $('bbAufspielen').onclick = async () => {
 $('bbZeigen').onclick = () => zwilling.modusSetzen(1).catch((e) => eintrag(e.message, true));
 window.__sticky = { ladePdf, zwilling, spiegelSetze: (t) => spiegelSetze(t), pufferAbholen, fahrtenschreiberAbholen, erkenne, sprachPruefung, zeigeNotiz, notizen };   // zum Prüfen per WebView-Fernsteuerung (adb)
 
-try { $('woerter').value = localStorage.getItem('sticky.woerter') ?? WOERTER_STANDARD; } catch { $('woerter').value = WOERTER_STANDARD; }
-$('woerter').onchange = () => { try { localStorage.setItem('sticky.woerter', $('woerter').value); } catch { /* egal */ } };
-try { $('woerterbuch').value = localStorage.getItem('sticky.woerterbuch') ?? WOERTERBUCH_STANDARD; } catch { $('woerterbuch').value = WOERTERBUCH_STANDARD; }
-$('woerterbuch').onchange = () => { try { localStorage.setItem('sticky.woerterbuch', $('woerterbuch').value); } catch { /* egal */ } };
+try { $('woerter').value = localStorage.getItem(schluessel('woerter')) ?? WOERTER_STANDARD; } catch { $('woerter').value = WOERTER_STANDARD; }
+$('woerter').onchange = () => { try { localStorage.setItem(schluessel('woerter'), $('woerter').value); } catch { /* egal */ } };
+try { $('woerterbuch').value = localStorage.getItem(schluessel('woerterbuch')) ?? WOERTERBUCH_STANDARD; } catch { $('woerterbuch').value = WOERTERBUCH_STANDARD; }
+$('woerterbuch').onchange = () => { try { localStorage.setItem(schluessel('woerterbuch'), $('woerterbuch').value); } catch { /* egal */ } };
 
 // ---- Spiegel: Vorschau folgt dem Sticky, Tipps und ▲▼ steuern ihn ----------------------
 const bbCache = new Map();
 async function bordbuchSeite(n) {
   let plan = null;
-  try { plan = JSON.parse(localStorage.getItem('sticky.bbplan') || 'null'); } catch { /* egal */ }
+  try { plan = JSON.parse(localStorage.getItem(schluessel('bbplan')) || 'null'); } catch { /* egal */ }
   const e = plan?.seiten?.[n];
   if (!e) return null;
   if (bbCache.has(n)) return bbCache.get(n);
@@ -1172,7 +1244,7 @@ const spiegel = spiegelEinrichten({
       return f ? f(hoch).find((d) => d.n === 'bild.bin')?.daten : null;
     },
     schriftBild: () => schriftHintergrund(),
-    inhaltsFelder: () => { try { return JSON.parse(localStorage.getItem('sticky.bbplan') || 'null')?.felder ?? []; } catch { return []; } },
+    inhaltsFelder: () => { try { return JSON.parse(localStorage.getItem(schluessel('bbplan')) || 'null')?.felder ?? []; } catch { return []; } },
   },
   befehl: (m, seite) => { if (zwilling.verbunden) zwilling.modusSetzen(m, seite).catch((e) => eintrag(e.message, true)); },
   notizTipp: (x, y) => fahrtTouch(x, y),
@@ -1180,9 +1252,9 @@ const spiegel = spiegelEinrichten({
 /** Spiegel-Zustand setzen und merken (nach dem App-Start zeigt die Vorschau den letzten Stand) */
 function spiegelSetze(teile) {
   spiegel.setze(teile);
-  try { const { modus, w, lh, bb: s, zettel } = spiegel.zustand(); localStorage.setItem('sticky.spiegel', JSON.stringify({ modus, w, lh, bb: s, zettel })); } catch { /* egal */ }
+  try { const { modus, w, lh, bb: s, zettel } = spiegel.zustand(); localStorage.setItem(schluessel('spiegel'), JSON.stringify({ modus, w, lh, bb: s, zettel })); } catch { /* egal */ }
 }
-try { const alt = JSON.parse(localStorage.getItem('sticky.spiegel') || 'null'); if (alt) spiegel.setze({ ...alt, verbunden: false }); else spiegel.setze({}); } catch { spiegel.setze({}); }
+try { const alt = JSON.parse(localStorage.getItem(schluessel('spiegel')) || 'null'); if (alt) spiegel.setze({ ...alt, verbunden: false }); else spiegel.setze({}); } catch { spiegel.setze({}); }
 $('fernAuf').onclick = () => spiegel.taste('up');
 $('fernAb').onclick = () => spiegel.taste('down');
 
@@ -1236,7 +1308,7 @@ zeigeVerbindung();
 // Beim Start gleich den bekannten Sticky suchen (12.11.2026: nach Neustart der App blieb sie sonst getrennt, bis
 // jemand „Verbinden“ tippte – mit dem Schlummermodus wichtig, damit der geweckte Sticky die App wiederfindet)
 try {
-  if (nativ && localStorage.getItem('sticky.geraet')) {
+  if (nativ && aktivesGeraet()) {
     verbindung = new BleVerbindung();
     zwilling.anbinden(verbindung);
     autoVerbinden = true;
