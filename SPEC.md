@@ -420,6 +420,11 @@ Was der Sticky als Immer-dabei-Helfer noch können könnte, sortiert nach Aufwan
   weg. Passt zu E-Paper, weil rundenbasiert: pro Zug ein Teil-Refresh, Flugbahn als Punktspur. Bedienung mit ▲/▼
   (Winkel/Pulver) und Tippen (Feuer), zu zweit am selben Gerät. Eigener Name und eigene Grafik, kein Nachbau.
   Ohne Flashen kaum machbar (braucht Rechnung auf dem Sticky), also eigener Seitentyp in der Firmware
+  - **Umgesetzt als Kür (14.11.2026): „Burgduell lite“** als App-Seite (`src/burgduell.js`, erster Reiter neben Rechner
+    und Umrechner; Karussell-Wort „Spiel“): Vorlage Markus' Artefakt „Burgduell“, eigene Grafik. Schuss sofort durchgerechnet,
+    gepunktete Bahn + Krater, ein Teilbild pro Zug; je Burg zwei Kanonen und König, Wind; Computer-Gegner in der App.
+    Braucht das Handy. Nächster Schritt (Markus): **zwei Spieler auf zwei Stickys** (West auf 559D, Ost auf Sticky B), App als
+    Schiedsrichter über die Hintergrund-Sitzung
   - Nur Idee (Markus, 14.11.2026): **wenn Spiele, dann richtig**: auch Weltraum-Felsen-Ballern und Städte-Verteidigung
     (Raketen abfangen) im Stil der Arcade-Zeit, eigene Namen und Grafik. Haken E-Paper: Teil-Refresh ~0,3–0,75 s, also
     2–3 Bilder/s mit Geisterbildern. Vorschlag: bewusst langsame Fassungen („Zeitlupen-Arcade“: Welt bewegt sich nur

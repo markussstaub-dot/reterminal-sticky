@@ -6,6 +6,7 @@ import { Rechner, TASTEN, ROLLE } from './rechner.js';
 import { braunKnopf, BRAUN_FONT } from './braun.js';
 import { Umrechner, PAARE } from './umrechner.js';
 import { groesse, vonDisplay, aufsDisplay, ausschnittAufsDisplay } from './lage.js';
+import { burgduellWidget } from './burgduell.js';
 
 const FONT = BRAUN_FONT;
 // Maße je Lage (logisch). Teil-Refresh: auf dem Display x und w Vielfache von 8 (hochkant: logisch y und h).
@@ -13,13 +14,13 @@ const FONT = BRAUN_FONT;
 // darunter die Reiter über die ganze Breite.
 const LAGEN = {
   quer: {
-    REITER: [{ x0: 16, x1: 256, text: 'Rechner' }, { x0: 264, x1: 504, text: 'Umrechner' }], REITER_Y: 0, REITER_H: 58,
+    REITER: [{ x0: 16, x1: 176, text: 'Burgduell' }, { x0: 184, x1: 344, text: 'Rechner' }, { x0: 352, x1: 504, text: 'Umrechner' }], REITER_Y: 0, REITER_H: 58,
     ANZEIGE: { x: 16, y: 66, w: 768, h: 80 }, UNTEN: { x: 0, y: 64, w: 800, h: 416 },
     R_FELD: { x: 16, y: 154, w: 768, h: 320 },
     U_LISTE: { x: 16, y: 154, w: 248, h: 320 }, U_FELD: { x: 272, y: 154, w: 512, h: 320 },
   },
   hoch: {
-    REITER: [{ x0: 16, x1: 240, text: 'Rechner' }, { x0: 244, x1: 468, text: 'Umrechner' }], REITER_Y: 38, REITER_H: 58,
+    REITER: [{ x0: 16, x1: 164, text: 'Burgduell' }, { x0: 168, x1: 316, text: 'Rechner' }, { x0: 320, x1: 468, text: 'Umrechner' }], REITER_Y: 38, REITER_H: 58,
     ANZEIGE: { x: 16, y: 104, w: 448, h: 96 }, UNTEN: { x: 0, y: 104, w: 480, h: 696 },
     R_FELD: { x: 16, y: 208, w: 448, h: 576 },
     U_LISTE: { x: 16, y: 208, w: 448, h: 232 }, U_FELD: { x: 16, y: 448, w: 448, h: 336 },
@@ -34,7 +35,7 @@ function kopf(g, aktiv) {
   g.fillStyle = '#fff';
   g.fillRect(0, 0, 800, 800);
   const { REITER, REITER_Y, REITER_H } = L;
-  REITER.forEach((r, i) => braunKnopf(g, r.x0, REITER_Y, r.x1 - r.x0, REITER_H, r.text, i === aktiv ? 'wahl' : 'neben', { rand: 3, gr: 26 }));
+  REITER.forEach((r, i) => braunKnopf(g, r.x0, REITER_Y, r.x1 - r.x0, REITER_H, r.text, i === aktiv ? 'wahl' : 'neben', { rand: 3, gr: 24 }));
 }
 
 function anzeigeRahmen(g, oben, gross) {
@@ -63,7 +64,7 @@ export const rechnerWidget = {
   neu() { return new Rechner(); },
   anzeige(g, r) { anzeigeRahmen(g, `${r.mem ? 'M   ' : ''}${r.zeile}`, r.anzeige); },
   seite(g, r) {
-    kopf(g, 0);
+    kopf(g, 1);
     this.anzeige(g, r);
     const { R_FELD } = L;
     const tw = R_FELD.w / TASTEN[0].length, th = R_FELD.h / TASTEN.length;
@@ -88,7 +89,7 @@ export const umrechnerWidget = {
   neu() { return new Umrechner(); },
   anzeige(g, u) { anzeigeRahmen(g, `${u.von} → ${u.nach}`, `${u.eingabe} ${u.von} = ${u.ergebnis} ${u.nach}`); },
   seite(g, u) {
-    kopf(g, 1);
+    kopf(g, 2);
     this.anzeige(g, u);
     const { U_LISTE, U_FELD } = L;
     const lw = U_LISTE.w / 2, lh = U_LISTE.h / Math.ceil(PAARE.length / 2);
@@ -115,7 +116,7 @@ export class AppSeite {
   /** senden(bytes, bereich|null): ganzes Bild oder Teilbild an den Sticky */
   constructor(senden) {
     this.senden = senden;
-    this.widgets = [rechnerWidget, umrechnerWidget];
+    this.widgets = [burgduellWidget((g) => kopf(g, 0)), rechnerWidget, umrechnerWidget];   // Burgduell (Kür 14.11.2026) vorn
     this.zustand = this.widgets.map((w) => w.neu());
     this.aktiv = 0;
     this.hoch = false;   // Lage (Mehr → Lage der Seiten), FW ≥ 0.21.0
@@ -132,7 +133,7 @@ export class AppSeite {
     const b = L[welcher];
     const c = leinwand(lw, lh);
     const g = c.getContext('2d', { willReadFrequently: true });
-    if (welcher === 'ANZEIGE') this.w.anzeige(g, this.z); else this.w.seite(g, this.z);
+    if (welcher === 'ANZEIGE') this.w.anzeige(g, this.z); else this.w.seite(g, this.z, this.hoch);
     const { canvas: d, bereich } = ausschnittAufsDisplay(c, b, this.hoch);
     return { bytes: rgbaZu1bpp(d.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, bereich.w, bereich.h).data, bereich.w, bereich.h), bereich };
   }
@@ -142,7 +143,7 @@ export class AppSeite {
     const { w, h } = this.#lage();
     const c = leinwand(w, h);
     const g = c.getContext('2d', { willReadFrequently: true });
-    this.w.seite(g, this.z);
+    this.w.seite(g, this.z, this.hoch);
     const d = aufsDisplay(c, this.hoch);
     return { bytes: rgbaZu1bpp(d.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, BREITE, HOEHE).data), canvas: d };
   }
@@ -164,8 +165,15 @@ export class AppSeite {
       if (reiter !== this.aktiv) { this.aktiv = reiter; await this.zeigen(); }
       return true;
     }
-    const was = this.w.tipp(this.z, x, y);
+    const was = this.w.tipp(this.z, x, y, this.hoch);
     if (was) { const t = this.#ausschnitt(was === 'anzeige' ? 'ANZEIGE' : 'UNTEN'); await this.senden(t.bytes, t.bereich); }
+    // Burgduell: der Computer antwortet mit kurzer Pause, damit man den eigenen Schuss erst sieht
+    while (this.w.nachzugBereit?.(this.z)) {
+      await new Promise((r) => setTimeout(r, 1500));
+      if (!this.w.nachzug(this.z)) break;
+      const t = this.#ausschnitt('UNTEN');
+      await this.senden(t.bytes, t.bereich);
+    }
     return !!was;
   }
 }
