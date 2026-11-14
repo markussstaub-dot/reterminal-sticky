@@ -449,6 +449,16 @@ Was der Sticky als Immer-dabei-Helfer noch können könnte, sortiert nach Aufwan
     erspart das Vermessen), **Lanyard Case** (Kenta IDA, GitHub, offener Bumper, TPU- und PLA-Variante – Basis für Remix),
     **Case mit Magnetring-Ausschnitt** (Zoltan Szalontay; der MagSafe-Ring liegt dem Sticky bei → Microlino-Halter),
     **Wallet Case** (Dropthetenors). Vor einem Remix jeweils die Lizenz prüfen
+    **Maße (aus dem Lanyard Case, github.com/ciniml/epaper-enclosures/sticky, CC BY 4.0 – Remix erlaubt mit Nennung
+    Kenta IDA / ciniml; Werte aus Seeeds Hardware-Übersicht, Anschlüsse an einer Referenzhülle abgeglichen):**
+    - Gehäuse 65,5 × 106,0 × 7,3 mm, Eckradius R2 (angenommen); Spiel je Seite 0,25 mm (XY), 0,2 mm in der Tiefe
+    - Wand 1,6 mm; Rückenlippe 1,2 mm / 2,0 mm Überlappung; Frontlippe 0,8 mm / 1,0 mm Überlappung
+    - rechts: KI/▲/▼-Tasten ab 27,5 mm von oben, 39,0 mm lang, 6,2 mm hoch; links: microSD ab 87,0 mm, 16,0 × 6,0 mm
+      (Seitenfenster mittig auf 4,2 mm vom Rücken)
+    - unten (x von der Mitte): Reset −19,4, Mikro −14,2 (je Ø 3,2), Original-Ösen −2,45 / +2,05 (3,0 × 4,8),
+      USB-C + Lade-LED +14,75 (18,5 × 5,8)
+    - Hinweis aus dem Projekt: eine Rückenlippe vergrößert den Abstand zum Magneten → Haltekraft am Ring sinkt; für den
+      Microlino-Halter den Rücken offen lassen oder den Magnetring in den Sleeve einlassen
 
 ### Einfach-Profil für ältere Angehörige (Markus, 13.11.2026, geparkt)
 Ein Sticky für jemanden, der mit Technik nichts zu tun haben will; gepflegt von einem Angehörigen aus der Ferne.
