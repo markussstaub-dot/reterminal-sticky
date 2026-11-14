@@ -942,20 +942,20 @@ async function logTage() {
 async function istAbholen(quelle, ziel) {
   const liste = (await zwilling.liste(`/ist/${quelle}`)).filter((d) => !d.ordner && /\.(txt|csv)$/.test(d.n));
   const stand = logStand();
-  const schluessel = (n) => (quelle === 'log' ? n : `${quelle}/${n}`);
+  const kennung = (n) => (quelle === 'log' ? n : `${quelle}/${n}`);
   let zeilen = 0;
   for (const d of liste) {
-    const ab = Math.min(stand[schluessel(d.n)] ?? 0, d.b);
+    const ab = Math.min(stand[kennung(d.n)] ?? 0, d.b);
     if (d.b > ab) {
       const neu = new TextDecoder().decode(await zwilling.holen(`/ist/${quelle}/${d.n}`, d.b, ab));
       await logAnhaengen(d.n, neu, ziel);
       zeilen += neu.split('\n').filter(Boolean).length;
-      stand[schluessel(d.n)] = d.b;
+      stand[kennung(d.n)] = d.b;
       localStorage.setItem(schluessel('logStand'), JSON.stringify(stand));
     }
     // vergangene Tage (und die Zeilen ohne Uhrzeit) sind abgeschlossen: auf dem Sticky quittieren
     if (!d.n.includes(heuteName().replace('.txt', '')) && await zwilling.loeschen(`/ist/${quelle}/${d.n}`)) {
-      delete stand[schluessel(d.n)];
+      delete stand[kennung(d.n)];
       localStorage.setItem(schluessel('logStand'), JSON.stringify(stand));
     }
   }
