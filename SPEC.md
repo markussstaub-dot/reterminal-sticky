@@ -445,6 +445,10 @@ Was der Sticky als Immer-dabei-Helfer noch können könnte, sortiert nach Aufwan
     Dazu (Markus): ein **kleiner Stylus** mit leitender Spitze (Touch ist kapazitiv, der Kuli geht nur auf Papier);
     hilft bei Strichschrift und Kritzelblock. Einen Mini-Stylus mit Gummi- oder Faserspitze im Format des Kulis kaufen,
     nicht selbst drucken (PLA leitet nicht)
+    Ausgangspunkte (Playground „3D Printables“, 14.11.2026): **Referenzmodell** des Sticky (Hendra Kusumah, Printables –
+    erspart das Vermessen), **Lanyard Case** (Kenta IDA, GitHub, offener Bumper, TPU- und PLA-Variante – Basis für Remix),
+    **Case mit Magnetring-Ausschnitt** (Zoltan Szalontay; der MagSafe-Ring liegt dem Sticky bei → Microlino-Halter),
+    **Wallet Case** (Dropthetenors). Vor einem Remix jeweils die Lizenz prüfen
 
 ### Einfach-Profil für ältere Angehörige (Markus, 13.11.2026, geparkt)
 Ein Sticky für jemanden, der mit Technik nichts zu tun haben will; gepflegt von einem Angehörigen aus der Ferne.
