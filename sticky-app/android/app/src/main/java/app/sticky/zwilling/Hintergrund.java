@@ -101,6 +101,58 @@ public class Hintergrund extends Plugin {
         }
     }
 
+    /** Vom Melder: eine Benachrichtigung einer erlaubten App (Titel, Text) */
+    static void benachrichtigung(String paket, String titel, String text) {
+        Hintergrund h = instanz;
+        if (h == null) return;
+        JSObject o = new JSObject();
+        o.put("paket", paket);
+        o.put("titel", titel);
+        o.put("text", text);
+        h.notifyListeners("benachrichtigung", o);
+    }
+
+    /** Hat der Nutzer den Benachrichtigungszugriff für die Sticky-App freigegeben? */
+    @PluginMethod
+    public void meldeZugriff(PluginCall call) {
+        JSObject o = new JSObject();
+        o.put("da", androidx.core.app.NotificationManagerCompat.getEnabledListenerPackages(getContext()).contains(getContext().getPackageName()));
+        call.resolve(o);
+    }
+
+    /** Öffnet die Systemseite „Benachrichtigungszugriff“ – freigeben muss der Nutzer selbst */
+    @PluginMethod
+    public void meldeZugriffOeffnen(PluginCall call) {
+        try {
+            Intent i = new Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(i);
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("Einstellungen nicht zu öffnen: " + e.getMessage());
+        }
+    }
+
+    /** Test: eine gewöhnliche Benachrichtigung der Sticky-App selbst (läuft dann durch den Melder) */
+    @PluginMethod
+    public void testMeldung(PluginCall call) {
+        try {
+            android.app.NotificationManager nm = getContext().getSystemService(android.app.NotificationManager.class);
+            String kanal = "hinweise";
+            if (Build.VERSION.SDK_INT >= 26 && nm.getNotificationChannel(kanal) == null)
+                nm.createNotificationChannel(new android.app.NotificationChannel(kanal, "Hinweise", android.app.NotificationManager.IMPORTANCE_DEFAULT));
+            android.app.Notification n = new android.app.Notification.Builder(getContext(), kanal)
+                    .setSmallIcon(android.R.drawable.ic_dialog_info)
+                    .setContentTitle(call.getString("titel", "Sticky"))
+                    .setContentText(call.getString("text", "Test-Benachrichtigung"))
+                    .setAutoCancel(true)
+                    .build();
+            nm.notify((int) (System.currentTimeMillis() % 100000), n);
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("Test-Benachrichtigung geht nicht: " + e.getMessage());
+        }
+    }
+
     @PluginMethod
     public void stop(PluginCall call) {
         getContext().stopService(new Intent(getContext(), StickyDienst.class));

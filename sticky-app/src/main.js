@@ -419,7 +419,16 @@ function geraeteZeigen() {
     const li = document.createElement('li');
     li.classList.toggle('aktiv', istAktiv);
     const name = Object.assign(document.createElement('input'), { value: g.name, title: 'Name' });
-    name.onchange = () => { geraetAendern(g.id, { name: name.value.trim() || g.name }); geraeteZeigen(); };
+    name.onchange = async () => {
+      const altKurz = kurz(g);
+      geraetAendern(g.id, { name: name.value.trim() || g.name });
+      const neuKurz = kurz(geraete().find((x) => x.id === g.id));
+      // Logs weiterer Stickys liegen im Unterordner mit Kurznamen: beim Umbenennen mit umziehen
+      if (nativ && neuKurz !== altKurz) for (const o of [LOG_ORDNER, 'messreihen']) {
+        await Filesystem.rename({ from: `${o}/${altKurz}`, to: `${o}/${neuKurz}`, directory: Directory.Data, toDirectory: Directory.Data }).catch(() => {});
+      }
+      geraeteZeigen();
+    };
     const profil = document.createElement('select');
     profil.title = 'Profil';
     profil.innerHTML = Object.entries(PROFILE).map(([k, t]) => `<option value="${k}">${t}</option>`).join('');
@@ -1466,6 +1475,32 @@ async function hintergrundAbgleich(s) {
 // stündlich Wetter und Stand nachziehen, bei Fahrt wach halten (wie beim aktiven Sticky)
 setInterval(() => { for (const s of sitzungen.values()) if (s.z.verbunden) hintergrundAbgleich(s).catch(() => {}); }, 60 * 60 * 1000);
 setInterval(() => { if (Date.now() < fahrtBis) for (const s of sitzungen.values()) if (s.z.verbunden) s.z.wach().catch(() => {}); }, 60 * 1000);
+
+// ---- Benachrichtigungen ans Sticky (Test 14.11.2026) ---------------------------------------------------------------
+// Der Melder (Android, Positivliste) reicht Titel und Text weiter; am Sticky erscheinen sie kurz im Rückmeldefeld
+// (Home und Notiz-Seite), beim aktiven wie bei Hintergrund-Stickys. Nichts wird gespeichert.
+async function meldeStatusZeigen() {
+  try { const { da } = await Hintergrund.meldeZugriff(); $('meldeStatus').textContent = da ? 'Zugriff: freigegeben ✓' : 'Zugriff: noch nicht freigegeben'; }
+  catch { $('meldeStatus').textContent = 'Zugriff: nur in der App auf dem Handy'; }
+}
+$('meldeZugriff').onclick = () => Hintergrund.meldeZugriffOeffnen().catch((e) => eintrag(e.message, true));
+$('meldeTest').onclick = () => Hintergrund.testMeldung({ titel: 'Sticky', text: `Test ${uhrzeit(new Date())}` }).catch((e) => eintrag(e.message, true));
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') meldeStatusZeigen(); });
+meldeStatusZeigen();
+Promise.resolve().then(() => Hintergrund.addListener('benachrichtigung', (e) => {
+  const zeile = [e.titel, e.text].filter(Boolean).join(': ').replace(/\s+/g, ' ').trim();
+  const kurzText = zeile.length > 30 ? zeile.slice(0, 29) + '…' : zeile;
+  eintrag(`Meldung: ${zeile}`);
+  meldeStatusZeigen();   // kommt eine an, ist der Zugriff offensichtlich frei
+  const r = rueckmeldung(kurzText);
+  if (zwilling.verbunden && (stickyModus === 'home' || stickyModus === 'notiz')) {
+    spiegel.meldung(kurzText);
+    zwilling.sendeBild(r.bytes, { bereich: r.bereich }).catch((x) => eintrag(`Meldung: ${x.message}`, true));
+  }
+  for (const s of sitzungen.values()) {
+    if (s.z.verbunden && (s.modus === 'home' || s.modus === 'notiz')) s.z.sendeBild(r.bytes, { bereich: r.bereich }).catch(() => {});
+  }
+})).catch(() => {});
 
 tabsEinrichten();
 muster();

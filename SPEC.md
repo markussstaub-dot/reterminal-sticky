@@ -37,6 +37,11 @@ Legende: **fest** = entschieden · **Vorschlag** = Claudes Idee, Markus entschei
     von beiden mit richtigem Gerät. Hintergrund funkt „bescheiden“ (kein Schnellmodus aus der App), weil zwei schnelle
     Verbindungen Abrisse brachten (Grund 0x222); ob das reicht, zeigt der Alltag – sonst Firmware-Wunsch nach schnellem
     Takt für Hintergrund-Abgleich abschalten
+  - **Benachrichtigungen ans Sticky (Test, 14.11.2026):** Android-NotificationListener „Melder“ mit Positivliste
+    (zum Test nur die Sticky-App; Bubble Log später), nur nach Freigabe durch Markus (Mehr → Benachrichtigungen); Titel
+    und Text erscheinen kurz im Rückmeldefeld auf Home/Notiz, beim aktiven und bei Hintergrund-Stickys; nichts wird
+    gespeichert. Am Gerät geprüft: Test-Meldung kam an. offen: Bubble-Log-Paketname, Symbol in der Statuszeile und Liste
+    der letzten Meldungen (Firmware), Anzeige auch auf anderen Seiten
   - offen: Wechsel des aktiven Sticky ohne Neuladen; „Gerät vergessen“ soll auch /soll und /ist auf der Karte leeren
     (vor dem Verschenken); Kopplung/Verschlüsselung
 

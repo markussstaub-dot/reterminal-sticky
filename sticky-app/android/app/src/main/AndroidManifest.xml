@@ -30,6 +30,17 @@
             android:exported="false"
             android:foregroundServiceType="connectedDevice|location" />
 
+        <!-- Benachrichtigungen ans Sticky (Test 14.11.2026): nur nach Freigabe durch den Nutzer, Positivliste in Melder.java -->
+        <service
+            android:name=".Melder"
+            android:exported="true"
+            android:label="Sticky: Benachrichtigungen"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
