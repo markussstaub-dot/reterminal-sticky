@@ -18,7 +18,10 @@ Legende: **fest** = entschieden · **Vorschlag** = Claudes Idee, Markus entschei
 - Vorschlag: das zweite Gerät bleibt in Folie, bis klar ist, ob es gebraucht wird
 - Merker (Markus, 14.11.2026): **Mehrere Stickys an einer App** („Multiclient“) als nächste Baustelle für die APK, Start
   15.11.: Geräteliste mit Namen/MAC, je Gerät eigener Zwilling (Soll/Ist), Abgleich je Gerät. Anlass: der zweite
-  Sticky bekommt zum Test die EDC-Firmware aus dem Playground. Vorher ein **Architekturbild** (App, Zwillinge, Stickys, Abgleich) als Grundlage
+  Sticky bekommt zum Test die EDC-Firmware aus dem Playground. Vorher ein **Architekturbild** (App, Zwillinge, Stickys, Abgleich) als Grundlage → `docs/architektur-multiclient.svg` (15.11.2026). Entschieden: alle gleichzeitig verbunden, Bibliothek geteilt (nur Unpersönliches),
+  Profile als Vorlagen, Altdaten zu Sticky A. Erst beide Stickys für Markus selbst, **Familie und Privatsphäre mitdenken**:
+  Besitzer je Gerät, persönliche Daten nie auf fremde Geräte, „Gerät vergessen“ vor dem Verschenken, alles lokal.
+  **Lücke:** BLE heute ohne Kopplung (jedes Handy in Reichweite könnte /ist lesen) → Kopplung mit Tastenbestätigung, eigener Firmware-Schritt
 
 ## MVP (Markus, 11.11.2026)
 
