@@ -208,6 +208,9 @@ nehmen, die im Auto wirklich gefehlt hat, statt zu sammeln (Pflege!).
     nur das Titel-Karussell; Menü, Widgets und Schrift kommen erst mit der APK. Für Fremde ohne APK zu wenig.
     Vorschlag: Grundausstattung (Menü, Uhr, Timer, Rechner, Umrechner, Strichschrift) in die Firmware backen und
     beim ersten Start nach /soll schreiben, wenn dort nichts liegt; mindestens im Playground-Text „braucht die APK“ sagen
+    - Einfacher (Markus, 14.11.2026): **Grundausstattung als ZIP für die SD-Karte** im GitHub-Release, „auspacken, Karte
+      rein, fertig“. Geht ohne Firmware-Änderung, die Firmware liest /soll schon von der Karte. Vorlage: /soll vom
+      Bastel-Sticky, aber ohne Persönliches (Bordbuch, Zettel, Kundennummern, Visitenkarte)
 - Vorschlag Lizenz: **MIT**. Steht in Seeeds Liste, ist am einfachsten und passt zu den Bausteinen
   (whisper.cpp MIT, NimBLE und pdf.js Apache-2.0). Anders als bei der Uhrenbox (bewusst ohne Lizenz), weil
   Teilen hier heißt: andere dürfen es nutzen. offen: Entscheidung Markus
