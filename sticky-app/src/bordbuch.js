@@ -92,17 +92,33 @@ function kopf(g, titel, rechts) {
 /** Textseite (Spickzettel) */
 export function zeichneTextseite(g, seite, fuss) {
   kopf(g, seite.titel, fuss);
-  let groesse = 26;
-  // Schrift verkleinern, bis alles passt
-  for (; groesse >= 16; groesse -= 1) {
-    if (seite.zeilen.length * groesse * 1.32 + 70 <= HOEHE - 10) break;
-  }
-  let y = 72 + groesse * 0.6;
-  for (const z of seite.zeilen) {
-    const fett = z.startsWith('!');
+  // Zu lange Zeilen umbrechen (an Leerzeichen, Fortsetzung eingerückt) statt abschneiden (14.11.2026: Hilfen
+  // für Rechner, Weltzeit, Einstellungen endeten mit „…“); Schrift nur so weit verkleinern, bis alles passt
+  const umbrechen = (t, fett, groesse) => {
     g.font = `${fett ? 'bold ' : ''}${groesse}px ${FONT}`;
-    let t = fett ? z.slice(1) : z;
-    while (g.measureText(t).width > BREITE - 40 && t.length > 4) t = t.slice(0, -2) + '…';
+    const breit = BREITE - (fett ? 18 : 30) - 16;
+    const teile = [];
+    let rest = t;
+    while (g.measureText(rest).width > breit) {
+      let i = rest.length;
+      do i = rest.lastIndexOf(' ', i - 1); while (i > 0 && g.measureText(rest.slice(0, i)).width > breit);
+      if (i <= 0) break;
+      teile.push(rest.slice(0, i).trimEnd());
+      rest = '  ' + rest.slice(i).trimStart();
+    }
+    teile.push(rest);
+    return teile;
+  };
+  const setzen = (groesse) => seite.zeilen.flatMap((z) => {
+    const fett = z.startsWith('!');
+    return umbrechen(fett ? z.slice(1) : z, fett, groesse).map((t) => ({ t, fett }));
+  });
+  let groesse = 26, zeilen = setzen(groesse);
+  const hoehe = (zs, gr) => zs.reduce((h, z) => h + gr * (z.fett ? 1.38 : 1.28), 72 + gr * 0.6);
+  while (groesse > 16 && hoehe(zeilen, groesse) > HOEHE - 6) zeilen = setzen(--groesse);
+  let y = 72 + groesse * 0.6;
+  for (const { t, fett } of zeilen) {
+    g.font = `${fett ? 'bold ' : ''}${groesse}px ${FONT}`;
     g.fillText(t, fett ? 18 : 30, y);
     y += groesse * (fett ? 1.38 : 1.28);
   }

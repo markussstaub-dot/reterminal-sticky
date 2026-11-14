@@ -17,8 +17,31 @@ function akkuSymbol(g, stufe, usb) {
   if (usb) { r(423, 13, 14, 22, false); r(429, 14, 5, 9, true); r(426, 21, 8, 3, true); r(426, 23, 5, 10, true); }
 }
 
+/** Namen der Widgets für den Hinweis unter der Vorschau */
+const WIDGET_NAMEN = { menue: 'Menü', timer: 'Timer', wecker: 'Wecker', weltzeit: 'Weltzeit', waage: 'Wasserwaage', lineal: 'Lineal',
+  'lineal-us': 'Lineal (Zoll)', rechner: 'Rechner', umrechner: 'Umrechner', einstellungen: 'Einstellungen' };
+const SEITEN_NAMEN = { home: 'Home', notiz: 'Notiz', kritzel: 'Kritzelblock', schrift: 'Strichschrift', app: 'App-Seite' };
+
+/** Display-Bild (800 × 480, 1 bpp, Bit 1 = schwarz) in die Vorschau; hochkant zurückdrehen: Display (dx, dy) = logisch (479 − dy, dx) */
+function zeichne1bpp(g, daten, hoch) {
+  const b = hoch ? HOEHE : BREITE, h = hoch ? BREITE : HOEHE;
+  const bild = g.createImageData(b, h);
+  const px = bild.data;
+  for (let dy = 0; dy < HOEHE; dy++) {
+    for (let dx = 0; dx < BREITE; dx++) {
+      const schwarz = (daten[dy * (BREITE / 8) + (dx >> 3)] >> (7 - (dx & 7))) & 1;
+      const x = hoch ? HOEHE - 1 - dy : dx, y = hoch ? dx : dy;
+      const i = (y * b + x) * 4;
+      const v = schwarz ? 0 : 255;
+      px[i] = px[i + 1] = px[i + 2] = v;
+      px[i + 3] = 255;
+    }
+  }
+  g.putImageData(bild, 0, 0);
+}
+
 export function spiegelEinrichten({ canvas, hinweisEl, quelle, befehl, notizTipp }) {
-  const z = { modus: null, bb: 0, zettel: 0, verbunden: false, aufnahme: false, meldung: null };
+  const z = { modus: null, w: '', lh: 0, foto: null, bb: 0, zettel: 0, verbunden: false, aufnahme: false, meldung: null };
   let meldungTimer = 0, uhrTimer = 0, zeichnet = 0;
 
   const ziel = (b, h) => {
@@ -30,7 +53,11 @@ export function spiegelEinrichten({ canvas, hinweisEl, quelle, befehl, notizTipp
   async function zeichne() {
     const nr = ++zeichnet;
     const m = z.modus;
-    if (m === 'home' || m === 'notiz') {
+    if (z.verbunden && z.foto) {
+      // echtes Bild vom Sticky (FW ≥ 0.31.3): Statuszeile, Knöpfe, Striche, Ziffern – alles wie am Gerät
+      const hoch = !!z.lh;
+      zeichne1bpp(ziel(hoch ? HOEHE : BREITE, hoch ? BREITE : HOEHE), z.foto, hoch);
+    } else if (m === 'home' || m === 'notiz') {
       const g = ziel(PB, PH);
       const jetzt = uhrzeit(new Date());
       g.drawImage(m === 'home' ? homeHochkant(KARTE, jetzt, quelle.wetter?.()) : fahrtHochkant(quelle.knoepfe()), 0, 0);
@@ -69,15 +96,22 @@ export function spiegelEinrichten({ canvas, hinweisEl, quelle, befehl, notizTipp
         g.fillText('(Vorschau entsteht beim nächsten „Bordbuch aufspielen“)', BREITE / 2, HOEHE / 2 + 30);
       }
     } else {
-      const g = ziel(BREITE, HOEHE);
-      g.fillStyle = '#fff';
-      g.fillRect(0, 0, BREITE, HOEHE);
-      g.fillStyle = '#000';
-      g.font = 'bold 36px system-ui, sans-serif';
-      g.textAlign = 'center';
-      g.fillText('Sticky noch nicht verbunden', BREITE / 2, HOEHE / 2);
+      // Widgets (Menü, Timer, …), Strichschrift, Kritzelblock, App-Seite: in der gemeldeten Lage (FW ≥ 0.31.2)
+      const hoch = !!z.lh;
+      const g = ziel(hoch ? HOEHE : BREITE, hoch ? BREITE : HOEHE);
+      const daten = m === 'widget' && z.w ? quelle.widgetBild?.(z.w, hoch) : m === 'schrift' ? quelle.schriftBild?.() : null;
+      if (daten) zeichne1bpp(g, daten, hoch && m === 'widget');
+      else {
+        g.fillStyle = '#fff';
+        g.fillRect(0, 0, g.canvas.width, g.canvas.height);
+        g.fillStyle = '#000';
+        g.font = 'bold 36px system-ui, sans-serif';
+        g.textAlign = 'center';
+        g.fillText(m ? (m === 'widget' ? WIDGET_NAMEN[z.w] ?? 'Widget' : SEITEN_NAMEN[m] ?? m) : 'Sticky noch nicht verbunden', g.canvas.width / 2, g.canvas.height / 2);
+      }
     }
-    hinweisEl.textContent = z.verbunden ? `Sticky zeigt: ${{ home: 'Home', notiz: 'Notiz', bordbuch: `Bordbuch, Seite ${z.bb + 1}`, bestell: `Zettel ${z.zettel + 1}` }[m] ?? '–'}` : 'nicht verbunden (letzter Stand)';
+    const was = { bordbuch: `Bordbuch, Seite ${z.bb + 1}`, bestell: `Zettel ${z.zettel + 1}`, widget: WIDGET_NAMEN[z.w] ?? (z.w || 'Widget') }[m] ?? SEITEN_NAMEN[m] ?? '–';
+    hinweisEl.textContent = z.verbunden ? `Sticky zeigt: ${was}${z.foto ? '' : m === 'widget' || m === 'schrift' ? ' (Grundbild)' : ''}` : 'nicht verbunden (letzter Stand)';
     hinweisEl.classList.toggle('gleich', z.verbunden);
   }
 
@@ -98,7 +132,15 @@ export function spiegelEinrichten({ canvas, hinweisEl, quelle, befehl, notizTipp
   });
 
   return {
-    setze(teile) { Object.assign(z, teile); zeichne(); },
+    setze(teile) {
+      // neue Seite oder Lage: das alte Foto passt nicht mehr, bis das nächste kommt zeichnet die App selbst
+      if (['modus', 'w', 'lh', 'bb', 'zettel'].some((k) => k in teile && teile[k] !== z[k]) || teile.verbunden === false) z.foto = null;
+      Object.assign(z, teile);
+      zeichne();
+    },
+    /** Bildschirmfoto vom Sticky (48000 Byte, Display-Lage) */
+    foto(daten) { z.foto = daten; zeichne(); },
+    hatFoto: () => !!z.foto,
     meldung(text) {
       z.meldung = text;
       clearTimeout(meldungTimer);
@@ -114,7 +156,7 @@ export function spiegelEinrichten({ canvas, hinweisEl, quelle, befehl, notizTipp
       } else if (k === 'down') befehl(3, 0);
       else befehl(1);
     },
-    zustand: () => ({ ...z }),
+    zustand: () => ({ ...z, foto: undefined }),
     stopp() { clearInterval(uhrTimer); },
   };
 }

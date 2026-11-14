@@ -33,6 +33,7 @@ static const uint32_t ZURUECK_MS = 5UL * 60 * 1000;
 static volatile int modusWunsch = -1;     // von der App (OP_BB_MODUS) oder Tasten, umgesetzt in loop()
 static int bestellAnzahl = 0, bestellAktuell = 0;
 static bool hilfeAn = false;          // Tastenhilfe gerade sichtbar (▲+▼)
+static bool hilfeNeuGedrueckt = false;   // seit dem Öffnen der Hilfe eine Taste gedrückt
 static char widgetName[16] = "";       // aktuelles Widget (widget.h)
 
 // Lage je Seite (SPEC „Hoch/Quer in zwei Stufen“, Stufe 1, FW 0.21.0): /soll/einstellungen/lage.txt, je Zeile
@@ -299,9 +300,22 @@ static void uhrAuffrischen(bool voll) {
     else teilZeigen(UHR_X, UHR_Y, UHR_W, UHR_H);
 }
 
+static bool kzHoch();
+/** Lage der gerade gezeigten Seite (für den Spiegel in der App, FW 0.31.2): Home/Notiz hochkant, Bordbuch/Zettel quer */
+static bool seiteHoch() {
+    switch (modus) {
+        case M_HOME: case M_NOTIZ: return true;
+        case M_WIDGET: return lageHoch(widgetName);
+        case M_KRITZEL: case M_SCHRIFT: return kzHoch();   // Lage des Blatts, beim neuen Blatt festgelegt
+        case M_APP: return lageHoch("app");
+        default: return false;
+    }
+}
+
 static void meldeModus() {
-    char j[64];   // hoch: Lage der App-Seite (bei „auto“ vom Sensor), die App zeichnet danach
-    snprintf(j, sizeof j, "{\"t\":\"modus\",\"m\":\"%s\",\"zettel\":%d,\"hoch\":%d}", modusName(), bestellAktuell, lageHoch("app") ? 1 : 0);
+    char j[112];   // hoch: Lage der App-Seite (bei „auto“ vom Sensor), die App zeichnet danach; w: offenes Widget (FW 0.31.2)
+    snprintf(j, sizeof j, "{\"t\":\"modus\",\"m\":\"%s\",\"zettel\":%d,\"hoch\":%d,\"w\":\"%s\",\"lh\":%d}", modusName(), bestellAktuell, lageHoch("app") ? 1 : 0,
+             modus == M_WIDGET ? widgetName : "", seiteHoch() ? 1 : 0);
     sendEvt(j);
     wantState = true;
 }
@@ -791,7 +805,7 @@ static const char* widgetHilfe() {
 
 static const char* hilfeName() {
     return modus == M_HOME ? "hilfe/home.bin" : modus == M_NOTIZ ? "hilfe/notiz.bin" : modus == M_BORDBUCH ? "hilfe/bordbuch.bin"
-         : modus == M_KRITZEL ? "hilfe/kritzel.bin" : modus == M_SCHRIFT ? "hilfe/schrift.bin" : modus == M_WIDGET ? widgetHilfe() : "hilfe/zettel.bin";
+         : modus == M_KRITZEL ? "hilfe/kritzel.bin" : modus == M_SCHRIFT ? "hilfe/schrift.bin" : modus == M_WIDGET ? widgetHilfe() : modus == M_APP ? "hilfe/app.bin" : "hilfe/zettel.bin";
 }
 
 static void hilfeZeigen() {
@@ -802,6 +816,7 @@ static void hilfeZeigen() {
     }
     if (!sollLesen(hilfeName(), imgBuf, IMG_BYTES)) { tone(PIN_BUZZER, 900, 120); return; }   // noch keine Hilfe aufgespielt
     hilfeAn = true;
+    hilfeNeuGedrueckt = false;
     protokoll("Hilfe %s", hilfeName() + 6);
     bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
     display.update();
@@ -819,9 +834,11 @@ static void tasteAktion(const char* name, bool gedrueckt) {
     bool up = strcmp(name, "up") == 0, down = strcmp(name, "down") == 0;
     if (up) upUnten = gedrueckt;
     if (down) downUnten = gedrueckt;
-    // Hilfe offen: der nächste Tastendruck schließt sie (losgelassen wird erst danach, damit nichts doppelt passiert)
+    // Hilfe offen: erst ein neuer Tastendruck schließt sie (beim Loslassen, damit nichts doppelt passiert). Das Loslassen
+    // von ▲+▼, mit dem sie geöffnet wurde, zählt nicht – sonst war sie gleich nach dem Aufbau wieder weg (FW 0.31.4)
     if (hilfeAn) {
-        if (!gedrueckt && !upUnten && !downUnten) { hilfeAn = false; kombi = false; neuZeichnen = true; }
+        if (gedrueckt) hilfeNeuGedrueckt = true;
+        else if (hilfeNeuGedrueckt && !upUnten && !downUnten) { hilfeAn = false; hilfeNeuGedrueckt = false; kombi = false; neuZeichnen = true; }
         kiSeit = upSeit = downSeit = 0;
         return;
     }

@@ -127,14 +127,45 @@ static void abgListe(const char* pfad, int ab) {
     sendEvt(j.c_str());
 }
 
+// ---- Bildschirmfoto (FW 0.31.3): /ist/bildschirm.rle -------------------------------------------------------
+// Keine Datei auf der Karte: beim HOLEN ab Byte 0 wird das gerade gezeigte Bild (imgBuf, 800 × 480, 1 bpp) frisch
+// aufgenommen und PackBits-gepackt (Kopf k < 128: k + 1 Bytes wörtlich, k > 128: nächstes Byte 257 − k mal). E-Paper ist
+// meist weiß, ein Menü wird so ~2–6 KB statt 48 KB. Die App holt es für den Spiegel, solange der Sticky-Tab offen ist.
+static const char* FOTO_PFAD = "/ist/bildschirm.rle";
+static uint8_t* fotoBuf = nullptr;
+static uint32_t fotoLen = 0;
+static uint32_t packBits(const uint8_t* q, uint32_t n, uint8_t* z) {
+    uint32_t i = 0, o = 0;
+    while (i < n) {
+        uint32_t lauf = 1;
+        while (i + lauf < n && lauf < 128 && q[i + lauf] == q[i]) lauf++;
+        if (lauf >= 2) { z[o++] = (uint8_t)(257 - lauf); z[o++] = q[i]; i += lauf; continue; }
+        uint32_t start = i, k = 0;
+        while (i < n && k < 128 && !(i + 1 < n && q[i] == q[i + 1])) { i++; k++; }
+        if (!k) { i++; k = 1; }
+        z[o++] = (uint8_t)(k - 1);
+        memcpy(z + o, q + start, k);
+        o += k;
+    }
+    return o;
+}
+
 static void abgStueck(const char* pfad, uint32_t off) {
     static uint8_t paket[4 + 480];
     int n = 0;
-    if (off == 0) protokollSchreiben();
-    File f = sdEin() ? SD.open(pfad, FILE_READ) : File();
-    if (f) {
-        if (f.seek(off)) n = f.read(paket + 4, 480);
-        f.close();
+    if (!strcmp(pfad, FOTO_PFAD)) {
+        if (off == 0) {
+            if (!fotoBuf) fotoBuf = (uint8_t*)ps_malloc(IMG_BYTES + IMG_BYTES / 128 + 16);
+            fotoLen = fotoBuf ? packBits(imgBuf, IMG_BYTES, fotoBuf) : 0;
+        }
+        if (off < fotoLen) { n = min<uint32_t>(480, fotoLen - off); memcpy(paket + 4, fotoBuf + off, n); }
+    } else {
+        if (off == 0) protokollSchreiben();
+        File f = sdEin() ? SD.open(pfad, FILE_READ) : File();
+        if (f) {
+            if (f.seek(off)) n = f.read(paket + 4, 480);
+            f.close();
+        }
     }
     if (n < 0) n = 0;
     if (off == 0) wantFast = true;

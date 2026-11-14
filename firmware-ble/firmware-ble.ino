@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.31.1";
+static const char* FW_VERSION = "0.31.5";
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "EDC Sticky";   // Startbild ohne App (Playground: neutral, nicht der Autor)
@@ -458,14 +458,14 @@ static void zeigeKarte() {
 // ---- Zustand -------------------------------------------------------------------
 static void sendState() {
     readBattery();
-    char j[480];
+    char j[520];
     snprintf(j, sizeof j,
-             "{\"fw\":\"%s\",\"seite\":\"%s\",\"bat\":%d,\"mv\":%d,\"ma\":%d,\"chg\":%s,\"mtu\":%u,\"phy\":%u,\"itvl\":%u,\"tp\":\"%ux%u\",\"fahrtv\":\"%08lx\",\"offen\":%d,\"uhr\":%s,\"modus\":\"%s\",\"homev\":\"%s\",\"usb\":%s,\"bb\":%d,\"zettel\":%d,\"temp\":%.1f,\"rf\":%.0f,\"taupunkt\":%.1f,\"fahrt\":%s,\"sensoren\":\"%s%s\",\"us\":%d}",
+             "{\"fw\":\"%s\",\"seite\":\"%s\",\"bat\":%d,\"mv\":%d,\"ma\":%d,\"chg\":%s,\"mtu\":%u,\"phy\":%u,\"itvl\":%u,\"tp\":\"%ux%u\",\"fahrtv\":\"%08lx\",\"offen\":%d,\"uhr\":%s,\"modus\":\"%s\",\"homev\":\"%s\",\"usb\":%s,\"bb\":%d,\"zettel\":%d,\"temp\":%.1f,\"rf\":%.0f,\"taupunkt\":%.1f,\"fahrt\":%s,\"sensoren\":\"%s%s\",\"us\":%d,\"w\":\"%s\",\"lh\":%d}",
              FW_VERSION, seite, batPct, batMv, batMa, laedt ? "true" : "false", mtu, phy, connItvl, tpResX, tpResY,
              (unsigned long)fahrtVersion, offeneNotizen, rtcDa ? "true" : "false",
              modusName(), homeVersion, usbDa() ? "true" : "false", bbAktuell, bestellAktuell,
              isnan(klimaT) ? -99.0f : klimaT, isnan(klimaRf) ? -1.0f : klimaRf, isnan(klimaTp) ? -99.0f : klimaTp,
-             fahrt ? "true" : "false", lsmDa ? "b" : "", shtDa ? "k" : "", einhUs ? 1 : 0);
+             fahrt ? "true" : "false", lsmDa ? "b" : "", shtDa ? "k" : "", einhUs ? 1 : 0, modus == M_WIDGET ? widgetName : "", seiteHoch() ? 1 : 0);
     if (connected && chState) {
         chState->setValue((const uint8_t*)j, strlen(j));
         chState->notify();

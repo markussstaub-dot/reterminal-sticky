@@ -43,7 +43,7 @@ Bild: Zeilen à 100 Byte, MSB = linkes Pixel, Bit 1 = schwarz. CRC-32 wie zlib.
 - `{"t":"touch","a":"down|up","x":…,"y":…,"rx":…,"ry":…}`: x/y in Display-Koordinaten 800×480 (Querformat, USB oben rechts), rx/ry roh vom GT911
 - `{"t":"img","ok":true,"ms":Empfang,"show":Anzeige,"mtu":…,"phy":1|2,"n":Rahmen,"dle":Byte}` bzw. `{"t":"img","ok":false,"err":"crc|format"}`
 - `{"t":"itvl","v":Intervall×1,25 ms,"lat":…}` bei jedem Wechsel der Verbindungsparameter
-- `{"t":"modus","m":"home|notiz|bordbuch|bestell|kritzel|app|widget","zettel":n,"hoch":0|1}` (hoch = Lage der App-Seite, ab FW 0.22.0), `{"t":"seite","n":…,"von":…}`, `{"t":"bordbuch","seiten","belegtKB"}`,
+- `{"t":"modus","m":"home|notiz|bordbuch|bestell|kritzel|schrift|app|widget","zettel":n,"hoch":0|1,"w":"menue|timer|…","lh":0|1}` (hoch = Lage der App-Seite, ab FW 0.22.0; w = offenes Widget, sonst leer, und lh = Lage der gezeigten Seite, beide ab FW 0.31.2), `{"t":"seite","n":…,"von":…}`, `{"t":"bordbuch","seiten","belegtKB"}`,
   `{"t":"img","ok":…,"gespeichert":n}` nach BILD_ENDE Modus 3
 - `{"t":"audio","a":"start","rate":16000,"codec":"ima-adpcm","n":480}`, `{"t":"audio","a":"stop","pakete","verworfen","ms","spitze"}`,
   `{"t":"audio","a":"fehler","err":"mtu|mikro"}`
@@ -60,7 +60,7 @@ was sich unterscheidet, und `stand.txt` zuletzt. Auslöser fürs Neuladen: `home
 Die alten Spezialbefehle (BILD_ENDE 3/5, BB_INDEX, FAHRT_LAYOUT, HOME_VERSION, PUFFER_*) gehen weiter.
 
 ## Zustand (JSON)
-`{"fw","modus","bb":Bordbuch-Seite,"zettel":Bestellzettel,"usb","seite":"karte|bild","bat":%,"mv","ma","chg","mtu","phy","itvl":×1,25 ms,"tp":"BxH","fahrtv":CRC des Layouts,"offen":Notizen im Puffer,"uhr":bool}` – bei Verbindung,
+`{"fw","modus","bb":Bordbuch-Seite,"zettel":Bestellzettel,"usb","seite":"karte|bild","bat":%,"mv","ma","chg","mtu","phy","itvl":×1,25 ms,"tp":"BxH","fahrtv":CRC des Layouts,"offen":Notizen im Puffer,"uhr":bool, …, "w", "lh"}` (w und lh wie beim Ereignis modus, ab FW 0.31.2) – bei Verbindung,
 nach jedem Bild und alle 30 s.
 
 ## Funkverhalten (rücksichtsvoll)
@@ -79,7 +79,8 @@ nach jedem Bild und alle 30 s.
 - Display: „● Aufnahme“ oben rechts per Teil-Refresh, danach wird die Stelle aus der Seite neu gezeichnet
 
 ## Spiegel und Fernbedienung (11.11.2026)
-- Sticky → App: keine Bilder, nur `modus` (`{"t":"modus","m","zettel"}`), `seite` (Bordbuch) und `audio` start/stop;
+- **Bildschirmfoto** (ab FW 0.31.3): HOLEN auf `/ist/bildschirm.rle` (keine Datei auf der Karte) liefert das gerade gezeigte Bild (800 × 480, 1 bpp, Display-Lage) PackBits-gepackt: Kopf k < 128 = k + 1 Bytes wörtlich, k > 128 = nächstes Byte 257 − k mal. Aufgenommen wird bei Offset 0, Länge vorher unbekannt: bis zum leeren Stück holen. Hochkant zurückdrehen mit `lh`
+- Sticky → App sonst: keine Bilder, nur `modus` (`{"t":"modus","m","zettel"}`), `seite` (Bordbuch) und `audio` start/stop;
   beim Verbinden einmal der Zustand mit `modus`, `bb`, `zettel`. Die App rendert das Bild aus ihrem eigenen Vorrat
 - App → Sticky: `MODUS m [seite]` (siehe oben); Tipps auf die Vorschau rechnet die App selbst um (Notiz-Streifen,
   Inhaltsverzeichnis) – kein eigener Touch-Befehl, kein zusätzlicher Schnellmodus

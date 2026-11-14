@@ -279,7 +279,7 @@ zwilling.beobachte((art, d) => {
     const us = !!d.us;
     if (us !== letzteEinheitUs) { const vorher = letzteEinheitUs; letzteEinheitUs = us; setzeEinheitUs(us); if (vorher != null && zwilling.verbunden) abgleich().catch((e) => eintrag(e.message, true)); }
   }
-  if (art === 'zustand') { zeigeZustand(d); if (d.modus) spiegelSetze({ modus: d.modus, bb: d.bb ?? 0, zettel: d.zettel ?? 0, bat: d.bat, usb: !!d.usb, verbunden: true }); }
+  if (art === 'zustand') { zeigeZustand(d); if (d.modus) spiegelSetze({ modus: d.modus, w: d.w ?? '', lh: d.lh ?? (d.modus === 'home' || d.modus === 'notiz' ? 1 : 0), bb: d.bb ?? 0, zettel: d.zettel ?? 0, bat: d.bat, usb: !!d.usb, verbunden: true }); if (!spiegel.hatFoto()) fotoAnstossen(); }
   else if (art === 'log') { if (!(stickySchlaeft && /^Verbinde mit/.test(d))) eintrag(d); }   // schlummert: Versuche nicht mitschreiben
   else if (art === 'getrennt') {
     if (stickySchlaeft) eintrag('Sticky schlummert (spart Akku) – Taste weckt ihn, sonst meldet er sich zur vollen Stunde');
@@ -291,13 +291,14 @@ zwilling.beobachte((art, d) => {
   }
   else if (art === 'ereignis') {
     if (d.t === 'key' && d.a === 'down') eintrag(`Taste ${TASTEN[d.k] || d.k} gedrückt`);
+    if (d.t === 'key' && d.a === 'up') fotoAnstossen();
     else if (d.t === 'touch' && d.a === 'down' && stickyModus === 'app') { appSeite.tipp(d.x, d.y).catch((e) => eintrag(`App-Seite: ${e.message}`, true)); }
     else if (d.t === 'touch' && d.a === 'down') { eintrag(`Touch bei ${d.x}, ${d.y}`); touchMarke(d.x, d.y); fahrtTouch(d.x, d.y, d.ms); }
     else if (d.t === 'pong') eintrag('Pong');
     else if (d.t === 'suchen') handyKlingeln();
     else if (d.t === 'suche') eintrag(d.a === 'gefunden' ? 'Sticky gefunden' : 'Sticky piept');
     else if (d.t === 'schlaf') stickySchlaeft = true;
-    else if (d.t === 'modus') { spiegelSetze({ modus: d.m, ...(d.zettel != null ? { zettel: d.zettel } : {}), verbunden: true }); stickyModus = d.m; imBordbuch = d.m === 'bordbuch'; eintrag(`Modus: ${{ home: 'Home', notiz: 'Notiz', bordbuch: 'Bordbuch', kritzel: 'Kritzelblock', schrift: 'Strichschrift', app: 'App-Seite', widget: 'Widget', bestell: `Bestellzettel ${(d.zettel ?? 0) + 1}` }[d.m] ?? d.m}`); if (d.m === 'app') { if (d.hoch != null) appSeite.hoch = !!d.hoch; appSeite.zeigen().catch((e) => eintrag(`App-Seite: ${e.message}`, true)); } }
+    else if (d.t === 'modus') { spiegelSetze({ modus: d.m, w: d.w ?? '', lh: d.lh ?? 0, ...(d.zettel != null ? { zettel: d.zettel } : {}), verbunden: true }); stickyModus = d.m; imBordbuch = d.m === 'bordbuch'; fotoAnstossen(); eintrag(`Modus: ${{ home: 'Home', notiz: 'Notiz', bordbuch: 'Bordbuch', kritzel: 'Kritzelblock', schrift: 'Strichschrift', app: 'App-Seite', widget: 'Widget', bestell: `Bestellzettel ${(d.zettel ?? 0) + 1}` }[d.m] ?? d.m}`); if (d.m === 'app') { if (d.hoch != null) appSeite.hoch = !!d.hoch; appSeite.zeigen().catch((e) => eintrag(`App-Seite: ${e.message}`, true)); } }
     else if (d.t === 'seite') { $('bbStatus').textContent = `Sticky zeigt Bordbuch-Seite ${d.n + 1} von ${d.von}`; spiegelSetze({ bb: d.n }); }
     else if (d.t === 'audio' && (d.a === 'start' || d.a === 'stop')) spiegelSetze({ aufnahme: d.a === 'start' });
     else if (d.t === 'bordbuch') eintrag(`Bordbuch auf dem Sticky: ${d.seiten} Seiten, ${d.belegtKB} KB`);
@@ -759,8 +760,10 @@ const lageText = () => Object.entries(lagen()).map(([s, l]) => `${s} ${l}`).join
 /** Widgets in ihrer Lage bauen; das Menü folgt dem Karussell */
 const auto = (seite) => fwAb('0.22.0') && lagen()[seite] === 'auto';
 /** bei „auto“ (Stufe 2, FW ≥ 0.22.0) beide Lagen: <name> quer, <name>-h hochkant; der Sticky nimmt laut Lagesensor */
+/** alle Widgets als Funktion der Lage; das Menü folgt dem Karussell (auch für den Spiegel) */
+const widgetFunktionen = () => ({ ...WIDGETS, menue: (h) => menueWidget(karussellText().trim().split('\n'), h) });
 const widgetBauer = () => {
-  const alle = { ...WIDGETS, menue: (h) => menueWidget(karussellText().trim().split('\n'), h) };
+  const alle = widgetFunktionen();
   const b = {};
   for (const [n, f] of Object.entries(alle)) {
     b[n] = () => f(hochkant(n));
@@ -821,6 +824,27 @@ $('karussell').onchange = () => {
 // Die App holt nur den neuen Teil (Stand je Datei in localStorage) und hängt ihn an ihre Kopie an
 // (Data/fahrtenschreiber/…). Vergangene Tage löscht sie danach auf dem Sticky, den heutigen lässt sie dort weiterwachsen.
 /** Firmware mindestens v? ("sim" kann alles) */
+// ---- Spiegel per Bildschirmfoto (FW ≥ 0.31.3) -------------------------------------------------------------------
+// Nur solange der Sticky-Tab sichtbar ist: nach Seitenwechsel oder Taste ein Foto; auf Kritzel, Strichschrift und Widgets
+// alle 3 s nach, höchstens 30 s nach der letzten Bedienung (danach darf der Sticky wieder schlummern).
+let fotoLaeuft = false, fotoBis = 0, fotoTimer = 0;
+const stickyTabOffen = () => document.visibilityState === 'visible' && document.querySelector('.tab[data-tab="sticky"]')?.hidden === false;
+function fotoAnstossen(verzoegerung = 1200) {
+  if (!zwilling.verbunden || !fwAb('0.31.3') || zwilling.geraet.fw === 'sim') return;
+  fotoBis = Date.now() + 30000;
+  clearTimeout(fotoTimer);
+  fotoTimer = setTimeout(fotoRunde, verzoegerung);
+}
+async function fotoRunde() {
+  clearTimeout(fotoTimer);
+  if (!zwilling.verbunden || !stickyTabOffen() || fotoLaeuft) return;
+  fotoLaeuft = true;
+  try { spiegel.foto(await zwilling.bildschirm()); } catch { /* egal: der Spiegel zeichnet dann selbst */ }
+  fotoLaeuft = false;
+  if (Date.now() < fotoBis && ['kritzel', 'schrift', 'widget'].includes(spiegel.zustand().modus)) fotoTimer = setTimeout(fotoRunde, 3000);
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') fotoAnstossen(300); });
+document.querySelector('#tabs [data-ziel="sticky"]')?.addEventListener('click', () => fotoAnstossen(300));
 const fwAb = (v) => { const f = zwilling.geraet.fw; if (f === 'sim') return true; const a = String(f ?? '0').split('.').map(Number), b = v.split('.').map(Number);
   for (let i = 0; i < 3; i++) if ((a[i] || 0) !== b[i]) return (a[i] || 0) > b[i]; return true; };
 const LOG_ORDNER = 'fahrtenschreiber';
@@ -1104,7 +1128,7 @@ $('bbAufspielen').onclick = async () => {
   }
 };
 $('bbZeigen').onclick = () => zwilling.modusSetzen(1).catch((e) => eintrag(e.message, true));
-window.__sticky = { ladePdf, zwilling, pufferAbholen, fahrtenschreiberAbholen, erkenne, sprachPruefung, zeigeNotiz, notizen };   // zum Prüfen per WebView-Fernsteuerung (adb)
+window.__sticky = { ladePdf, zwilling, spiegelSetze: (t) => spiegelSetze(t), pufferAbholen, fahrtenschreiberAbholen, erkenne, sprachPruefung, zeigeNotiz, notizen };   // zum Prüfen per WebView-Fernsteuerung (adb)
 
 try { $('woerter').value = localStorage.getItem('sticky.woerter') ?? WOERTER_STANDARD; } catch { $('woerter').value = WOERTER_STANDARD; }
 $('woerter').onchange = () => { try { localStorage.setItem('sticky.woerter', $('woerter').value); } catch { /* egal */ } };
@@ -1143,6 +1167,11 @@ const spiegel = spiegelEinrichten({
     zettelText: () => $('zettelText').value,
     alleZettel,
     bordbuchSeite,
+    widgetBild: (name, hoch) => {
+      const f = widgetFunktionen()[name];
+      return f ? f(hoch).find((d) => d.n === 'bild.bin')?.daten : null;
+    },
+    schriftBild: () => schriftHintergrund(),
     inhaltsFelder: () => { try { return JSON.parse(localStorage.getItem('sticky.bbplan') || 'null')?.felder ?? []; } catch { return []; } },
   },
   befehl: (m, seite) => { if (zwilling.verbunden) zwilling.modusSetzen(m, seite).catch((e) => eintrag(e.message, true)); },
@@ -1151,7 +1180,7 @@ const spiegel = spiegelEinrichten({
 /** Spiegel-Zustand setzen und merken (nach dem App-Start zeigt die Vorschau den letzten Stand) */
 function spiegelSetze(teile) {
   spiegel.setze(teile);
-  try { const { modus, bb: s, zettel } = spiegel.zustand(); localStorage.setItem('sticky.spiegel', JSON.stringify({ modus, bb: s, zettel })); } catch { /* egal */ }
+  try { const { modus, w, lh, bb: s, zettel } = spiegel.zustand(); localStorage.setItem('sticky.spiegel', JSON.stringify({ modus, w, lh, bb: s, zettel })); } catch { /* egal */ }
 }
 try { const alt = JSON.parse(localStorage.getItem('sticky.spiegel') || 'null'); if (alt) spiegel.setze({ ...alt, verbunden: false }); else spiegel.setze({}); } catch { spiegel.setze({}); }
 $('fernAuf').onclick = () => spiegel.taste('up');

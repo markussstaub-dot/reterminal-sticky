@@ -17,8 +17,8 @@ Legende: **fest** = entschieden · **Vorschlag** = Claudes Idee, Markus entschei
 - fest: Werks-Firmware kann KI-Notizen, ist aber träge → eigene Firmware auf dem Bastel-Sticky
 - Vorschlag: das zweite Gerät bleibt in Folie, bis klar ist, ob es gebraucht wird
 - Merker (Markus, 14.11.2026): **Mehrere Stickys an einer App** („Multiclient“) als nächste Baustelle für die APK, Start
-  15.11.: Geräteliste mit Namen/MAC, je Gerät eigener Zwilling (Soll/Ist), Abgleich je Gerät. Anlass: der zweite
-  Sticky bekommt zum Test die EDC-Firmware aus dem Playground. Vorher ein **Architekturbild** (App, Zwillinge, Stickys, Abgleich) als Grundlage → `docs/architektur-multiclient.svg` (15.11.2026). Entschieden: alle gleichzeitig verbunden, Bibliothek geteilt (nur Unpersönliches),
+  14.11.: Geräteliste mit Namen/MAC, je Gerät eigener Zwilling (Soll/Ist), Abgleich je Gerät. Anlass: der zweite
+  Sticky bekommt zum Test die EDC-Firmware aus dem Playground. Vorher ein **Architekturbild** (App, Zwillinge, Stickys, Abgleich) als Grundlage → `docs/architektur-multiclient.svg` (14.11.2026). Entschieden: alle gleichzeitig verbunden, Bibliothek geteilt (nur Unpersönliches),
   Profile als Vorlagen, Altdaten zu Sticky A. Erst beide Stickys für Markus selbst, **Familie und Privatsphäre mitdenken**:
   Besitzer je Gerät, persönliche Daten nie auf fremde Geräte, „Gerät vergessen“ vor dem Verschenken, alles lokal.
   **Lücke:** BLE heute ohne Kopplung (jedes Handy in Reichweite könnte /ist lesen) → Kopplung mit Tastenbestätigung, eigener Firmware-Schritt
@@ -309,6 +309,11 @@ die Firmware rechnet. Ein Flash für alles.
     Tastatur bleibt Plan B. **Umgesetzt 13.11.2026 (FW 0.27.0), am Gerät „klappt gut“**
   - Merker (Markus, 14.11.2026, beim Ausprobieren): **Spickzettel erst auf Tastendruck wieder ausblenden**, nicht von
     selbst – sonst ist er weg, bevor man nachgeschaut hat
+    - erledigt (14.11.2026, FW 0.31.4): alle Hilfeseiten (▲+▼) bleiben stehen, bis eine Taste neu gedrückt wird; vorher
+      schloss schon das Loslassen von ▲+▼ sie wieder
+    - geprüft (14.11.2026, FW 0.31.5): alle Hilfeseiten gegen die Tastenlogik – Home (KI kurz = Menü, ▲ ▼ 1 s, KI 3× =
+      Handy), eigene Hilfe für App-Seite und Lineal (Zoll), Tastenzeile bei Wecker/Einstellungen/Menü; lange Zeilen werden
+      jetzt umbrochen statt mit „…“ abgeschnitten
   - Merker (14.11.2026): **„8“ und „B“ werden noch nicht zuverlässig erkannt** – Vorlagen bzw. Zweitformen nachschärfen
     (ähnliche Form, nur über Feld links/rechts getrennt)
 - ohne Flash, reine App-Arbeit: **Kritzel-Texterkennung** – die App liest Kritzel-Notizen per Handschrifterkennung aus
@@ -621,6 +626,14 @@ Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzu
   echten Fahrten einzustellen), danach Szenen
   - Merker (Markus, 14.11.2026): **Abgleich in der APK läuft nicht mehr komplett** – z. B. kommt der
     Home-Screen (Menü) nicht an; beim nächsten Mal Logs vom Fold ziehen (adb logcat) und mit der Bestandsliste `stand.txt` vergleichen
+    - geklärt (14.11.2026): Abgleich war vollständig; die **Vorschau im Sticky-Tab** kannte nur Home, Notiz, Bordbuch
+      und Zettel und zeigte sonst „noch nicht verbunden“. Ab FW 0.31.2 meldet der Sticky Widget-Namen (`w`) und Lage
+      (`lh`), die Vorschau zeigt Menü, Widgets und Strichschrift als Grundbild in der richtigen Lage. Offen: Abgleich
+      bricht bei Funkabriss mit Folgefehlern ab und wird erst beim nächsten Verbinden nachgeholt
+    - fest (Markus, 14.11.2026): **Spiegel per Bildschirmfoto** (FW 0.31.3) statt Nachmalen: die App holt das echte Bild
+      (`/ist/bildschirm.rle`, gepackt meist wenige KB) nur bei offenem Sticky-Tab, nach Seitenwechsel/Taste, auf Kritzel,
+      Strichschrift und Widgets alle 3 s bis 30 s nach der letzten Bedienung. Zeigt Statuszeile, Knöpfe, Striche und Ziffern
+      wie am Gerät; ohne Foto zeichnet die App wie bisher selbst. Weicht bewusst von „es fließen keine Bilder zurück“ ab
 - Vorschlag **Messintervalle**: Klima wach 1/min, im Schlummern alle 15 min per Timer-Wecken; Bewegungssensor im
   Schlaf im Weck-Modus (~25 µA); Fahrtenschreiber nur Ereignisse. Ziel < 5 % Akku über Nacht
 - Vorschlag **Fahrt**: die Bewegung entscheidet übers Wachbleiben, GPS im `StickyDienst` bleibt Rückfall, bis

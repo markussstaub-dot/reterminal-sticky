@@ -4,6 +4,19 @@ import { rahmenStart, rahmenDaten, rahmenEnde, rahmenKarte, rahmenPing, rahmenWa
   rahmenListe, rahmenHolen, rahmenLoeschen, rahmenSchreibStart, rahmenSchreibDaten, rahmenSchreibEnde } from './protokoll.js';
 import { Aufnahme, wav } from './audio.js';
 
+/** PackBits entpacken: Kopf k < 128 → k + 1 Bytes wörtlich, k > 128 → nächstes Byte 257 − k mal */
+export function entpacken(p, n) {
+  const o = new Uint8Array(n);
+  let i = 0, j = 0;
+  while (i < p.length && j < n) {
+    const k = p[i++];
+    if (k < 128) { o.set(p.subarray(i, i + k + 1).subarray(0, n - j), j); i += k + 1; j += k + 1; }
+    else if (k > 128) { o.fill(p[i++], j, Math.min(n, j + 257 - k)); j += 257 - k; }
+  }
+  if (j < n) throw new Error(`Bildschirm: unvollständig (${j}/${n} Byte)`);
+  return o;
+}
+
 export class Zwilling {
   constructor() {
     this.verbindung = null;
@@ -143,6 +156,13 @@ export class Zwilling {
     return alle;
   }
   /** Datei ab Byte `ab` bis `groesse` holen → Uint8Array (nur der neue Teil) */
+  /** Bildschirmfoto (FW ≥ 0.31.3): das gerade gezeigte Bild, 800 × 480, 1 bpp, PackBits-gepackt übertragen */
+  async bildschirm() {
+    const pfad = '/ist/bildschirm.rle';
+    const gepackt = await this.#nacheinander(() => this.#stueckweiseJetzt('Bildschirm', (off) => rahmenHolen(pfad, off), 49000, 0, true));
+    return entpacken(gepackt, 48000);
+  }
+
   holen(pfad, groesse, ab = 0) { return this.#stueckweise(pfad, (off) => rahmenHolen(pfad, off), groesse, ab); }
   async loeschen(pfad) {
     const e = await this.#abgleich(rahmenLoeschen(pfad), `Löschen ${pfad}`);
@@ -223,7 +243,7 @@ export class Zwilling {
   }
 
   #stueckweise(name, anfrage, groesse, ab = 0) { return this.#nacheinander(() => this.#stueckweiseJetzt(name, anfrage, groesse, ab)); }
-  async #stueckweiseJetzt(name, anfrage, groesse, ab = 0) {
+  async #stueckweiseJetzt(name, anfrage, groesse, ab = 0, bisEnde = false) {
     const daten = new Uint8Array(Math.max(0, groesse - ab));
     await this.verbindung.schnell();
     let off = ab;
@@ -241,6 +261,7 @@ export class Zwilling {
       daten.set(stueck.subarray(0, Math.min(stueck.length, groesse - off)), off - ab);
       off += stueck.length;
     }
+    if (bisEnde) return daten.subarray(0, off - ab);   // Länge vorher unbekannt: bis zum leeren Stück
     if (off < groesse) throw new Error(`${name}: unvollständig (${off}/${groesse} Byte)`);
     return daten;
   }
