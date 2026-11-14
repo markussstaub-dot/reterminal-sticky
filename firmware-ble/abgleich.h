@@ -7,12 +7,14 @@
  *   23 SCHREIBEN_START größe:u32 crc:u32 pfad   (nur /soll/…, bis 1 MB, landet erst im PSRAM)
  *   24 SCHREIBEN_DATEN offset:u32 daten…        (write-no-response, wie BILD_DATEN)
  *   25 SCHREIBEN_ENDE                           → CRC prüfen, ablegen, EVT {"t":"geschrieben","p","ok","err"?}
+ *   26 LEEREN   "LEEREN"                  → alles Persönliche weg (vor der Weitergabe, FW 0.31.6): /soll und /ist auf der
+ *               Karte samt Unterordnern, internen Speicher (LittleFS) formatieren, EVT {"t":"geleert","ok"}, dann Neustart
  * /ist/… schreibt nur der Sticky (die App holt ab und quittiert mit LOESCHEN), /soll/… nur die App.
  * Ohne Karte landet /soll/home|bordbuch|notiz im Flash (ablage.h). Die Befehle kommen im BLE-Task an,
  * die Karte wird nur aus loop() angefasst (SPI mit dem Display).
  */
 static const uint8_t OP_LISTE = 0x20, OP_HOLEN = 0x21, OP_LOESCHEN = 0x22,
-                     OP_SCHR_START = 0x23, OP_SCHR_DATEN = 0x24, OP_SCHR_ENDE = 0x25;
+                     OP_SCHR_START = 0x23, OP_SCHR_DATEN = 0x24, OP_SCHR_ENDE = 0x25, OP_LEEREN = 0x26;
 static const uint32_t SCHR_MAX = 1UL << 20;
 
 static char abgPfad[64];
@@ -60,6 +62,9 @@ static bool abgleichBefehl(const uint8_t* d, size_t n) {
     }
     case OP_SCHR_ENDE:
         if (schrAktiv) abgWunsch = OP_SCHR_ENDE;
+        return true;
+    case OP_LEEREN:   // nur mit Kennwort im Rahmen, damit kein verirrtes Byte den Sticky leert
+        if (n == 7 && !memcmp(d + 1, "LEEREN", 6) && !abgWunsch) abgWunsch = OP_LEEREN;
         return true;
     case OP_LISTE: case OP_HOLEN: case OP_LOESCHEN: {
         size_t kopf = d[0] == OP_HOLEN ? 5 : 1;
@@ -195,12 +200,43 @@ static void abgSchreibenEnde() {
     sendEvt(j);
 }
 
+/** Ordner auf der Karte samt Inhalt löschen */
+static int sdLeeren(const char* pfad) {
+    File d = SD.open(pfad);
+    if (!d) return 0;
+    int n = 0;
+    std::vector<String> dateien, ordner;
+    for (File f = d.openNextFile(); f; f = d.openNextFile()) {
+        String p = String(pfad) + "/" + f.name();
+        (f.isDirectory() ? ordner : dateien).push_back(p);
+        f.close();
+    }
+    d.close();
+    for (auto& p : ordner) n += sdLeeren(p.c_str());
+    for (auto& p : dateien) if (SD.remove(p)) n++;
+    SD.rmdir(pfad);
+    return n;
+}
+
+static void abgLeeren() {
+    int n = 0;
+    if (sdEin()) { n += sdLeeren("/soll"); n += sdLeeren("/ist"); }
+    bool fs = LittleFS.format();
+    char j[80];
+    snprintf(j, sizeof j, "{\"t\":\"geleert\",\"ok\":%s,\"dateien\":%d}", fs ? "true" : "false", n);
+    sendEvt(j);
+    Serial.printf("Geleert: %d Dateien auf der Karte, LittleFS %s, Neustart\n", n, fs ? "formatiert" : "FEHLER");
+    delay(800);
+    ESP.restart();
+}
+
 static void abgleichLoop() {
     uint8_t w = abgWunsch;
     if (!w) return;
     if (w == OP_LISTE) abgListe(abgPfad, abgAb);
     else if (w == OP_HOLEN) abgStueck(abgPfad, abgOffset);
     else if (w == OP_SCHR_ENDE) abgSchreibenEnde();
+    else if (w == OP_LEEREN) abgLeeren();
     else if (w == OP_LOESCHEN) {
         bool ok = sdEin() && SD.remove(abgPfad);
         char j[110];

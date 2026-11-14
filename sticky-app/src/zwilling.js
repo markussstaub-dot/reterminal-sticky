@@ -1,7 +1,7 @@
 // Der Zwilling: Soll-Zustand des Sticky in der App (Quelle der Wahrheit) plus Übertragung.
 import { rahmenStart, rahmenDaten, rahmenEnde, rahmenKarte, rahmenPing, rahmenWach, nutzlastFuer, crc32, rahmenSpeichern, rahmenBbIndex, rahmenBbModus,
   rahmenRueck, rahmenHome, rahmenHomeVersion, rahmenModus, rahmenZeit, rahmenFahrtLayout, rahmenPufferListe, rahmenPufferHolen, rahmenPufferLoeschen,
-  rahmenListe, rahmenHolen, rahmenLoeschen, rahmenSchreibStart, rahmenSchreibDaten, rahmenSchreibEnde } from './protokoll.js';
+  rahmenListe, rahmenHolen, rahmenLoeschen, rahmenLeeren, rahmenSchreibStart, rahmenSchreibDaten, rahmenSchreibEnde } from './protokoll.js';
 import { Aufnahme, wav } from './audio.js';
 
 /** PackBits entpacken: Kopf k < 128 → k + 1 Bytes wörtlich, k > 128 → nächstes Byte 257 − k mal */
@@ -164,6 +164,16 @@ export class Zwilling {
   }
 
   holen(pfad, groesse, ab = 0) { return this.#stueckweise(pfad, (off) => rahmenHolen(pfad, off), groesse, ab); }
+  /** Sticky für die Weitergabe leeren (FW ≥ 0.31.6): wartet auf {"t":"geleert"} oder höchstens 30 s */
+  leeren() {
+    return new Promise((ok, fehler) => {
+      const zeit = setTimeout(() => { this.beobachter.delete(hoer); fehler(new Error('Sticky hat das Leeren nicht bestätigt')); }, 30000);
+      const hoer = (art, d) => { if (art === 'ereignis' && d.t === 'geleert') { clearTimeout(zeit); this.beobachter.delete(hoer); ok(d); } };
+      this.beobachte(hoer);
+      this.verbindung.schreiben(rahmenLeeren()).catch((e) => { clearTimeout(zeit); this.beobachter.delete(hoer); fehler(e); });
+    });
+  }
+
   async loeschen(pfad) {
     const e = await this.#abgleich(rahmenLoeschen(pfad), `Löschen ${pfad}`);
     return e.ok === true;

@@ -446,8 +446,19 @@ function geraeteZeigen() {
     knopf.disabled = istAktiv;
     knopf.onclick = () => wechselnZu(g.id, `Gewechselt zu ${g.name}`);
     const weg = Object.assign(document.createElement('button'), { textContent: 'Vergessen' });
-    weg.onclick = () => {
-      if (!confirm(`${g.name} vergessen? Sein Abgleich-Stand in der App wird gelöscht; das Profil bleibt. (Die Karte im Sticky bleibt, wie sie ist.)`)) return;
+    weg.onclick = async () => {
+      if (!confirm(`${g.name} vergessen? Sein Abgleich-Stand in der App wird gelöscht; das Profil bleibt.`)) return;
+      // Vor der Weitergabe: auch auf dem Sticky alles Persönliche löschen (Karte /soll und /ist, interner Speicher)
+      const z = istAktiv ? zwilling : sitzungen.get(g.id)?.z;
+      const kannLeeren = z?.verbunden && baue(istAktiv ? null : sitzungen.get(g.id), () => fwAb('0.31.6'));
+      if (kannLeeren && confirm(`Auch ${g.name} selbst leeren? Notizen, Zettel, Bordbuch, Visitenkarte und alles auf der Karte werden dort gelöscht – zum Weitergeben. Danach startet er neu und ist leer.`)) {
+        try {
+          const r = await z.leeren();
+          eintrag(`${g.name} geleert (${r.dateien} Dateien auf der Karte${r.ok ? ', interner Speicher formatiert' : ', interner Speicher NICHT formatiert'})`, !r.ok);
+        } catch (e) { eintrag(`${g.name} leeren: ${e.message}`, true); return; }
+      } else if (!kannLeeren) eintrag(`${g.name}: zum Leeren muss er verbunden sein (Firmware ab 0.31.6) – sonst bleibt seine Karte, wie sie ist`);
+      const s = sitzungen.get(g.id);
+      if (s) { s.weg = true; clearTimeout(s.timer); await s.v.trennen().catch(() => {}); sitzungen.delete(g.id); }
       geraetVergessen(g.id);
       if (istAktiv) wechselnZu(null, `${g.name} vergessen`); else geraeteZeigen();
     };
@@ -805,13 +816,16 @@ function karussellText() {
   return [...new Set(roh)].join('\n') + '\n';
 }
 /** Tastenhilfe je Modus (▲+▼ am Sticky): auf eigener Leinwand rendern, damit die Vorschau bleibt, wie sie ist */
-async function hilfeAufspielen(s = null) {
+function hilfeDateien() {
   const c = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(BREITE, HOEHE) : Object.assign(document.createElement('canvas'), { width: BREITE, height: HOEHE });
   const h = c.getContext('2d', { willReadFrequently: true });
-  const dateien = baue(s, () => Object.entries(HILFE).map(([modus, seite]) => {
+  return Object.entries(HILFE).map(([modus, seite]) => {
     bb.zeichneTextseite(h, seite, '▲+▼ = Hilfe');
     return { n: `${modus}.bin`, daten: rgbaZu1bpp(h.getImageData(0, 0, BREITE, HOEHE).data) };
-  }).concat(fwAb('0.27.0') ? [{ n: 'schrift.bin', daten: schriftHilfe() }] : []));   // Alphabet als Spickzettel
+  }).concat(fwAb('0.27.0') ? [{ n: 'schrift.bin', daten: schriftHilfe() }] : []);   // Alphabet als Spickzettel
+}
+async function hilfeAufspielen(s = null) {
+  const dateien = baue(s, hilfeDateien);
   const n = await (s?.z ?? zwilling).sollAbgleich('hilfe', dateien);
   if (n) eintrag(`${s ? `${s.g.name}: ` : ''}Tastenhilfe aufgespielt (${n} Seiten)`);
 }
@@ -1501,6 +1515,54 @@ Promise.resolve().then(() => Hintergrund.addListener('benachrichtigung', (e) => 
     if (s.z.verbunden && (s.modus === 'home' || s.modus === 'notiz')) s.z.sendeBild(r.bytes, { bereich: r.bereich }).catch(() => {});
   }
 })).catch(() => {});
+
+// ---- Grundausstattung für die SD-Karte (14.11.2026) ---------------------------------------------------------------
+// Wer die Firmware aus dem Playground flasht und keine App hat, packt dieses ZIP auf eine microSD (FAT32): Menü,
+// Widgets, Hilfe, Strichschrift und Karussell. Gebaut aus einem LEEREN Profil – nur Standardinhalte, nichts
+// Persönliches (kein Home mit Visitenkarte, keine Zettel, kein Bordbuch). stand.txt je Ordner wie beim Abgleich.
+const GRUND_FW = '0.31.6';
+function grundausstattung() {
+  const s = { g: { id: '__grund', profil: '__grund', name: 'Grundausstattung' }, z: { geraet: { fw: GRUND_FW } } };
+  // Karussell nur mit Seiten, die ohne App etwas zeigen (Notiz, Bordbuch und Zettel kommen erst mit der App)
+  try { localStorage.setItem('sticky.p.__grund.karussell', 'Home, Timer, Wecker, Weltzeit, Waage, Lineal, Kritzel, Schrift, Rechner, Umrechner, Einstellungen'); } catch { /* egal */ }
+  return baue(s, () => {
+    const enc = new TextEncoder(), dateien = [];
+    const ordner = (pfad, liste) => {
+      for (const d of liste) dateien.push({ p: `soll/${pfad}/${d.n}`, daten: d.daten });
+      const stand = liste.map((d) => `${d.n} ${crc32(d.daten).toString(16).padStart(8, '0')}`).join('\n') + '\n';
+      dateien.push({ p: `soll/${pfad}/stand.txt`, daten: enc.encode(stand) });
+    };
+    ordner('einstellungen', [{ n: 'karussell.txt', daten: enc.encode(karussellText()) }, { n: 'lage.txt', daten: enc.encode(lageText()) }]);
+    ordner('hilfe', hilfeDateien());
+    ordner('schrift', [{ n: 'zeichen.bin', daten: glyphenBlatt() }, { n: 'bild.bin', daten: schriftHintergrund() }, { n: 'alphabet.txt', daten: alphabetDatei() }]);
+    for (const [name, bauen] of Object.entries(widgetBauer())) ordner(`widgets/${name}`, bauen());
+    dateien.push({ p: 'LIESMICH.txt', daten: enc.encode('EDC Sticky – Grundausstattung (Firmware ' + GRUND_FW + ')\n\n'
+      + 'Den Ordner "soll" auf eine microSD-Karte (FAT32) kopieren, Karte in den Sticky, neu starten.\n'
+      + 'Danach gibt es Menue (KI kurz auf Home), Timer, Wecker, Weltzeit, Wasserwaage, Lineal, Rechner,\n'
+      + 'Umrechner, Strichschrift und Einstellungen - ohne Handy. Mit der App kommen Home, Zettel und Notizen dazu.\n\n'
+      + 'Copy the "soll" folder to a FAT32 microSD card, insert it, restart the Sticky. You get the menu\n'
+      + '(KI short on Home) and all widgets without a phone. The app adds Home, notes and cards.\n') });
+    return dateien;
+  });
+}
+/** ZIP ohne Kompression (Methode 0) – reicht, die Bilder sind ohnehin 1 bpp */
+function zipBauen(dateien) {
+  const enc = new TextEncoder(), teile = [], zentral = [];
+  let ofs = 0;
+  const u16 = (v) => [v & 255, (v >> 8) & 255], u32 = (v) => [v & 255, (v >> 8) & 255, (v >> 16) & 255, (v >>> 24) & 255];
+  for (const d of dateien) {
+    const name = enc.encode(d.p), crc = crc32(d.daten) >>> 0, n = d.daten.length;
+    const kopf = Uint8Array.from([...u32(0x04034b50), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x5821), ...u32(crc), ...u32(n), ...u32(n), ...u16(name.length), ...u16(0), ...name]);
+    zentral.push(Uint8Array.from([...u32(0x02014b50), ...u16(20), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x5821), ...u32(crc), ...u32(n), ...u32(n), ...u16(name.length), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(ofs), ...name]));
+    teile.push(kopf, d.daten);
+    ofs += kopf.length + n;
+  }
+  const zl = zentral.reduce((a, b) => a + b.length, 0);
+  const ende = Uint8Array.from([...u32(0x06054b50), ...u16(0), ...u16(0), ...u16(dateien.length), ...u16(dateien.length), ...u32(zl), ...u32(ofs), ...u16(0)]);
+  return new Blob([...teile, ...zentral, ende], { type: 'application/zip' });
+}
+window.__sticky.grundausstattung = grundausstattung;
+window.__sticky.grundZip = () => zipBauen(grundausstattung());
 
 tabsEinrichten();
 muster();

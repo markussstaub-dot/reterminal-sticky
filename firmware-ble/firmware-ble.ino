@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.31.5";
+static const char* FW_VERSION = "0.31.6";
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "EDC Sticky";   // Startbild ohne App (Playground: neutral, nicht der Autor)

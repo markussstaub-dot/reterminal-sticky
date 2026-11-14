@@ -44,8 +44,10 @@ Legende: **fest** = entschieden · **Vorschlag** = Claudes Idee, Markus entschei
     der letzten Meldungen (Firmware), Anzeige auch auf anderen Seiten
   - fest (Markus, 14.11.2026): **mehrere Handys/Apps mit mehreren Stickys** (n:m) bauen wir nicht – wer das braucht,
     baut es selbst (Protokoll und SD-Vertrag stehen unter „Für Fremd-Apps“)
-  - offen: Wechsel des aktiven Sticky ohne Neuladen; „Gerät vergessen“ soll auch /soll und /ist auf der Karte leeren
-    (vor dem Verschenken); Kopplung/Verschlüsselung
+  - **Leeren vor der Weitergabe (14.11.2026, FW 0.31.6):** Befehl 0x26 „LEEREN“ löscht /soll und /ist auf der Karte
+    samt Unterordnern, formatiert LittleFS und startet neu; in der App bei „Vergessen“ als Rückfrage, wenn der Sticky
+    verbunden ist. An Sticky B geprüft: 93 Dateien weg, Karte 0 MB, LittleFS leer
+  - offen: Wechsel des aktiven Sticky ohne Neuladen; Kopplung/Verschlüsselung
 
 ## MVP (Markus, 11.11.2026)
 
@@ -235,6 +237,9 @@ nehmen, die im Auto wirklich gefehlt hat, statt zu sammeln (Pflege!).
     nur das Titel-Karussell; Menü, Widgets und Schrift kommen erst mit der APK. Für Fremde ohne APK zu wenig.
     Vorschlag: Grundausstattung (Menü, Uhr, Timer, Rechner, Umrechner, Strichschrift) in die Firmware backen und
     beim ersten Start nach /soll schreiben, wenn dort nichts liegt; mindestens im Playground-Text „braucht die APK“ sagen
+    - umgesetzt (14.11.2026): `edc-sticky-sd-basekit-0.31.6.zip`, von der App aus einem leeren Profil gebaut
+      (`window.__sticky.grundZip()`): Einstellungen (Karussell nur mit Seiten, die ohne App gehen), Hilfe, Schrift,
+      alle Widgets, LIESMICH; nichts Persönliches. Release-Paket in `vermarktung/release-0.31.6/`
     - Einfacher (Markus, 14.11.2026): **Grundausstattung als ZIP für die SD-Karte** im GitHub-Release, „auspacken, Karte
       rein, fertig“. Geht ohne Firmware-Änderung, die Firmware liest /soll schon von der Karte. Vorlage: /soll vom
       Bastel-Sticky, aber ohne Persönliches (Bordbuch, Zettel, Kundennummern, Visitenkarte)

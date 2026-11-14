@@ -78,6 +78,8 @@ export const rahmenSchreibStart = (daten, pfad) => {
 };
 export const rahmenSchreibDaten = (daten, nutzlast) => rahmenDaten(daten, nutzlast, OP.SCHR_DATEN);
 export const rahmenSchreibEnde = () => Uint8Array.of(OP.SCHR_ENDE);
+/** Alles Persönliche auf dem Sticky löschen (FW ≥ 0.31.6): Kennwort im Rahmen, danach startet er neu */
+export const rahmenLeeren = () => Uint8Array.of(0x26, ...new TextEncoder().encode('LEEREN'));
 
 /** Teilbild-Datei für die Offline-Rückmeldung: x, y, w, h (je u16) + 1 bpp, wie die Firmware sie liest */
 export function rueckDatei(bytes, bereich) {
