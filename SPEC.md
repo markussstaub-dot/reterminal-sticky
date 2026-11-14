@@ -28,8 +28,17 @@ Legende: **fest** = entschieden · **Vorschlag** = Claudes Idee, Markus entschei
     Gerät (`sticky.g.<mac>.…`: Abgleich-Stand, Spiegel, Lineal-Kalibrierung, Bordbuch-Plan); `src/geraete.js`. Altdaten
     wandern einmalig zu Sticky A (Profil „EDC“). Notizen tragen `geraet`, Fahrtenschreiber/Messreihen weiterer Geräte
     liegen in einem Unterordner mit Kurznamen. Wiederverbinden sucht nur den aktiven Sticky, nie einen anderen
-  - offen, **Stufe 2:** gleichzeitig verbunden (Zwilling je Gerät, Wecker je MAC im StickyDienst); „Gerät vergessen“ soll
-    auch /soll und /ist auf der Karte leeren (vor dem Verschenken)
+  - **Stufe 2 umgesetzt (14.11.2026, Weg B „Vordergrund + Hintergrund“):** der aktive Sticky wie bisher (Vorschau,
+    Fernbedienung, Bordbuch); jeder weitere bekannte Sticky läuft als Hintergrund-Sitzung mit eigener Verbindung und
+    eigenem Zwilling: liefert Live-Diktate, Notiz-Knöpfe, Puffer, Kritzel, Schrift, Fahrtenschreiber und Messreihen ab,
+    bekommt Home (mit Wetter), Zettel, Notiz-Seite, Karussell, Widgets, Hilfe und Schrift nach SEINEM Profil
+    (`baue()`/`mitGeraet()`: Bau-Kontext nur für synchrone Bauschritte). StickyDienst: ein Wecker je MAC. Geräteliste
+    zeigt „im Hintergrund verbunden · Akku“ bzw. „zuletzt“. Am Gerät geprüft: beide gleichzeitig verbunden, Live-Diktat
+    von beiden mit richtigem Gerät. Hintergrund funkt „bescheiden“ (kein Schnellmodus aus der App), weil zwei schnelle
+    Verbindungen Abrisse brachten (Grund 0x222); ob das reicht, zeigt der Alltag – sonst Firmware-Wunsch nach schnellem
+    Takt für Hintergrund-Abgleich abschalten
+  - offen: Wechsel des aktiven Sticky ohne Neuladen; „Gerät vergessen“ soll auch /soll und /ist auf der Karte leeren
+    (vor dem Verschenken); Kopplung/Verschlüsselung
 
 ## MVP (Markus, 11.11.2026)
 

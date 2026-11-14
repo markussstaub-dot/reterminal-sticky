@@ -63,9 +63,9 @@ export class BleVerbindung extends Basis {
   }
 
   /** nurGemerkt: beim automatischen Wiederverbinden nur den bekannten Sticky ansprechen, nicht scannen (schont Akku/Funk) */
-  async verbinden({ nurGemerkt = false, neu = false } = {}) {
+  async verbinden({ nurGemerkt = false, neu = false, geraet: bestimmt = null } = {}) {
     await this.init();
-    const gemerkt = neu ? null : aktivesGeraet();   // Multiclient: der aktive Sticky aus der Geräteliste
+    const gemerkt = neu ? null : (bestimmt ?? aktivesGeraet());   // Stufe 2: Hintergrund-Sitzungen nennen ihr Gerät   // Multiclient: der aktive Sticky aus der Geräteliste
     let geraet = null;
     if (gemerkt && this.nativ) {
       try {
@@ -123,6 +123,9 @@ export class BleVerbindung extends Basis {
   }
 
   async schnell() {
+    // bescheiden (Hintergrund-Sticky, Multiclient Stufe 2): nie den schnellen Funkmodus verlangen – zwei Verbindungen
+    // im 7,5-ms-Takt brachten das Fold aus dem Tritt (14.11.2026: Abrisse mit Grund 0x222 etwa jede Minute)
+    if (this.bescheiden) return;
     if (this.nativ && this.id) await BleClient.requestConnectionPriority(this.id, ConnectionPriority.CONNECTION_PRIORITY_HIGH).catch(() => {});
   }
 

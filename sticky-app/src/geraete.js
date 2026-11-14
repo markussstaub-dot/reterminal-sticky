@@ -24,12 +24,24 @@ export function aktivesGeraet() {
 }
 export function aktivesProfil() { return aktivesGeraet()?.profil ?? 'edc'; }
 
-/** Name im Speicher für eine Einstellung: je Profil, je Gerät oder (alles andere) für die ganze App */
-export function schluessel(k) {
-  if (PROFIL_SCHLUESSEL.includes(k)) return `sticky.p.${aktivesProfil()}.${k}`;
-  if (GERAET_SCHLUESSEL.includes(k)) return `sticky.g.${aktivesGeraet()?.id ?? 'ohne'}.${k}`;
+/** Name im Speicher für eine Einstellung eines bestimmten Geräts: je Profil, je Gerät oder für die ganze App */
+export function schluesselFuer(g, k) {
+  if (PROFIL_SCHLUESSEL.includes(k)) return `sticky.p.${g?.profil ?? 'edc'}.${k}`;
+  if (GERAET_SCHLUESSEL.includes(k)) return `sticky.g.${g?.id ?? 'ohne'}.${k}`;
   return `sticky.${k}`;
 }
+
+// Bau-Kontext (Stufe 2): Seiten für einen Hintergrund-Sticky werden aus SEINEM Profil gebaut. Nur für synchrone
+// Bauschritte – zwischen zwei await kann der Vordergrund laufen, dann gilt wieder das aktive Gerät.
+let kontext = null;
+export function mitGeraet(g, fn) {
+  const alt = kontext;
+  kontext = g;
+  try { return fn(); } finally { kontext = alt; }
+}
+
+/** Name im Speicher für eine Einstellung: für das Gerät im Bau-Kontext, sonst das aktive */
+export function schluessel(k) { return schluesselFuer(kontext ?? aktivesGeraet(), k); }
 
 /** Den Sticky, mit dem gerade verbunden wurde, in die Liste aufnehmen (neu: Profil „edc“) und aktiv setzen */
 export function geraetMerken({ id, name }) {

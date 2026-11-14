@@ -49,7 +49,7 @@ import { spiegelEinrichten } from './spiegel.js';
 import { BREITE, HOEHE, rgbaZu1bpp, crc32, rueckDatei } from './protokoll.js';
 import { BleVerbindung, SimVerbindung } from './verbindung.js';
 import { Zwilling } from './zwilling.js';
-import { schluessel, kurz, geraete, aktivesGeraet, aktivSetzen, geraetAendern, geraetVergessen, PROFILE } from './geraete.js';
+import { schluessel, schluesselFuer, mitGeraet, kurz, geraete, aktivesGeraet, aktivSetzen, geraetAendern, geraetVergessen, PROFILE } from './geraete.js';
 
 const $ = (id) => document.getElementById(id);
 const nativ = Capacitor.isNativePlatform();
@@ -250,8 +250,8 @@ async function zeigeAufnahme(a) {
     if (pttAblage() && r.text && !r.unklar && !spaet) {
       Clipboard.write({ string: r.text }).then(() => { kopieren.textContent = 'Kopiert ✓'; eintrag('Diktat in der Zwischenablage'); }).catch((e) => eintrag(`Zwischenablage: ${e.message}`, true));
     }
-    neueNotiz({ t: a.start, art: 'diktat', text: r.text || '', ...(zwilling.geraet.fahrt ? { faehrt: true } : {}), ...(r.roh ? { roh: r.roh } : {}), ...(r.unklar ? { unklar: r.unklar } : {}), audio: nativ ? `aufnahmen/${name}` : name, dauerMs: a.dauerMs, ...(spaet ? { offline: true } : {}) },
-      spaet ? null : a.ort, 'Diktat');
+    neueNotiz({ t: a.start, art: 'diktat', text: r.text || '', ...(a.wer ? { geraet: a.wer } : {}), ...((a.sitzung ? a.sitzung.z : zwilling).geraet.fahrt ? { faehrt: true } : {}), ...(r.roh ? { roh: r.roh } : {}), ...(r.unklar ? { unklar: r.unklar } : {}), audio: nativ ? `aufnahmen/${name}` : name, dauerMs: a.dauerMs, ...(spaet ? { offline: true } : {}) },
+      spaet ? null : a.ort, 'Diktat', a.sitzung);
   }).catch((e) => {
     text.className = 'text';
     text.textContent = `Erkennung fehlgeschlagen: ${e.message}`;
@@ -346,13 +346,16 @@ let autoVerbinden = false;
 let wiederTimer = 0;
 /** Bluetooth-Adresse des gemerkten Sticky für den nativen Wecker (StickyDienst) */
 function stickyAdresse() {
-  return aktivesGeraet()?.id ?? null;
+  return geraete().map((x) => x.id).join(',') || null;   // Stufe 2: Wecker für alle bekannten Stickys
 }
 
 // Wecker: Der Dienst merkt per autoConnect, dass der Sticky wieder funkt, und weckt die App (12.11.2026: im Doze
 // standen die Zeitgeber 15 min still, die ganze Rückfahrt lief offline)
 Promise.resolve().then(() => Hintergrund.addListener('sticky', (e) => {
-  if (!e.da || !autoVerbinden || zwilling.verbunden) return;
+  if (!e.da || !autoVerbinden) return;
+  const s = e.adresse && sitzungen.get(e.adresse);
+  if (s) { if (!s.z.verbunden) { clearTimeout(s.timer); hgVerbinden(s); } return; }   // ein Hintergrund-Sticky
+  if (zwilling.verbunden) return;
   console.info('[sticky] Wecker: Sticky funkt wieder');
   clearTimeout(wiederTimer);
   wiederverbinden();
@@ -391,6 +394,8 @@ async function wiederverbinden() {
   }
 }
 
+/** Hintergrund-Sitzungen (Multiclient Stufe 2, unten): MAC → { g, z, v, timer, zuletzt, modus, ort, laeuft } */
+const sitzungen = new Map();
 // ---- Stickys (Multiclient Stufe 1, 14.11.2026): Liste, Profil, Wechseln ---------------------------------------
 // Wechseln lädt die App neu: alle Felder, Bilder und der Abgleich kommen dann sauber aus Profil und Gerät des neuen Sticky.
 async function wechselnZu(id, grund) {
@@ -398,6 +403,7 @@ async function wechselnZu(id, grund) {
   clearTimeout(wiederTimer);
   wiederTimer = 0;
   if (zwilling.verbunden) await verbindung.trennen().catch(() => {});
+  await hintergrundStoppen();
   await Hintergrund.stop().catch(() => {});
   if (id) aktivSetzen(id);
   try { sessionStorage.setItem('sticky.grund', grund); } catch { /* egal */ }
@@ -423,6 +429,10 @@ function geraeteZeigen() {
       if (istAktiv) wechselnZu(null, `Profil „${PROFILE[profil.value]}“ für ${g.name}`);
     };
     const mac = Object.assign(document.createElement('span'), { className: 'klein', textContent: g.id });
+    const hg = sitzungen.get(g.id);
+    if (hg) mac.textContent += hg.z.verbunden ? ` · im Hintergrund verbunden${hg.z.geraet.bat != null ? ` · Akku ${hg.z.geraet.bat} %` : ''}`
+      : hg.zuletzt ? ` · zuletzt ${uhrzeit(new Date(hg.zuletzt))}` : ' · wartet auf den Sticky';
+    else if (istAktiv && zwilling.verbunden && zwilling.geraet.bat != null) mac.textContent += ` · Akku ${zwilling.geraet.bat} %`;
     const knopf = Object.assign(document.createElement('button'), { textContent: istAktiv ? (zwilling.verbunden ? '● verbunden' : '● aktiv') : 'Wechseln' });
     knopf.disabled = istAktiv;
     knopf.onclick = () => wechselnZu(g.id, `Gewechselt zu ${g.name}`);
@@ -466,6 +476,7 @@ $('verbinden').onclick = async () => {
     wiederTimer = 0;
     Hintergrund.stop().catch(() => {});
     if (zwilling.verbunden) await verbindung.trennen();
+    await hintergrundStoppen();
     zeigeVerbindung();
     return;
   }
@@ -479,6 +490,7 @@ $('verbinden').onclick = async () => {
     autoVerbinden = true;
     Hintergrund.start({ text: 'Notizen und Diktate kommen an', adresse: stickyAdresse() }).catch((e) => eintrag(`Hintergrund-Dienst: ${e.message}`, true));
     abgleich().catch((e) => eintrag(`Abgleich: ${e.message}`, true));
+    hintergrundStarten();
   } catch (e) {
     eintrag(`Verbinden fehlgeschlagen: ${e.message || e}`, true);
   } finally {
@@ -540,7 +552,8 @@ let stickyModus = null;
 const appSeite = new AppSeite((bytes, bereich) => zwilling.sendeBild(bytes, bereich ? { bereich } : { schnell: false }));
 let fahrtCrc = null;
 const knoepfe = () => {
-  const l = $('knoepfe').value.split(',').map((t) => t.trim()).filter(Boolean).slice(0, 5);
+  const roh = bauZ ? (localStorage.getItem(schluessel('knoepfe')) ?? '') : $('knoepfe').value;
+  const l = roh.split(',').map((t) => t.trim()).filter(Boolean).slice(0, 5);
   return l.length ? l : STANDARD_KNOEPFE;
 };
 try { $('knoepfe').value = localStorage.getItem(schluessel('knoepfe')) || STANDARD_KNOEPFE.join(', '); } catch { $('knoepfe').value = STANDARD_KNOEPFE.join(', '); }
@@ -596,7 +609,7 @@ $('zettelText').onchange = () => {
 $('zettelStandard').onclick = () => { $('zettelText').value = BESTELL_STANDARD; $('zettelText').onchange(); };
 /** Alle Zettel in der Reihenfolge am Sticky (höchstens 6): mit QR eine Karte, sonst ein Bestellzettel */
 function alleZettel() {
-  const l = zettelListe($('zettelText').value);
+  const l = zettelListe(bauZ ? zettelLaden() : $('zettelText').value);
   return l.map((x, i) => ({ zeichne: (g) => (x.qr ? zeichneKarte(g, x, i + 1, l.length) : zeichneZettel(g, x, i + 1, l.length)) }));
 }
 
@@ -611,16 +624,17 @@ async function fahrtTouch(x, y, ms) {
 }
 
 /** Notiz speichern, in der Liste zeigen und am Sticky kurz bestätigen */
-async function neueNotiz(teile, ortPromise, kurz) {
+async function neueNotiz(teile, ortPromise, kurz, s = null) {
   const ort = await (ortPromise ?? null);
   let n;
   try { n = await notizen.notiere(teile, ort); } catch (e) { eintrag(`Notiz nicht gespeichert: ${e.message}`, true); return; }
   zeigeNotiz(n, true);
-  if (stickyModus === 'notiz' || stickyModus === 'home') {   // Rückmeldefeld gibt es auf beiden Seiten
+  const modus = s ? s.modus : stickyModus;   // Hintergrund-Sticky: Bestätigung an IHN, nicht an den aktiven
+  if (modus === 'notiz' || modus === 'home') {   // Rückmeldefeld gibt es auf beiden Seiten
     const zeit = uhrzeit(n.t);
     const r = rueckmeldung(`✓ ${kurz} ${zeit}`);
-    spiegel.meldung(`✓ ${kurz} ${zeit}`);
-    zwilling.sendeBild(r.bytes, { bereich: r.bereich }).catch((e) => eintrag(`Rückmeldung: ${e.message}`, true));
+    if (!s) spiegel.meldung(`✓ ${kurz} ${zeit}`);
+    (s?.z ?? zwilling).sendeBild(r.bytes, { bereich: r.bereich }).catch((e) => eintrag(`Rückmeldung: ${e.message}`, true));
   }
 }
 
@@ -782,29 +796,28 @@ function karussellText() {
   return [...new Set(roh)].join('\n') + '\n';
 }
 /** Tastenhilfe je Modus (▲+▼ am Sticky): auf eigener Leinwand rendern, damit die Vorschau bleibt, wie sie ist */
-async function hilfeAufspielen() {
+async function hilfeAufspielen(s = null) {
   const c = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(BREITE, HOEHE) : Object.assign(document.createElement('canvas'), { width: BREITE, height: HOEHE });
   const h = c.getContext('2d', { willReadFrequently: true });
-  const dateien = Object.entries(HILFE).map(([modus, seite]) => {
+  const dateien = baue(s, () => Object.entries(HILFE).map(([modus, seite]) => {
     bb.zeichneTextseite(h, seite, '▲+▼ = Hilfe');
     return { n: `${modus}.bin`, daten: rgbaZu1bpp(h.getImageData(0, 0, BREITE, HOEHE).data) };
-  });
-  if (fwAb('0.27.0')) dateien.push({ n: 'schrift.bin', daten: schriftHilfe() });   // Alphabet als Spickzettel
-  const n = await zwilling.sollAbgleich('hilfe', dateien);
-  if (n) eintrag(`Tastenhilfe aufgespielt (${n} Seiten)`);
+  }).concat(fwAb('0.27.0') ? [{ n: 'schrift.bin', daten: schriftHilfe() }] : []));   // Alphabet als Spickzettel
+  const n = await (s?.z ?? zwilling).sollAbgleich('hilfe', dateien);
+  if (n) eintrag(`${s ? `${s.g.name}: ` : ''}Tastenhilfe aufgespielt (${n} Seiten)`);
 }
 
 /**
  * /soll/einstellungen immer vollständig abgleichen: sollAbgleich räumt auf, was nicht in der Liste steht
  * (13.11.2026: lage.txt allein hat karussell.txt gelöscht, das Menü sprang dann ins falsche Ziel)
  */
-function einstellungenAufspielen() {
+function einstellungenAufspielen(s = null) {
   const enc = new TextEncoder();
-  return zwilling.sollAbgleich('einstellungen', [
+  return (s?.z ?? zwilling).sollAbgleich('einstellungen', baue(s, () => [
     { n: 'karussell.txt', daten: enc.encode(karussellText()) },
     ...(fwAb('0.21.0') ? [{ n: 'lage.txt', daten: enc.encode(lageText()) }] : []),
     ...(fwAb('0.30.0') ? [{ n: 'zeit.txt', daten: zeitDatei() }] : []),   // 12/24 h wie das Handy
-  ]);
+  ]));
 }
 
 async function karussellAufspielen() {
@@ -914,18 +927,29 @@ async function fotoRunde() {
 }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') fotoAnstossen(300); });
 document.querySelector('#tabs [data-ziel="sticky"]')?.addEventListener('click', () => fotoAnstossen(300));
-const fwAb = (v) => { const f = zwilling.geraet.fw; if (f === 'sim') return true; const a = String(f ?? '0').split('.').map(Number), b = v.split('.').map(Number);
+// Bau-Kontext (Multiclient Stufe 2): Seiten für einen Hintergrund-Sticky entstehen aus seinem Profil und seiner Firmware
+let bauZ = null;
+/** fn synchron für Sitzung s bauen (Profil, Firmware-Stand); ohne s für den aktiven Sticky */
+function baue(s, fn) {
+  if (!s) return fn();
+  const alt = bauZ;
+  bauZ = s.z;
+  try { return mitGeraet(s.g, fn); } finally { bauZ = alt; }
+}
+const fwAb = (v) => { const f = (bauZ ?? zwilling).geraet.fw; if (f === 'sim') return true; const a = String(f ?? '0').split('.').map(Number), b = v.split('.').map(Number);
   for (let i = 0; i < 3; i++) if ((a[i] || 0) !== b[i]) return (a[i] || 0) > b[i]; return true; };
 const LOG_ORDNER = 'fahrtenschreiber';
+/** Firmware-Stand eines bestimmten Sticky (Sitzung s) bzw. des aktiven */
+const fwAbZ = (s, v) => baue(s, () => fwAb(v));
 const logStand = () => { try { return JSON.parse(localStorage.getItem(schluessel('logStand')) ?? '{}'); } catch { return {}; } };
 const heuteName = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}.txt`; };
 const logSim = {};   // im Browser statt Filesystem
 
-async function logAnhaengen(name, text, ordner = LOG_ORDNER) {
+async function logAnhaengen(name, text, ordner = LOG_ORDNER, geraet = aktivesGeraet()) {
   if (!nativ) { if (ordner === LOG_ORDNER) logSim[name] = (logSim[name] ?? '') + text; return; }
   // Multiclient: der erste Sticky (A) schreibt wie bisher, weitere in einen Unterordner mit ihrem Kurznamen
-  const g = aktivesGeraet(), erster = geraete()[0];
-  const pfad = g && erster && g.id !== erster.id ? `${ordner}/${kurz(g)}/${name}` : `${ordner}/${name}`;
+  const erster = geraete()[0];
+  const pfad = geraet && erster && geraet.id !== erster.id ? `${ordner}/${kurz(geraet)}/${name}` : `${ordner}/${name}`;
   await Filesystem.appendFile({ path: pfad, data: text, directory: Directory.Data, encoding: Encoding.UTF8, recursive: true });
 }
 async function logLesen(name) {
@@ -939,24 +963,26 @@ async function logTage() {
 
 /** Tagesdateien aus /ist/<quelle> holen (nur den neuen Teil), an die Kopie in Data/<ziel> anhängen,
  *  vergangene Tage auf dem Sticky quittieren. → Anzahl neuer Zeilen */
-async function istAbholen(quelle, ziel) {
-  const liste = (await zwilling.liste(`/ist/${quelle}`)).filter((d) => !d.ordner && /\.(txt|csv)$/.test(d.n));
-  const stand = logStand();
+async function istAbholen(quelle, ziel, s = null) {
+  const z = s?.z ?? zwilling, geraet = s?.g ?? aktivesGeraet(), standName = schluesselFuer(geraet, 'logStand');
+  const liste = (await z.liste(`/ist/${quelle}`)).filter((d) => !d.ordner && /\.(txt|csv)$/.test(d.n));
+  let stand = {};
+  try { stand = JSON.parse(localStorage.getItem(standName) ?? '{}'); } catch { /* neu */ }
   const kennung = (n) => (quelle === 'log' ? n : `${quelle}/${n}`);
   let zeilen = 0;
   for (const d of liste) {
     const ab = Math.min(stand[kennung(d.n)] ?? 0, d.b);
     if (d.b > ab) {
-      const neu = new TextDecoder().decode(await zwilling.holen(`/ist/${quelle}/${d.n}`, d.b, ab));
-      await logAnhaengen(d.n, neu, ziel);
+      const neu = new TextDecoder().decode(await z.holen(`/ist/${quelle}/${d.n}`, d.b, ab));
+      await logAnhaengen(d.n, neu, ziel, geraet);
       zeilen += neu.split('\n').filter(Boolean).length;
       stand[kennung(d.n)] = d.b;
-      localStorage.setItem(schluessel('logStand'), JSON.stringify(stand));
+      localStorage.setItem(standName, JSON.stringify(stand));
     }
     // vergangene Tage (und die Zeilen ohne Uhrzeit) sind abgeschlossen: auf dem Sticky quittieren
-    if (!d.n.includes(heuteName().replace('.txt', '')) && await zwilling.loeschen(`/ist/${quelle}/${d.n}`)) {
+    if (!d.n.includes(heuteName().replace('.txt', '')) && await z.loeschen(`/ist/${quelle}/${d.n}`)) {
       delete stand[kennung(d.n)];
-      localStorage.setItem(schluessel('logStand'), JSON.stringify(stand));
+      localStorage.setItem(standName, JSON.stringify(stand));
     }
   }
   return zeilen;
@@ -986,44 +1012,46 @@ function kritzelPng(bits, hoch = false) {
 const kritzelSim = {};   // im Browser statt Filesystem
 
 /** Kritzelblock (FW ≥ 0.16.0): Blätter aus /ist/kritzel holen, als PNG ablegen, als Notiz eintragen, quittieren */
-async function kritzelAbholen() {
-  const liste = (await zwilling.liste('/ist/kritzel')).filter((d) => !d.ordner && d.n.endsWith('.bin'));
+async function kritzelAbholen(s = null) {
+  const z = s?.z ?? zwilling, wer = s ? { geraet: kurz(s.g) } : {};
+  const liste = (await z.liste('/ist/kritzel')).filter((d) => !d.ordner && d.n.endsWith('.bin'));
   for (const d of liste) {
-    const bits = await zwilling.holen(`/ist/kritzel/${d.n}`, d.b);
+    const bits = await z.holen(`/ist/kritzel/${d.n}`, d.b);
     const png = kritzelPng(bits, d.n.endsWith('-h.bin'));
     const name = d.n.replace('-h.bin', '.bin').replace('.bin', '.png');
     if (nativ) await Filesystem.writeFile({ path: `kritzel/${name}`, data: png, directory: Directory.Data, recursive: true });
     else kritzelSim[name] = png;
     const m = d.n.match(/(\d{4})-(\d{2})-(\d{2})-(\d{2})(\d{2})(\d{2})/);
     const t = m ? new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +m[6]).getTime() : Date.now();
-    zeigeNotiz(await notizen.notiere({ t, art: 'kritzel', bild: `kritzel/${name}` }), true);
-    await zwilling.loeschen(`/ist/kritzel/${d.n}`);
+    zeigeNotiz(await notizen.notiere({ t, art: 'kritzel', bild: `kritzel/${name}`, ...wer }), true);
+    await z.loeschen(`/ist/kritzel/${d.n}`);
   }
   if (liste.length) eintrag(`${liste.length} ${liste.length === 1 ? 'Kritzel' : 'Kritzel'} vom Sticky abgeholt`);
 }
 
 /** Strichschrift (FW ≥ 0.27.0): Texte aus /ist/schrift holen, als Notiz eintragen, quittieren */
-async function schriftAbholen() {
-  const liste = (await zwilling.liste('/ist/schrift')).filter((d) => !d.ordner && d.n.endsWith('.txt'));
+async function schriftAbholen(s = null) {
+  const z = s?.z ?? zwilling, wer = s ? { geraet: kurz(s.g) } : {};
+  const liste = (await z.liste('/ist/schrift')).filter((d) => !d.ordner && d.n.endsWith('.txt'));
   for (const d of liste) {
-    const text = new TextDecoder().decode(await zwilling.holen(`/ist/schrift/${d.n}`, d.b)).trim();
+    const text = new TextDecoder().decode(await z.holen(`/ist/schrift/${d.n}`, d.b)).trim();
     const m = d.n.match(/(\d{4})-(\d{2})-(\d{2})-(\d{2})(\d{2})(\d{2})/);
     const t = m ? new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +m[6]).getTime() : Date.now();
-    if (text) zeigeNotiz(await notizen.notiere({ t, art: 'schrift', text }), true);
-    await zwilling.loeschen(`/ist/schrift/${d.n}`);
+    if (text) zeigeNotiz(await notizen.notiere({ t, art: 'schrift', text, ...wer }), true);
+    await z.loeschen(`/ist/schrift/${d.n}`);
   }
   if (liste.length) eintrag(`${liste.length} geschriebene ${liste.length === 1 ? 'Notiz' : 'Notizen'} vom Sticky abgeholt`);
 }
 
-async function fahrtenschreiberAbholen() {
-  const zeilen = await istAbholen('log', LOG_ORDNER);
-  if (zeilen) eintrag(`Fahrtenschreiber: ${zeilen} neue ${zeilen === 1 ? 'Zeile' : 'Zeilen'}`);
-  await zeigeFahrtenschreiber();
-  if (fwAb('0.16.0')) await kritzelAbholen().catch((e) => eintrag(`Kritzel: ${e.message}`, true));
-  if (fwAb('0.27.0')) await schriftAbholen().catch((e) => eintrag(`Schrift: ${e.message}`, true));
-  if (fwAb('0.12.0')) {
-    const mess = await istAbholen('mess', 'messreihen');
-    if (mess) eintrag(`Messreihen: ${mess} neue Werte`);
+async function fahrtenschreiberAbholen(s = null) {
+  const zeilen = await istAbholen('log', LOG_ORDNER, s);
+  if (zeilen) eintrag(`${s ? `${s.g.name}: ` : ''}Fahrtenschreiber: ${zeilen} neue ${zeilen === 1 ? 'Zeile' : 'Zeilen'}`);
+  if (!s) await zeigeFahrtenschreiber();
+  if (fwAbZ(s, '0.16.0')) await kritzelAbholen(s).catch((e) => eintrag(`Kritzel: ${e.message}`, true));
+  if (fwAbZ(s, '0.27.0')) await schriftAbholen(s).catch((e) => eintrag(`Schrift: ${e.message}`, true));
+  if (fwAbZ(s, '0.12.0')) {
+    const mess = await istAbholen('mess', 'messreihen', s);
+    if (mess) eintrag(`${s ? `${s.g.name}: ` : ''}Messreihen: ${mess} neue Werte`);
   }
 }
 
@@ -1042,17 +1070,18 @@ zeigeFahrtenschreiber();
 
 // Ab FW 0.11.0 liegt der Puffer unter /ist/puffer und geht über den allgemeinen Datei-Abgleich
 const puffer = {
-  liste: () => (fwAb('0.11.0') ? zwilling.liste('/ist/puffer') : zwilling.pufferListe()),
-  holen: (n, b) => (fwAb('0.11.0') ? zwilling.holen(`/ist/puffer/${n}`, b) : zwilling.pufferHolen(n, b)),
-  loeschen: (n) => (fwAb('0.11.0') ? zwilling.loeschen(`/ist/puffer/${n}`) : zwilling.pufferLoeschen(n)),
+  liste: (s) => { const z = s?.z ?? zwilling; return fwAbZ(s, '0.11.0') ? z.liste('/ist/puffer') : z.pufferListe(); },
+  holen: (n, b, s) => { const z = s?.z ?? zwilling; return fwAbZ(s, '0.11.0') ? z.holen(`/ist/puffer/${n}`, b) : z.pufferHolen(n, b); },
+  loeschen: (n, s) => { const z = s?.z ?? zwilling; return fwAbZ(s, '0.11.0') ? z.loeschen(`/ist/puffer/${n}`) : z.pufferLoeschen(n); },
 };
 
-async function pufferAbholen() {
-  const liste = (await puffer.liste()).filter((d) => !d.ordner);
+async function pufferAbholen(s = null) {
+  const wer = s ? { geraet: kurz(s.g) } : {}, vor = s ? `${s.g.name}: ` : '';
+  const liste = (await puffer.liste(s)).filter((d) => !d.ordner);
   if (!liste.length) return;
-  eintrag(`Hole Notizen vom Sticky (${liste.length} Dateien) …`);
+  eintrag(`${vor}Hole Notizen vom Sticky (${liste.length} Dateien) …`);
   const groesse = Object.fromEntries(liste.map((d) => [d.n, d.b]));
-  const roh = groesse['notizen.jsonl'] ? new TextDecoder().decode(await puffer.holen('notizen.jsonl', groesse['notizen.jsonl'])) : '';
+  const roh = groesse['notizen.jsonl'] ? new TextDecoder().decode(await puffer.holen('notizen.jsonl', groesse['notizen.jsonl'], s)) : '';
   const zeilen = roh.split('\n').map((z) => { try { return JSON.parse(z); } catch { return null; } }).filter(Boolean);
   // Aufnahmen ohne Notiz-Zeile (z. B. nach einem abgebrochenen Abholen) trotzdem mitnehmen
   for (const d of liste) {
@@ -1067,7 +1096,7 @@ async function pufferAbholen() {
       try {
         if (groesse[z.audio] == null) throw new Error('Audiodatei fehlt auf dem Sticky');
         const t0 = performance.now();
-        const daten = await puffer.holen(z.audio, groesse[z.audio]);
+        const daten = await puffer.holen(z.audio, groesse[z.audio], s);
         console.info('[sticky] abgeholt', z.audio, daten.length, Math.round(performance.now() - t0));
         const a = new Aufnahme();
         for (let o = 0; o + 245 <= daten.length; o += 245) a.paket(daten.subarray(o, o + 245));
@@ -1075,17 +1104,17 @@ async function pufferAbholen() {
         dauerMs = e.dauerMs;
         pfad = await speichern(`sticky-${dateiZeit(t)}-offline.wav`, wav(e.pcm));
         text = (await erkenne(e.pcm)).text || '';
-        await puffer.loeschen(z.audio);
+        await puffer.loeschen(z.audio, s);
       } catch (e) { eintrag(`Diktat ${z.audio}: ${e.message}`, true); }
-      n = await notizen.notiere({ t, art: 'diktat', text, audio: pfad ?? z.audio, dauerMs, offline: true });
+      n = await notizen.notiere({ t, art: 'diktat', text, audio: pfad ?? z.audio, dauerMs, offline: true, ...wer });
     } else {
-      n = await notizen.notiere({ t, art: 'knopf', knopf: z.knopf, offline: true });
+      n = await notizen.notiere({ t, art: 'knopf', knopf: z.knopf, offline: true, ...wer });
     }
     zeigeNotiz(n, true);
     anzahl++;
   }
-  if (groesse['notizen.jsonl']) await puffer.loeschen('notizen.jsonl');
-  eintrag(`${anzahl} Notizen vom Sticky abgeholt`);
+  if (groesse['notizen.jsonl']) await puffer.loeschen('notizen.jsonl', s);
+  eintrag(`${vor}${anzahl} Notizen vom Sticky abgeholt`);
 }
 
 $('notizenTeilen').onclick = async () => {
@@ -1301,6 +1330,143 @@ setInterval(() => {
   if (zwilling.verbunden) abgleich().catch(() => {});
 }, 60 * 1000);
 
+// ---- Hintergrund-Sitzungen (Multiclient Stufe 2, 14.11.2026) ------------------------------------------------------
+// Jeder weitere bekannte Sticky läuft schlank mit: eigene Verbindung, eigener Zwilling. Er liefert Notizen, Diktate,
+// Kritzel, Fahrtenschreiber und Messreihen ab und bekommt Home (mit Wetter), Zettel, Notiz-Seite, Karussell, Widgets,
+// Hilfe und Schrift nach SEINEM Profil. Vorschau, Fernbedienung und Bordbuch bleiben beim aktiven Sticky.
+const hgLeinwand = (() => {
+  const c = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(BREITE, HOEHE) : Object.assign(document.createElement('canvas'), { width: BREITE, height: HOEHE });
+  return c.getContext('2d', { willReadFrequently: true });
+})();
+const hgBytes = () => rgbaZu1bpp(hgLeinwand.getImageData(0, 0, BREITE, HOEHE).data);
+
+function hintergrundStarten() {
+  if (!nativ) return;   // im Browser gibt es nur eine Web-Bluetooth-Verbindung
+  const aktiv = aktivesGeraet();
+  for (const g of geraete()) {
+    if (g.id === aktiv?.id || sitzungen.has(g.id)) continue;
+    const v = new BleVerbindung();
+    v.bescheiden = true;
+    const z = new Zwilling();
+    z.anbinden(v);
+    const s = { g, z, v, timer: 0, zuletzt: 0, modus: null, ort: null, laeuft: false };
+    z.beobachte((art, d) => hgEreignis(s, art, d));
+    sitzungen.set(g.id, s);
+    hgVerbinden(s);
+  }
+  geraeteZeigen();
+}
+
+async function hintergrundStoppen() {
+  for (const s of sitzungen.values()) {
+    clearTimeout(s.timer);
+    s.weg = true;
+    await s.v.trennen().catch(() => {});
+  }
+  sitzungen.clear();
+}
+
+function hgPlanen(s, ms) {
+  clearTimeout(s.timer);
+  if (!s.weg && autoVerbinden) s.timer = setTimeout(() => hgVerbinden(s), ms);
+}
+
+async function hgVerbinden(s) {
+  if (s.weg || s.verbindet || s.z.verbunden || !autoVerbinden) return;
+  s.verbindet = true;
+  try {
+    await mitFrist(s.v.verbinden({ geraet: s.g, nurGemerkt: true }), VERBINDEN_FRIST_MS, 'Verbinden').catch(async (e) => {
+      await s.v.abbrechen?.().catch(() => {});
+      throw e;
+    });
+    s.zuletzt = Date.now();
+    eintrag(`Im Hintergrund verbunden: ${s.g.name}`);
+    geraeteZeigen();
+    hintergrundAbgleich(s).catch((e) => eintrag(`${s.g.name}: ${e.message}`, true));
+  } catch {
+    hgPlanen(s, 15000);   // der Wecker im Dienst meldet sich zusätzlich, sobald er wieder funkt
+  } finally {
+    s.verbindet = false;
+  }
+}
+
+function hgEreignis(s, art, d) {
+  if (art === 'zustand') { s.zuletzt = Date.now(); if (d.modus) s.modus = d.modus; geraeteZeigen(); }
+  else if (art === 'aufnahmeLaeuft') s.ort = notizen.standort();
+  else if (art === 'aufnahme') { d.ort = s.ort; d.wer = kurz(s.g); d.sitzung = s; zeigeAufnahme(d); }
+  else if (art === 'getrennt') {
+    s.zuletzt = Date.now();
+    geraeteZeigen();
+    if (!s.weg) hgPlanen(s, 3000);
+  } else if (art === 'ereignis') {
+    if (d.t === 'modus') s.modus = d.m;
+    else if (d.t === 'suchen') handyKlingeln();
+    else if (d.t === 'touch' && d.a === 'down' && s.modus === 'notiz') hgNotizTipp(s, d).catch((e) => eintrag(`${s.g.name}: ${e.message}`, true));
+  }
+}
+
+/** Tipp auf einen Knopf der Notiz-Seite des Hintergrund-Sticky (seine Knöpfe, sein Profil) */
+async function hgNotizTipp(s, d) {
+  const k = baue(s, () => { const l = knoepfe(); const i = trefferKnopf(d.x, d.y, l); return i < 0 ? null : l[i]; });
+  if (!k) return;
+  const t = d.ms > 1.7e12 ? d.ms : Date.now();
+  const spaet = Date.now() - t > VERSPAETET_MS;
+  await neueNotiz({ t, art: 'knopf', knopf: k, geraet: kurz(s.g), ...(spaet ? { offline: true } : {}) }, spaet ? null : notizen.standort(), k, s);
+}
+
+/** Abgleich für einen Hintergrund-Sticky: wie abgleich(), aber ohne Vorschau und nur über den Datei-Abgleich */
+async function hintergrundAbgleich(s) {
+  const z = s.z;
+  if (s.laeuft || !z.verbunden) return;
+  if (!fwAbZ(s, '0.31.0')) { eintrag(`${s.g.name}: Firmware ${z.geraet.fw ?? '?'} ist zu alt für den Hintergrund (ab 0.31)`, true); return; }
+  s.laeuft = true;
+  try {
+    await z.zeitSetzen();
+    const wetter = (await holeWetter(await notizen.standort())) ?? letztesWetter();
+    // Seiten aus seinem Profil bauen (synchron, damit der Bau-Kontext nicht in den Vordergrund leckt)
+    const teile = baue(s, () => {
+      const h = hgLeinwand;
+      zeichneHome(h, undefined, null, wetter); const home = hgBytes();
+      zeichneFahrt(h, knoepfe()); const notiz = hgBytes();
+      zeichneZiffern(h); const ziffern = hgBytes();
+      const zettel = alleZettel().map((x) => { x.zeichne(h); return hgBytes(); });
+      const alle = [home, notiz, ziffern, ...zettel];
+      const homeV = crc32(new Uint8Array(alle.flatMap((b) => [...b]))).toString(16).padStart(8, '0') + ';' + zettel.length;
+      const st = statusGlyphen();
+      const homeDateien = alle.map((b, i) => ({ n: `${i}.bin`, daten: b }))
+        .concat([{ n: 'status-quer.bin', daten: st.quer }, { n: 'status-hoch.bin', daten: st.hoch }, { n: 'version.txt', daten: new TextEncoder().encode(homeV) }]);
+      const k = knoepfe();
+      const text = layoutText(k);
+      const version = crc32(new TextEncoder().encode(text)).toString(16).padStart(8, '0');
+      const texte = [0, 1, 2, 3, 4].map((i) => (k[i] ? `✓ ${k[i]}` : null)).concat(['✓ Diktat gespeichert', '● Aufnahme']);
+      const notizDateien = texte.map((t, i) => (t ? { n: `r${String(i).padStart(2, '0')}.bin`, daten: (({ bytes, bereich }) => rueckDatei(bytes, bereich))(rueckmeldung(t)) } : null))
+        .filter(Boolean).concat([{ n: 'layout.txt', daten: new TextEncoder().encode(text) }]);
+      const schrift = [{ n: 'zeichen.bin', daten: glyphenBlatt() }, { n: 'bild.bin', daten: schriftHintergrund() }, { n: 'alphabet.txt', daten: alphabetDatei() }];
+      const widgets = Object.entries(widgetBauer()).map(([name, bauen]) => [name, bauen()]);
+      return { homeV, homeDateien, version, notizDateien, schrift, widgets };
+    });
+    if (z.geraet.homev !== teile.homeV) { const n = await z.sollAbgleich('home', teile.homeDateien); if (n) eintrag(`${s.g.name}: Home (${n} Dateien)`); }
+    if (z.geraet.fahrtv !== teile.version) await z.sollAbgleich('notiz', teile.notizDateien);
+    await pufferAbholen(s);
+    const nE = await einstellungenAufspielen(s).catch((e) => { eintrag(`${s.g.name}: Karussell: ${e.message}`, true); return 0; });
+    if (nE) eintrag(`${s.g.name}: Karussell und Lage aufgespielt`);
+    await hilfeAufspielen(s).catch((e) => eintrag(`${s.g.name}: Hilfe: ${e.message}`, true));
+    const nS = await z.sollAbgleich('schrift', teile.schrift).catch((e) => { eintrag(`${s.g.name}: Schrift: ${e.message}`, true); return 0; });
+    if (nS) eintrag(`${s.g.name}: Strichschrift aufgespielt`);
+    for (const [name, dateien] of teile.widgets) {
+      const n = await z.sollAbgleich(`widgets/${name}`, dateien).catch((e) => { eintrag(`${s.g.name}: Widget ${name}: ${e.message}`, true); return 0; });
+      if (n) eintrag(`${s.g.name}: Widget „${name}“ aufgespielt`);
+    }
+    await fahrtenschreiberAbholen(s).catch((e) => eintrag(`${s.g.name}: Fahrtenschreiber: ${e.message}`, true));
+  } finally {
+    s.laeuft = false;
+  }
+}
+
+// stündlich Wetter und Stand nachziehen, bei Fahrt wach halten (wie beim aktiven Sticky)
+setInterval(() => { for (const s of sitzungen.values()) if (s.z.verbunden) hintergrundAbgleich(s).catch(() => {}); }, 60 * 60 * 1000);
+setInterval(() => { if (Date.now() < fahrtBis) for (const s of sitzungen.values()) if (s.z.verbunden) s.z.wach().catch(() => {}); }, 60 * 1000);
+
 tabsEinrichten();
 muster();
 zeigeVerbindung();
@@ -1314,5 +1480,6 @@ try {
     autoVerbinden = true;
     Hintergrund.start({ text: 'Notizen und Diktate kommen an', adresse: stickyAdresse() }).catch(() => {});
     wiederverbinden();
+    hintergrundStarten();
   }
 } catch { /* dann eben per Knopf */ }

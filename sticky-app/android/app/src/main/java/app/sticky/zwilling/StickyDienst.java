@@ -16,6 +16,8 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Looper;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
@@ -37,8 +39,8 @@ import android.util.Log;
 public class StickyDienst extends Service {
     static final String KANAL = "sticky";
     private static final String TAG = "StickyApp";
-    private BluetoothGatt wecker;
-    private String weckerAdresse;
+    // Multiclient Stufe 2 (14.11.2026): ein Wecker je bekanntem Sticky (Adressen kommagetrennt aus der App)
+    private final Map<String, Wecker> wecker = new HashMap<>();
     private PowerManager.WakeLock wach;
 
     private void wachHalten(long ms) {
@@ -57,9 +59,7 @@ public class StickyDienst extends Service {
     private static final UUID DIENST = UUID.fromString("b1e50001-7374-6963-6b79-7465726d6e6c");
     private static final UUID BEFEHL = UUID.fromString("b1e50002-7374-6963-6b79-7465726d6e6c");
     private static final byte OP_WACH = 0x1b;
-    private BluetoothGattCharacteristic befehl;
-    private boolean weckerVerbunden;
-    private long fahrtBis = 0, letztesWach = 0;
+    private long fahrtBis = 0;
     private LocationManager orte;
     static volatile Location letzterOrt;
 
@@ -79,22 +79,7 @@ public class StickyDienst extends Service {
     };
 
     private void wachSenden() {
-        long jetzt = System.currentTimeMillis();
-        if (!weckerVerbunden || befehl == null || jetzt - letztesWach < 45000) return;
-        try {
-            boolean ok;
-            if (Build.VERSION.SDK_INT >= 33) {
-                ok = wecker.writeCharacteristic(befehl, new byte[]{OP_WACH}, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE) == 0;
-            } else {
-                befehl.setValue(new byte[]{OP_WACH});
-                befehl.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
-                ok = wecker.writeCharacteristic(befehl);
-            }
-            if (ok) letztesWach = jetzt;
-            Log.i(TAG, "Wach an Sticky: " + (ok ? "ok" : "fehlgeschlagen"));
-        } catch (SecurityException e) {
-            Log.w(TAG, "Wach nicht möglich: " + e.getMessage());
-        }
+        for (Wecker w : wecker.values()) w.wachSenden();
     }
 
     private void orteEin() {
@@ -113,18 +98,66 @@ public class StickyDienst extends Service {
         if (orte != null) { orte.removeUpdates(ortRuf); orte = null; }
     }
 
-    private final BluetoothGattCallback weckerRuf = new BluetoothGattCallback() {
+    /** Eine GATT-Verbindung mit autoConnect je Sticky: meldet „funkt wieder“ an die App und hält ihn bei Fahrt wach */
+    private class Wecker extends BluetoothGattCallback {
+        final String adresse;
+        BluetoothGatt gatt;
+        BluetoothGattCharacteristic befehl;
+        boolean verbunden;
+        long letztesWach = 0;
+
+        Wecker(String adresse) { this.adresse = adresse; }
+
+        void stellen() {
+            try {
+                BluetoothAdapter a = getSystemService(BluetoothManager.class).getAdapter();
+                BluetoothDevice d = a.getRemoteDevice(adresse);
+                gatt = d.connectGatt(StickyDienst.this, true, this, BluetoothDevice.TRANSPORT_LE);
+                Log.i(TAG, "Wecker gestellt für " + adresse);
+            } catch (SecurityException | IllegalArgumentException e) {
+                Log.w(TAG, "Wecker nicht möglich für " + adresse + ": " + e.getMessage());
+            }
+        }
+
+        void aus() {
+            if (gatt != null) {
+                try { gatt.disconnect(); gatt.close(); } catch (SecurityException e) { /* egal */ }
+                gatt = null;
+            }
+            verbunden = false;
+            befehl = null;
+        }
+
+        void wachSenden() {
+            long jetzt = System.currentTimeMillis();
+            if (!verbunden || befehl == null || gatt == null || jetzt - letztesWach < 45000) return;
+            try {
+                boolean ok;
+                if (Build.VERSION.SDK_INT >= 33) {
+                    ok = gatt.writeCharacteristic(befehl, new byte[]{OP_WACH}, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE) == 0;
+                } else {
+                    befehl.setValue(new byte[]{OP_WACH});
+                    befehl.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
+                    ok = gatt.writeCharacteristic(befehl);
+                }
+                if (ok) letztesWach = jetzt;
+                Log.i(TAG, "Wach an " + adresse + ": " + (ok ? "ok" : "fehlgeschlagen"));
+            } catch (SecurityException e) {
+                Log.w(TAG, "Wach nicht möglich: " + e.getMessage());
+            }
+        }
+
         @Override
         public void onConnectionStateChange(BluetoothGatt g, int status, int neu) {
             boolean da = neu == BluetoothProfile.STATE_CONNECTED;
-            Log.i(TAG, "Wecker: Sticky " + (da ? "funkt" : "weg") + " (status " + status + ")");
+            Log.i(TAG, "Wecker: Sticky " + adresse + " " + (da ? "funkt" : "weg") + " (status " + status + ")");
             wachHalten(da ? 60000 : 20000);   // Zeit, damit die WebView verbindet bzw. die Trennung verarbeitet
-            weckerVerbunden = da;
+            verbunden = da;
             befehl = null;
             if (da) {
                 try { g.discoverServices(); } catch (SecurityException e) { /* egal */ }
             }
-            Hintergrund.melde(da);
+            Hintergrund.melde(da, adresse);
         }
 
         @Override
@@ -133,30 +166,28 @@ public class StickyDienst extends Service {
             befehl = s != null ? s.getCharacteristic(BEFEHL) : null;
             if (befehl != null && System.currentTimeMillis() < fahrtBis) wachSenden();
         }
-    };
+    }
 
-    private void weckerStellen(String adresse) {
-        if (adresse == null || adresse.equals(weckerAdresse) && wecker != null) return;
-        weckerAus();
-        try {
-            BluetoothAdapter a = getSystemService(BluetoothManager.class).getAdapter();
-            BluetoothDevice d = a.getRemoteDevice(adresse);
-            wecker = d.connectGatt(this, true, weckerRuf, BluetoothDevice.TRANSPORT_LE);
-            weckerAdresse = adresse;
-            Log.i(TAG, "Wecker gestellt für " + adresse);
-        } catch (SecurityException | IllegalArgumentException e) {
-            Log.w(TAG, "Wecker nicht möglich: " + e.getMessage());
+    /** Wecker auf genau diese Adressen stellen (kommagetrennt); bekannte bleiben, fehlende gehen aus */
+    private void weckerStellen(String adressen) {
+        if (adressen == null) return;
+        java.util.Set<String> soll = new java.util.HashSet<>();
+        for (String a : adressen.split(",")) if (!a.trim().isEmpty()) soll.add(a.trim());
+        for (java.util.Iterator<Map.Entry<String, Wecker>> it = wecker.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<String, Wecker> e = it.next();
+            if (!soll.contains(e.getKey())) { e.getValue().aus(); it.remove(); }
+        }
+        for (String a : soll) {
+            if (wecker.containsKey(a)) continue;
+            Wecker w = new Wecker(a);
+            wecker.put(a, w);
+            w.stellen();
         }
     }
 
     private void weckerAus() {
-        if (wecker != null) {
-            try { wecker.disconnect(); wecker.close(); } catch (SecurityException e) { /* egal */ }
-            wecker = null;
-        }
-        weckerAdresse = null;
-        weckerVerbunden = false;
-        befehl = null;
+        for (Wecker w : wecker.values()) w.aus();
+        wecker.clear();
     }
 
     @Override

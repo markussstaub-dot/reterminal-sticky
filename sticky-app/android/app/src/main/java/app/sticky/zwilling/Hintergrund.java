@@ -18,11 +18,12 @@ public class Hintergrund extends Plugin {
     public void load() { instanz = this; }
 
     /** Vom Wecker im StickyDienst: Sticky funkt wieder (true) oder ist weg (false) */
-    static void melde(boolean da) {
+    static void melde(boolean da, String adresse) {
         Hintergrund h = instanz;
         if (h == null) return;
         JSObject o = new JSObject();
         o.put("da", da);
+        o.put("adresse", adresse);
         h.notifyListeners("sticky", o);
     }
 
