@@ -262,6 +262,7 @@ Einrichten, Abholen, Rechner/Umrechner.
   „Taste gedrückt, Anzeige neu“
 - Vorschlag **Umrechner** gleich mit: Paare als Zeilen in `felder.txt` (`paar km mi 0.621371`, `paar °C °F 1.8 32`),
   die Firmware rechnet nur `a · x + b`; neue Paare ohne Flashen
+  - Merker (Markus, 14.11.2026): **Schrift im Umrechner darf größer** – Platz ist da
 - offen: kleine Rechenzeile („80 × 20 =“) braucht eine zweite Schrift, erst weglassen
 - Aufwand grob ein halber Tag, ein Flash. Danach braucht der Sticky das Handy nur noch für Spracherkennung und GPS;
   die App-Seite (Thin Client) bleibt als Technik erhalten
@@ -293,6 +294,10 @@ die Firmware rechnet. Ein Flash für alles.
     als Tasten: kein Refresh je Tipp, nur der erkannte Buchstabe erscheint. **Eigenes Strich-Alphabet** im gleichen
     Geist (keine Kopie des Palm-Originals), Spickzettel mit dem Alphabet; Wisch nach links = letzten Buchstaben löschen.
     Tastatur bleibt Plan B. **Umgesetzt 13.11.2026 (FW 0.27.0), am Gerät „klappt gut“**
+  - Merker (Markus, 14.11.2026, beim Ausprobieren): **Spickzettel erst auf Tastendruck wieder ausblenden**, nicht von
+    selbst – sonst ist er weg, bevor man nachgeschaut hat
+  - Merker (14.11.2026): **„8“ und „B“ werden noch nicht zuverlässig erkannt** – Vorlagen bzw. Zweitformen nachschärfen
+    (ähnliche Form, nur über Feld links/rechts getrennt)
 - ohne Flash, reine App-Arbeit: **Kritzel-Texterkennung** – die App liest Kritzel-Notizen per Handschrifterkennung aus
   („Eier, Mehl“ wird zusätzlich eine Textnotiz); für Einkaufslisten schneller als Tippen
 - später, eigenes Paket: **Schrittzähler** (Hardware-Schrittzähler im LSM6DS3; Zusammenspiel mit Bewegungswecken und

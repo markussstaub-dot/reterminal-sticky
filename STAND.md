@@ -4,7 +4,7 @@ tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
 version: FW 0.31.0 – EDC-Sticky, allein nützlich: Uhr/Wecker/Weltzeit, Rechner/Umrechner, Strichschrift, Waage, Lineal, Zettel mit QR, Einstellungen am Sticky; Braun-Optik, Hoch/Quer; MIT-Lizenz (13.11.2026)
-wartet: Markus: Lineal nachmessen, Einfügen in WhatsApp probieren, Seeed-Playground-PR #123 (13.11. eingereicht) im Blick behalten; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
+wartet: Markus: Lineal nachmessen, Einfügen in WhatsApp probieren; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
 Repo: github.com/markussstaub-dot/reterminal-sticky (privat, seit 11.11.2026). `backup/`, Modelle und
@@ -341,7 +341,7 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   Git-Historie geprüft: keine Kundennummern (gegen die echten QR-Inhalte abgeglichen), keine PDFs/Aufnahmen/Koordinaten,
   Autor nur mit GitHub-noreply-Adresse; Ortsnamen aus Wortliste, Tests und Doku neutralisiert (in alten Commits noch
   sichtbar). Entwurf, APK und Firmware-Dateien liegen in `vermarktung/` (per .gitignore draußen). Einreichen auf dem
-  Seeed Playground: PR #123 am 13.11. eröffnet (FW 0.31.1 beta)
+  Seeed Playground: PR #123 am 13.11. eröffnet (FW 0.31.1 beta), am 14.11. gemergt – EDC Sticky ist im Playground
 - **Strichschrift (FW 0.27.0, 13.11.2026):** Seite „Schrift“ als Spielart des Kritzelblocks (`firmware-ble/schrift.h`):
   ein Strich je Zeichen, links Buchstaben, rechts Ziffern, Wisch → Leerzeichen / ← löschen, Tipp = Umlaut bzw. Punkt.
   Erkennung im Sticky („$1“ ohne Drehung, 32 Punkte, Grenze 0,18; im Test 99,7 % richtig bei 200 verwackelten Strichen
