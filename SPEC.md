@@ -375,6 +375,11 @@ Was der Sticky als Immer-dabei-Helfer noch können könnte, sortiert nach Aufwan
   - **Parkplatz merken**: ein Tipp merkt den GPS-Ort vom Handy, optional Parkuhr-Timer
 - Kaffee (Markus, 13.11.2026): **Timer-Vorlage „Kaffee“** mit fester Zieh-/Rührzeit, ein Tipp startet; passt zur
   USB-Rührtasse im EDC. Ohne Flashen machbar (Timer-Widget mit Vorgabe)
+- Spiel (Markus, 14.11.2026, geparkt): **Artillerie-Duell (lite)**, Hommage an die Burgen-Duelle der Atari-ST-Zeit:
+  zwei Burgen auf einem Hügelprofil, abwechselnd Winkel und Pulver wählen, Wind als Fähnchen, Treffer sprengen Steine
+  weg. Passt zu E-Paper, weil rundenbasiert: pro Zug ein Teil-Refresh, Flugbahn als Punktspur. Bedienung mit ▲/▼
+  (Winkel/Pulver) und Tippen (Feuer), zu zweit am selben Gerät. Eigener Name und eigene Grafik, kein Nachbau.
+  Ohne Flashen kaum machbar (braucht Rechnung auf dem Sticky), also eigener Seitentyp in der Firmware
 
 ### Einfach-Profil für ältere Angehörige (Markus, 13.11.2026, geparkt)
 Ein Sticky für jemanden, der mit Technik nichts zu tun haben will; gepflegt von einem Angehörigen aus der Ferne.
