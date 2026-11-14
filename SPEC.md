@@ -380,6 +380,24 @@ Was der Sticky als Immer-dabei-Helfer noch können könnte, sortiert nach Aufwan
   weg. Passt zu E-Paper, weil rundenbasiert: pro Zug ein Teil-Refresh, Flugbahn als Punktspur. Bedienung mit ▲/▼
   (Winkel/Pulver) und Tippen (Feuer), zu zweit am selben Gerät. Eigener Name und eigene Grafik, kein Nachbau.
   Ohne Flashen kaum machbar (braucht Rechnung auf dem Sticky), also eigener Seitentyp in der Firmware
+  - Nur Idee (Markus, 14.11.2026): **wenn Spiele, dann richtig**: auch Weltraum-Felsen-Ballern und Städte-Verteidigung
+    (Raketen abfangen) im Stil der Arcade-Zeit, eigene Namen und Grafik. Haken E-Paper: Teil-Refresh ~0,3–0,75 s, also
+    2–3 Bilder/s mit Geisterbildern. Vorschlag: bewusst langsame Fassungen („Zeitlupen-Arcade“: Welt bewegt sich nur
+    in Ticks von ~0,5 s, Touch zum Zielen statt Tasten), alle paar Züge ein Voll-Refresh; erst mit dem Artillerie-Duell
+    ausprobieren, wie sich Bewegung auf dem Panel anfühlt. Mögliche Sammelseite „Spiele“ im Karussell
+- Nur Idee (Markus, 14.11.2026): **Sticky aus Titan** (EDC-Gral). Haken: Metall schirmt BLE/WLAN ab (Antennenfenster
+  nötig), Titan ist nicht magnetisch (Stahlplättchen für den Microlino-Halter), Herstellung nur gefräst oder SLM-Druck
+  per Dienst, grob mehrere hundert Euro. Einfacher: nur Titan-Rahmen/Bumper ums Seeed-Gehäuse, vorher Passform als
+  Druck auf dem X1C testen; noch billiger PETG/PLA in Seidengrau mit Titan-Optik
+  - Konkreter (Markus, 14.11.2026, beim Rumdösen): **Sleeve vom X1C** zum Überschieben, mit Extras wie einem
+    **Bithalter** (1/4"-Bits) auf der Rückseite. Frei bleiben müssen Touchfläche, Tasten, USB und der Antennenbereich;
+    Stahlplättchen oder Magnete für den Microlino-Halter gleich mit einplanen. Material z. B. PETG oder PLA in
+    Seidengrau (Titan-Optik); passt zur Werkstatt-Seite (Lineal, Wasserwaage) – ggf. Lineal-Skala an der Kante
+    Dazu (Markus): Steckplätze für **Victorinox-Ersatzteile** (Zahnstocher, Pinzette, Mini-Kuli wie bei der SwissCard),
+    gibt es einzeln nachzukaufen; Schlitze mit leichter Klemmung, damit nichts klappert oder rausfällt
+    Dazu (Markus): ein **kleiner Stylus** mit leitender Spitze (Touch ist kapazitiv, der Kuli geht nur auf Papier);
+    hilft bei Strichschrift und Kritzelblock. Einen Mini-Stylus mit Gummi- oder Faserspitze im Format des Kulis kaufen,
+    nicht selbst drucken (PLA leitet nicht)
 
 ### Einfach-Profil für ältere Angehörige (Markus, 13.11.2026, geparkt)
 Ein Sticky für jemanden, der mit Technik nichts zu tun haben will; gepflegt von einem Angehörigen aus der Ferne.
