@@ -54,7 +54,8 @@ export function homeHochkant(karte = KARTE, beispielZeit = null, wetter = null) 
     p.font = '16px system-ui, sans-serif';
     p.fillText(`Wetter, Stand ${uhrzeit(wetter.zeit)}`, PB / 2, 330);
   }
-  // QR-Code unter der Uhr
+  // QR-Code unter der Uhr (nur mit Link; Multiclient: weitere Stickys haben erst einmal keinen)
+  if (!karte.qr) { if (beispielZeit) zeichneZeit(p, beispielZeit); return c; }
   const qr = qrcode(0, 'M');
   qr.addData(karte.qr);
   qr.make();
@@ -64,7 +65,7 @@ export function homeHochkant(karte = KARTE, beispielZeit = null, wetter = null) 
   const qx = Math.round((PB - n * m) / 2), qy = 492;
   for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (qr.isDark(y, x)) p.fillRect(qx + x * m, qy + y * m, m, m);
   p.font = '20px system-ui, sans-serif';
-  p.fillText(karte.zeile, PB / 2, qy + n * m + 22);
+  p.fillText(karte.zeile ?? '', PB / 2, qy + n * m + 22);
   if (beispielZeit) zeichneZeit(p, beispielZeit);
   return c;
 }

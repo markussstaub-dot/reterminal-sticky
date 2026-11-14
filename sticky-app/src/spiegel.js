@@ -70,7 +70,7 @@ export function spiegelEinrichten({ canvas, hinweisEl, quelle, befehl, notizTipp
     } else if (m === 'home' || m === 'notiz') {
       const g = ziel(PB, PH);
       const jetzt = uhrzeit(new Date());
-      g.drawImage(m === 'home' ? homeHochkant(KARTE, jetzt, quelle.wetter?.()) : fahrtHochkant(quelle.knoepfe()), 0, 0);
+      g.drawImage(m === 'home' ? homeHochkant(quelle.karte?.() ?? KARTE, jetzt, quelle.wetter?.()) : fahrtHochkant(quelle.knoepfe()), 0, 0);
       if (m === 'home' && z.bat >= 0) akkuSymbol(g, Math.floor((z.bat + 12) / 25), z.usb);
       // Überlagerungen unten im Rückmeldefeld, wie am Sticky
       const text = z.aufnahme ? '● Aufnahme' : z.meldung;

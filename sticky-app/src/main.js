@@ -25,7 +25,7 @@ async function erkenne(pcm) {
   return { ...r, text, ...(text !== r.text ? { roh: r.text } : {}), pruefung: p };
 }
 import { zeichneFahrt, trefferKnopf, rueckmeldung, layoutText, STANDARD_KNOEPFE } from './fahrtseite.js';
-import { zeichneHome, zeichneZiffern, statusGlyphen, setzeEinheitUs } from './homeseite.js';
+import { zeichneHome, zeichneZiffern, statusGlyphen, setzeEinheitUs, KARTE } from './homeseite.js';
 import { holeWetter, letztesWetter } from './wetter.js';
 import { BESTELL_STANDARD, zeichneZettel } from './bestellung.js';
 import { zettelListe, zettelUmzug } from './zettel.js';
@@ -49,7 +49,7 @@ import { spiegelEinrichten } from './spiegel.js';
 import { BREITE, HOEHE, rgbaZu1bpp, crc32, rueckDatei } from './protokoll.js';
 import { BleVerbindung, SimVerbindung } from './verbindung.js';
 import { Zwilling } from './zwilling.js';
-import { schluessel, schluesselFuer, mitGeraet, kurz, geraete, aktivesGeraet, aktivSetzen, geraetAendern, geraetVergessen, PROFILE } from './geraete.js';
+import { schluessel, schluesselFuer, mitGeraet, karteFuer, kurz, geraete, aktivesGeraet, aktivSetzen, geraetAendern, geraetVergessen, PROFILE } from './geraete.js';
 
 const $ = (id) => document.getElementById(id);
 const nativ = Capacitor.isNativePlatform();
@@ -437,6 +437,12 @@ function geraeteZeigen() {
       geraetAendern(g.id, { profil: profil.value });
       if (istAktiv) wechselnZu(null, `Profil „${PROFILE[profil.value]}“ für ${g.name}`);
     };
+    const link = Object.assign(document.createElement('input'), { value: g.link ?? '', placeholder: 'Link für den QR-Code auf Home (leer = keiner)', title: 'QR-Code auf Home' });
+    link.onchange = () => {
+      geraetAendern(g.id, { link: link.value.trim() || undefined });
+      if (istAktiv && zwilling.verbunden) abgleich().catch((e) => eintrag(e.message, true));
+      else { const s = sitzungen.get(g.id); if (s?.z.verbunden) hintergrundAbgleich(s).catch(() => {}); }
+    };
     const mac = Object.assign(document.createElement('span'), { className: 'klein', textContent: g.id });
     const hg = sitzungen.get(g.id);
     if (hg) mac.textContent += hg.z.verbunden ? ` · im Hintergrund verbunden${hg.z.geraet.bat != null ? ` · Akku ${hg.z.geraet.bat} %` : ''}`
@@ -462,7 +468,7 @@ function geraeteZeigen() {
       geraetVergessen(g.id);
       if (istAktiv) wechselnZu(null, `${g.name} vergessen`); else geraeteZeigen();
     };
-    li.append(name, profil, mac, knopf, weg);
+    li.append(name, profil, link, mac, knopf, weg);
     ul.append(li);
   }
 }
@@ -738,7 +744,7 @@ async function abgleich() {
   // Wetter für die Home-Karte (bei Fehler bleibt die letzte Vorhersage)
   const ort = await notizen.standort();
   const wetter = (await holeWetter(ort)) ?? letztesWetter();
-  zeichneHome(g, undefined, null, wetter);
+  zeichneHome(g, karteFuer(aktivesGeraet(), KARTE), null, wetter);
   const home = bildBytes();
   zeichneFahrt(g, knoepfe());
   const notiz = bildBytes();
@@ -766,7 +772,7 @@ async function abgleich() {
     try { localStorage.setItem(schluessel('homecrcs'), JSON.stringify({ version: homeV, crcs })); } catch { /* egal */ }
     eintrag(`Home-Karte, Notiz-Seite, Uhr und ${zettelBilder.length} Zettel/Karten aufgespielt`);
   }
-  zeichneHome(g, undefined, uhrzeit(new Date()), wetter);
+  zeichneHome(g, karteFuer(aktivesGeraet(), KARTE), uhrzeit(new Date()), wetter);
   pruefeAbgleich();
   if (zwilling.geraet.modus) stickyModus = zwilling.geraet.modus;
   if (zwilling.geraet.fahrtv !== version && fwAb('0.11.0')) {
@@ -1291,6 +1297,7 @@ const spiegel = spiegelEinrichten({
     zettelText: () => $('zettelText').value,
     alleZettel,
     bordbuchSeite,
+    karte: () => karteFuer(aktivesGeraet(), KARTE),
     widgetBild: (name, hoch) => {
       const f = widgetFunktionen()[name];
       return f ? f(hoch).find((d) => d.n === 'bild.bin')?.daten : null;
@@ -1449,7 +1456,7 @@ async function hintergrundAbgleich(s) {
     // Seiten aus seinem Profil bauen (synchron, damit der Bau-Kontext nicht in den Vordergrund leckt)
     const teile = baue(s, () => {
       const h = hgLeinwand;
-      zeichneHome(h, undefined, null, wetter); const home = hgBytes();
+      zeichneHome(h, karteFuer(s.g, KARTE), null, wetter); const home = hgBytes();
       zeichneFahrt(h, knoepfe()); const notiz = hgBytes();
       zeichneZiffern(h); const ziffern = hgBytes();
       const zettel = alleZettel().map((x) => { x.zeichne(h); return hgBytes(); });

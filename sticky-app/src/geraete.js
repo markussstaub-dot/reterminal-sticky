@@ -86,6 +86,16 @@ export function geraetVergessen(id) {
   }
 }
 
+/** Home-Karte eines Sticky (14.11.2026): der erste behält die eingebaute (vorlage), jeder weitere zeigt seinen Namen;
+ *  QR nur, wenn in der Geräteliste ein Link steht (g.link) */
+export function karteFuer(g, vorlage) {
+  if (!g) return vorlage;
+  const erster = geraete()[0];
+  if (!g.link && (!erster || erster.id === g.id)) return vorlage;
+  const link = g.link ?? '';
+  return { name: kurz(g), qr: link, zeile: link.replace(/^https?:\/\//, '').replace(/\/$/, '') };
+}
+
 /** Kurzname fürs Protokoll und für Ist-Daten: „Sticky-559D“ → „559D“ */
 export const kurz = (g) => (g?.name ?? '').replace(/^Sticky-?/, '') || g?.id?.slice(-5).replace(':', '') || '?';
 
