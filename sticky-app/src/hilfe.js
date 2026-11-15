@@ -38,6 +38,25 @@ function seiten() {
         ['!Tap', 'a chapter in the contents = go there', '!Keys', '▲ ▼ short   page back / forward', '▲ hold 1 s   contents',
           '▼ hold 1 s   next carousel entry', 'AI short   Home · AI hold   dictate']).concat(ZURUECK()),
     },
+    // ab FW 0.38.0 (Dokumente): Handbuch und Spickzettel statt Bordbuch
+    handbuch: {
+      titel: T('Hilfe · Handbuch', 'Help · Manual'),
+      zeilen: T(
+        ['!Tippen', 'Kachel = Dokument, wo du warst · Kapitel = dorthin', 'auf eine Seite = Inhaltsverzeichnis · Lesezeichen oben rechts',
+          '!Tasten', '▲ ▼ kurz   Seite zurück / vor', '▲ 1 s auf einer Seite   Lesezeichen setzen', '▲ 1 s im Inhalt   Bibliothek',
+          'KI kurz   Home · KI halten   Diktat'],
+        ['!Tap', 'tile = document where you left off · chapter = go there', 'a page = contents · bookmark top right',
+          '!Keys', '▲ ▼ short   page back / forward', '▲ hold 1 s on a page   set bookmark', '▲ hold 1 s in contents   library',
+          'AI short   Home · AI hold   dictate']).concat(ZURUECK()),
+    },
+    spick: {
+      titel: T('Hilfe · Spickzettel', 'Help · Cheat sheets'),
+      zeilen: T(
+        ['!Tippen', 'einen Titel links = diese Karte', '!Tasten', '▲ ▼ kurz   vorige / nächste Karte', '▲ 1 s halten   erste Karte',
+          'KI kurz   Home · KI halten   Diktat', '!Pflegen', 'in der App unter Dokumente oder am Zenbook (Spickzettel-Konsole)'],
+        ['!Tap', 'a title on the left = that card', '!Keys', '▲ ▼ short   previous / next card', '▲ hold 1 s   first card',
+          'AI short   Home · AI hold   dictate', '!Edit', 'in the app under Docs or on the laptop (cheat sheet console)']).concat(ZURUECK()),
+    },
     kritzel: {
       titel: T('Hilfe · Kritzel', 'Help · Doodle'),
       zeilen: T(
@@ -176,10 +195,10 @@ function seiten() {
       titel: T('Spiel braucht das Handy', 'Game needs the phone'),
       zeilen: T(
         ['!Gerade nicht verbunden', 'Das Burgduell rechnet die App auf dem Handy.', '!Was hilft', 'App auf dem Handy öffnen, Bluetooth an – dann noch mal antippen',
-          '!Ohne Handy geht', 'Uhr, Timer, Wecker, Weltzeit, Rechner, Umrechner, Waage, Lineal, Notiz, Diktat, Kritzel, Schrift, Bordbuch, Zettel',
+          '!Ohne Handy geht', 'Uhr, Timer, Wecker, Weltzeit, Rechner, Umrechner, Waage, Lineal, Notiz, Diktat, Kritzel, Schrift, Handbuch, Spickzettel, Zettel',
           '!Zurück', 'beliebige Taste'],
         ['!Not connected right now', 'Castle Duel is computed by the app on the phone.', '!What helps', 'open the app on the phone, Bluetooth on – then tap again',
-          '!Works without phone', 'clock, timer, alarm, world clock, calculator, converter, level, ruler, note, dictation, doodle, writing, logbook, cards',
+          '!Works without phone', 'clock, timer, alarm, world clock, calculator, converter, level, ruler, note, dictation, doodle, writing, manual, cheat sheets, cards',
           '!Back', 'any key']),
     },
     zettel: {

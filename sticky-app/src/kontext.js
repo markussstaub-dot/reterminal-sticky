@@ -44,10 +44,12 @@ export const meldungenAufraeumen = (liste, jetzt = Date.now()) =>
 
 // ---- C. Orte -------------------------------------------------------------------------------------------------------
 export const UMKREIS_M = 150;
-/** Ziele, auf die die App den Sticky schicken kann (Befehl 0x14: 0 Home, 1 Bordbuch, 2 Notiz, 3 Zettel n) */
+/** Ziele, auf die die App den Sticky schicken kann (Befehl 0x14: 0 Home, 1 Handbuch – bis FW 0.37.0 Bordbuch –, 2 Notiz,
+ *  3 Zettel n, 8 Spickzettel ab FW 0.38.0) */
 const ZIELE = [
   [/^(home|start)$/i, () => ({ modus: 0 })],
-  [/^(bordbuch|logbook)$/i, () => ({ modus: 1 })],
+  [/^(bordbuch|logbook|handbuch|manual)$/i, () => ({ modus: 1 })],
+  [/^(spickzettel|cheat ?sheets?)$/i, () => ({ modus: 8 })],
   [/^(notiz|note|fahrt)$/i, () => ({ modus: 2 })],
   [/^(zettel|list)\s*(\d)?$/i, (m) => ({ modus: 3, seite: Math.max(0, Number(m[2] ?? 1) - 1) })],
 ];

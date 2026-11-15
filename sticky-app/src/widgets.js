@@ -152,6 +152,7 @@ function handyZeichen(g, x, y) {
 }
 /** Kachelname je Karussell-Eintrag; Deutsch wie bisher (Widget-Name groß geschrieben), Englisch übersetzt */
 const NAMEN = { home: ['Home', 'Home'], notiz: ['Notiz', 'Note'], bordbuch: ['Bordbuch', 'Logbook'], zettel: ['Zettel', 'Cards'],
+  handbuch: ['Handbuch', 'Manual'], spickzettel: ['Spickzettel', 'Cheat sheets'],
   kritzel: ['Kritzel', 'Doodle'], schrift: ['Schrift', 'Writing'], app: ['Spiel', 'Game'] };
 const WIDGET_EN = { timer: 'Timer', wecker: 'Alarm', weltzeit: 'World clock', waage: 'Level', lineal: 'Ruler', rechner: 'Calculator',
   umrechner: 'Converter', einstellungen: 'Settings', recorder: 'Recorder', tippen: 'Type' };

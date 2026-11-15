@@ -69,7 +69,7 @@ export function fahrtHochkant(knoepfe = STANDARD_KNOEPFE) {
   p.textAlign = 'center';
   p.font = '22px system-ui, sans-serif';
   p.fillStyle = '#000';
-  p.fillText(T('KI halten = Diktat · KI = Home · ▲ = Bordbuch', 'hold AI = dictate · AI = Home · ▲ = Logbook'), PB / 2, 698);
+  p.fillText(T('KI halten = Diktat · KI = Home · ▲▼ = blättern', 'hold AI = dictate · AI = Home · ▲▼ = scroll'), PB / 2, 698);
   return c;
 }
 

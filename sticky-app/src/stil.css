@@ -158,3 +158,13 @@ label.lage { display: flex; justify-content: space-between; align-items: center;
 .kkopf .name { flex: 1; }
 .kpfeil { min-width: 40px; min-height: 40px; border-radius: 20px; }
 .kblock .kzeile { padding-left: 8px; }
+
+/* Dokumente (15.11.2026) */
+#dokListe { display: grid; gap: 8px; }
+#dokListe summary { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+#dokListe summary .klein { flex-basis: 100%; }
+#dokListe textarea { margin-top: 4px; }
+.kartenliste { display: grid; gap: 4px; }
+.kartezeile { background: var(--flaeche); border-radius: 8px; padding: 8px 10px; }
+.kartezeile.aus { opacity: .45; }
+#szenen button { min-height: 36px; padding: 4px 12px; }

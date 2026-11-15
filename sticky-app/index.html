@@ -94,27 +94,30 @@
       </section>
     </div>
 
-    <!-- ======================= Bordbuch ======================= -->
-    <div class="tab" data-tab="bordbuch" hidden>
-      <section id="bordbuch">
+    <!-- ======================= Dokumente (bis 15.11.2026: Bordbuch) ======================= -->
+    <div class="tab" data-tab="dokumente" hidden>
+      <section id="dokumente">
+        <h2 data-en="Manuals">Handbücher</h2>
+        <div id="dokListe"></div>
         <div class="leiste">
-          <label class="dateiwahl"><input type="file" id="pdfDatei" accept="application/pdf" hidden><span data-en="Choose manual PDF">Handbuch-PDF wählen</span></label>
-          <span id="pdfName" class="klein" data-en="no manual">kein Handbuch</span>
+          <label class="dateiwahl"><input type="file" id="pdfDatei" accept="application/pdf" hidden><span>+ PDF</span></label>
+          <span class="klein" data-en="Switch = document goes to the Sticky. Tap a manual: search, contents, rename, delete.">Schalter = Dokument kommt auf den Sticky. Tippen auf ein Handbuch: Suche, Inhaltsverzeichnis, umbenennen, löschen.</span>
         </div>
-        <div class="leiste">
-          <button id="bbAufspielen" disabled data-en="Upload logbook">Bordbuch aufspielen</button>
-        </div>
-        <p id="bbStatus" class="klein"></p>
+        <p id="dokPlatz" class="klein"></p>
+        <h2 data-en="Cheat sheets">Spickzettel</h2>
+        <div id="szenen" class="leiste"></div>
+        <div id="spickListe" class="kartenliste"></div>
+        <p id="spickZahl" class="klein"></p>
         <details>
-          <summary class="klein" data-en="Edit cheat sheets">Spickzettel bearbeiten</summary>
+          <summary class="klein" data-en="Edit cheat sheets (“## Title #scene”, lines below, ! = bold)">Spickzettel bearbeiten („## Titel #szene“, darunter Zeilen, ! = fett)</summary>
           <textarea id="spickzettel" rows="18" spellcheck="false"></textarea>
           <button id="spickStandard" data-en="Restore default">Standard wiederherstellen</button>
         </details>
-        <details>
-          <summary class="klein" data-en="Edit how-tos (short guides, in the logbook after the cheat sheets)">Handgriffe bearbeiten (kurze Anleitungen, im Bordbuch nach den Spickzetteln)</summary>
-          <textarea id="handgriffe" rows="14" spellcheck="false"></textarea>
-          <button id="handgriffeStandard" data-en="Restore default">Standard wiederherstellen</button>
-        </details>
+        <p class="klein" data-en="Easiest to edit on the laptop (cheat sheet console), look and fix small things here.">Pflegen am bequemsten am Zenbook (Spickzettel-Konsole), hier ansehen und kleine Korrekturen.</p>
+        <div class="leiste">
+          <button id="dokAufspielen" class="haupt" disabled data-en="To the Sticky">Auf den Sticky</button>
+        </div>
+        <p id="dokStatus" class="klein"></p>
       </section>
     </div>
 
@@ -149,7 +152,7 @@
       </section>
       <section>
         <h2>Stickys</h2>
-        <p class="klein" data-en="Several Stickys on one app, one connected at a time. The profile sets carousel, orientation, lists, cheat sheets, how-tos and dictionary – devices with the same profile share them.">Mehrere Stickys an einer App, verbunden ist einer zur Zeit. Das Profil bestimmt Karussell, Lage, Zettel, Spickzettel, Handgriffe und Wörterbuch – Geräte mit demselben Profil teilen sie.</p>
+        <p class="klein" data-en="Several Stickys on one app, one connected at a time. The profile sets carousel, orientation, lists, cheat sheets and dictionary – devices with the same profile share them.">Mehrere Stickys an einer App, verbunden ist einer zur Zeit. Das Profil bestimmt Karussell, Lage, Zettel, Spickzettel und Wörterbuch – Geräte mit demselben Profil teilen sie.</p>
         <ul id="geraeteListe" class="geraete"></ul>
         <div class="leiste"><button id="geraetNeu" data-en="Add Sticky">Sticky hinzufügen</button></div>
       </section>
@@ -176,7 +179,7 @@
       </section>
       <section>
         <h2 data-en="Places">Orte</h2>
-        <p class="klein" data-en="One place per line: “name; latitude, longitude; target[; radius m]”. Target: Home, Note, List 1–6 or Logbook. On arrival the Sticky jumps there once, but only from Home; Home shows the place. While driving it goes to the note page, after the ride it asks “Remember parking spot?”.">Je Zeile ein Ort: „Name; Breite, Länge; Ziel[; Umkreis m]“. Ziel: Home, Notiz, Zettel 1–6 oder Bordbuch. Bei Ankunft springt der Sticky einmal dorthin, aber nur aus Home; Home zeigt den Ort. Beim Fahren geht er auf die Notiz-Seite, nach der Fahrt fragt er „Parkplatz merken?“.</p>
+        <p class="klein" data-en="One place per line: “name; latitude, longitude; target[; radius m]”. Target: Home, Note, List 1–6, Manual or Cheat sheets. On arrival the Sticky jumps there once, but only from Home; Home shows the place. While driving it goes to the note page, after the ride it asks “Remember parking spot?”.">Je Zeile ein Ort: „Name; Breite, Länge; Ziel[; Umkreis m]“. Ziel: Home, Notiz, Zettel 1–6, Handbuch oder Spickzettel. Bei Ankunft springt der Sticky einmal dorthin, aber nur aus Home; Home zeigt den Ort. Beim Fahren geht er auf die Notiz-Seite, nach der Fahrt fragt er „Parkplatz merken?“.</p>
         <textarea id="orte" rows="3" spellcheck="false" placeholder="Supermarkt; 47.12345, 8.12345; Zettel 1" data-en-placeholder="Supermarket; 47.12345, 8.12345; List 1"></textarea>
         <div class="leiste"><button id="ortMerken" data-en="Remember this place">Hier merken</button><button id="frageTest" data-en="Test question">Test-Rückfrage</button></div>
       </section>
@@ -216,7 +219,7 @@
   <nav id="tabs">
     <button data-ziel="sticky" class="an"><span>◧</span><span>Sticky</span></button>
     <button data-ziel="notizen"><span>✎</span><span data-en="Notes">Notizen</span></button>
-    <button data-ziel="bordbuch"><span>☰</span><span data-en="Logbook">Bordbuch</span></button>
+    <button data-ziel="dokumente"><span>☰</span><span data-en="Docs">Dokumente</span></button>
     <button data-ziel="bestellen"><span>▤</span><span data-en="Lists">Zettel</span></button>
     <button data-ziel="mehr"><span>⋯</span><span data-en="More">Mehr</span></button>
   </nav>

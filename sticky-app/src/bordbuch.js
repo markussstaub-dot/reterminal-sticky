@@ -3,9 +3,10 @@
 import { BREITE, HOEHE, rgbaZu1bpp } from './protokoll.js';
 import { T } from './uebersetzen.js';
 
-// Spickzettel: als Text gepflegt (in der App änderbar). „## Titel“ beginnt eine Seite, „!“ am Zeilenanfang = fett.
+// Spickzettel: als Text gepflegt (in der App änderbar). „## Titel #szene“ beginnt eine Karte, „!“ am Zeilenanfang = fett.
+// Seit FW 0.38.0 (Dokumente) eigene Seite am Sticky, gezeichnet von dokumente.js; hier bleiben Standard, PDF-Werkzeuge, Textseiten.
 // Werte aus der Bedienungsanleitung DE 2026 (Seitenangaben in Klammern); „(prüfen)“ = bitte am Fahrzeug bestätigen.
-export const SPICKZETTEL_STANDARD = `## Laden
+export const SPICKZETTEL_STANDARD = `## Laden #micro
 !Schuko (Haushaltssteckdose)
 Mode-2-Kabel mit Steuerbox, Dauerstrom max. 8 A (S. 21)
 !Typ 2 (Wallbox / Ladesäule)
@@ -17,7 +18,7 @@ Ladebalken im Kombiinstrument läuft; Signet rot = Ladefehler
 Auto entriegeln stoppt das Laden, dann Stecker ziehen
 Notentriegelung Ladestecker: Abb. 31 (S. 20)
 
-## Warnleuchten
+## Warnleuchten #micro #notfall
 !Rot = sofort anhalten, Fachwerkstatt
 STOP rot: nicht fahrbereit · Bremssystem-Fehler
 Antriebsbatterie-Fehler (rot): umgehend anhalten
@@ -28,7 +29,7 @@ READY grün: fahrbereit
 Handbremse: Leuchte, Warnton ab 4 km/h
 Tür vorne offen: Symbol im Kombiinstrument (S. 22)
 
-## Reifen und Räder
+## Reifen und Räder #micro
 !Reifendruck (Aufkleber innen an der Ladeklappe)
 Stahlfelge 13": 145/70 R13 → 1,8 bar
 Alufelge 14": 155/55 R14 → 2,0 bar   (welche hat der Pioneer? prüfen)
@@ -38,7 +39,7 @@ Stahlfelge 40 Nm · Alufelge 90 Nm
 Kein Reserverad, kein Pannenset → Pannenhilfe/Werkstatt
 Zum Prüfen Radzierblende abziehen; Aussparung beim Aufsetzen aufs Ventil (S. 29)
 
-## Sicherungen
+## Sicherungen #micro
 Sitzen in der Tür vorne und im Kofferraum (Abb. 42/43, S. 26)
 Möglichst vom Fachpersonal tauschen lassen
 !Häufig gebraucht
@@ -49,7 +50,7 @@ FSH19 7,5 A Scheibenwaschpumpe · FSD2 15 A Wischer
 FSD1 5 A OBD · FSD3 20 A Innenraumgebläse
 Schlüsselbatterie: CR 2032, 3 V (S. 28)
 
-## Notfall und Pannen
+## Notfall und Pannen #micro #notfall
 !Notruf 112
 Rettungskarte: microlino-car.com bzw. Servicepartner (S. 5)
 !Notfahrmodus (Türschloss defekt, Schritttempo)
@@ -215,11 +216,14 @@ export async function pdfAusschnitte(pdf, nr) {
   const xs = [0, Math.max(0, c.width - BREITE)];   // zwei Spalten, in der Mitte überlappend
   const ys = [0, Math.max(0, c.height - HOEHE)];
   const teile = [];
+  let erstes = null;
   for (const y of ys) for (const x of xs) {
     const d = g.getImageData(x, y, BREITE, HOEHE);
-    if (fastLeer(d.data)) continue;
+    if (fastLeer(d.data)) { erstes ??= d; continue; }
     teile.push({ daten: d, pos: `${ys.indexOf(y) ? 'unten' : 'oben'} ${xs.indexOf(x) ? 'rechts' : 'links'}` });
   }
+  // Fast leere Seite (Titelblatt, wenig Text): wenigstens oben links zeigen, sonst fehlt sie am Sticky ganz (15.11.2026)
+  if (!teile.length && erstes) teile.push({ daten: erstes, pos: 'oben links' });
   return teile;
 }
 

@@ -219,6 +219,8 @@ export class SimVerbindung extends Basis {
       const [pfad, ab = 0] = r.pfad.split('|');
       const vor = `${pfad}/`;
       const d = Object.entries(k).filter(([p]) => p.startsWith(vor) && !p.slice(vor.length).includes('/')).map(([p, b]) => ({ n: p.slice(vor.length), b: b.length }));
+      // Unterordner wie die Firmware („ordner“: true), z. B. /soll/doku/<name>
+      for (const o of new Set(Object.keys(k).filter((p) => p.startsWith(vor) && p.slice(vor.length).includes('/')).map((p) => p.slice(vor.length).split('/')[0]))) d.push({ n: o, b: 0, ordner: true });
       const stueck = d.slice(+ab, +ab + 8);   // wie die Firmware: nicht alles in ein Paket
       this.onEreignis({ t: 'liste', p: pfad, ab: +ab, d: stueck, mehr: +ab + 8 < d.length });
     } else if (r.op === 'schreibStart') {
@@ -230,7 +232,12 @@ export class SimVerbindung extends Basis {
       const s = this.schreib;
       this.schreib = null;
       const ok = crc32(s.daten) === s.crc;
-      if (ok) this.#karte()[s.pfad] = s.daten;
+      if (ok && s.pfad.endsWith('/umbenennen.txt')) {   // wie doku.h sollUmbenennen: „alt neu“ je Zeile
+        const k = this.#karte(), ordner = s.pfad.slice(0, s.pfad.lastIndexOf('/') + 1), zwischen = {};
+        const paare = new TextDecoder().decode(s.daten).split('\n').map((z) => z.trim().split(' ')).filter((x) => x.length === 2);
+        for (const [a] of paare) if (k[ordner + a]) { zwischen[a] = k[ordner + a]; delete k[ordner + a]; }
+        for (const [a, b] of paare) if (zwischen[a]) k[ordner + b] = zwischen[a];
+      } else if (ok) this.#karte()[s.pfad] = s.daten;
       this.onEreignis(ok ? { t: 'geschrieben', p: s.pfad, ok, b: s.laenge } : { t: 'geschrieben', p: s.pfad, ok, err: 'crc' });
     } else if (r.op === 'holen') {
       const b = (this.#karte()[r.pfad] ?? new Uint8Array(0)).subarray(r.offset, r.offset + 480);
@@ -248,12 +255,13 @@ export class SimVerbindung extends Basis {
       this.onEreignis({ t: 'bordbuch', seiten: this.bbAnzahl, belegtKB: this.bbAnzahl * 47 });
     } else if (r.op === 'bbModus') {
       // Fernbedienung: 0 Home, 1 Bordbuch, 2 Notiz, 3 Bestellzettel
-      const m = ['home', 'bordbuch', 'notiz', 'bestell'][r.m] ?? 'home';
+      const m = ['home', 'handbuch', 'notiz', 'bestell', '', '', '', '', 'spick'][r.m] || 'home';   // ab FW 0.38.0: 1 Handbuch, 8 Spickzettel
       if (m === 'bestell') this.zettel = r.seite ?? 0;
-      if (m === 'bordbuch' && r.seite != null) this.bb = r.seite;
+      if ((m === 'handbuch' || m === 'spick') && r.seite != null) this.bb = r.seite;
       this.modus = m;
       this.onEreignis({ t: 'modus', m, zettel: this.zettel ?? 0 });
-      if (m === 'bordbuch') this.onEreignis({ t: 'seite', n: this.bb ?? 0, von: this.bbAnzahl ?? 150 });
+      if (m === 'handbuch') this.onEreignis({ t: 'seite', n: this.bb ?? 0, von: this.bbAnzahl ?? 150 });
+      if (m === 'spick') this.onEreignis({ t: 'spick', n: this.bb ?? 0, von: 8 });
     } else if (r.op === 'karte') {
       this.seite = 'karte';
       this.bild = null;

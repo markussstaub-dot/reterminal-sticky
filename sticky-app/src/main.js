@@ -39,11 +39,12 @@ import { Aufnahme, wav, wavKopf, sprachPruefung, nurWortliste, angehoben, dekodi
 import * as notizen from './notizen.js';
 import { SORTEN, naechsteSorte } from './sorte.js';
 import { HILFE } from './hilfe.js';
-import { HANDGRIFFE_STANDARD } from './handgriffe.js';
 import { AppSeite } from './appseite.js';
 import { WIDGETS, EINGABEN, menueWidget, mitReiter, kachelName } from './widgets.js';
 import { zustandAus, wortliste, umschalten, blockSchieben, gliedSchieben, EINTRAG } from './karussellListe.js';
-import { reiterFuer } from './gruppen.js';
+import { reiterFuer, reiterFuerEintrag } from './gruppen.js';
+import { dokumenteEinrichten } from './dokumenteSeite.js';
+import { karussellOhneBordbuch } from './dokumente.js';
 import { LAGE_STANDARD, LAGE_NAMEN, vomDisplay } from './lage.js';
 import { WOERTERBUCH_STANDARD, paareLesen, paareText, korrigiere, lernen, einpflegen } from './woerterbuch.js';
 import * as bb from './bordbuch.js';
@@ -336,10 +337,10 @@ zwilling.beobachte((art, d) => {
     else if (d.t === 'puffer' && d.a === 'neu') pufferAbholen().catch((e) => eintrag(T(`Notizen: ${e.message}`, `Notes: ${e.message}`), true));   // getippt (FW ≥ 0.37.0)
     else if (d.t === 'suche') eintrag(d.a === 'gefunden' ? T('Sticky gefunden', 'Sticky found') : T('Sticky piept', 'Sticky is beeping'));
     else if (d.t === 'schlaf') stickySchlaeft = true;
-    else if (d.t === 'modus') { spiegelSetze({ modus: d.m, w: d.w ?? '', lh: d.lh ?? 0, ...(d.zettel != null ? { zettel: d.zettel } : {}), verbunden: true }); stickyModus = d.m; imBordbuch = d.m === 'bordbuch'; if (d.m !== 'app' && appSeite.frage) { appSeite.frage = null; eintrag(T('Rückfrage: nicht jetzt', 'Question: not now')); } fotoAnstossen(); eintrag(T('Modus: ', 'Mode: ') + ({ home: 'Home', notiz: T('Notiz', 'Note'), bordbuch: T('Bordbuch', 'Logbook'), kritzel: T('Kritzel', 'Doodle'), schrift: T('Schrift', 'Handwriting'), app: T('Spiel', 'Game'), widget: 'Widget', bestell: `${T('Zettel', 'List')} ${(d.zettel ?? 0) + 1}` }[d.m] ?? d.m)); if (d.m === 'app') { if (d.hoch != null) appSeite.hoch = !!d.hoch; } duellPruefen(); if (d.m === 'app' && !imDuell()) appSeite.zeigen().catch((e) => eintrag(T(`Spiel: ${e.message}`, `Game: ${e.message}`), true)); }
-    else if (d.t === 'seite') { $('bbStatus').textContent = T(`Sticky zeigt Bordbuch-Seite ${d.n + 1} von ${d.von}`, `Sticky shows logbook page ${d.n + 1} of ${d.von}`); spiegelSetze({ bb: d.n }); }
+    else if (d.t === 'modus') { spiegelSetze({ modus: d.m, w: d.w ?? '', lh: d.lh ?? 0, ...(d.zettel != null ? { zettel: d.zettel } : {}), verbunden: true }); stickyModus = d.m; if (d.m !== 'app' && appSeite.frage) { appSeite.frage = null; eintrag(T('Rückfrage: nicht jetzt', 'Question: not now')); } fotoAnstossen(); eintrag(T('Modus: ', 'Mode: ') + ({ home: 'Home', notiz: T('Notiz', 'Note'), bordbuch: T('Bordbuch', 'Logbook'), handbuch: T('Handbuch', 'Manual'), spick: T('Spickzettel', 'Cheat sheets'), kritzel: T('Kritzel', 'Doodle'), schrift: T('Schrift', 'Handwriting'), app: T('Spiel', 'Game'), widget: 'Widget', bestell: `${T('Zettel', 'List')} ${(d.zettel ?? 0) + 1}` }[d.m] ?? d.m)); if (d.m === 'app') { if (d.hoch != null) appSeite.hoch = !!d.hoch; } duellPruefen(); if (d.m === 'app' && !imDuell()) appSeite.zeigen().catch((e) => eintrag(T(`Spiel: ${e.message}`, `Game: ${e.message}`), true)); }
+    else if (d.t === 'seite') { spiegelSetze({ bb: d.n }); dokumente.seiteGemeldet(d); }   // Handbuch (FW ≥ 0.38.0: d = Dokument, bib)
+    else if (d.t === 'spick') spiegelSetze({ bb: d.n });
     else if (d.t === 'audio' && (d.a === 'start' || d.a === 'stop')) spiegelSetze({ aufnahme: d.a === 'start' });
-    else if (d.t === 'bordbuch') eintrag(T(`Bordbuch auf dem Sticky: ${d.seiten} Seiten, ${d.belegtKB} KB`, `Logbook on the Sticky: ${d.seiten} pages, ${d.belegtKB} KB`));
     else if (d.t === 'audio' && d.a === 'fehler') { eintrag(T(`Aufnahme nicht möglich: ${d.err}`, `Recording not possible: ${d.err}`), true); $('aufnahmeStatus').hidden = true; }
   }
 });
@@ -367,8 +368,7 @@ function zeigeVerbindung() {
   $('senden').disabled = !an;
   $('stickySuchen').disabled = !an;
   $('bestellZeigen').disabled = !an;
-  $('bbAufspielen').disabled = !an;
-  if (an) $('bbAufspielen').disabled = !pdf && !$('spickzettel').value.trim();
+  dokumente?.zeigeVerbindung();
   $('karte').disabled = !an;
   $('simTasten').hidden = !(an && verbindung instanceof SimVerbindung);
   if (!an) $('geraet').textContent = '';
@@ -492,7 +492,7 @@ function geraeteZeigen() {
       // Vor der Weitergabe: auch auf dem Sticky alles Persönliche löschen (Karte /soll und /ist, interner Speicher)
       const z = istAktiv ? zwilling : sitzungen.get(g.id)?.z;
       const kannLeeren = z?.verbunden && baue(istAktiv ? null : sitzungen.get(g.id), () => fwAb('0.31.6'));
-      if (kannLeeren && confirm(T(`Auch ${g.name} selbst leeren? Notizen, Zettel, Bordbuch, Visitenkarte und alles auf der Karte werden dort gelöscht – zum Weitergeben. Danach startet er neu und ist leer.`,
+      if (kannLeeren && confirm(T(`Auch ${g.name} selbst leeren? Notizen, Zettel, Handbücher, Visitenkarte und alles auf der Karte werden dort gelöscht – zum Weitergeben. Danach startet er neu und ist leer.`,
         `Also wipe ${g.name} itself? Notes, lists, logbook, business card and everything on the card are deleted there – for passing it on. It then restarts empty.`))) {
         try {
           const r = await z.leeren();
@@ -902,14 +902,14 @@ async function abgleichKern() {
 }
 
 // ---- Karussell (SPEC „Bedienung und Oberfläche“): Reihe, durch die ▲/▼ am Sticky blättern -------------------------
-const KARUSSELL_STANDARD_DE = 'Home, Timer, Wecker, Weltzeit, Waage, Lineal, Recorder, Tippen, Kritzel, Schrift, Rechner, Umrechner, Bordbuch, Zettel, Spiel, Einstellungen';
-const KARUSSELL_STANDARD_EN = 'Home, Timer, Alarm, World clock, Spirit level, Ruler, Recorder, Type, Doodle, Handwriting, Calculator, Converter, Logbook, List, Game, Settings';
+const KARUSSELL_STANDARD_DE = 'Home, Timer, Wecker, Weltzeit, Waage, Lineal, Recorder, Tippen, Kritzel, Schrift, Rechner, Umrechner, Handbuch, Spickzettel, Zettel, Spiel, Einstellungen';
+const KARUSSELL_STANDARD_EN = 'Home, Timer, Alarm, World clock, Spirit level, Ruler, Recorder, Type, Doodle, Handwriting, Calculator, Converter, Manual, Cheat sheets, List, Game, Settings';
 /** Standard der App-Sprache (beide Fassungen lösen über KARUSSELL_WOERTER gleich auf) */
 const karussellStandard = () => (appIstEn() ? KARUSSELL_STANDARD_EN : KARUSSELL_STANDARD_DE);
-const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'bordbuch', zettel: 'zettel', bestellzettel: 'zettel', kritzel: 'kritzel', kritzelblock: 'kritzel', schrift: 'schrift', strichschrift: 'schrift', app: 'app', spiel: 'app', burgduell: 'app', rechner: 'app', umrechner: 'app', timer: 'widget timer', waage: 'widget waage', wasserwaage: 'widget waage', lineal: 'widget lineal', wecker: 'widget wecker', weltzeit: 'widget weltzeit', einstellungen: 'widget einstellungen', recorder: 'widget recorder', tippen: 'widget tippen', type: 'widget tippen', tastatur: 'widget tippen', keyboard: 'widget tippen',
+const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'handbuch', handbuch: 'handbuch', spickzettel: 'spickzettel', spick: 'spickzettel', zettel: 'zettel', bestellzettel: 'zettel', kritzel: 'kritzel', kritzelblock: 'kritzel', schrift: 'schrift', strichschrift: 'schrift', app: 'app', spiel: 'app', burgduell: 'app', rechner: 'app', umrechner: 'app', timer: 'widget timer', waage: 'widget waage', wasserwaage: 'widget waage', lineal: 'widget lineal', wecker: 'widget wecker', weltzeit: 'widget weltzeit', einstellungen: 'widget einstellungen', recorder: 'widget recorder', tippen: 'widget tippen', type: 'widget tippen', tastatur: 'widget tippen', keyboard: 'widget tippen',
   // englische Eingaben (Anzeige Englisch), intern dieselben deutschen Wörter
   alarm: 'widget wecker', 'world clock': 'widget weltzeit', worldclock: 'widget weltzeit', level: 'widget waage', ruler: 'widget lineal', note: 'notiz', notes: 'notiz', scribble: 'kritzel', doodle: 'kritzel', 'spirit level': 'widget waage', handwriting: 'schrift',
-  calculator: 'app', converter: 'app', logbook: 'bordbuch', list: 'zettel', lists: 'zettel', game: 'app', settings: 'widget einstellungen' };
+  calculator: 'app', converter: 'app', logbook: 'handbuch', manual: 'handbuch', manuals: 'handbuch', 'cheat sheets': 'spickzettel', 'cheat sheet': 'spickzettel', list: 'zettel', lists: 'zettel', game: 'app', settings: 'widget einstellungen' };
 /** englische Wörter, die ab FW 0.28.0 zu eigenen Widgets werden (wie rechner/umrechner) */
 const KARUSSELL_LOKAL = { rechner: 'rechner', umrechner: 'umrechner', calculator: 'rechner', converter: 'umrechner' };
 function karussellText() {
@@ -917,14 +917,16 @@ function karussellText() {
   const lokal = fwAb('0.28.0'), wort = (w) => (lokal && KARUSSELL_LOKAL[w] ? `widget ${KARUSSELL_LOKAL[w]}` : KARUSSELL_WOERTER[w]);
   const roh = (localStorage.getItem(schluessel('karussell')) || karussellStandard()).split(/[,;\n]/).map((w) => wort(w.trim().toLowerCase())).filter(Boolean)
     .filter((e) => e !== 'widget recorder' || fwAb('0.34.0'))   // Recorder erst ab FW 0.34.0
-    .filter((e) => e !== 'widget tippen' || fwAb('0.37.0'));    // Tippen erst ab FW 0.37.0
+    .filter((e) => e !== 'widget tippen' || fwAb('0.37.0'))     // Tippen erst ab FW 0.37.0
+    .flatMap((e) => (fwAb('0.38.0') || !['handbuch', 'spickzettel'].includes(e) ? [e] : e === 'handbuch' ? ['bordbuch'] : []));   // vorher: Bordbuch
   return [...new Set(roh)].join('\n') + '\n';
 }
 /** Tastenhilfe je Modus (▲+▼ am Sticky): auf eigener Leinwand rendern, damit die Vorschau bleibt, wie sie ist */
 function hilfeDateien() {
   const c = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(BREITE, HOEHE) : Object.assign(document.createElement('canvas'), { width: BREITE, height: HOEHE });
   const h = c.getContext('2d', { willReadFrequently: true });
-  return Object.entries(HILFE).map(([modus, seite]) => {
+  const neu = fwAb('0.38.0');   // Handbuch und Spickzettel statt Bordbuch
+  return Object.entries(HILFE).filter(([m]) => (m === 'bordbuch' ? !neu : ['handbuch', 'spick'].includes(m) ? neu : true)).map(([modus, seite]) => {
     bb.zeichneTextseite(h, seite, T('▲+▼ = Hilfe', '▲+▼ = Help'));
     return { n: `${modus}.bin`, daten: rgbaZu1bpp(h.getImageData(0, 0, BREITE, HOEHE).data) };
   }).concat(fwAb('0.27.0') ? [{ n: 'schrift.bin', daten: schriftHilfe() }] : []);   // Alphabet als Spickzettel
@@ -953,6 +955,7 @@ async function karussellAufspielen() {
   if (n) eintrag(`${T('Karussell', 'Carousel')}: ${karussellText().trim().split('\n').join(' → ')}`);
   // Menü-Kacheln folgen dem Karussell (FW ≥ 0.19.0) und dem anderen Firmware-Platz (Kachel „Sticky Lab“, FW ≥ 0.33.0)
   if ((n | platzGeaendert()) && fwAb('0.19.0')) for (const [name, bauen] of Object.entries(widgetBauer())) if (name.startsWith('menue')) await zwilling.sollAbgleich(`widgets/${name}`, bauen());
+  if (n && fwAb('0.38.0')) await dokumente.aufspielen({ leicht: true });   // Reiter tragen Karussell-Indizes
 }
 // ---- Lage der Seiten (SPEC „Hoch/Quer in zwei Stufen“, Stufe 1, FW ≥ 0.21.0) -------------------------------------
 function lagen() {
@@ -1090,6 +1093,15 @@ function karussellEintraegeRoh() {   // ohne Firmware-Filter, damit die Liste al
     if (!alt) return;
     const w = alt.split(/[,;\n]/).map((x) => x.trim()).filter((x) => x && !['notiz', 'note', 'notes'].includes(x.toLowerCase()));
     localStorage.setItem(k, w.join(', '));
+  } catch { /* egal */ }
+})();
+// Einmalig (Dokumente, 15.11.2026): „Bordbuch“ in eigenen Listen wird „Handbuch, Spickzettel“
+(function bordbuchTeilen() {
+  try {
+    const k = schluessel('karussell'), merk = schluessel('karussellDokumente'), alt = localStorage.getItem(k);
+    if (localStorage.getItem(merk)) return;
+    localStorage.setItem(merk, '1');
+    if (alt) localStorage.setItem(k, karussellOhneBordbuch(alt, appIstEn()));
   } catch { /* egal */ }
 })();
 let karussellZ = null;
@@ -1451,110 +1463,20 @@ $('notizenTeilen').onclick = async () => {
 };
 notizen.heute().then((l) => l.reverse().forEach((n) => zeigeNotiz(n)));
 
-// ---- Bordbuch (SPEC „MVP 2“) --------------------------------------------------------
-let imBordbuch = false;
-let pdf = null;
+// ---- Dokumente (SPEC „Dokumente …“, 15.11.2026; bis dahin Bordbuch): Handbücher und Spickzettel, dokumenteSeite.js -------
 try { $('spickzettel').value = localStorage.getItem(schluessel('spickzettel')) || bb.SPICKZETTEL_STANDARD; } catch { $('spickzettel').value = bb.SPICKZETTEL_STANDARD; }
 $('spickzettel').onchange = () => { try { localStorage.setItem(schluessel('spickzettel'), $('spickzettel').value); } catch { /* egal */ } };
 $('spickStandard').onclick = () => { $('spickzettel').value = bb.SPICKZETTEL_STANDARD; $('spickzettel').onchange(); };
-try { $('handgriffe').value = localStorage.getItem(schluessel('handgriffe')) ?? HANDGRIFFE_STANDARD; } catch { $('handgriffe').value = HANDGRIFFE_STANDARD; }
-$('handgriffe').onchange = () => { try { localStorage.setItem(schluessel('handgriffe'), $('handgriffe').value); } catch { /* egal */ } };
-$('handgriffeStandard').onclick = () => { $('handgriffe').value = HANDGRIFFE_STANDARD; $('handgriffe').onchange(); };
-/** Spickzettel und Handgriffe zusammen, in dieser Reihenfolge (Bordbuch und Vorschau nutzen dieselbe Liste) */
-const spickSeiten = () => [...bb.spickzettelSeiten($('spickzettel').value), ...bb.spickzettelSeiten($('handgriffe').value)];
-
-async function ladePdf(bytes, name) {
-  pdf = await bb.oeffnePdf(bytes);
-  $('pdfName').textContent = `${name} · ${pdf.numPages} ${T('Seiten', 'pages')}`;
-  zeigeVerbindung();
-}
-$('pdfDatei').onchange = async (e) => {
-  const f = e.target.files[0];
-  if (!f) return;
-  const bytes = new Uint8Array(await f.arrayBuffer());
-  await ladePdf(bytes, f.name);
-  // Für den nächsten Start merken (App-Speicher, nicht im Repo)
-  if (nativ) {
-    let bin = '';
-    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-    Filesystem.writeFile({ path: 'bordbuch/handbuch.pdf', data: btoa(bin), directory: Directory.Data, recursive: true }).catch(() => {});
-  }
-};
-// Gemerktes Handbuch laden (bzw. per adb nach files/bordbuch/handbuch.pdf gelegt)
-if (nativ) {
-  Filesystem.readFile({ path: 'bordbuch/handbuch.pdf', directory: Directory.Data })
-    .then((d) => ladePdf(Uint8Array.from(atob(d.data), (c) => c.charCodeAt(0)), 'handbuch.pdf'))
-    .catch(() => {});
-}
-
-/** Alle Bildschirme erzeugen: [Inhalt, Spickzettel…, Handbuch-Ausschnitte…] → { seiten: Uint8Array[], index } */
-async function bordbuchBauen(status) {
-  const spick = spickSeiten();
-  const hb = [];        // { bytes, pdfSeite }
-  const ersteVon = {};  // PDF-Seite → Bildschirm-Index (relativ)
-  if (pdf) {
-    for (let p = 1; p <= pdf.numPages; p++) {
-      status(T(`Handbuch rendern: Seite ${p} von ${pdf.numPages}`, `Rendering manual: page ${p} of ${pdf.numPages}`));
-      const teile = await bb.pdfAusschnitte(pdf, p);
-      teile.forEach((t, i) => {
-        ersteVon[p] ??= hb.length;
-        hb.push({ bytes: bb.dithern(bb.marke(t.daten, `${T('S.', 'p.')} ${p} · ${i + 1}/${teile.length}`).data), pdfSeite: p, teil: i, von: teile.length });
-      });
-    }
-  }
-  const nSpick = spick.length;
-  const start = 1 + nSpick;   // erster Handbuch-Bildschirm
-  const gesamt = start + hb.length;
-  const kap = pdf ? (await bb.kapitel(pdf)).filter((k) => ersteVon[k.seite] != null).slice(0, 14) : [];
-  const links = spick.map((s, i) => ({ titel: s.titel, seite: 1 + i }));
-  const rechts = kap.map((k) => ({ titel: k.titel, seite: start + ersteVon[k.seite], anzeige: k.seite }));
-  const seiten = [];
-  const felder = bb.zeichneInhalt(g, links, rechts);
-  seiten.push(bildBytes());
-  spick.forEach((s, i) => { bb.zeichneTextseite(g, s, `${T('Spickzettel', 'Cheat sheet')} ${i + 1}/${nSpick} · ${2 + i}/${gesamt}`); seiten.push(bildBytes()); });
-  for (const h of hb) seiten.push(h.bytes);
-  const index = [`seiten=${seiten.length}`, 'toc=0', ...felder.map((f) => `e ${f.x0} ${f.y0} ${f.x1} ${f.y1} ${f.seite}`)].join('\n') + '\n';
-  // Plan für die Vorschau merken: welche Seite ist was (die Bilder rendert der Spiegel bei Bedarf neu)
-  const plan = { links, rechts, felder, seiten: [{ a: 'inhalt' }, ...spick.map((_, i) => ({ a: 'spick', i, n: nSpick, von: gesamt })), ...hb.map((h) => ({ a: 'pdf', p: h.pdfSeite, t: h.teil, n: h.von }))] };
-  try { localStorage.setItem(schluessel('bbplan'), JSON.stringify(plan)); } catch { /* egal */ }
-  bb.zeichneInhalt(g, links, rechts);   // Vorschau zeigt am Ende das Inhaltsverzeichnis
-  pruefeAbgleich();
-  return { seiten, index };
-}
-
-$('bbAufspielen').onclick = async () => {
-  const knopf = $('bbAufspielen');
-  knopf.disabled = true;
-  const status = (t) => { $('bbStatus').textContent = t; };
-  const t0 = performance.now();
-  try {
-    const { seiten, index } = await fuerSticky(() => bordbuchBauen(status));   // Rahmentexte in der Sprache des Sticky
-    if (seiten.length > 255) throw new Error(T(`Zu viele Seiten (${seiten.length}, höchstens 255)`, `Too many pages (${seiten.length}, at most 255)`));
-    if (fwAb('0.11.0')) {
-      // Auf die Karte: nur geänderte Seiten, der Index zuletzt (er lässt den Sticky neu einlesen)
-      const dateien = seiten.map((b, i) => ({ n: `${String(i).padStart(2, '0')}.bin`, daten: b }));
-      dateien.push({ n: 'index.txt', daten: new TextEncoder().encode(index) });
-      const n = await zwilling.sollAbgleich('bordbuch', dateien, (i, von, name) => status(T(`Aufspielen: ${name} (${i} von ${von} geänderten) …`, `Uploading: ${name} (${i} of ${von} changed) …`)));
-      eintrag(T(`Bordbuch: ${n} von ${dateien.length} Dateien neu`, `Logbook: ${n} of ${dateien.length} files new`));
-    } else {
-      for (let i = 0; i < seiten.length; i++) {
-        status(T(`Aufspielen: Seite ${i + 1} von ${seiten.length} …`, `Uploading: page ${i + 1} of ${seiten.length} …`));
-        await zwilling.sendeBild(seiten[i], { speichern: i });
-      }
-      await zwilling.bordbuchIndex(index);
-    }
-    const s = Math.round((performance.now() - t0) / 1000);
-    status(T(`Bordbuch aufgespielt: ${seiten.length} Seiten in ${s} s`, `Logbook uploaded: ${seiten.length} pages in ${s} s`));
-    eintrag(T(`Bordbuch aufgespielt (${seiten.length} Seiten, ${s} s)`, `Logbook uploaded (${seiten.length} pages, ${s} s)`));
-    console.info('[sticky] bordbuch', JSON.stringify({ seiten: seiten.length, sekunden: s }));
-  } catch (e) {
-    status(T(`Fehler: ${e.message}`, `Error: ${e.message}`));
-    eintrag(T(`Bordbuch: ${e.message}`, `Logbook: ${e.message}`), true);
-  } finally {
-    knopf.disabled = !zwilling.verbunden;
-  }
-};
-window.__sticky = { ladePdf, zwilling, spiegelSetze: (t) => spiegelSetze(t), pufferAbholen, fahrtenschreiberAbholen, erkenne, sprachPruefung, zeigeNotiz, notizen };   // zum Prüfen per WebView-Fernsteuerung (adb)
+const dokumente = dokumenteEinrichten({
+  $, zwilling, eintrag, fwAb, schluessel, nativ,
+  // Reiter der Gruppe „Nachschlagen“ auf Bibliothek, Inhaltsverzeichnis und Spickzettel (Karussell-Indizes wie im Menü)
+  reiter: (e) => {
+    if (!fwAb('0.36.0')) return null;
+    const r = reiterFuerEintrag(e, karussellText().trim().split('\n'));
+    return r ? { aktiv: r.aktiv, glieder: r.glieder.map((x) => ({ i: x.i, name: fuerSticky(() => kachelName(x.e)) })) } : null;
+  },
+});
+window.__sticky = { zwilling, spiegelSetze: (t) => spiegelSetze(t), pufferAbholen, fahrtenschreiberAbholen, erkenne, sprachPruefung, zeigeNotiz, notizen, dokumente };   // zum Prüfen per WebView-Fernsteuerung (adb)
 
 try { $('woerter').value = localStorage.getItem(schluessel('woerter')) ?? WOERTER_STANDARD; } catch { $('woerter').value = WOERTER_STANDARD; }
 $('woerter').onchange = () => { try { localStorage.setItem(schluessel('woerter'), $('woerter').value); } catch { /* egal */ } };
@@ -1562,28 +1484,6 @@ try { $('woerterbuch').value = localStorage.getItem(schluessel('woerterbuch')) ?
 $('woerterbuch').onchange = () => { try { localStorage.setItem(schluessel('woerterbuch'), $('woerterbuch').value); } catch { /* egal */ } };
 
 // ---- Spiegel: Vorschau folgt dem Sticky, Tipps und ▲▼ steuern ihn ----------------------
-const bbCache = new Map();
-async function bordbuchSeite(n) {
-  let plan = null;
-  try { plan = JSON.parse(localStorage.getItem(schluessel('bbplan')) || 'null'); } catch { /* egal */ }
-  const e = plan?.seiten?.[n];
-  if (!e) return null;
-  if (bbCache.has(n)) return bbCache.get(n);
-  const c = document.createElement('canvas');
-  c.width = BREITE; c.height = HOEHE;
-  const h = c.getContext('2d', { willReadFrequently: true });
-  let bild = null;
-  if (e.a === 'inhalt') { fuerSticky(() => bb.zeichneInhalt(h, plan.links, plan.rechts)); bild = h.getImageData(0, 0, BREITE, HOEHE); }
-  else if (e.a === 'spick') {
-    const s = spickSeiten()[e.i];
-    if (s) { fuerSticky(() => bb.zeichneTextseite(h, s, `${T('Spickzettel', 'Cheat sheet')} ${e.i + 1}/${e.n} · ${n + 1}/${e.von}`)); bild = h.getImageData(0, 0, BREITE, HOEHE); }
-  } else if (e.a === 'pdf' && pdf) {
-    const teile = await bb.pdfAusschnitte(pdf, e.p);
-    if (teile[e.t]) bild = fuerSticky(() => bb.marke(teile[e.t].daten, `${T('S.', 'p.')} ${e.p} · ${e.t + 1}/${teile.length}`));
-  }
-  if (bild) { bbCache.set(n, bild); if (bbCache.size > 12) bbCache.delete(bbCache.keys().next().value); }
-  return bild;
-}
 const spiegel = spiegelEinrichten({
   canvas: $('spiegel'),
   hinweisEl: $('spiegelHinweis'),
@@ -1592,14 +1492,12 @@ const spiegel = spiegelEinrichten({
     wetter: letztesWetter,
     zettelText: () => $('zettelText').value,
     alleZettel,
-    bordbuchSeite,
     karte: () => karteFuer(aktivesGeraet(), KARTE),
     widgetBild: (name, hoch) => {
       const f = widgetFunktionen()[name];
       return f ? f(hoch).find((d) => d.n === 'bild.bin')?.daten : null;
     },
     schriftBild: () => schriftHintergrund(),
-    inhaltsFelder: () => { try { return JSON.parse(localStorage.getItem(schluessel('bbplan')) || 'null')?.felder ?? []; } catch { return []; } },
   },
   befehl: (m, seite) => { if (zwilling.verbunden) zwilling.modusSetzen(m, seite).catch((e) => eintrag(e.message, true)); },
   notizTipp: (x, y) => fahrtTouch(x, y),

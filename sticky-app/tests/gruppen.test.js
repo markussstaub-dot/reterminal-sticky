@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { menueKacheln, kachelAktion, reiterFuer } from '../src/gruppen.js';
+import { menueKacheln, kachelAktion, reiterFuer, reiterFuerEintrag } from '../src/gruppen.js';
 
 const STANDARD = ['home', 'widget timer', 'widget wecker', 'widget weltzeit', 'widget waage', 'widget lineal', 'notiz', 'widget recorder',
-  'kritzel', 'schrift', 'widget rechner', 'widget umrechner', 'bordbuch', 'zettel', 'app', 'widget einstellungen'];
+  'kritzel', 'schrift', 'widget rechner', 'widget umrechner', 'handbuch', 'spickzettel', 'zettel', 'app', 'widget einstellungen'];
 
 test('Standard-Karussell ergibt 8 Kacheln in Karussell-Reihenfolge', () => {
   const k = menueKacheln(STANDARD);
@@ -47,4 +47,14 @@ test('Tippen (FW 0.37.0): steht in Notieren hinter dem Recorder; Ziffern und Spr
   assert.equal(r.aktiv, 1);
   assert.deepEqual(reiterFuer('tippen-zf', e), r);
   assert.deepEqual(reiterFuer('tippen-sp', e), r);
+});
+
+test('Nachschlagen (FW 0.38.0): Handbuch · Spickzettel · Zettel, Reiter auch für Nicht-Widgets', () => {
+  const k = menueKacheln(STANDARD).find((x) => x.gruppe?.id === 'nachschlagen');
+  assert.deepEqual(k.glieder.map((x) => x.e), ['handbuch', 'spickzettel', 'zettel']);
+  assert.equal(kachelAktion(k), `gruppe ${(1 << 12) | (1 << 13) | (1 << 14)}`);
+  const r = reiterFuerEintrag('spickzettel', STANDARD);
+  assert.deepEqual(r.glieder.map((x) => x.i), [12, 13, 14]);
+  assert.equal(r.aktiv, 1);
+  assert.equal(reiterFuerEintrag('handbuch', ['home', 'handbuch']), null);
 });

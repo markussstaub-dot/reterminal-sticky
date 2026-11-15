@@ -4,6 +4,7 @@ import { rahmenStart, rahmenDaten, rahmenEnde, rahmenKarte, rahmenWach, nutzlast
   rahmenListe, rahmenHolen, rahmenLoeschen, rahmenLeeren, rahmenSchreibStart, rahmenSchreibDaten, rahmenSchreibEnde } from './protokoll.js';
 import { Aufnahme, wav } from './audio.js';
 import { T } from './uebersetzen.js';
+import { umbenennenPlan } from './dokumente.js';
 
 /** PackBits entpacken: Kopf k < 128 → k + 1 Bytes wörtlich, k > 128 → nächstes Byte 257 − k mal */
 export function entpacken(p, n) {
@@ -231,7 +232,8 @@ export class Zwilling {
    * Der Sticky führt /soll/<ordner>/stand.txt („name crc“ je Zeile) als Bestandsliste; geschrieben wird nur, was sich
    * unterscheidet, Überzähliges wird gelöscht, stand.txt kommt zum Schluss. → Anzahl geschriebener Dateien
    */
-  async sollAbgleich(ordner, dateien, fortschritt = () => {}) {
+  /** Bestand eines Soll-Ordners: { liste (LISTE), alt: { name: crc } aus stand.txt, nur für Dateien, die wirklich da sind } */
+  async sollStand(ordner) {
     const basis = `/soll/${ordner}`;
     const liste = await this.liste(basis).catch(() => []);
     const standDatei = liste.find((d) => d.n === 'stand.txt');
@@ -240,18 +242,51 @@ export class Zwilling {
       const text = new TextDecoder().decode(await this.holen(`${basis}/stand.txt`, standDatei.b));
       for (const z of text.split('\n')) { const [n, c] = z.trim().split(' '); if (n && c) alt[n] = c; }
     }
+    const da = new Set(liste.map((d) => d.n));
+    for (const n of Object.keys(alt)) if (!da.has(n)) delete alt[n];
+    return { liste, alt };
+  }
+
+  /**
+   * Soll-Ordner abgleichen: `dateien` = [{ n, daten }] in der gewünschten Reihenfolge (Auslöser wie version.txt zuletzt).
+   * Ein Eintrag darf statt `daten` nur `crc` tragen (Datei liegt schon drüben, z. B. eine Handbuch-Seite beim leichten
+   * Aufspielen); fehlt sie dort, wirft der Abgleich {fehlt: true}.
+   * umbenennen (FW ≥ 0.38.0): liegt ein Inhalt schon unter anderem Namen auf der Karte, benennt der Sticky ihn um
+   * (<ordner>/umbenennen.txt), statt ihn neu zu übertragen – wichtig, wenn sich Seiten nur verschieben.
+   * Der Sticky führt /soll/<ordner>/stand.txt („name crc“ je Zeile) als Bestandsliste; geschrieben wird nur, was sich
+   * unterscheidet, Überzähliges wird gelöscht, stand.txt kommt zum Schluss. → Anzahl geschriebener Dateien
+   */
+  async sollAbgleich(ordner, dateien, fortschritt = () => {}, { umbenennen = false } = {}) {
+    const basis = `/soll/${ordner}`;
+    let { liste, alt } = await this.sollStand(ordner);
     const vorhanden = new Set(liste.map((d) => d.n));
-    const neu = dateien.map((d) => ({ ...d, crc: crc32(d.daten).toString(16).padStart(8, '0') }));
+    const neu = dateien.map((d) => ({ ...d, crc: d.crc ?? crc32(d.daten).toString(16).padStart(8, '0') }));
+    const enc = new TextEncoder();
+    const standSchreiben = (stand) => this.schreibeDatei(`${basis}/stand.txt`, enc.encode(Object.entries(stand).map(([n, c]) => `${n} ${c}`).join('\n') + '\n'));
+    if (umbenennen) {
+      const paare = umbenennenPlan(alt, neu);
+      if (paare.length) {
+        fortschritt(0, paare.length, T(`${paare.length} Dateien umbenennen`, `renaming ${paare.length} files`));
+        await this.schreibeDatei(`${basis}/umbenennen.txt`, enc.encode(paare.map(([a, b]) => `${a} ${b}`).join('\n') + '\n'));
+        const stand = { ...alt };
+        for (const [a] of paare) { delete stand[a]; vorhanden.delete(a); }
+        for (const [a, b] of paare) { stand[b] = alt[a]; vorhanden.add(b); }
+        alt = stand;
+        await standSchreiben(alt);   // gleich festhalten: bricht es danach ab, stimmt der Bestand trotzdem
+      }
+    }
     const zuSchreiben = neu.filter((d) => alt[d.n] !== d.crc || !vorhanden.has(d.n));
+    const fehlt = zuSchreiben.find((d) => !d.daten);
+    if (fehlt) throw Object.assign(new Error(T(`${basis}/${fehlt.n} fehlt auf dem Sticky`, `${basis}/${fehlt.n} missing on the Sticky`)), { fehlt: true });
     let i = 0;
     for (const d of zuSchreiben) {
       fortschritt(++i, zuSchreiben.length, d.n);
       await this.schreibeDatei(`${basis}/${d.n}`, d.daten);
     }
     const namen = new Set(neu.map((d) => d.n));
-    for (const d of liste) if (!d.ordner && d.n !== 'stand.txt' && !namen.has(d.n)) await this.loeschen(`${basis}/${d.n}`);
-    if (zuSchreiben.length || Object.keys(alt).length !== neu.length) {
-      await this.schreibeDatei(`${basis}/stand.txt`, new TextEncoder().encode(neu.map((d) => `${d.n} ${d.crc}`).join('\n') + '\n'));
+    for (const n of vorhanden) if (n !== 'stand.txt' && !namen.has(n) && !liste.find((d) => d.n === n && d.ordner)) await this.loeschen(`${basis}/${n}`);
+    if (zuSchreiben.length || Object.keys(alt).length !== neu.length || neu.some((d) => alt[d.n] !== d.crc)) {
+      await standSchreiben(Object.fromEntries(neu.map((d) => [d.n, d.crc])));
     }
     return zuSchreiben.length;
   }

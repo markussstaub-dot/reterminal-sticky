@@ -94,21 +94,19 @@ export function spiegelEinrichten({ canvas, hinweisEl, quelle, befehl, notizTipp
     } else if (m === 'bestell') {
       const g = ziel(BREITE, HOEHE);
       fuerSticky(() => { const liste = quelle.alleZettel(); (liste[z.zettel] ?? liste[0])?.zeichne(g); });
-    } else if (m === 'bordbuch') {
+    } else if (m === 'bordbuch' || m === 'handbuch' || m === 'spick') {
+      // Handbuch und Spickzettel (FW ≥ 0.38.0, vorher Bordbuch): die Vorschau ist das Bildschirmfoto vom Sticky;
+      // ohne Verbindung nur der Name
       const g = ziel(BREITE, HOEHE);
-      const bild = await quelle.bordbuchSeite(z.bb);   // ImageData oder null
-      if (nr !== zeichnet) return;                       // inzwischen weitergeblättert
-      if (bild) g.putImageData(bild, 0, 0);
-      else {
-        g.fillStyle = '#fff';
-        g.fillRect(0, 0, BREITE, HOEHE);
-        g.fillStyle = '#000';
-        g.font = 'bold 34px system-ui, sans-serif';
-        g.textAlign = 'center';
-        g.fillText(T(`Bordbuch · Seite ${z.bb + 1}`, `Logbook · page ${z.bb + 1}`), BREITE / 2, HOEHE / 2 - 10);
-        g.font = '22px system-ui, sans-serif';
-        g.fillText(T('(Vorschau entsteht beim nächsten „Bordbuch aufspielen“)', '(preview appears with the next logbook upload)'),BREITE / 2, HOEHE / 2 + 30);
-      }
+      g.fillStyle = '#fff';
+      g.fillRect(0, 0, BREITE, HOEHE);
+      g.fillStyle = '#000';
+      g.font = 'bold 34px system-ui, sans-serif';
+      g.textAlign = 'center';
+      g.fillText(m === 'spick' ? T(`Spickzettel · Karte ${z.bb + 1}`, `Cheat sheets · card ${z.bb + 1}`)
+        : m === 'handbuch' ? T('Handbuch', 'Manual') : T(`Bordbuch · Seite ${z.bb + 1}`, `Logbook · page ${z.bb + 1}`), BREITE / 2, HOEHE / 2 - 10);
+      g.font = '22px system-ui, sans-serif';
+      g.fillText(T('(Bild kommt vom Sticky, sobald er verbunden ist)', '(the image comes from the Sticky once connected)'), BREITE / 2, HOEHE / 2 + 30);
     } else {
       // Widgets (Menü, Timer, …), Strichschrift, Kritzelblock, App-Seite: in der gemeldeten Lage (FW ≥ 0.31.2)
       const hoch = !!z.lh;
@@ -124,7 +122,8 @@ export function spiegelEinrichten({ canvas, hinweisEl, quelle, befehl, notizTipp
         g.fillText(m ? (m === 'widget' ? widgetName(z.w) ?? 'Widget' : seitenName(m) ?? m) : T('Sticky noch nicht verbunden', 'Sticky not connected yet'),g.canvas.width / 2, g.canvas.height / 2);
       }
     }
-    const was = { bordbuch: T(`Bordbuch, Seite ${z.bb + 1}`, `Logbook, page ${z.bb + 1}`), bestell: T(`Zettel ${z.zettel + 1}`, `Card ${z.zettel + 1}`),
+    const was = { bordbuch: T(`Bordbuch, Seite ${z.bb + 1}`, `Logbook, page ${z.bb + 1}`), handbuch: z.bb < 0 ? T('Handbuch, Bibliothek', 'Manual, library') : T(`Handbuch, Bildschirm ${z.bb + 1}`, `Manual, screen ${z.bb + 1}`),
+      spick: T(`Spickzettel, Karte ${z.bb + 1}`, `Cheat sheets, card ${z.bb + 1}`), bestell: T(`Zettel ${z.zettel + 1}`, `Card ${z.zettel + 1}`),
       widget: widgetName(z.w) ?? (z.w || 'Widget') }[m] ?? seitenName(m) ?? '–';
     const zusatz = z.foto && !z.fotoAlt ? '' : z.fotoAlt ? T(' (Bild kommt)', ' (image on its way)') : m === 'widget' || m === 'schrift' ? T(' (Grundbild)', ' (background)') : '';
     hinweisEl.textContent = z.verbunden ? `${T('Sticky zeigt', 'Sticky shows')}: ${was}${zusatz}` : T('nicht verbunden (letzter Stand)', 'not connected (last state)');
@@ -141,9 +140,6 @@ export function spiegelEinrichten({ canvas, hinweisEl, quelle, befehl, notizTipp
     if (z.modus === 'notiz') {
       const d = vonHochkant(px, py);
       notizTipp(d.x, d.y);
-    } else if (z.modus === 'bordbuch' && z.bb === 0) {
-      const f = quelle.inhaltsFelder().find((f) => px >= f.x0 && px < f.x1 && py >= f.y0 && py < f.y1);
-      if (f) befehl(1, f.seite);
     }
   });
 
@@ -168,7 +164,9 @@ export function spiegelEinrichten({ canvas, hinweisEl, quelle, befehl, notizTipp
     },
     /** ▲ / ▼ wie am Sticky */
     taste(k) {
-      if (z.modus === 'bordbuch') befehl(1, Math.max(0, z.bb + (k === 'down' ? 1 : -1)));
+      const n = Math.min(255, Math.max(0, z.bb + (k === 'down' ? 1 : -1)));   // Befehl 0x14 trägt die Seite als Byte
+      if (z.modus === 'bordbuch' || z.modus === 'handbuch') { if (z.bb >= 0) befehl(1, n); }   // Bibliothek: nichts zu blättern
+      else if (z.modus === 'spick') befehl(8, n);
       else if (z.modus === 'bestell') {
         const n = Math.max(1, quelle.alleZettel().length);
         befehl(3, (z.zettel + (k === 'down' ? 1 : n - 1)) % n);

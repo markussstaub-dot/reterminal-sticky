@@ -8,7 +8,8 @@ export const GRUPPEN = [
   { id: 'messen', de: 'Messen', en: 'Measure', glieder: ['widget waage', 'widget lineal'] },
   { id: 'notieren', de: 'Notieren', en: 'Capture', glieder: ['widget recorder', 'widget tippen', 'kritzel', 'schrift', 'notiz'] },   // Notiz-Knopfseite nur noch per Häkchen
   { id: 'rechnen', de: 'Rechnen', en: 'Calculate', glieder: ['widget rechner', 'widget umrechner'] },
-  { id: 'nachschlagen', de: 'Nachschlagen', en: 'Look up', glieder: ['bordbuch', 'zettel'] },
+  // Dokumente (15.11.2026): das Bordbuch ist in Handbuch und Spickzettel aufgegangen (FW ≥ 0.38.0)
+  { id: 'nachschlagen', de: 'Nachschlagen', en: 'Look up', glieder: ['handbuch', 'spickzettel', 'zettel'] },
 ];
 
 const gruppeVon = (e) => GRUPPEN.find((g) => g.glieder.includes(e)) ?? null;
@@ -42,7 +43,11 @@ export function kachelAktion(k) {
  * null, wenn das Widget in keiner Gruppe mit mindestens zwei vorhandenen Gliedern steckt.
  */
 export function reiterFuer(name, eintraege) {
-  const e = `widget ${name.replace(/-(us|h)$/, '').replace(/-(us|h)$/, '').replace(/^tippen-(zf|sp)$/, 'tippen')}`;   // Arten der Tippen-Seite
+  return reiterFuerEintrag(`widget ${name.replace(/-(us|h)$/, '').replace(/-(us|h)$/, '').replace(/^tippen-(zf|sp)$/, 'tippen')}`, eintraege);   // Arten der Tippen-Seite
+}
+
+/** Reiter für einen Karussell-Eintrag (z. B. „handbuch“, „spickzettel“, „widget timer“) → wie reiterFuer */
+export function reiterFuerEintrag(e, eintraege) {
   const g = gruppeVon(e);
   if (!g || !eintraege.includes(e)) return null;
   const glieder = g.glieder.map((x) => ({ e: x, i: eintraege.indexOf(x) })).filter((x) => x.i >= 0);
