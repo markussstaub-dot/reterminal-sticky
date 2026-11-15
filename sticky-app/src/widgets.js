@@ -138,8 +138,9 @@ export function timerWidget(hoch = false) {
   ];
 }
 
-/** Seiten, die nur mit verbundenem Handy gehen (SPEC „Blick von außen“, 15.11.2026): Kachel bekommt ein Handy-Zeichen */
-const NUR_MIT_HANDY = new Set(['app']);
+/** Seiten, die nur mit verbundenem Handy gehen (SPEC „Blick von außen“, 15.11.2026): Kachel bekommt ein Handy-Zeichen.
+ *  Leer seit FW 0.39.0: „Spiel“ läuft ohne Handy als lokales Burgduell, nur das Duell zweier Stickys braucht die App. */
+const NUR_MIT_HANDY = new Set([]);
 /** kleines Handy (18 × 28 px) oben rechts in der Kachel */
 function handyZeichen(g, x, y) {
   g.save();

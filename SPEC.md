@@ -538,6 +538,19 @@ Was der Sticky als Immer-dabei-Helfer noch können könnte, sortiert nach Aufwan
     West am aktiven, Ost am Hintergrund-Sticky, nur wer am Zug ist, darf tippen, jedes Bild geht an beide. Dazu
     **Computer gegen Computer** (`__sticky.maschinenDuell()`, gleicher Computer-Spieler, Münzwurf entscheidet den Anfang):
     erstes Spiel 5695 gegen 559D, 5695 gewann nach knapp 3 min. „180° gedreht“ gilt jetzt je Gerät statt je Profil
+  - **Burgduell lokal (FW 0.39.0, 15.11.2026, Markus: „Ballerburg ist Pflicht, auch ohne Handy“):** der Sticky rechnet
+    selbst, übernommen aus dem Sticky Lab (Station 9, `firmware-ble/burgduell.h`). Karussell-Eintrag „Spiel“: **ohne Handy
+    beim Betreten lokales Burgduell, mit Handy die App-Seite wie bisher** (Computer-Gegner der App, Duell zweier
+    Stickys). Entschieden beim Betreten und bis zum Verlassen fest; geht das Handy mitten im App-Spiel weg, wechselt der
+    Sticky ins lokale Spiel, kommt es während des lokalen Spiels, bleibt es lokal (Modus meldet „spiel“, die App
+    zeichnet nicht drüber). Warum so und nicht „lokal immer, Duell als Knopf“: das Zwei-Sticky-Duell lebt komplett in der
+    App (Zustand, Abwechseln, beide Bilder); ein Knopf im lokalen Spiel müsste den Spielstand an die App übergeben oder
+    verwerfen, und mit Handy hat die App-Seite ohnehin den besseren Gegner. Spielstand bleibt im RAM, Zurückkommen
+    setzt fort. Bedienung wie im Lab: Tippen ins Feld zielt (Richtung/Abstand = Winkel/Pulver), runde Regler ±5,
+    Doppelring „Feuer“, ▲/▼ kurz = Winkel ±3°, Pille unten links „gegen Sticky“ (Standard) / „2 Spieler“; EDC-Tasten
+    bleiben (KI kurz Home, KI halten Diktat, ▲/▼ 1 s Karussell). Zeichnen in ein 1-bpp-Sprite → imgBuf, damit
+    Statuszeile, Hilfe (`hilfe/burgduell.bin`, ▲+▼) und 180°-Drehung wie überall gehen; je Zug ein Teil-Refresh,
+    neues Spiel Voll-Refresh. Immer quer (Lage „app“ gilt nur für die App-Seite)
   - Nur Idee (Markus, 14.11.2026): **wenn Spiele, dann richtig**: auch Weltraum-Felsen-Ballern und Städte-Verteidigung
     (Raketen abfangen) im Stil der Arcade-Zeit, eigene Namen und Grafik. Haken E-Paper: Teil-Refresh ~0,3–0,75 s, also
     2–3 Bilder/s mit Geisterbildern. Vorschlag: bewusst langsame Fassungen („Zeitlupen-Arcade“: Welt bewegt sich nur
@@ -871,10 +884,13 @@ Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzu
   Rückmeldung, Hilfe
 - **Blick von außen** (Markus, 15.11.2026): was geht ohne Handy? Fast alles: Widgets, Notiz/Diktat/Kritzel/Schrift
   (gepuffert), Bordbuch, Zettel. Nur **Spiel** braucht das Handy (rechnet die App), dazu Benachrichtigungen;
-  Wetter auf Home veraltet still
-  - fest (umgesetzt FW 0.31.8): **Handy-Zeichen auf Menü-Kacheln**, die nur verbunden gehen (heute: Spiel)
-  - fest (umgesetzt FW 0.31.8): **Hinweisseite statt stummem Rücksprung**: Spiel ohne Verbindung zeigt „braucht das
-    Handy“, KI = Home
+  Wetter auf Home veraltet still. **Seit FW 0.39.0 geht auch Spiel ohne Handy** (Burgduell lokal gegen den Sticky),
+  nur das Duell zweier Stickys braucht die App
+  - fest (umgesetzt FW 0.31.8): **Handy-Zeichen auf Menü-Kacheln**, die nur verbunden gehen (bis 0.38.0: Spiel; seit
+    0.39.0 keine mehr, `NUR_MIT_HANDY` in `sticky-app/src/widgets.js` ist leer)
+  - fest (umgesetzt FW 0.31.8, abgelöst durch 0.39.0): **Hinweisseite statt stummem Rücksprung**: Spiel ohne Verbindung
+    zeigte „braucht das Handy“; jetzt startet das lokale Burgduell (`hilfe/offline.bin` baut die App nur noch für ältere
+    Firmware)
   - fest (umgesetzt): **Spielseite nur noch Burgduell** – Rechner/Umrechner gibt es als eigene Widgets (ohne Handy)
   - fest (umgesetzt): **ein Name je Sache, der vom Sticky**: Zettel (App-Reiter hieß „Bestellen“), Spiel (statt
     „App-Seite“), Kritzel (statt „Kritzelblock“)

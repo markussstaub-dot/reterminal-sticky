@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.38.0";
+static const char* FW_VERSION = "0.39.0";
 
 // ---- Sprache (FW 0.32.0, SPEC „Zweisprachig Deutsch/Englisch“): wirksame Sprache der Anzeige, Muster aus dem Sticky Lab.
 // Gesetzt in modus.h (uhrFormatLaden): Standard vom Handy, am Sticky überstimmbar. Nur Anzeige, Logs bleiben deutsch.
@@ -310,6 +310,7 @@ static void pufferTouch(int x, int y);
 static void rahmenAntippen(int x, int y);
 static void widgetTipp(int x, int y);
 static void widgetLos();
+static void spielTipp(int x, int y);
 static void kritzelPunkt(int x, int y, bool neu);
 static void kritzelLos();
 static uint64_t jetztMs();
@@ -317,7 +318,7 @@ static void sendTouch(const char* a, int x, int y) {
     aktiv();
     int dx, dy;
     touchDisplay(x, y, dx, dy);
-    if (a[0] == 'd') { rahmenAntippen(dx, dy); dokTouch(dx, dy); pufferTouch(dx, dy); widgetTipp(dx, dy); }
+    if (a[0] == 'd') { rahmenAntippen(dx, dy); dokTouch(dx, dy); pufferTouch(dx, dy); widgetTipp(dx, dy); spielTipp(dx, dy); }
     else widgetLos();
     char j[128];
     snprintf(j, sizeof j, "{\"t\":\"touch\",\"a\":\"%s\",\"x\":%d,\"y\":%d,\"rx\":%d,\"ry\":%d,\"ms\":%llu}", a, dx, dy, x, y, (unsigned long long)jetztMs());
@@ -469,6 +470,7 @@ static void zeigeKarte() {
 #include "eingabe.h"
 #include "recorder.h"
 #include "tippen.h"
+#include "burgduell.h"
 
 // ---- Zustand -------------------------------------------------------------------
 static void sendState() {

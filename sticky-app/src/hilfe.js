@@ -183,14 +183,29 @@ function seiten() {
     app: {
       titel: T('Hilfe · Spiel', 'Help · Game'),
       zeilen: T(
-        ['!Burgduell', 'Tippen ins Feld zielt und schießt; die App auf dem Handy rechnet (nur mit Verbindung)',
+        ['!Burgduell mit Handy', 'Tippen ins Feld zielt und schießt; die App auf dem Handy rechnet',
           '!Zu zweit', 'zeigen zwei verbundene Stickys das Spiel, beginnt das Duell', '!Tasten', '▲ ▼ kurz   blättern im Karussell', 'KI kurz   Home · KI halten   Diktat',
-          '!Ohne Handy', 'zeigt der Sticky „braucht das Handy“'],
-        ['!Castle Duel', 'tap the field to aim and fire; the app on the phone does the maths (connection needed)',
+          '!Ohne Handy', 'rechnet der Sticky selbst: Burgduell gegen den Sticky (ab FW 0.39.0)'],
+        ['!Castle Duel with phone', 'tap the field to aim and fire; the app on the phone does the maths',
           '!Two players', 'when two connected Stickys show the game, the duel begins', '!Keys', '▲ ▼ short   scroll the carousel', 'AI short   Home · AI hold   dictate',
-          '!Without phone', 'the Sticky shows “needs the phone”']).concat(ZURUECK()),
+          '!Without phone', 'the Sticky does the maths itself: Castle Duel against the Sticky (FW 0.39.0 and later)']).concat(ZURUECK()),
     },
-    // kein Modus: zeigt der Sticky, wenn „Spiel“ ohne Verbindung gewählt wird oder das Handy mitten im Spiel weg ist (FW 0.31.8)
+    // „Spiel“ ohne Handy (FW 0.39.0): Burgduell rechnet der Sticky selbst (firmware-ble/burgduell.h)
+    burgduell: {
+      titel: T('Hilfe · Burgduell', 'Help · Castle Duel'),
+      zeilen: T(
+        ['!Zielen', 'ins Feld tippen: Richtung und Abstand von der eigenen Kanone = Winkel und Pulver',
+          'Kreise unten   Winkel − / +, Pulver − / +', 'Feuer   Doppelring rechts unten', '!Gegner',
+          'Pille links unten   gegen Sticky oder 2 Spieler reihum', 'drei Treffer zerstören eine Burg, Wind wechselt je Zug',
+          '!Tasten', '▲ ▼ kurz   Winkel fein · 1 s halten   Karussell', 'KI kurz   Home · KI halten   Diktat',
+          '!Ohne Handy', 'läuft ganz auf dem Sticky; mit Handy zeigt „Spiel“ das Duell der App'],
+        ['!Aim', 'tap the field: direction and distance from your cannon = angle and powder',
+          'circles at the bottom   angle − / +, powder − / +', 'Fire   double ring bottom right', '!Opponent',
+          'pill bottom left   vs. Sticky or 2 players taking turns', 'three hits destroy a castle, the wind changes every turn',
+          '!Keys', '▲ ▼ short   fine angle · hold 1 s   carousel', 'AI short   Home · AI hold   dictate',
+          '!Without phone', 'runs entirely on the Sticky; with the phone, “Game” shows the app duel']).concat(ZURUECK()),
+    },
+    // kein Modus: zeigte der Sticky bis FW 0.38.0, wenn „Spiel“ ohne Verbindung gewählt wurde (ab 0.39.0 lokales Burgduell)
     offline: {
       titel: T('Spiel braucht das Handy', 'Game needs the phone'),
       zeilen: T(

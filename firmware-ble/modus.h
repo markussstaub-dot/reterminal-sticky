@@ -171,6 +171,11 @@ static void lageSofort() {
 static volatile bool neuZeichnen = false;   // Seite neu aufbauen (Hilfe zu, anderes Widget)
 static void widgetZeigen();
 static bool widgetTaste(int i);
+// Spiel (burgduell.h, FW 0.39.0): ohne Handy beim Betreten läuft das Burgduell lokal, mit Handy zeigt M_APP die App-Seite
+static bool spielLokal = false;
+static void spielBetreten();
+static bool spielTaste(int i);
+static void spielLoop();
 static void widgetLoop();
 
 static void bestellZaehlen() {
@@ -186,7 +191,7 @@ static void bestellZaehlen() {
 }
 
 static const char* modusName() {
-    return modus == M_HOME ? "home" : modus == M_NOTIZ ? "notiz" : modus == M_BESTELL ? "bestell" : modus == M_KRITZEL ? "kritzel" : modus == M_SCHRIFT ? "schrift" : modus == M_APP ? "app" : modus == M_WIDGET ? "widget" : modus == M_SPICK ? "spick" : "handbuch";
+    return modus == M_HOME ? "home" : modus == M_NOTIZ ? "notiz" : modus == M_BESTELL ? "bestell" : modus == M_KRITZEL ? "kritzel" : modus == M_SCHRIFT ? "schrift" : modus == M_APP ? (spielLokal ? "spiel" : "app") : modus == M_WIDGET ? "widget" : modus == M_SPICK ? "spick" : "handbuch";
 }
 
 static bool homeLaden(int n, uint8_t* ziel) {
@@ -328,7 +333,7 @@ static bool seiteHoch() {
         case M_HOME: case M_NOTIZ: return true;
         case M_WIDGET: return lageHoch(widgetName);
         case M_KRITZEL: case M_SCHRIFT: return kzHoch();   // Lage des Blatts, beim neuen Blatt festgelegt
-        case M_APP: return lageHoch("app");
+        case M_APP: return !spielLokal && lageHoch("app");   // lokales Burgduell: immer quer
         default: return false;
     }
 }
@@ -603,6 +608,7 @@ static void kzBlattNeu() {
 }
 
 static void setzeModus(Modus m) {
+    Modus vorher = modus;
     lageSofort();
     if ((m == M_HANDBUCH && dokN == 0) || (m == M_SPICK && sp.seiten == 0) || (m == M_BESTELL && bestellAnzahl == 0)) {
         tone(PIN_BUZZER, 900, 120);   // tiefer Ton: nichts aufgespielt
@@ -614,7 +620,8 @@ static void setzeModus(Modus m) {
         if (modus == M_KRITZEL) kritzelSpeichern(); else schriftSpeichern();
     }
     if (modus == M_WIDGET && m != M_WIDGET) gfxPartialWachHalten = false;
-    if (m != modus) protokoll("Modus %s", m == M_HOME ? "home" : m == M_HANDBUCH ? "handbuch" : m == M_SPICK ? "spick" : m == M_NOTIZ ? "notiz" : m == M_KRITZEL ? "kritzel" : m == M_SCHRIFT ? "schrift" : m == M_APP ? "app" : m == M_WIDGET ? "widget" : "bestell");
+    if (m != modus) protokoll("Modus %s", m == M_HOME ? "home" : m == M_HANDBUCH ? "handbuch" : m == M_SPICK ? "spick" : m == M_NOTIZ ? "notiz" : m == M_KRITZEL ? "kritzel" : m == M_SCHRIFT ? "schrift" : m == M_APP ? (appDa() || (vorher == M_APP && !spielLokal) ? "app" : "spiel") : m == M_WIDGET ? "widget" : "bestell");
+    if (m == M_APP && vorher != M_APP) spielLokal = !appDa();   // beim Betreten entschieden, bleibt bis zum Verlassen
     modus = m;
     letzteBedienung = millis();
     tone(PIN_BUZZER, 3300, 25);   // heller Doppelklick: Wechsel angenommen, das Bild kommt gleich
@@ -638,6 +645,8 @@ static void setzeModus(Modus m) {
         kritzelStart();
     } else if (m == M_WIDGET) {
         widgetZeigen();
+    } else if (m == M_APP && spielLokal) {
+        spielBetreten();                 // Burgduell lokal gegen den Sticky (SPEC „Spiel“, FW 0.39.0)
     } else if (m == M_APP) {
         // App-Seite (SPEC „Widgets ohne ständiges Flashen“): die App zeichnet, sobald sie „modus app“ hört;
         // Tipper gehen an die App, ▲/▼ blättern wie überall
@@ -719,7 +728,7 @@ static bool karussellDa(Modus m) {
     if (m == M_SPICK) return sp.seiten > 0;
     if (m == M_BESTELL) return bestellAnzahl > 0;
     if (m == M_NOTIZ) return notizDa;
-    if (m == M_APP) return appDa();   // ohne zuhörende App gibt es nichts zu zeigen
+    if (m == M_APP) return true;      // ohne Handy: Burgduell lokal (FW 0.39.0; vorher nur mit App)
     if (m == M_SCHRIFT) return sollDa("schrift/alphabet.txt");
     return true;
 }
@@ -749,10 +758,8 @@ static void karussellSchritt(int richtung) {
 
 /** Menü: direkt zum Karussell-Eintrag i */
 static void hilfeZeigen(const char* pfad = nullptr);
-// Spiel ohne Handy (SPEC „Blick von außen“, FW 0.31.8): statt nur tief zu piepen erklärt eine Seite, warum
-static const char* OFFLINE_HINWEIS = "hilfe/offline.bin";
+// Spiel ohne Handy: bis FW 0.38.0 die Seite hilfe/offline.bin („braucht das Handy“), ab 0.39.0 das lokale Burgduell
 static void karussellGehe(int i) {
-    if (i >= 0 && i < kAnzahl && karussell[i] == M_APP && !appDa()) { hilfeZeigen(OFFLINE_HINWEIS); return; }
     if (i < 0 || i >= kAnzahl || !karussellDaI(i)) { tone(PIN_BUZZER, 900, 120); return; }
     Modus m = karussell[i];
     if (m == M_BESTELL) bestellAktuell = 0;
@@ -842,7 +849,7 @@ static const char* widgetHilfe() {
 
 static const char* hilfeName() {
     return modus == M_HOME ? "hilfe/home.bin" : modus == M_NOTIZ ? "hilfe/notiz.bin" : modus == M_HANDBUCH ? "hilfe/handbuch.bin" : modus == M_SPICK ? "hilfe/spick.bin"
-         : modus == M_KRITZEL ? "hilfe/kritzel.bin" : modus == M_SCHRIFT ? "hilfe/schrift.bin" : modus == M_WIDGET ? widgetHilfe() : modus == M_APP ? "hilfe/app.bin" : "hilfe/zettel.bin";
+         : modus == M_KRITZEL ? "hilfe/kritzel.bin" : modus == M_SCHRIFT ? "hilfe/schrift.bin" : modus == M_WIDGET ? widgetHilfe() : modus == M_APP ? (spielLokal ? "hilfe/burgduell.bin" : "hilfe/app.bin") : "hilfe/zettel.bin";
 }
 
 static void hilfeZeigen(const char* pfad) {
@@ -910,13 +917,13 @@ static void tasteAktion(const char* name, bool gedrueckt) {
     if (strcmp(name, "up") == 0) {
         if (gedrueckt) { upSeit = millis(); upLang = false; return; }
         upSeit = 0;
-        if (!upLang && !widgetTaste(0)) blaettern(-1);   // ▲/▼ kurz blättern überall (Widgets nur per Tippen, 13.11.2026)
+        if (!upLang && !spielTaste(0) && !widgetTaste(0)) blaettern(-1);   // ▲/▼ kurz blättern überall (Widgets nur per Tippen, 13.11.2026)
         return;
     }
     if (strcmp(name, "down") == 0) {
         if (gedrueckt) { downSeit = millis(); downLang = false; return; }
         downSeit = 0;
-        if (!downLang && !widgetTaste(1)) blaettern(+1);
+        if (!downLang && !spielTaste(1) && !widgetTaste(1)) blaettern(+1);
     }
 }
 
@@ -927,7 +934,7 @@ static void lageLoop() {
     static int kandidat = -1, gleich = 0;
     if (hilfeAn || audioLaeuft || millis() - zuletzt < 250) return;   // ein I2C-Lesen (6 Byte, < 1 ms) je 0,25 s, nur auf „auto“-Seiten
     zuletzt = millis();
-    const char* s = modus == M_APP ? "app" : modus == M_KRITZEL ? "kritzel" : modus == M_WIDGET ? widgetName : nullptr;
+    const char* s = modus == M_APP ? (spielLokal ? nullptr : "app") : modus == M_KRITZEL ? "kritzel" : modus == M_WIDGET ? widgetName : nullptr;
     if (!s || !lageAuto(s)) { gleich = 0; return; }
     int k = lageMessen();
     if (k < 0) { gleich = 0; return; }
@@ -989,6 +996,7 @@ static void modusLoop() {
     rahmenLoop();
     kritzelLoop();
     widgetLoop();
+    spielLoop();
     lageLoop();
     kiSerieLoop();
     suchenLoop();
@@ -1006,7 +1014,7 @@ static void modusLoop() {
     }
     dokuLoop();
     if (modus != M_HOME && !audioLaeuft && millis() - letzteBedienung > ZURUECK_MS) setzeModus(M_HOME);
-    if (modus == M_APP && !appDa()) { protokoll("App weg, zurück nach Home"); setzeModus(M_HOME); hilfeZeigen(OFFLINE_HINWEIS); }
+    if (modus == M_APP && !spielLokal && !appDa()) { protokoll("App weg, Burgduell lokal"); spielLokal = true; setzeModus(M_APP); }
     if (modus == M_HOME && homeDa && !audioLaeuft && !hilfeAn && uhrZeichnen()) uhrAuffrischen(uhrMinute == 0);
     static uint32_t akkuZuletzt = 0;
     (void)akkuZuletzt;
