@@ -161,6 +161,7 @@ static void dokListeLaden() {
     dokN = 0; bibN = 0; bibGN = 0;
     bibBild = sollDa("doku/bibliothek.bin");
     File f = sollOeffnen("doku/bibliothek.txt");
+    const bool hatListe = (bool)f;   // FW 0.39.1: leere Liste = alles ausgeblendet, nicht „Ordner durchsuchen“
     if (f) {
         while (f.available()) {
             String z = f.readStringUntil('\n');
@@ -179,7 +180,7 @@ static void dokListeLaden() {
         }
         f.close();
     }
-    if (!dokN && sdEin()) {
+    if (!dokN && !hatListe && sdEin()) {
         File d = SD.open("/soll/doku");
         if (d && d.isDirectory())
             for (File e = d.openNextFile(); e && dokN < DOK_MAX; e = d.openNextFile()) {

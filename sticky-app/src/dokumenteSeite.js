@@ -191,7 +191,9 @@ export function dokumenteEinrichten(dep) {
     try {
       n += await spickAufspielen();
       const doku = await zwilling.liste('/soll/doku').catch(() => []);
-      for (const x of doku.filter((x) => x.ordner && !liste.some((d) => d.id === x.n && d.aufSticky))) await dokEntfernen(x.n);
+      // Schalter = nur sichtbar in der Bibliothek (Markus, 15.11.2026: Karte hat Platz, Bluetooth ist langsam) – Dateien bleiben
+      // auf der Karte; entfernt wird nur, was in der App gelöscht wurde
+      for (const x of doku.filter((x) => x.ordner && !liste.some((d) => d.id === x.n))) await dokEntfernen(x.n);
       for (const d of liste.filter((x) => x.aufSticky)) {
         try { n += await dokAufspielen(d, { leicht: leicht || !!d.pdfMap?.length }); } catch (e) { eintrag(`${d.titel}: ${e.message}`, true); }
       }
@@ -245,7 +247,7 @@ export function dokumenteEinrichten(dep) {
     lesen();
     const ziel = $('dokListe');
     ziel.replaceChildren(...liste.map((d) => {
-      const schalter = el('input', { type: 'checkbox', checked: !!d.aufSticky, title: T('auf dem Sticky', 'on the Sticky') });
+      const schalter = el('input', { type: 'checkbox', checked: !!d.aufSticky, title: T('in der Bibliothek am Sticky sichtbar (bleibt auf der Karte)', 'visible in the library on the Sticky (stays on the card)') });
       schalter.onclick = (e) => e.stopPropagation();
       schalter.onchange = () => { d.aufSticky = schalter.checked; sichern(); zeigen(); };
       const n = dk.inhaltLesen(d.inhalt ?? '').length;

@@ -699,6 +699,9 @@ Mockup: `docs/dokumente-mockup.html`.
 - fest (Markus): Handbuch-Seiten **auf der SD-Karte** (`/soll/doku/<name>/`), viel mehr Platz; das heutige Bordbuch
   zieht beim ersten Start aus dem Flash dorthin um
 - fest (Markus): am Sticky heißt es **„Handbuch“** (EN „Manual“)
+- fest (Markus, 15.11.2026 spät): Schalter in der App = **nur sichtbar in der Bibliothek**; die Seiten bleiben auf der
+  Karte (Platz satt, 500 Seiten ≈ 24 MB), weil Hin- und Herschieben über Bluetooth (~8 kB/s) Zeit und Akku kostet.
+  Von der Karte entfernt wird nur, was in der App gelöscht wird (umgesetzt App + FW 0.39.1)
 - **gebaut 15.11.2026 (FW 0.38.0 + App, nicht geflasht)**: `firmware-ble/doku.h` ersetzt `bordbuch.h`, App
   `src/dokumente.js` (Logik, Zeichnen, Tests) und `src/dokumenteSeite.js` (Reiter). Ablage und Formate: `PROTOKOLL.md`
   „Dokumente“. Selbst entschieden:
