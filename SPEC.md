@@ -511,6 +511,8 @@ die Firmware rechnet. Ein Flash für alles.
 Was der Sticky als Immer-dabei-Helfer noch können könnte, sortiert nach Aufwand. Favorit: „gegenseitig suchen“.
 - Ohne Flashen (App-Seiten, Zettel):
   - **Lineal** am Displayrand (mm-Skala, einmal kalibrieren): Schrauben, Kabel, Uhrbänder (umgesetzt 13.11.2026, FW 0.26.0)
+    - am Gerät bestätigt (Markus, 15.11.2026): **Lage passt** – beim Messen sind keine Tasten im Weg, nur der
+      SD-Schlitz liegt an der Kante, und der stört nicht. So lassen
   - **QR-Seiten**: Gast-WLAN, Visitenkarte, Abholcodes; E-Ink zeigt QR gestochen scharf (umgesetzt 13.11.2026 als Zettel mit `wlan:`/`link:`/`qr:`)
   - **Notfallkarte** (Kontakt, Blutgruppe, Medikamente) als Zettel, nur auf dem Gerät
 - Kleiner Flash (neuer Widget-Typ für die Widget-Maschine):
