@@ -20,6 +20,47 @@ export function wetterWort(code) {
   return T('Gewitter', 'thunderstorm');
 }
 
+/**
+ * Wettersymbol als Strichzeichnung (Markus, 15.11.2026: „Wetter-Icon auf die Startkarte“), Schwarz auf Weiß für e-Ink.
+ * cx/cy = Mitte, s = Kantenlänge (≈ 44 px). Sonne, Sonne+Wolke, Wolke, Nebel, Niesel/Regen, Schnee, Gewitter.
+ */
+export function wetterSymbol(p, code, cx, cy, s = 44) {
+  const k = s / 44;
+  p.save();
+  p.translate(cx, cy);
+  p.scale(k, k);
+  p.strokeStyle = '#000';
+  p.fillStyle = '#000';
+  p.lineWidth = 3;
+  p.lineCap = 'round';
+  const sonne = (x, y, r) => {
+    p.beginPath(); p.arc(x, y, r, 0, Math.PI * 2); p.stroke();
+    for (let i = 0; i < 8; i++) { const a = (i * Math.PI) / 4; p.beginPath(); p.moveTo(x + Math.cos(a) * (r + 4), y + Math.sin(a) * (r + 4)); p.lineTo(x + Math.cos(a) * (r + 9), y + Math.sin(a) * (r + 9)); p.stroke(); }
+  };
+  const wolke = (x, y, voll = false) => {   // Wolke aus drei Bögen, unten gerade
+    p.beginPath();
+    p.moveTo(x - 16, y + 8);
+    p.arc(x - 9, y + 1, 7, Math.PI * 0.75, Math.PI * 1.5);
+    p.arc(x + 1, y - 4, 10, Math.PI * 1.1, Math.PI * 1.95);
+    p.arc(x + 11, y + 2, 6, Math.PI * 1.5, Math.PI * 0.4);
+    p.lineTo(x - 16, y + 8);
+    p.closePath();
+    p.fillStyle = voll ? '#000' : '#fff';
+    p.fill();
+    p.stroke();
+    p.fillStyle = '#000';
+  };
+  const striche = (n, y0, form) => { for (let i = 0; i < n; i++) { const x = -10 + i * 10; form(x, y0); } };
+  if (code === 0) sonne(0, 0, 9);
+  else if (code <= 2) { sonne(-6, -6, 7); wolke(4, 6); }
+  else if (code === 3) wolke(0, 0);
+  else if (code <= 48) { for (let i = 0; i < 4; i++) { p.beginPath(); p.moveTo(-17 + (i % 2) * 4, -11 + i * 8); p.lineTo(17 - (i % 2) * 4, -11 + i * 8); p.stroke(); } }
+  else if (code <= 67 || (code >= 80 && code <= 82)) { wolke(0, -6); striche(3, 10, (x, y) => { p.beginPath(); p.moveTo(x + 2, y); p.lineTo(x - 2, y + (code <= 57 ? 5 : 10)); p.stroke(); }); }
+  else if (code <= 77 || code <= 86) { wolke(0, -6); striche(3, 14, (x, y) => { for (let a = 0; a < 3; a++) { const w = (a * Math.PI) / 3; p.beginPath(); p.moveTo(x - Math.cos(w) * 4, y - Math.sin(w) * 4); p.lineTo(x + Math.cos(w) * 4, y + Math.sin(w) * 4); p.stroke(); } }); }
+  else { wolke(0, -8, true); p.beginPath(); p.moveTo(2, 4); p.lineTo(-5, 13); p.lineTo(1, 13); p.lineTo(-4, 22); p.lineTo(8, 9); p.lineTo(2, 9); p.closePath(); p.fill(); }
+  p.restore();
+}
+
 /** Eine Zeile für die Karte, z. B. „bewölkt 12° · 4–14° · Regen 20 %“; us = °F (Einstellung am Sticky bzw. Handy) */
 export function wetterZeile(w, us = false) {
   if (!w) return null;

@@ -5,7 +5,7 @@ import { uhrzeit } from './zeit.js';
 import qrcode from 'qrcode-generator';
 import { BREITE, HOEHE, rgbaZu1bpp } from './protokoll.js';
 import { drehe, PB, PH } from './fahrtseite.js';
-import { wetterZeile } from './wetter.js';
+import { wetterZeile, wetterSymbol } from './wetter.js';
 import { T, lang } from './uebersetzen.js';
 /** °F statt °C (Einheit am Sticky bzw. vom Handy, FW ≥ 0.31.0) */
 let einheitUs = false;
@@ -49,9 +49,15 @@ export function homeHochkant(karte = KARTE, beispielZeit = null, wetter = null, 
   // Wetter zwischen Datum und Uhr (Uhrfeld beginnt bei y = 352)
   const zeile = wetterZeile(wetter, einheitUs);
   if (zeile) {
+    // Symbol links vor der Zeile (wetterSymbol, 44 px), beides zusammen mittig
+    const S = 44, L = 10;
     let gr = 26;
-    do { p.font = `${gr}px system-ui, sans-serif`; gr -= 2; } while (p.measureText(zeile).width > PB - 30 && gr > 16);
-    p.fillText(zeile, PB / 2, 300);
+    do { p.font = `${gr}px system-ui, sans-serif`; gr -= 2; } while (p.measureText(zeile).width > PB - 30 - S - L && gr > 16);
+    const b = p.measureText(zeile).width, x0 = (PB - (S + L + b)) / 2;
+    wetterSymbol(p, wetter.code, x0 + S / 2, 300, S);
+    p.textAlign = 'left';
+    p.fillText(zeile, x0 + S + L, 300);
+    p.textAlign = 'center';
     p.font = '16px system-ui, sans-serif';
     p.fillText(T(`Wetter, Stand ${uhrzeit(wetter.zeit)}`, `Weather as of ${uhrzeit(wetter.zeit)}`), PB / 2, 330);
   }
