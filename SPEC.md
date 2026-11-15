@@ -866,7 +866,7 @@ Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzu
 - offen: Wie man zwischen Widgets wechselt (eigener Modus mit ▲/▼ wie die Bestellzettel?); Reihenfolge nach den Szenen
   oder davor
 
-### Weltzeit mit Karte (Markus, 16.11.2026, Entwurf)
+### Weltzeit mit Karte (Markus, 16.11.2026, abgenommen)
 Anlass: Merker „Globus-Ansicht“ – „das kann e-Ink ab“. Mockup: `docs/weltzeit-mockup.html`.
 - Vorschlag **flache Weltkarte statt Kugel**: eine Kugel zeigt nur die halbe Erde, Tokio, Europa und L.A. wären nie
   zugleich sichtbar. Flache Karte (Plattkarte) mit Tag/Nacht-Schatten wie eine Geochron-Uhr, alle Städte auf einen Blick
@@ -879,9 +879,8 @@ Anlass: Merker „Globus-Ansicht“ – „das kann e-Ink ab“. Mockup: `docs/w
   Uhrzeit, je Kartenspalte die Grenze) und frischt ihn alle 15 min per Teil-Refresh auf – geht offline, bleibt richtig.
   Ziffern setzt er wie heute selbst ein
 - Vorschlag: bleibt das Widget „Weltzeit“ (Gruppe Zeit); die heutige Liste entfällt zugunsten der Karte
-- offen: Mittelpunkt der Karte – Greenwich (Europa mittig, Pazifik am Rand) oder so verschoben, dass alle Städte nicht
-  am Rand kleben? (Vorschlag: Greenwich – vertraut)
-- offen: Strom – Schatten alle 15 min heißt den Sticky dafür kurz wecken; im Schlummer nur zur vollen Stunde?
+- fest (mit der Abnahme): Kartenmitte **Greenwich** (Europa mittig, vertraut)
+- Vorschlag Strom: wach alle 15 min, im Schlummer nur zur vollen Stunde (im vorhandenen Stundenfenster); nach Messung im Lab ggf. anpassen
 
 ### Bedienung und Oberfläche (Markus, 13.11.2026, Mockup abgenommen)
 - fest **Tastenregeln überall gleich**: KI kurz = Home, KI halten = Diktat (Rettungsanker, nie anders belegt);
