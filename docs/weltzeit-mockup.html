@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EDC Weltzeit Mockup</title>
+<style>
+:root{--bg:#e9e6df;--muted:#666}
+body{margin:0;background:var(--bg);font-family:Helvetica,Arial,sans-serif;color:#111;padding:16px}
+h1{font-size:20px;margin:0 0 4px}p.k{margin:0 0 16px;color:var(--muted);font-size:14px;max-width:820px}
+figure{margin:0 0 20px;max-width:820px}figcaption{font-size:13px;color:var(--muted);margin-top:6px}
+.dev{background:#2b2b2b;border-radius:18px;padding:14px}
+canvas{display:block;width:100%;height:auto;border-radius:4px;background:#f4f2ec;image-rendering:pixelated}
+label{font-size:14px}
+</style></head><body>
+<h1>EDC · Weltzeit mit Karte (Entwurf)</h1>
+<p class="k">Flache Weltkarte mit Tag/Nacht-Schatten, darunter die Städte. Die App liefert einmal die Landkarte als Raster, der Sticky rechnet den Schatten selbst und frischt ihn alle 15 Minuten auf – geht ohne Handy. Schieber: Uhrzeit ändern und sehen, wie die Nacht wandert.</p>
+<label>Uhrzeit (UTC): <input type="range" id="zeit" min="0" max="1439" step="15"> <span id="zeitTxt"></span></label>
+<figure><div class="dev"><canvas id="c" width="800" height="480"></canvas></div>
+<figcaption>Quer, 1 bpp wie am Sticky. Land = Punktraster, Nacht = dichteres Raster darüber, Städte = Punkt mit Ring und Kürzel. Unten je Stadt Uhrzeit, ☀/☾ und Tag (−1/+1), „HIER“ als Doppelring betont.</figcaption></figure>
+<script>
+// grobe Kontinente (Länge, Breite) – nur fürs Mockup, am Sticky kommt eine echte gemeinfreie Karte
+const LAND = [
+ [[-168,66],[-140,70],[-95,72],[-80,63],[-60,55],[-53,47],[-66,44],[-75,35],[-81,25],[-90,29],[-97,26],[-105,20],[-95,16],[-83,9],[-77,8],[-80,0],[-81,-6],[-71,-18],[-71,-30],[-74,-45],[-68,-55],[-64,-42],[-57,-37],[-48,-27],[-39,-15],[-35,-6],[-50,0],[-60,10],[-75,12],[-87,16],[-105,23],[-112,31],[-120,34],[-124,40],[-124,48],[-135,58],[-150,60],[-165,62]],
+ [[-55,60],[-45,60],[-20,70],[-25,82],[-60,82],[-70,76]],
+ [[-10,36],[-9,43],[-2,48],[-5,58],[5,62],[15,69],[28,71],[40,67],[60,69],[80,73],[110,77],[140,72],[170,70],[180,66],[162,58],[140,48],[130,42],[122,31],[121,23],[108,18],[105,9],[100,13],[98,8],[93,20],[80,13],[77,8],[72,20],[66,25],[57,26],[50,30],[52,23],[59,22],[52,12],[43,12],[33,28],[30,31],[35,36],[27,37],[26,40],[18,40],[15,38],[12,44],[3,43]],
+ [[-17,21],[-16,12],[-8,4],[6,4],[9,-1],[13,-12],[12,-18],[18,-34],[26,-34],[33,-26],[40,-15],[40,-4],[51,11],[43,12],[33,28],[10,37],[-6,36]],
+ [[114,-22],[122,-18],[130,-12],[137,-12],[142,-11],[146,-19],[153,-26],[150,-37],[141,-38],[131,-31],[115,-34]],
+ [[-180,-70],[180,-70],[180,-90],[-180,-90]],
+ [[130,31],[140,35],[142,41],[141,45],[136,38]], [[-6,50],[2,51],[0,58],[-6,58]],
+];
+const STAEDTE = [['HIER', 7.1, 49.3, true], ['TYO', 139.7, 35.7], ['NJ', -74.4, 40.1], ['JAX', -81.7, 30.3], ['LA', -118.2, 34.1]];
+const OFFS = { HIER: 1, TYO: 9, NJ: -5, JAX: -5, LA: -8 };   // Winterzeit
+const c = document.getElementById('c'), g = c.getContext('2d');
+const W = 800, MY = 48, MH = 300;
+const xy = (lon, lat) => [((lon + 180) / 360) * W, MY + ((90 - lat) / 180) * MH];
+const land = document.createElement('canvas'); land.width = W; land.height = 480;
+(() => { const l = land.getContext('2d'); l.fillStyle = '#000'; for (const p of LAND) { l.beginPath(); p.forEach(([a, b], i) => { const [x, y] = xy(a, b); i ? l.lineTo(x, y) : l.moveTo(x, y); }); l.closePath(); l.fill(); } })();
+const landDaten = land.getContext('2d').getImageData(0, 0, W, 480).data;
+function zeichne(minUtc) {
+  const tag = 320, decl = -23.44 * Math.cos((2 * Math.PI / 365) * (tag + 10)) * Math.PI / 180;   // Mitte November
+  const subLon = 180 - (minUtc / 1440) * 360;
+  const im = g.createImageData(W, 480), d = im.data;
+  for (let y = 0; y < 480; y++) for (let x = 0; x < W; x++) {
+    let schwarz = false;
+    if (y >= MY && y < MY + MH) {
+      const lon = (x / W) * 360 - 180, lat = 90 - ((y - MY) / MH) * 180, phi = lat * Math.PI / 180, H = (lon - subLon) * Math.PI / 180;
+      const hoehe = Math.sin(phi) * Math.sin(decl) + Math.cos(phi) * Math.cos(decl) * Math.cos(H);
+      const istLand = landDaten[(y * W + x) * 4 + 3] > 128;
+      const nacht = hoehe < -0.05, daemmerung = !nacht && hoehe < 0.05;
+      // Land immer dunkler als Meer, Nacht dunkelt beides ab: Meer Tag 0 % · Meer Nacht 25 % · Land Tag 33 % · Land Nacht 67 %
+      if (istLand) schwarz = nacht ? ((x + y) % 3 !== 0) : daemmerung ? ((x + y) % 2 === 0) : ((x + y) % 3 === 0);
+      else schwarz = nacht ? ((x % 2 === 0) && (y % 2 === 0)) : daemmerung ? ((x % 4 === 0) && (y % 2 === 0)) : false;
+    }
+    const v = schwarz ? 17 : 244; d.set([v, v, v - (schwarz ? 0 : 8), 255], (y * W + x) * 4);
+  }
+  g.putImageData(im, 0, 0);
+  g.fillStyle = '#111'; g.font = 'bold 20px Helvetica'; g.textBaseline = 'middle';
+  g.fillText('Weltzeit', 16, 24); g.textAlign = 'right'; g.font = '16px Helvetica'; g.fillText('14:05 · 82 %', 784, 24); g.textAlign = 'left';
+  g.fillRect(0, MY - 2, W, 2); g.fillRect(0, MY + MH, W, 2);
+  // Städte
+  for (const [k, lon, lat, hier] of STAEDTE) {
+    const [x, y] = xy(lon, lat);
+    g.fillStyle = '#f4f2ec'; g.beginPath(); g.arc(x, y, hier ? 10 : 8, 0, 7); g.fill();
+    g.fillStyle = '#111'; g.beginPath(); g.arc(x, y, hier ? 6 : 5, 0, 7); g.fill();
+    if (hier) { g.strokeStyle = '#111'; g.lineWidth = 2; g.beginPath(); g.arc(x, y, 12, 0, 7); g.stroke(); }
+    g.font = 'bold 15px Helvetica'; const b = g.measureText(k).width;
+    g.fillStyle = '#f4f2ec'; g.fillRect(x + 12, y - 9, b + 6, 18); g.fillStyle = '#111'; g.fillText(k, x + 15, y);
+  }
+  // Leiste unten
+  const n = STAEDTE.length, bw = W / n;
+  STAEDTE.forEach(([k, lon, lat, hier], i) => {
+    const x0 = i * bw, m = ((minUtc + OFFS[k] * 60) % 1440 + 1440) % 1440, tagD = Math.floor((minUtc + OFFS[k] * 60) / 1440);
+    const hh = String(Math.floor(m / 60)).padStart(2, '0'), mm = String(m % 60).padStart(2, '0');
+    const phi = lat * Math.PI / 180, H = (lon - subLon) * Math.PI / 180, istTag = Math.sin(phi) * Math.sin(decl) + Math.cos(phi) * Math.cos(decl) * Math.cos(H) > 0;
+    g.strokeStyle = '#111'; g.lineWidth = hier ? 4 : 2; g.beginPath(); g.roundRect(x0 + 6, 360, bw - 12, 108, 24); g.stroke();
+    g.textAlign = 'center'; g.fillStyle = '#111';
+    g.font = 'bold 18px Helvetica'; g.fillText(`${k}  ${istTag ? '☀' : '☾'}`, x0 + bw / 2, 382);
+    g.font = 'bold 40px Helvetica'; g.fillText(`${hh}:${mm}`, x0 + bw / 2, 422);
+    g.font = '15px Helvetica'; g.fillText(tagD ? (tagD > 0 ? 'morgen' : 'gestern') : 'heute', x0 + bw / 2, 454);
+    g.textAlign = 'left';
+  });
+}
+const r = document.getElementById('zeit'), t = document.getElementById('zeitTxt');
+r.value = 13 * 60; const neu = () => { const m = +r.value; t.textContent = `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`; zeichne(m); };
+r.oninput = neu; neu();
+</script></body></html>

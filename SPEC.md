@@ -836,6 +836,7 @@ Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzu
   - **Taschenrechner** mit Touch-Tastenfeld, rechnet auf dem Sticky (aufwendigster Punkt)
 - Ideen, gemischt: **Weltzeituhr** (Tokio, New Jersey, Jacksonville, L.A.; Karte aus der App, Ziffern vom Sticky) ·
   **Klimaverlauf** 24 h mit Taupunkt-Linie (Daten aus `/ist/mess`)
+  - → ausgearbeitet in „Weltzeit mit Karte“ (16.11.2026, unten bei den Widgets)
   - Merker (Markus, 15.11.2026 spät): **Weltzeit als Globus-Ansicht** fürs e-Paper – Erdkugel (gerastert, Braun-Stil)
     mit Tag/Nacht-Grenze und den Städten als Punkte mit Uhrzeit; die App rendert Kugel und Schatten z. B. viertelstündlich,
     der Sticky setzt nur die Ziffern ein (wie heute). Idee, nicht entschieden
@@ -864,6 +865,23 @@ Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzu
   - geparkt: Skriptsprache auf dem Sticky (z. B. Berry wie in Tasmota), maximal flexibel, aber zu viel Dauerpflege
 - offen: Wie man zwischen Widgets wechselt (eigener Modus mit ▲/▼ wie die Bestellzettel?); Reihenfolge nach den Szenen
   oder davor
+
+### Weltzeit mit Karte (Markus, 16.11.2026, Entwurf)
+Anlass: Merker „Globus-Ansicht“ – „das kann e-Ink ab“. Mockup: `docs/weltzeit-mockup.html`.
+- Vorschlag **flache Weltkarte statt Kugel**: eine Kugel zeigt nur die halbe Erde, Tokio, Europa und L.A. wären nie
+  zugleich sichtbar. Flache Karte (Plattkarte) mit Tag/Nacht-Schatten wie eine Geochron-Uhr, alle Städte auf einen Blick
+- Vorschlag **Aufbau quer**: Karte oben (800 × 300), darunter die Städte als Reihe (Kürzel, Uhrzeit groß, Tag ±1,
+  ☀/☾ je nachdem, ob dort Tag ist); hochkant Karte oben schmaler, Städte als Liste
+- Vorschlag **Stil**: Land gerastert (feines Punktraster), Meer weiß, Nacht als dunkleres Raster über allem, Tag/Nacht-
+  Grenze als weiche Kante; Städte als schwarzer Punkt mit weißem Ring und Kürzel (HIER, TYO, NJ, JAX, LA); „HIER“ betont
+- Vorschlag **wer rechnet was**: die App liefert einmal die Landkarte (gemeinfreie Weltkarte, z. B. Natural Earth,
+  als 1-bpp-Raster) und die Städte mit Länge/Breite; der **Sticky rechnet den Schatten selbst** (Sonnenstand aus der
+  Uhrzeit, je Kartenspalte die Grenze) und frischt ihn alle 15 min per Teil-Refresh auf – geht offline, bleibt richtig.
+  Ziffern setzt er wie heute selbst ein
+- Vorschlag: bleibt das Widget „Weltzeit“ (Gruppe Zeit); die heutige Liste entfällt zugunsten der Karte
+- offen: Mittelpunkt der Karte – Greenwich (Europa mittig, Pazifik am Rand) oder so verschoben, dass alle Städte nicht
+  am Rand kleben? (Vorschlag: Greenwich – vertraut)
+- offen: Strom – Schatten alle 15 min heißt den Sticky dafür kurz wecken; im Schlummer nur zur vollen Stunde?
 
 ### Bedienung und Oberfläche (Markus, 13.11.2026, Mockup abgenommen)
 - fest **Tastenregeln überall gleich**: KI kurz = Home, KI halten = Diktat (Rettungsanker, nie anders belegt);
