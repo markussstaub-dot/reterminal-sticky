@@ -4,7 +4,7 @@ tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
 version: FW 0.32.0 – EDC-Sticky, allein nützlich: Uhr/Wecker/Weltzeit, Rechner/Umrechner, Strichschrift, Waage, Lineal, Zettel mit QR, Einstellungen am Sticky; Braun-Optik, Hoch/Quer; MIT-Lizenz (14.11.2026: App-Vorschau = Bildschirmfoto, Multiclient Stufe 2: zwei Stickys gleichzeitig; 15.11.: sparsamer schlummern, Spiel ohne Handy erklärt, Namen vereinheitlicht; 0.31.9: zweiter Haltepin GPIO46; 0.32.0: zweisprachig DE/EN, auf meinem Sticky geflasht und gepusht; SPEC Eingabe abgenommen: Tasten/Ziffern/Strich/Sprache, kleine Eingaben, Recorder; 0.33.0: Umschalten EDC ↔ Sticky Lab (app0/app1, Menü-Kachel, ▲ beim Einschalten), gebaut, nicht geflasht; Release noch 0.31.6)
-wartet: Markus: APK 2026.11.15-1452 installieren (falls noch nicht), dann auf Englisch alle Seiten auf Überläufe prüfen; Playground-Update-PR #125 (0.31.6) im Blick behalten; Lineal nachmessen, Einfügen in WhatsApp probieren; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
+wartet: Markus: APK 2026.11.15-1452 installieren (falls noch nicht), dann auf Englisch alle Seiten auf Überläufe prüfen; Playground-Update-PR #125 (0.31.6) im Blick behalten; Lineal nachmessen, Einfügen in WhatsApp probieren; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Spickzettel-Konsole (Lab-Console, Reiter „Spickzettel“) ausprobieren: Karte am Zenbook → Zwischenablage → Fold → Aufspielen; Nachtverbrauch messen
 ---
 
 Repo: github.com/markussstaub-dot/reterminal-sticky (privat, seit 11.11.2026). `backup/`, Modelle und

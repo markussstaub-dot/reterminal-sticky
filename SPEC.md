@@ -598,6 +598,46 @@ Seitentypen, beide eigene Seiten (gehen ohne Handy):
   Werkstatt-Handgriffe
 - Vorschlag: der Name „Bordbuch“ geht in diesen zwei Teilen auf (bleibt höchstens als Titel der Micro-Szene)
 
+### Spickzettel-Konsole: Karten am Zenbook pflegen (Markus, 15.11.2026, abgenommen)
+Anlass: Karten am Fold abzutippen ist mühsam (heute: `sticky-lab/SPICKZETTEL-EDC.md` → App, Bordbuch-Tab → Spickzettel).
+Am Zenbook mit Tastatur schreiben, in Sticky-Größe ansehen, dann rüber.
+- fest **App = Gehirn**: Die Karten gehören weiter dem Spickzettel-Feld der App (`sticky.p.<profil>.spickzettel`, Format
+  „## Titel“, darunter Zeilen, „!“ am Anfang = fett). Die Konsole ist nur Schreibtisch und Vorschau, sie spricht nicht
+  selbst mit dem Sticky; aufgespielt wird wie bisher aus der App (Bordbuch „Aufspielen“)
+- fest **Alle sammeln, je Szene nur die passenden vorbelegt** (Markus, 15.11.): der Vorrat darf wachsen, „bis er platzt“.
+  Jede Karte trägt Szenen-Marken, z. B. `## Reifendruck #micro #notfall`; die Szene wählt aus, was auf den Sticky kommt
+- fest **Ort**: neuer Reiter „Spickzettel“ in der Sticky-Console (`sticky-lab/console`, Edge am Zenbook, unterer
+  Bildschirm). Die Console ist öffentlich (GitHub Pages), die Karten aber nicht: sie liegen nur im Browser-Speicher
+  und in der lokalen Datei, nie im Repo
+- Vorschlag **Bildschirm** (groß, Tastatur zuerst):
+  ```
+  ┌ Karten ──────────────┐ ┌ Karte ──────────────────────┐ ┌ Vorschau 800×480 (wie die App zeichnet) ┐
+  │ Szene: [Alle][Micro] │ │ Titel  [Reifendruck       ] │ │ ███ Reifendruck ████████████████████   │
+  │ [Werkstatt][Notfall] │ │ Marken [#micro #notfall   ] │ │ Reifendruck (Ladeklappe)               │
+  │ ▸ Reifendruck  ↑↓    │ │ Zeilen (! = fett, 3–10)     │ │   Stahlfelge 13": 1,8 bar              │
+  │   Sicherungen  ↑↓    │ │ [!Reifendruck (Ladeklappe) ]│ │   …                                    │
+  │   Lab bedienen ↑↓    │ │ [Stahlfelge 13": 1,8 bar   ]│ └────────────────────────────────────────┘
+  │ [+ Neue Karte]       │ │ 7 Zeilen · passt (26 px)    │ [Datei öffnen] [Speichern] [In Zwischenablage]
+  └──────────────────────┘ └─────────────────────────────┘ [Aus Zwischenablage holen]
+  ```
+  Alt+↑/↓ sortiert, Strg+Enter neue Karte, Warnung ab 11 Zeilen bzw. wenn die Schrift unter 20 px schrumpfen müsste
+- Vorschlag **Vorrat = die lokale Datei** `sticky-lab/SPICKZETTEL-EDC.md` (OneDrive, `.gitignore`): Edge öffnet sie
+  einmal („Datei öffnen“) und schreibt sie zurück; Text vor der ersten Karte bleibt stehen. Das alte Format
+  („## Karte 1: …“, „- “ als Aufzählung) liest sie mit und schreibt dann App-Format
+- fest **Weg zum Sticky, Stufe 1 ohne neue APK**: „In Zwischenablage“ kopiert die Karten der gewählten Szene im
+  App-Format, ohne Marken (die App kennt sie noch nicht); beim Zurückholen behalten Karten gleichen Titels ihre Marken; die geräteübergreifende Zwischenablage (Windows „Smartphone-Link“ ↔ Samsung „Kopieren und Einfügen
+  zwischen Geräten“) bringt sie aufs Fold; dort im Spickzettel-Feld alles markieren → Einfügen → „Aufspielen“.
+  Rückweg genauso: Feld kopieren → Console „Aus Zwischenablage holen“ (so kommen die Microlino-Karten aus dem
+  App-Standard einmalig in den Vorrat)
+- Vorschlag **Stufe 2 (App, später)**: Knopf „Aus Zwischenablage übernehmen“ neben dem Feld (Clipboard-Plugin ist schon
+  drin) und Marken in der App: die App kennt die Szene und spielt nur deren Karten auf; dann kopiert die Console immer
+  den ganzen Vorrat. Wartet, bis die Session „naheliegende Handy-Ideen“ aus `main.js` heraus ist
+- Vorschlag **Notweg ohne Zwischenablage-Abgleich**: die Console zeigt die Karten als QR-Code, die Fold-Kamera liest
+  ihn und bietet „Text kopieren“ an (reicht für ein paar KB)
+- offen: Ist die geräteübergreifende Zwischenablage zwischen Zenbook und Fold an? (sonst erst einschalten oder QR)
+- fest **Szenen-Marken zum Start**: `#micro #werkstatt #lab #notfall #unterwegs`, weitere durch Eintippen; Karte ohne
+  Marke = in jeder Szene
+
 ### Bordbuch generisch: Objekte als Ordnung, Doku-Viewer für Notfälle (Markus, 13.11.2026, geparkt)
 Weiterführung von „Spickzettel und Handbücher trennen“: geordnet wird nach **Objekten**, nicht nach Dokumentart.
 - fest **ein Bordbuch pro Objekt** (Micro, Hruodland, Bambu, Hütte, NAS …) mit drei Teilen:
