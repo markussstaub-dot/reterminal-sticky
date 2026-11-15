@@ -342,6 +342,24 @@ export function recorderWidget(hoch = false) {
   ];
 }
 
+/**
+ * Ein Ziffernfeld für alles (SPEC „ein Ziffernfeld für alles“, Markus 15.11.2026): Rechner, Umrechner und die
+ * Eingabe-Art „Ziffern“ haben dieselben Tasten an derselben Stelle – 7-8-9 oben, 0 unten in der Mitte, links und rechts
+ * der 0 je ein Platz, rechts eine Spalte für Sonder-/Rechentasten (bei drei Einträgen geht der letzte über zwei Reihen:
+ * die Hauptaktion ⇄ bzw. OK). Rolle aus rechner.js (Ziffern schwarz, Hauptaktion Doppelring, Rest gerastert).
+ * F = Feld (logisch), 4 × 4 gleich große Zellen. → [{ t, x, y, w, h }]
+ */
+function ziffernfeld(g, F, rechts, links0 = '', rechts0 = '') {
+  const sp = F.w / 4, re = F.h / 4, aus = [];
+  [['7', '8', '9'], ['4', '5', '6'], ['1', '2', '3'], [links0, '0', rechts0]].forEach((zeile, r) => zeile.forEach((t, c) => {
+    if (t) aus.push({ t, x: F.x + c * sp, y: F.y + r * re, w: sp, h: re });
+  }));
+  rechts.forEach((t, i) => { if (t) aus.push({ t, x: F.x + 3 * sp, y: F.y + i * re, w: sp, h: rechts.length === 3 && i === 2 ? 2 * re : re }); });
+  for (const k of aus) braunKnopf(g, k.x, k.y, k.w, k.h, tastenText(k.t), R_ROLLE(k.t), { rund: k.h <= re + 1, rand: 6 });
+  return aus;
+}
+const feldZuDisplay = (k, hoch) => { const d = zuDisplay({ x: Math.round(k.x), y: Math.round(k.y), w: Math.round(k.w), h: Math.round(k.h) }, hoch); return `${d.x} ${d.y} ${d.x + d.w} ${d.y + d.h}`; };
+
 /** Anzeige-Fenster wie das LCD beim Braun */
 function fenster(g, x, y, w, h) {
   g.fillStyle = '#fff'; g.fillRect(x, y, w, h);
@@ -360,12 +378,12 @@ export function rechnerWidget(hoch = false) {
   const F = hoch ? { x: 16, y: 176, w: 448, h: 608 } : { x: 16, y: 136, w: 768, h: 336 };
   const tw = F.w / R_TASTEN[0].length, th = F.h / R_TASTEN.length;
   const liste = R_TASTEN.flat();
-  R_TASTEN.forEach((zeile, ze) => zeile.forEach((t, sp) => {
-    const x = F.x + sp * tw, y = F.y + ze * th;
-    braunKnopf(g, x, y, tw, th, tastenText(t), R_ROLLE(t), { rund: true });
-    const d = zuDisplay({ x: Math.round(x), y: Math.round(y), w: Math.round(tw), h: Math.round(th) }, hoch);
-    p.felder.push(`knopf ${d.x} ${d.y} ${d.x + d.w} ${d.y + d.h} taste ${liste.indexOf(t)}`);
-  }));
+  // oben die Speicherreihe, links √ % ⌫ C; rechts unten 4 × 4 das gemeinsame Ziffernfeld (Rechenzeichen rechts, , 0 =)
+  const rand = [...R_TASTEN[0].map((t, sp) => ({ t, x: F.x + sp * tw, y: F.y, w: tw, h: th })),
+    ...R_TASTEN.slice(1).map((z, ze) => ({ t: z[0], x: F.x, y: F.y + (ze + 1) * th, w: tw, h: th }))];
+  for (const k of rand) braunKnopf(g, k.x, k.y, k.w, k.h, tastenText(k.t), R_ROLLE(k.t), { rund: true });
+  const kern = ziffernfeld(g, { x: F.x + tw, y: F.y + th, w: 4 * tw, h: 4 * th }, ['÷', '×', '−', '+'], ',', '=');
+  for (const k of [...rand, ...kern]) p.felder.push(`knopf ${feldZuDisplay(k, hoch)} taste ${liste.indexOf(k.t)}`);
   // „.“, „E“, „o“ (mit „r“): Englisch zeigt die Firmware Punkt statt Komma und „Error“ statt „Fehler“ (FW 0.32.0)
   const glyphen = [...'0123456789,-+eFhlrM.Eo', ' '];
   const z = p.ziffernPos(tx, ty, Z.w);
@@ -396,16 +414,10 @@ export function umrechnerWidget(hoch = false) {
     const d = zuDisplay({ x: Math.round(x), y: Math.round(y), w: Math.round(lw), h: Math.round(lh) }, hoch);
     p.felder.push(`knopf ${d.x} ${d.y} ${d.x + d.w} ${d.y + d.h} paar ${i}`);
   });
-  const U = [['7', '8', '9', '⌫'], ['4', '5', '6', 'C'], ['1', '2', '3', '⇄'], ['±', '0', ',', '']];
-  const liste = U.flat().filter(Boolean);
-  const tw = TF.w / 4, th = TF.h / U.length;
-  U.forEach((zeile, ze) => zeile.forEach((t, sp) => {
-    if (!t) return;
-    const x = TF.x + sp * tw, y = TF.y + ze * th;
-    braunKnopf(g, x, y, tw, th, tastenText(t), t === '⇄' ? 'haupt' : /^[\d,]$/.test(t) ? 'wahl' : 'werkzeug', { rund: true });
-    const d = zuDisplay({ x: Math.round(x), y: Math.round(y), w: Math.round(tw), h: Math.round(th) }, hoch);
-    p.felder.push(`knopf ${d.x} ${d.y} ${d.x + d.w} ${d.y + d.h} taste ${liste.indexOf(t)}`);
-  }));
+  // gemeinsames Ziffernfeld: rechts C, ⌫ und ⇄ (über zwei Reihen, an der Stelle von OK bei „Ziffern“), links der 0 ±
+  const kern = ziffernfeld(g, TF, ['C', '⌫', '⇄'], '±', ',');
+  const liste = kern.map((k) => k.t);
+  for (const k of kern) p.felder.push(`knopf ${feldZuDisplay(k, hoch)} taste ${liste.indexOf(k.t)}`);
   // Glyphen: Ziffern, Zeichen und alle Buchstaben der Einheiten (°, /)
   const einheiten = new Set(PAARE.flatMap((pa) => [...pa.a, ...pa.b]));
   const glyphen = [...new Set([...'0123456789,-=', ...einheiten, ...'Fehlr', ...'.Eo', ' '])];   // .Eo(r): Englisch, s. Rechner
@@ -625,20 +637,11 @@ export function ziffernWidget(titel, hinweis, sonder = '', max = 6, hoch = false
   const Z = hoch ? { w: 32, h: 72 } : { w: 40, h: 64 }, n = 12;
   const tx = (A.x + A.w - 24 - n * Z.w) & ~7, ty = hoch ? 72 : A.y + 10;
   fenster(g, A.x, A.y, A.w, A.h);
-  const F = hoch ? { x: 16, y: 176, w: 336, h: 608 } : { x: 16, y: 136, w: 504, h: 336 };
-  const R = hoch ? { x: 352, w: 112 } : { x: 536, w: 248 };
-  const tw = F.w / 3, th = F.h / 4;
-  const taste = (x, y, w, h, t, aktion, rolle, rund = true) => {
-    braunKnopf(g, x, y, w, h, t, rolle, { rund, rand: 6 });
-    const d = zuDisplay({ x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h) }, hoch);
-    p.felder.push(`knopf ${d.x} ${d.y} ${d.x + d.w} ${d.y + d.h} ${aktion}`);
-  };
-  [['7', '8', '9'], ['4', '5', '6'], ['1', '2', '3'], ['', '0', '']].forEach((zeile, ze) => zeile.forEach((t, sp) => {
-    if (t) taste(F.x + sp * tw, F.y + ze * th, tw, th, t, `ziffer ${t}`, 'wahl');
-  }));
-  if (sonder) taste(R.x, F.y, R.w, th, sonder === ',' ? T(',', '.') : sonder === '-' ? '±' : sonder, 'sonder', 'werkzeug', false);
-  taste(R.x, F.y + th, R.w, th, '←', 'zurueck', 'werkzeug', false);
-  taste(R.x, F.y + 2 * th, R.w, 2 * th, 'OK', 'ok', 'haupt', false);
+  // gemeinsames Ziffernfeld (wie Rechner/Umrechner): rechts Sondertaste des Ziels, ⌫ (lang = alles weg), OK über zwei Reihen
+  const F = hoch ? { x: 16, y: 176, w: 448, h: 608 } : { x: 16, y: 136, w: 768, h: 336 };
+  const sonderText = sonder === '-' ? '±' : sonder;   // „,“ zeigt tastenText auf Englisch als „.“
+  const aktion = { '⌫': 'zurueck', OK: 'ok', [sonderText]: 'sonder' };
+  for (const k of ziffernfeld(g, F, [sonderText, '⌫', 'OK'])) p.felder.push(`knopf ${feldZuDisplay(k, hoch)} ${/^\d$/.test(k.t) ? `ziffer ${k.t}` : aktion[k.t]}`);
   const glyphen = [...new Set([...'0123456789.', ...(sonder || ''), ' '])];
   const z = p.ziffernPos(tx, ty, Z.w);
   p.felder.unshift('typ ziffern', hoch ? `ziffern ${Z.h} ${Z.w}` : `ziffern ${Z.w} ${Z.h}`, ...(hoch ? [`schritt 0 ${-Z.w}`] : []),

@@ -111,9 +111,9 @@ function seiten() {
     'w-zf-timer': {
       titel: T('Hilfe · Ziffern', 'Help · Digits'),
       zeilen: T(
-        ['!Eintippen', 'Ziffern, „:“ trennt Sekunden ab (5:30) · ← löscht eine Stelle, lang gehalten alles',
+        ['!Eintippen', 'Ziffern, „:“ trennt Sekunden ab (5:30) · ⌫ löscht eine Stelle, lang gehalten alles',
           '!Fertig', 'OK übernimmt die Zeit in den Timer · KI kurz = abbrechen'],
-        ['!Type', 'digits, “:” separates seconds (5:30) · ← deletes one digit, held long everything',
+        ['!Type', 'digits, “:” separates seconds (5:30) · ⌫ deletes one digit, held long everything',
           '!Done', 'OK sets the timer · short AI = cancel']).concat(ZURUECK()),
     },
     'w-jn-rec': {

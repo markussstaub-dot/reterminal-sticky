@@ -8,10 +8,10 @@ export const TASTEN = [
   ['√', '7', '8', '9', '÷'],
   ['%', '4', '5', '6', '×'],
   ['⌫', '1', '2', '3', '−'],
-  ['C', '0', ',', '=', '+'],
+  ['C', ',', '0', '=', '+'],   // 0 unten in der Mitte wie im gemeinsamen Ziffernfeld (SPEC „ein Ziffernfeld für alles“)
 ];
 /** Rolle im Braun-Stil (braun.js): Ziffern wahl (schwarz), = haupt (gelb), Speicher und ± neben (grün), Rest werkzeug (braun) */
-export const ROLLE = (t) => (/^[\d,]$/.test(t) ? 'wahl' : t === '=' ? 'haupt' : /^M/.test(t) || t === '±' ? 'neben' : 'werkzeug');
+export const ROLLE = (t) => (/^[\d,]$/.test(t) ? 'wahl' : t === '=' || t === '⇄' || t === 'OK' ? 'haupt' : /^M/.test(t) || t === '±' ? 'neben' : 'werkzeug');
 
 const rechne = (a, op, b) => (op === '+' ? a + b : op === '−' ? a - b : op === '×' ? a * b : op === '÷' ? (b === 0 ? NaN : a / b) : b);
 

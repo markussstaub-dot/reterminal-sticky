@@ -844,6 +844,11 @@ Mockup: `docs/gruppen-mockup.html`.
 - fest (Markus, 15.11.2026) **ein Ziffernfeld für alles**: Rechner, Umrechner und die Eingabe-Art „Ziffern“ zeigen
   dasselbe Tastenfeld im ET66-Stil – gleiche Tasten an gleicher Stelle (7-8-9 oben, 0 unten Mitte, rechte Spalte für
   Sonder-/Rechentasten). Wer eins kann, kann alle; die App zeichnet es aus einem gemeinsamen Baustein
+  - umgesetzt (15.11.2026, App): `ziffernfeld()` in `widgets.js`, 4 × 4 gleiche Zellen: 7-8-9 / 4-5-6 / 1-2-3 /
+    [links 0 rechts], rechte Spalte; bei drei Einträgen geht der letzte (Hauptaktion) über zwei Reihen. Rechner: Kern
+    rechts unten im 5er-Raster, rechts ÷ × − +, unten „, 0 =“ (Komma und 0 getauscht, damit die 0 in der Mitte sitzt),
+    Speicherreihe und √ % ⌫ C bleiben außen. Umrechner: rechts C, ⌫, ⇄; unten „± 0 ,“. Ziffern: rechts Sondertaste, ⌫,
+    OK – ⌫ und Hauptaktion sitzen bei Umrechner und Ziffern an derselben Stelle. Firmware unverändert (Tasten per Name)
 - fest (Markus, 15.11.2026) **jedes Werkzeug behält seine Lage**: wechselt der Reiter von Waage (quer) zu Lineal
   (hochkant), dreht das Bild mit (voller Refresh ~2 s). Der Sticky ist träge genug, dass das nicht nervt; mit Lage
   „auto“ entscheidet wie bisher der Lagesensor

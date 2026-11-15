@@ -88,7 +88,7 @@ export const rechnerWidget = {
 
 // ---- Umrechner --------------------------------------------------------------------------------
 // Einheitenpaare in zwei Spalten, daneben (quer) bzw. darunter (hochkant) die Tasten
-const U_TASTEN = [['7', '8', '9', '⌫'], ['4', '5', '6', 'C'], ['1', '2', '3', '⇄'], ['±', '0', ',', '']];
+const U_TASTEN = [['7', '8', '9', 'C'], ['4', '5', '6', '⌫'], ['1', '2', '3', '⇄'], ['±', '0', ',', '']];   // wie das gemeinsame Ziffernfeld
 export const umrechnerWidget = {
   get name() { return T('Umrechner', 'Converter'); },
   neu() { return new Umrechner(); },
