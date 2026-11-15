@@ -15,6 +15,7 @@
  * Regeln: KI halten während der Aufnahme = Merker (statt Diktat); nach jeder vollen Stunde Piepton und „!“; unter 15 %
  * Akku (und Spannung unter 3,7 V, oder unter 3,45 V allein) stoppt er selbst; ohne Karte keine Aufnahme.
  * Textfelder (felder.txt): 0 Zustand groß, 1 Zusatz, 2–6 Tagesliste (neueste oben).
+ * Löschen (FW 0.35.0): Knopf „eingabe 2“ öffnet Ja/Nein für die gewählte Zeile (eingabe.h → recLoeschen).
  */
 static const uint32_t REC_RING = 128 * 1024, REC_BLOCK = 4096;
 static const int REC_MERKER_MAX = 40, REC_ZEILEN = 5;
@@ -258,6 +259,38 @@ static bool recAktion(const char* a, int wert) {
         return true;
     }
     return false;
+}
+
+/** Ja/Nein „Aufnahme löschen?“ (eingabe.h): was gemeint ist, z. B. „14:02 12m“; leer = keine Zeile gewählt */
+static void recDetail(char* z, size_t n) {
+    z[0] = 0;
+    if (recWahl < 0 || recWahl >= recListeN) return;
+    char uhr[10];
+    recUhr(uhr, sizeof uhr, recListe[recWahl].startS);
+    snprintf(z, n, "%s %lum", uhr, (unsigned long)((recListe[recWahl].dauerS + 30) / 60));
+}
+
+/** Gewählte Aufnahme löschen: Datei von der Karte (falls noch da) und Zeile aus der Tagesliste */
+static bool recLoeschen(char* name, size_t n) {
+    if (recWahl < 0 || recWahl >= recListeN || !sdEin()) return false;
+    strlcpy(name, recListe[recWahl].name, n);
+    char pfad[48];
+    snprintf(pfad, sizeof pfad, "/ist/puffer/%s", name);
+    if (SD.exists(pfad)) SD.remove(pfad);
+    String rest;
+    File f = SD.open("/ist/recorder/liste.txt", FILE_READ);
+    if (f) {
+        while (f.available()) {
+            String z = f.readStringUntil('\n');
+            if (z.length() && !z.startsWith(String(name) + " ")) rest += z + "\n";
+        }
+        f.close();
+    }
+    f = SD.open("/ist/recorder/liste.txt", FILE_WRITE);
+    if (f) { f.print(rest); f.close(); }
+    recWahl = 0;
+    recListeLaden();
+    return true;
 }
 
 /** Aus audioLoop, solange audioRec: Abschluss nach dem Stopp */

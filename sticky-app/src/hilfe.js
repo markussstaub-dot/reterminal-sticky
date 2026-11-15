@@ -108,6 +108,19 @@ function seiten() {
           '!Listen', 'on the phone only: tap a row to play it there (again = pause), ▲ ▼ jumps to marks',
           '!Limits', 'beep after every hour · stops below 15 % battery · needs the card']).concat(ZURUECK()),
     },
+    'w-zf-timer': {
+      titel: T('Hilfe · Ziffern', 'Help · Digits'),
+      zeilen: T(
+        ['!Eintippen', 'Ziffern, „:“ trennt Sekunden ab (5:30) · ← löscht eine Stelle, lang gehalten alles',
+          '!Fertig', 'OK übernimmt die Zeit in den Timer · KI kurz = abbrechen'],
+        ['!Type', 'digits, “:” separates seconds (5:30) · ← deletes one digit, held long everything',
+          '!Done', 'OK sets the timer · short AI = cancel']).concat(ZURUECK()),
+    },
+    'w-jn-rec': {
+      titel: T('Hilfe · Ja/Nein', 'Help · Yes/No'),
+      zeilen: T(['!Antworten', 'Pille antippen oder ▲ = Ja, ▼ = Nein · KI kurz = abbrechen'],
+        ['!Answer', 'tap a pill or ▲ = yes, ▼ = no · short AI = cancel']).concat(ZURUECK()),
+    },
     'w-wecker': {
       titel: T('Hilfe · Wecker', 'Help · Alarm'),
       zeilen: T(

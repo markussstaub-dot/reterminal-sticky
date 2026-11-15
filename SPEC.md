@@ -904,6 +904,19 @@ für Rückfragen der App. Teil desselben Bausteins `eingabe.h`, alle ohne Handy,
   Uhr stellen)
 - fest **Stufe 1–5**: ein Tipp = fertig (Fahrt, Laune, wie gut lief's)
 - Vorschlag: die App kann jede davon als Rückfrage schicken (Frage + Antworten), die Antwort geht wie eine Notiz zurück
+- **umgesetzt FW 0.35.0** (15.11.2026, gebaut, nicht geflasht): **Ja/Nein** und **Ziffern** als Seiten der
+  Widget-Maschine (`typ janein`, `typ ziffern`, `firmware-ble/eingabe.h`); die App zeichnet sie (`EINGABEN` in
+  `widgets.js`), der Sticky nimmt Tasten an und gibt das Ergebnis ans Ziel. Vorschlag (umgesetzt) **Mechanik**: die
+  aufrufende Seite hat einen Knopf `eingabe <code>`, die Eingabe öffnet sich als eigene Seite und kehrt danach zurück;
+  KI kurz = Home (bricht ab). Je Ziel eine eigene Seite (Frage bzw. Sondertaste fest im Bild), Namen ≤ 15 Zeichen
+  - erste Ziele: **Timer-Minuten** (`zf-timer`: Zeit am Timer antippen; Sondertaste „:“ für Sekunden, „5:30“, bis
+    99:59, ungültig = Brummton, bleibt offen) und **Aufnahme löschen** (`jn-rec`: Knopf „Löschen“ auf der
+    Recorder-Seite für die gewählte Zeile; löscht die Datei von der Karte, falls noch da, und die Zeile der Tagesliste)
+  - ← lang gehalten (≥ 0,7 s) = alles weg (dazu meldet der Touch jetzt auch das Loslassen an die Widget-Maschine)
+  - offen: weitere Ziffern-Ziele (Parkplatz/Etage, Codes, Telefon) brauchen einen Ort für das Ergebnis – Vorschlag:
+    als Notiz `art: eingabe` mit Ziel, die App legt es ab (Parkplatz → „Geparkt“ auf Home)
+  - offen: Rückfrage der App (`rueckfrage.js`, heute Spielseite mit Handy) auf diese Seiten umstellen, dann geht die
+    Antwort auch ohne Handy
 
 #### Recorder für Längeres (Markus, 15.11.2026)
 Abgrenzung: **Diktat** (KI halten) ist für Kurzes, die Hand ist dabei belegt. Der **Recorder** ist für Minuten:
@@ -961,7 +974,7 @@ abtippen, sortieren, Ziele). Nimmt die Idee „Gesprächs-/Meeting-Notizen“ au
   - **Fernbedienung** (billig, darum mit drin): mit Handy spielt ein Tipp auf eine Zeile die Aufnahme am Handy ab
     (noch einmal = Pause), ▲/▼ springt dann zum vorigen/nächsten Merker. Nur für Aufnahmen, die schon beim Handy sind
     (✓); ohne Handy wählt der Tipp nur die Zeile
-  - Löschen am Sticky: kommt mit Ja/Nein (nächster Schritt)
+  - Löschen am Sticky: Knopf „Löschen“ → Ja/Nein für die gewählte Zeile (umgesetzt FW 0.35.0)
   - offen: Abholen bricht bei Funkabriss ab und beginnt beim nächsten Mal von vorn (Merker gehen dann verloren, weil
     die Notiz-Zeile schon abgeräumt ist); Weiterholen ab Byte n wäre der nächste Schritt
   - offen: am Gerät prüfen – Strom, ob 128 KB Ring reichen, ob der Ton beim Teil-Refresh lückenlos bleibt

@@ -83,12 +83,15 @@ function seite(hoch, titel, hinweis) {
 
 /** Timer (Countdown): große Knöpfe zum Tippen (±1 min, Start/Stopp, Vorlagen), ▲/▼ blättern wie überall. → [{ n, daten }] mit felder.txt zuletzt */
 export function timerWidget(hoch = false) {
-  const p = seite(hoch, 'Timer', T('Tippen zum Bedienen · ▲▼ = blättern · KI = Home', 'tap to operate · ▲▼ = scroll · AI = Home'));
+  const p = seite(hoch, 'Timer', T('Zeit antippen = eigene Zeit · ▲▼ = blättern', 'tap the time = own time · ▲▼ = scroll'));
   const startStopp = T('Start / Stopp', 'Start / Stop');
   // 5 Zellen „MM:SS“; hochkant: Zellenhöhe und y-Position Vielfache von 8 (werden auf dem Display zu Breite und x)
   const Z = hoch ? { w: 88, h: 136, x: 20, y: 80 } : { w: 96, h: 144, x: 160, y: 60 };
   const z = p.ziffernPos(Z.x, Z.y, Z.w);
   p.felder.push('typ countdown', 'dauer 300', hoch ? `ziffern ${Z.h} ${Z.w}` : `ziffern ${Z.w} ${Z.h}`, ...(hoch ? [`schritt 0 ${-Z.w}`] : []), `zeit ${z.x} ${z.y}`);
+  // Zeit antippen öffnet das Ziffernfeld (Art „Ziffern“, FW ≥ 0.35.0): unsichtbarer Knopf über den Ziffern
+  const zf = zuDisplay({ x: Z.x, y: Z.y, w: 5 * Z.w, h: Z.h }, hoch);
+  p.felder.push(`knopf ${zf.x} ${zf.y} ${zf.x + zf.w} ${zf.y + zf.h} eingabe 1`);
   const vorlagen = [[1, '1 min'], [3, '3'], [5, '5'], [10, '10'], [25, '25']];
   if (hoch) {
     p.k(16, 236, 464, 360, startStopp, 'start_stopp', 'haupt', 40);
@@ -305,10 +308,11 @@ export function recorderWidget(hoch = false) {
   const Z = { w: 24, h: 40 };
   const glyphen = recorderGlyphen();
   const L = hoch
-    ? { knopf: [16, 52, 464, 264], t0: [16, 280], t1: [16, 328], merker: [16, 376, 464, 448], kopf: 470, zeilen: { x: 24, y: 504, h: 56, x0: 16, x1: 464 } }
-    : { knopf: [16, 52, 392, 292], t0: [16, 304], t1: [16, 352], merker: [16, 400, 392, 472], kopf: 60, zeilen: { x: 416, y: 96, h: 64, x0: 404, x1: 784 } };
+    ? { knopf: [16, 52, 464, 264], t0: [16, 280], t1: [16, 328], merker: [16, 376, 300, 448], loeschen: [300, 376, 464, 448], kopf: 470, zeilen: { x: 24, y: 504, h: 56, x0: 16, x1: 464 } }
+    : { knopf: [16, 52, 392, 292], t0: [16, 304], t1: [16, 352], merker: [16, 400, 248, 472], loeschen: [248, 400, 392, 472], kopf: 60, zeilen: { x: 416, y: 96, h: 64, x0: 404, x1: 784 } };
   p.k(...L.knopf, T('● Aufnahme', '● Record'), 'rec', 'haupt', 40);
-  p.k(...L.merker, T('Merker setzen', 'Set mark'), 'merker', 'werkzeug', 28);
+  p.k(...L.merker, T('Merker', 'Mark'), 'merker', 'werkzeug', 28);
+  p.k(...L.loeschen, T('Löschen', 'Delete'), 'eingabe 2', 'neben', 24);   // Ja/Nein für die gewählte Zeile (FW ≥ 0.35.0)
   g.fillStyle = '#000'; g.textAlign = 'left'; g.textBaseline = 'middle';
   const R = L.zeilen;
   g.font = `500 24px ${FONT}`; g.fillText(T('Heute', 'Today'), R.x0 + 8, L.kopf);
@@ -584,8 +588,76 @@ function linealZoll(pxmm) {
   ];
 }
 
+// ---- Kleine Eingaben (SPEC „Kleine Eingaben“, Art „Ziffern“, FW ≥ 0.35.0) -----------------------------------------
+// Seiten der Widget-Maschine, die eine andere Seite kurz öffnet (firmware-ble/eingabe.h): die Firmware nimmt Tasten an,
+// setzt die Eingabezeile ein und gibt das Ergebnis ans Ziel zurück.
+
+/** Ja/Nein: Frage groß, darunter was gemeint ist (Textfeld 0, von der Firmware), zwei große Pillen; ▲ = Ja, ▼ = Nein */
+export function janeinWidget(titel, frage, hoch = false) {
+  const p = seite(hoch, titel, T('▲ = Ja · ▼ = Nein · KI = abbrechen', '▲ = yes · ▼ = no · AI = cancel'));
+  const { g } = p;
+  const Z = { w: 40, h: 64 }, n = 10, glyphen = [...'0123456789:map', ' '];
+  g.fillStyle = '#000'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.font = `500 ${hoch ? 40 : 44}px ${FONT}`;
+  g.fillText(frage, p.W / 2, hoch ? 150 : 104);
+  const tx = ((p.W - n * Z.w) / 2) & ~7, ty = hoch ? 216 : 152;
+  const z = p.ziffernPos(tx, ty, Z.w);
+  if (hoch) { p.k(16, 330, 464, 550, T('Ja', 'Yes'), 'ja', 'haupt', 48); p.k(16, 570, 464, 790, T('Nein', 'No'), 'nein', 'neben', 48); }
+  else { p.k(16, 252, 392, 468, T('Ja', 'Yes'), 'ja', 'haupt', 48); p.k(408, 252, 784, 468, T('Nein', 'No'), 'nein', 'neben', 48); }
+  p.felder.unshift('typ janein', hoch ? `ziffern ${Z.h} ${Z.w}` : `ziffern ${Z.w} ${Z.h}`, ...(hoch ? [`schritt 0 ${-Z.w}`] : []),
+    `glyphen ${glyphen.map((x) => (x === ' ' ? '_' : x)).join(' ')}`, `text ${z.x} ${z.y} ${n}`, 'taste up ja', 'taste down nein');
+  return [
+    { n: 'ziffern.bin', daten: textBlatt(Z.w, Z.h, glyphen, hoch) },
+    { n: 'bild.bin', daten: p.bild() },
+    { n: 'felder.txt', daten: text(p.felder) },
+  ];
+}
+
+/**
+ * Ziffern (Num-Pad, ET66-Stil): runde schwarze Tasten 7-8-9 oben wie beim Rechner, 0 unten in der Mitte; rechts die
+ * Sondertaste des Ziels (gerastert), darunter ← (lang = alles weg) und OK als Doppelring. Liefert nur die Zahl, rechnet nicht.
+ * sonder: „,“ Zahlen · „+“ Telefon · „#“ Codes · „-“ negativ · „:“ Minuten:Sekunden (Timer); max = Stellen
+ */
+export function ziffernWidget(titel, hinweis, sonder = '', max = 6, hoch = false) {
+  const p = seite(hoch, titel, hinweis);
+  const { g } = p;
+  const A = hoch ? { x: 16, y: 48, w: 448, h: 112 } : { x: 16, y: 44, w: 768, h: 84 };
+  const Z = hoch ? { w: 32, h: 72 } : { w: 40, h: 64 }, n = 12;
+  const tx = (A.x + A.w - 24 - n * Z.w) & ~7, ty = hoch ? 72 : A.y + 10;
+  fenster(g, A.x, A.y, A.w, A.h);
+  const F = hoch ? { x: 16, y: 176, w: 336, h: 608 } : { x: 16, y: 136, w: 504, h: 336 };
+  const R = hoch ? { x: 352, w: 112 } : { x: 536, w: 248 };
+  const tw = F.w / 3, th = F.h / 4;
+  const taste = (x, y, w, h, t, aktion, rolle, rund = true) => {
+    braunKnopf(g, x, y, w, h, t, rolle, { rund, rand: 6 });
+    const d = zuDisplay({ x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h) }, hoch);
+    p.felder.push(`knopf ${d.x} ${d.y} ${d.x + d.w} ${d.y + d.h} ${aktion}`);
+  };
+  [['7', '8', '9'], ['4', '5', '6'], ['1', '2', '3'], ['', '0', '']].forEach((zeile, ze) => zeile.forEach((t, sp) => {
+    if (t) taste(F.x + sp * tw, F.y + ze * th, tw, th, t, `ziffer ${t}`, 'wahl');
+  }));
+  if (sonder) taste(R.x, F.y, R.w, th, sonder === ',' ? T(',', '.') : sonder === '-' ? '±' : sonder, 'sonder', 'werkzeug', false);
+  taste(R.x, F.y + th, R.w, th, '←', 'zurueck', 'werkzeug', false);
+  taste(R.x, F.y + 2 * th, R.w, 2 * th, 'OK', 'ok', 'haupt', false);
+  const glyphen = [...new Set([...'0123456789.', ...(sonder || ''), ' '])];
+  const z = p.ziffernPos(tx, ty, Z.w);
+  p.felder.unshift('typ ziffern', hoch ? `ziffern ${Z.h} ${Z.w}` : `ziffern ${Z.w} ${Z.h}`, ...(hoch ? [`schritt 0 ${-Z.w}`] : []),
+    `glyphen ${glyphen.map((x) => (x === ' ' ? '_' : x)).join(' ')}`, `text ${z.x} ${z.y} ${n}`, `max ${max}`, ...(sonder ? [`sonder ${sonder}`] : []));
+  return [
+    { n: 'ziffern.bin', daten: textBlatt(Z.w, Z.h, glyphen, hoch) },
+    { n: 'bild.bin', daten: p.bild() },
+    { n: 'felder.txt', daten: text(p.felder) },
+  ];
+}
+
+/** Eingabe-Seiten je Ziel (Namen ≤ 15 Zeichen, so öffnet sie eingabe.h) */
+export const EINGABEN = {
+  'zf-timer': (h = false) => ziffernWidget(T('Timer · eigene Zeit', 'Timer · own time'), T('Minuten, mit „:“ auch Sekunden · KI = abbrechen', 'minutes, with “:” also seconds · AI = cancel'), ':', 4, h),
+  'jn-rec': (h = false) => janeinWidget('Recorder', T('Aufnahme löschen?', 'Delete recording?'), h),
+};
+
 export const WIDGETS = { timer: timerWidget, waage: waageWidget, lineal: () => linealWidget(linealEcht()), rechner: rechnerWidget, umrechner: umrechnerWidget,
-  weltzeit: weltzeitWidget, wecker: weckerWidget, recorder: recorderWidget, einstellungen: (h = false) => einstellungenWidget(h, HANDY_12H, HANDY_US),
+  weltzeit: weltzeitWidget, wecker: weckerWidget, recorder: recorderWidget, ...EINGABEN, einstellungen: (h = false) => einstellungenWidget(h, HANDY_12H, HANDY_US),
   'lineal-us': () => linealWidget(linealEcht(), true) };
 /** Kalibrierung aus der App (Mehr → Lineal): so viele echte mm misst die 80-mm-Marke */
 function linealEcht() { try { return parseFloat(localStorage.getItem(schluessel('lineal80'))) || 80; } catch { return 80; } }

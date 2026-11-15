@@ -41,7 +41,7 @@ import { SORTEN, naechsteSorte } from './sorte.js';
 import { HILFE } from './hilfe.js';
 import { HANDGRIFFE_STANDARD } from './handgriffe.js';
 import { AppSeite } from './appseite.js';
-import { WIDGETS, menueWidget } from './widgets.js';
+import { WIDGETS, EINGABEN, menueWidget } from './widgets.js';
 import { LAGE_STANDARD, LAGE_NAMEN, vomDisplay } from './lage.js';
 import { WOERTERBUCH_STANDARD, paareLesen, paareText, korrigiere, lernen, einpflegen } from './woerterbuch.js';
 import * as bb from './bordbuch.js';
@@ -971,6 +971,7 @@ const platzKachel = () => { const a = (bauZ ?? zwilling).geraet.anders; return !
 const widgetFunktionen = () => {
   const w = { ...WIDGETS, menue: (h) => menueWidget(karussellText().trim().split('\n'), h, platzKachel()) };
   if (!fwAb('0.34.0')) delete w.recorder;   // ältere Firmware kennt „typ recorder“ nicht
+  if (!fwAb('0.35.0')) for (const n of Object.keys(EINGABEN)) delete w[n];   // Ja/Nein, Ziffern erst ab FW 0.35.0
   return w;
 };
 const widgetBauer = () => {

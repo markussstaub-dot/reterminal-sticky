@@ -45,6 +45,17 @@ static bool wRechner = false, wUmrechner = false, wTextNeu = false, wPaarNeu = f
 static int wTx = -1, wTy = 0, wTn = 0, wGlyphAnzahl = 0, wTastenAnzahl = 0;
 static int wTxA[8], wTyA[8], wTnA[8], wTextAnzahl = 0;    // alle text-Zeilen; wTx/wTy/wTn ist die gerade gezeichnete
 static bool wWeltzeit = false, wWecker = false, wEinst = false, wRecorder = false;
+// Kleine Eingaben (eingabe.h, FW 0.35.0)
+static bool wJaNein = false, wZiffern = false;
+static int wEMax = 6;
+static char wESonder[5] = "";
+static volatile bool wLangZurueck = false;
+static int wTippKnopf = -1;
+static uint32_t wTippSeit = 0;
+static void eingabeOeffnen(int ziel);
+static bool eingabeAktion(const char* a, int wert);
+static void eingabeZeichnen();
+static void eingabeLoop();
 static void recZeichnen();                       // recorder.h
 static void recSeiteNeu();
 static bool recAktion(const char* a, int wert);
@@ -103,7 +114,7 @@ static bool widgetLaden(const char* name) {
     wKnopfAnzahl = 0; wzX = -1; wTaste[0][0] = wTaste[1][0] = 0; wHatUhr = false; wWaage = false; wbR = 0; wW1x = wW2x = -1;
     wzSchrittGesetzt = false;
     wRechner = wUmrechner = false; wTx = -1; wGlyphAnzahl = wTastenAnzahl = 0;
-    wWeltzeit = wWecker = wEinst = wRecorder = false; wTextAnzahl = 0; wStadtAnzahl = 0; wMinuteGezeigt = -1;
+    wWeltzeit = wWecker = wEinst = wRecorder = wJaNein = wZiffern = false; wTextAnzahl = 0; wEMax = 6; wESonder[0] = 0; wStadtAnzahl = 0; wMinuteGezeigt = -1;
     if (!wReBereit) { rNeu(wRe); wReBereit = true; }
     if (!wUmBereit) { uNeu(wUm); wUmBereit = true; }
     int altPaar = wUm.paar;
@@ -122,7 +133,8 @@ static bool widgetLaden(const char* name) {
             wRechner = !strcmp(a, "rechner"); wUmrechner = !strcmp(a, "umrechner");
             wWeltzeit = !strcmp(a, "weltzeit"); wWecker = !strcmp(a, "wecker"); wEinst = !strcmp(a, "einstellungen");
             wRecorder = !strcmp(a, "recorder");
-            wHatUhr = strcmp(a, "menue") && !wWaage && !wRechner && !wUmrechner && !wWeltzeit && !wWecker && !wEinst && !wRecorder;
+            wJaNein = !strcmp(a, "janein"); wZiffern = !strcmp(a, "ziffern");
+            wHatUhr = strcmp(a, "menue") && !wWaage && !wRechner && !wUmrechner && !wWeltzeit && !wWecker && !wEinst && !wRecorder && !wJaNein && !wZiffern;
         }
         else if (z.startsWith("glyphen ") || z.startsWith("tasten ")) {   // Wortliste (UTF-8), „_“ = Leerzeichen
             bool g = z.startsWith("glyphen ");
@@ -141,6 +153,8 @@ static bool widgetLaden(const char* name) {
             if (wTextAnzahl == 1) { wTx = v[0] & ~7; wTy = v[1]; wTn = v[2]; }
         }
         else if (sscanf(z.c_str(), "stadt %d", &v[0]) == 1 && wStadtAnzahl < 6) wStadtOff[wStadtAnzahl++] = v[0];
+        else if (sscanf(z.c_str(), "max %d", &v[0]) == 1) wEMax = constrain(v[0], 1, 20);
+        else if (z.startsWith("sonder ")) strlcpy(wESonder, z.substring(7).c_str(), sizeof wESonder);
         else if (z.startsWith("paar ") && wUm.anzahl < 12) {
             char von[8], nach[8]; double pa, pb;
             if (sscanf(z.c_str(), "paar %7s %7s %lf %lf", von, nach, &pa, &pb) == 4 && pa != 0) {
@@ -255,6 +269,7 @@ static void wAnzeigeZeichnen() {
         wFeld(0);
     }
     if (wRecorder) recZeichnen();
+    if (wJaNein || wZiffern) eingabeZeichnen();
     if (wEinst && wFeld(0)) { wTextZeichnen(uhr12Lokal < 0 ? "auto" : uhr12 ? "12 h" : "24 h", nullptr); wFeld(0); }
     if (wEinst && wFeld(2)) { wTextZeichnen(einhUsLokal < 0 ? "auto" : einhUs ? "US" : "metr", nullptr); wFeld(0); }
     if (wEinst && wFeld(3)) { wTextZeichnen(sprLokal < 0 ? "auto" : EN ? "EN" : "DE", nullptr); wFeld(0); }   // FW 0.32.0
@@ -422,7 +437,7 @@ static void widgetZeigen() {
         tone(PIN_BUZZER, 900, 120);           // Widget noch nicht aufgespielt
     }
     if (wRecorder) recSeiteNeu();
-    if (wRechner || wUmrechner || wWeltzeit || wWecker || wEinst || wRecorder) {
+    if (wRechner || wUmrechner || wWeltzeit || wWecker || wEinst || wRecorder || wJaNein || wZiffern) {
         if (!wHintergrund) wHintergrund = (uint8_t*)ps_malloc(IMG_BYTES);
         if (wHintergrund) memcpy(wHintergrund, imgBuf, IMG_BYTES);
         wPaarMarkieren();
@@ -446,6 +461,8 @@ static void karussellGehe(int i);
 static void widgetAktion(const char* a, int wert) {
     if (!strcmp(a, "gehe")) { karussellGehe(wert); return; }
     if (!strcmp(a, "platz")) { if (!platzWechseln()) tone(PIN_BUZZER, 900, 120); return; }   // Menü-Kachel „Sticky Lab“
+    if (!strcmp(a, "eingabe")) { eingabeOeffnen(wert); return; }   // Ja/Nein, Ziffern (FW 0.35.0)
+    if ((wJaNein || wZiffern) && eingabeAktion(a, wert)) return;
     if (wRecorder) { if (recAktion(a, wert)) wTextNeu = true; return; }
     if (wWaage && !strcmp(a, "null")) {                 // aktuelle Lage als Null (schräge Unterlage)
         float n0 = wNull[0], n1 = wNull[1];
@@ -535,9 +552,17 @@ static void widgetTipp(int x, int y) {
         if (x >= k.x0 && x < k.x1 && y >= k.y0 && y < k.y1) {
             tone(PIN_BUZZER, 2700, 25);   // sofort hörbar, die Anzeige folgt nach dem Refresh (~0,7 s)
             wTippX = x; wTippY = y;
+            wTippKnopf = i; wTippSeit = millis();
             return;
         }
     }
+}
+
+/** Aus sendTouch (up): ← der Ziffern lange gehalten (≥ 0,7 s) = alles weg */
+static void widgetLos() {
+    if (modus == M_WIDGET && wZiffern && wTippKnopf >= 0 && wTippKnopf < wKnopfAnzahl && !strcmp(wKnoepfe[wTippKnopf].aktion, "zurueck")
+        && millis() - wTippSeit >= 700) wLangZurueck = true;
+    wTippKnopf = -1;
 }
 
 /** Aus tasteAktion (▲/▼ kurz): true, wenn das Widget die Taste belegt hat */
@@ -583,6 +608,7 @@ static void widgetLoop() {
     if (modus == M_WIDGET && !hilfeAn && wTextNeu) { wTextNeu = false; wAnzeigeZeigen(); }
     weckerPruefen();
     recLoop();
+    eingabeLoop();
     if (modus == M_WIDGET && !hilfeAn && (wWeltzeit || wEinst)) {   // Weltzeit, Einstellungen (Uhr): jede Minute neu
         time_t jetzt = time(nullptr);
         int min_ = (int)(jetzt / 60);
