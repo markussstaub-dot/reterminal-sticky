@@ -11,7 +11,7 @@ export const UUID = {
 };
 
 export const OP = { BILD_START: 0x01, BILD_DATEN: 0x02, BILD_ENDE: 0x03, PING: 0x10, KARTE: 0x11, BB_INDEX: 0x13, BB_MODUS: 0x14,
-  ZEIT: 0x15, FAHRT_LAYOUT: 0x16, PUFFER_LISTE: 0x17, PUFFER_HOLEN: 0x18, PUFFER_LOESCHEN: 0x19, HOME_VERSION: 0x1a, WACH: 0x1b,
+  ZEIT: 0x15, FAHRT_LAYOUT: 0x16, PUFFER_LISTE: 0x17, PUFFER_HOLEN: 0x18, PUFFER_LOESCHEN: 0x19, HOME_VERSION: 0x1a, WACH: 0x1b, TIPPEN: 0x31,
   LISTE: 0x20, HOLEN: 0x21, LOESCHEN: 0x22,      // Datei-Abgleich (Zwilling 2.0): /ist lesen und quittieren,
   SCHR_START: 0x23, SCHR_DATEN: 0x24, SCHR_ENDE: 0x25 };   // /soll schreiben (FW ≥ 0.11.0)
 
@@ -113,6 +113,12 @@ const textRahmen = (op, text) => { const t = new TextEncoder().encode(text); con
 /** BILD_ENDE Modus 5: als Home-Bild n speichern (0 Karte, 1 Notiz-Seite, 2 Ziffernblatt) */
 export const rahmenHome = (n) => Uint8Array.of(OP.BILD_ENDE, 5, n);
 export const rahmenHomeVersion = (text) => textRahmen(OP.HOME_VERSION, text);
+/** Text an die Schreibmarke der Tippen-Seite (FW ≥ 0.37.0); der Sticky nimmt bis 255 Byte, gekürzt an einer Zeichengrenze */
+export const rahmenTippen = (text) => {
+  let t = String(text);
+  while (new TextEncoder().encode(t).length > 255) t = [...t].slice(0, -1).join('');
+  return textRahmen(OP.TIPPEN, t);
+};
 /** Modus am Sticky: 0 Home, 1 Bordbuch, 2 Notiz */
 export const rahmenModus = (m, seite = null) => (seite == null ? Uint8Array.of(OP.BB_MODUS, m) : Uint8Array.of(OP.BB_MODUS, m, seite));
 export const rahmenZeit = (ms = Date.now()) => { const r = new Uint8Array(9); r[0] = OP.ZEIT; let v = BigInt(ms); for (let i = 0; i < 8; i++) { r[1 + i] = Number(v & 0xffn); v >>= 8n; } return r; };

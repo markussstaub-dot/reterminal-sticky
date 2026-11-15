@@ -23,3 +23,12 @@ test('Häkchen, Gruppe verschieben, Glied verschieben', () => {
   assert.equal(wortliste(umschalten(z, 'home')), wortliste(z));          // Home bleibt an
   assert.equal(wortliste(blockSchieben(z, 'messen', -1)), wortliste(z)); // nicht über Home
 });
+
+test('Tippen: eigenes Häkchen in Notieren, hinter dem Recorder', () => {
+  let z = zustandAus(['home', 'widget recorder', 'kritzel']);
+  assert.deepEqual(z.bloecke.find((b) => b.id === 'notieren').glieder.slice(0, 2), ['recorder', 'kritzel']);
+  z = umschalten(z, 'tippen');
+  assert.equal(wortliste(z), 'home, recorder, kritzel, tippen');
+  z = gliedSchieben(gliedSchieben(z, 'tippen', -1), 'tippen', 0);
+  assert.equal(wortliste(z), 'home, recorder, tippen, kritzel');
+});

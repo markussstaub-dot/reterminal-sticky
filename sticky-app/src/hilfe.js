@@ -108,6 +108,18 @@ function seiten() {
           '!Listen', 'on the phone only: tap a row to play it there (again = pause), ▲ ▼ jumps to marks',
           '!Limits', 'beep after every hour · stops below 15 % battery · needs the card']).concat(ZURUECK()),
     },
+    'w-tippen': {
+      titel: T('Hilfe · Tippen', 'Help · Type'),
+      zeilen: T(
+        ['!Arten', 'Reiter unter der Textzeile: Tasten · Ziffern · Strich (Strichschrift-Seite) · Sprache',
+          '!Tasten', '⇧ = nächster Buchstabe groß (Schreibmarke wird zum Block) · ⌫ löscht, lang gehalten alles',
+          '!Sprache', 'KI halten und sprechen · mit Handy kommt der Text an die Schreibmarke, ohne wird es eine Sprachnotiz',
+          '!Fertig', 'OK = Notiz (landet in der App im Eingang, ohne Handy gepuffert) · der Text bleibt bis OK stehen'],
+        ['!Modes', 'tabs below the text line: Keys · Digits · Stroke (handwriting page) · Voice',
+          '!Keys', '⇧ = next letter upper case (the cursor turns into a block) · ⌫ deletes, held long everything',
+          '!Voice', 'hold AI and speak · with the phone the text goes to the cursor, without it becomes a voice note',
+          '!Done', 'OK = note (lands in the app inbox, buffered without the phone) · the text stays until OK']).concat(TASTEN_KURZ(), ZURUECK()),
+    },
     'w-zf-timer': {
       titel: T('Hilfe · Ziffern', 'Help · Digits'),
       zeilen: T(

@@ -39,3 +39,12 @@ test('Reiter: Glieder mit Index, aktives Glied, Varianten -us/-h', () => {
   assert.equal(reiterFuer('einstellungen', STANDARD), null);
   assert.equal(reiterFuer('waage', ['home', 'widget waage']), null);
 });
+
+test('Tippen (FW 0.37.0): steht in Notieren hinter dem Recorder; Ziffern und Sprache haben dieselben Reiter', () => {
+  const e = ['home', 'widget recorder', 'widget tippen', 'kritzel', 'schrift'];
+  const r = reiterFuer('tippen', e);
+  assert.deepEqual(r.glieder.map((x) => x.e), ['widget recorder', 'widget tippen', 'kritzel', 'schrift']);
+  assert.equal(r.aktiv, 1);
+  assert.deepEqual(reiterFuer('tippen-zf', e), r);
+  assert.deepEqual(reiterFuer('tippen-sp', e), r);
+});

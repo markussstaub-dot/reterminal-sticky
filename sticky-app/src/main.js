@@ -269,6 +269,16 @@ async function zeigeAufnahme(a) {
     if (pttAblage() && r.text && !r.unklar && !spaet) {
       Clipboard.write({ string: r.text }).then(() => { kopieren.textContent = T('Kopiert ✓', 'Copied ✓'); eintrag(T('Diktat in der Zwischenablage', 'Dictation copied to clipboard')); }).catch((e) => eintrag(T(`Zwischenablage: ${e.message}`, `Clipboard: ${e.message}`), true));
     }
+    // Tippen-Seite (FW ≥ 0.37.0): der Text gehört an die Schreibmarke; die Notiz entsteht dort mit OK (Art „getippt“)
+    if (a.ziel === 'tippen' && r.text && !r.unklar && !spaet) {
+      (a.sitzung ? a.sitzung.z : zwilling).tippen(r.text)
+        .then(() => eintrag(T(`Diktat an die Schreibmarke: ${r.text}`, `Dictation to the cursor: ${r.text}`)))
+        .catch((e) => {
+          eintrag(T(`Tippen: ${e.message} – als Notiz gespeichert`, `Type: ${e.message} – saved as a note`), true);
+          neueNotiz({ t: a.start, art: 'diktat', text: r.text, audio: nativ ? `aufnahmen/${name}` : name, dauerMs: a.dauerMs }, a.ort, 'Diktat', a.sitzung);
+        });
+      return;
+    }
     neueNotiz({ t: a.start, art: 'diktat', text: r.text || '', ...(a.wer ? { geraet: a.wer } : {}), ...((a.sitzung ? a.sitzung.z : zwilling).geraet.fahrt ? { faehrt: true } : {}), ...(r.roh ? { roh: r.roh } : {}), ...(r.unklar ? { unklar: r.unklar } : {}), audio: nativ ? `aufnahmen/${name}` : name, dauerMs: a.dauerMs, ...(spaet ? { offline: true } : {}) },
       spaet ? null : a.ort, 'Diktat', a.sitzung);
   }).catch((e) => {
@@ -323,6 +333,7 @@ zwilling.beobachte((art, d) => {
     else if (d.t === 'pong') eintrag('Pong');
     else if (d.t === 'rec' && ['abspielen', 'pause', 'springe'].includes(d.a)) recorderFernbedienung(d).catch((e) => eintrag(T(`Anhören: ${e.message}`, `Playback: ${e.message}`), true));
     else if (d.t === 'suchen') handyKlingeln();
+    else if (d.t === 'puffer' && d.a === 'neu') pufferAbholen().catch((e) => eintrag(T(`Notizen: ${e.message}`, `Notes: ${e.message}`), true));   // getippt (FW ≥ 0.37.0)
     else if (d.t === 'suche') eintrag(d.a === 'gefunden' ? T('Sticky gefunden', 'Sticky found') : T('Sticky piept', 'Sticky is beeping'));
     else if (d.t === 'schlaf') stickySchlaeft = true;
     else if (d.t === 'modus') { spiegelSetze({ modus: d.m, w: d.w ?? '', lh: d.lh ?? 0, ...(d.zettel != null ? { zettel: d.zettel } : {}), verbunden: true }); stickyModus = d.m; imBordbuch = d.m === 'bordbuch'; if (d.m !== 'app' && appSeite.frage) { appSeite.frage = null; eintrag(T('Rückfrage: nicht jetzt', 'Question: not now')); } fotoAnstossen(); eintrag(T('Modus: ', 'Mode: ') + ({ home: 'Home', notiz: T('Notiz', 'Note'), bordbuch: T('Bordbuch', 'Logbook'), kritzel: T('Kritzel', 'Doodle'), schrift: T('Schrift', 'Handwriting'), app: T('Spiel', 'Game'), widget: 'Widget', bestell: `${T('Zettel', 'List')} ${(d.zettel ?? 0) + 1}` }[d.m] ?? d.m)); if (d.m === 'app') { if (d.hoch != null) appSeite.hoch = !!d.hoch; } duellPruefen(); if (d.m === 'app' && !imDuell()) appSeite.zeigen().catch((e) => eintrag(T(`Spiel: ${e.message}`, `Game: ${e.message}`), true)); }
@@ -748,7 +759,7 @@ function zeigeNotiz(n, neu = false) {
   kopf.append(' ', schild);
   const was = document.createElement('div');
   was.className = 'was';
-  was.textContent = n.art === 'diktat' || n.art === 'recorder' ? `${n.art === 'recorder' ? `⏺ ${Math.round((n.dauerMs ?? 0) / 60000)} min · ` : '🎙 '}${notizText(n.text) || T('(nichts erkannt)', '(nothing recognised)')}` : n.art === 'kritzel' ? T('✎ Kritzel', '✎ Doodle') : n.art === 'schrift' ? `✍ ${n.text}` : n.knopf;
+  was.textContent = n.art === 'diktat' || n.art === 'recorder' ? `${n.art === 'recorder' ? `⏺ ${Math.round((n.dauerMs ?? 0) / 60000)} min · ` : '🎙 '}${notizText(n.text) || T('(nichts erkannt)', '(nothing recognised)')}` : n.art === 'kritzel' ? T('✎ Kritzel', '✎ Doodle') : n.art === 'schrift' ? `✍ ${n.text}` : n.art === 'getippt' ? `⌨ ${n.text}` : n.knopf;
   if (n.art === 'kritzel' && n.bild) {
     const img = document.createElement('img');
     img.className = 'kritzel';
@@ -895,11 +906,11 @@ async function abgleichKern() {
 }
 
 // ---- Karussell (SPEC „Bedienung und Oberfläche“): Reihe, durch die ▲/▼ am Sticky blättern -------------------------
-const KARUSSELL_STANDARD_DE = 'Home, Timer, Wecker, Weltzeit, Waage, Lineal, Recorder, Kritzel, Schrift, Rechner, Umrechner, Bordbuch, Zettel, Spiel, Einstellungen';
-const KARUSSELL_STANDARD_EN = 'Home, Timer, Alarm, World clock, Spirit level, Ruler, Recorder, Doodle, Handwriting, Calculator, Converter, Logbook, List, Game, Settings';
+const KARUSSELL_STANDARD_DE = 'Home, Timer, Wecker, Weltzeit, Waage, Lineal, Recorder, Tippen, Kritzel, Schrift, Rechner, Umrechner, Bordbuch, Zettel, Spiel, Einstellungen';
+const KARUSSELL_STANDARD_EN = 'Home, Timer, Alarm, World clock, Spirit level, Ruler, Recorder, Type, Doodle, Handwriting, Calculator, Converter, Logbook, List, Game, Settings';
 /** Standard der App-Sprache (beide Fassungen lösen über KARUSSELL_WOERTER gleich auf) */
 const karussellStandard = () => (appIstEn() ? KARUSSELL_STANDARD_EN : KARUSSELL_STANDARD_DE);
-const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'bordbuch', zettel: 'zettel', bestellzettel: 'zettel', kritzel: 'kritzel', kritzelblock: 'kritzel', schrift: 'schrift', strichschrift: 'schrift', app: 'app', spiel: 'app', burgduell: 'app', rechner: 'app', umrechner: 'app', timer: 'widget timer', waage: 'widget waage', wasserwaage: 'widget waage', lineal: 'widget lineal', wecker: 'widget wecker', weltzeit: 'widget weltzeit', einstellungen: 'widget einstellungen', recorder: 'widget recorder',
+const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'bordbuch', zettel: 'zettel', bestellzettel: 'zettel', kritzel: 'kritzel', kritzelblock: 'kritzel', schrift: 'schrift', strichschrift: 'schrift', app: 'app', spiel: 'app', burgduell: 'app', rechner: 'app', umrechner: 'app', timer: 'widget timer', waage: 'widget waage', wasserwaage: 'widget waage', lineal: 'widget lineal', wecker: 'widget wecker', weltzeit: 'widget weltzeit', einstellungen: 'widget einstellungen', recorder: 'widget recorder', tippen: 'widget tippen', type: 'widget tippen', tastatur: 'widget tippen', keyboard: 'widget tippen',
   // englische Eingaben (Anzeige Englisch), intern dieselben deutschen Wörter
   alarm: 'widget wecker', 'world clock': 'widget weltzeit', worldclock: 'widget weltzeit', level: 'widget waage', ruler: 'widget lineal', note: 'notiz', notes: 'notiz', scribble: 'kritzel', doodle: 'kritzel', 'spirit level': 'widget waage', handwriting: 'schrift',
   calculator: 'app', converter: 'app', logbook: 'bordbuch', list: 'zettel', lists: 'zettel', game: 'app', settings: 'widget einstellungen' };
@@ -909,7 +920,8 @@ function karussellText() {
   // Rechner/Umrechner rechnen ab FW 0.28.0 im Sticky (Widgets); vorher über die App-Seite
   const lokal = fwAb('0.28.0'), wort = (w) => (lokal && KARUSSELL_LOKAL[w] ? `widget ${KARUSSELL_LOKAL[w]}` : KARUSSELL_WOERTER[w]);
   const roh = (localStorage.getItem(schluessel('karussell')) || karussellStandard()).split(/[,;\n]/).map((w) => wort(w.trim().toLowerCase())).filter(Boolean)
-    .filter((e) => e !== 'widget recorder' || fwAb('0.34.0'));   // Recorder erst ab FW 0.34.0
+    .filter((e) => e !== 'widget recorder' || fwAb('0.34.0'))   // Recorder erst ab FW 0.34.0
+    .filter((e) => e !== 'widget tippen' || fwAb('0.37.0'));    // Tippen erst ab FW 0.37.0
   return [...new Set(roh)].join('\n') + '\n';
 }
 /** Tastenhilfe je Modus (▲+▼ am Sticky): auf eigener Leinwand rendern, damit die Vorschau bleibt, wie sie ist */
@@ -974,6 +986,7 @@ const widgetFunktionen = () => {
   const w = { ...WIDGETS, menue: (h) => menueWidget(karussellText().trim().split('\n'), h, platzKachel(), fwAb('0.36.0')) };
   if (!fwAb('0.34.0')) delete w.recorder;   // ältere Firmware kennt „typ recorder“ nicht
   if (!fwAb('0.35.0')) for (const n of Object.keys(EINGABEN)) delete w[n];   // Ja/Nein, Ziffern erst ab FW 0.35.0
+  if (!fwAb('0.37.0')) for (const n of ['tippen', 'tippen-zf', 'tippen-sp']) delete w[n];   // „typ tippen“ erst ab FW 0.37.0
   return w;
 };
 const widgetBauer = () => {
@@ -1054,6 +1067,20 @@ function karussellEintraegeRoh() {   // ohne Firmware-Filter, damit die Liste al
     if (w.some((x) => x.toLowerCase() === 'recorder')) return;
     const nach = w.findIndex((x) => ['notiz', 'note', 'notes'].includes(x.toLowerCase()));
     w.splice(nach >= 0 ? nach + 1 : w.length, 0, 'Recorder');
+    localStorage.setItem(k, w.join(', '));
+  } catch { /* egal */ }
+})();
+// Einmalig (15.11.2026): eigene Listen bekommen „Tippen“ hinter den Recorder (sonst kam Markus gar nicht an Tastatur
+// oder Num-Pad); ohne Recorder in der Liste ans Ende
+(function tippenNachtragen() {
+  try {
+    const k = schluessel('karussell'), merk = schluessel('karussellTippen'), alt = localStorage.getItem(k);
+    if (!alt || localStorage.getItem(merk)) return;
+    localStorage.setItem(merk, '1');
+    const w = alt.split(/[,;\n]/).map((x) => x.trim()).filter(Boolean);
+    if (w.some((x) => ['tippen', 'type', 'tastatur', 'keyboard'].includes(x.toLowerCase()))) return;
+    const nach = w.findIndex((x) => x.toLowerCase() === 'recorder');
+    w.splice(nach >= 0 ? nach + 1 : w.length, 0, appIstEn() ? 'Type' : 'Tippen');
     localStorage.setItem(k, w.join(', '));
   } catch { /* egal */ }
 })();
@@ -1407,6 +1434,9 @@ async function pufferAbholen(s = null) {
         await puffer.loeschen(z.audio, s);
       } catch (e) { eintrag(`${T('Diktat', 'Dictation')} ${z.audio}: ${e.message}`, true); }
       n = await notizen.notiere({ t, art: 'diktat', text, audio: pfad ?? z.audio, dauerMs, offline: true, ...wer });
+    } else if (z.art === 'getippt') {   // Tippen-Seite (FW ≥ 0.37.0): Text, landet im Eingang
+      if (!String(z.text ?? '').trim()) continue;
+      n = await notizen.notiere({ t, art: 'getippt', text: z.text, offline: true, ...wer });
     } else {
       n = await notizen.notiere({ t, art: 'knopf', knopf: z.knopf, offline: true, ...wer });
     }
@@ -1708,6 +1738,7 @@ function hgEreignis(s, art, d) {
       if (d.m === 'app' && !imDuell()) appSeiteHg.zeigen().catch((e) => eintrag(`${s.g.name}: ${e.message}`, true));
     }
     else if (d.t === 'suchen') handyKlingeln();
+    else if (d.t === 'puffer' && d.a === 'neu') pufferAbholen(s).catch((e) => eintrag(`${s.g.name}: ${e.message}`, true));   // getippt (FW ≥ 0.37.0)
     else if (d.t === 'touch' && d.a === 'down' && s.modus === 'app') { appSeiteHg.sitzung = s; appSeiteHg.tipp(d.x, d.y).catch((e) => eintrag(`${s.g.name}: ${e.message}`, true)); }
     else if (d.t === 'touch' && d.a === 'down' && s.modus === 'notiz') hgNotizTipp(s, d).catch((e) => eintrag(`${s.g.name}: ${e.message}`, true));
   }

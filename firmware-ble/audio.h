@@ -33,6 +33,7 @@ static volatile uint32_t recLiveVerlust = 0;
 static void recPaket(const uint8_t* p);   // recorder.h
 static void recAbschluss();               // recorder.h
 static bool recLaeuftJetzt();             // recorder.h
+static bool tippenZiel();                 // tippen.h (FW 0.37.0)
 static void recMerkerSetzen();            // recorder.h
 
 // ---- IMA-ADPCM ---------------------------------------------------------------------------
@@ -205,7 +206,8 @@ static void aufnahmeStart() {
     slowAt = 0;
     server->updateConnParams(connHandle, AUDIO_MIN, AUDIO_MAX, 0, 400);
     char j[140];
-    snprintf(j, sizeof j, "{\"t\":\"audio\",\"a\":\"start\",\"rate\":%d,\"codec\":\"ima-adpcm\",\"n\":%d,\"ms\":%llu}", AUDIO_RATE, AUDIO_SAMPLES, (unsigned long long)jetztMs());
+    snprintf(j, sizeof j, "{\"t\":\"audio\",\"a\":\"start\",\"rate\":%d,\"codec\":\"ima-adpcm\",\"n\":%d,\"ms\":%llu%s}", AUDIO_RATE, AUDIO_SAMPLES, (unsigned long long)jetztMs(),
+             tippenZiel() ? ",\"ziel\":\"tippen\"" : "");   // Tippen-Seite: Text kommt an die Schreibmarke (FW 0.37.0)
     sendEvt(j);
     xTaskCreatePinnedToCore(audioTask, "audio", 6144, nullptr, 5, nullptr, 1);
     indikator = 1;

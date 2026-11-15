@@ -917,6 +917,28 @@ Mockup: `docs/eingabe-mockup.html`.
     (Tasten, Ziffern, Sprache); sie bleibt. Umlaut-Gesten liegen dazwischen (mehr auswendig) → Lab
 - offen: Diktat später per Ollama nachbessern (Satzzeichen, Groß/klein)?
 - offen: Einfach-Profil für ältere Angehörige – nur Sprache und Tasten, keine Strichschrift?
+- **umgesetzt FW 0.37.0** (15.11.2026, Markus: „kam sonst gar nicht an Tastatur oder Num-Pad“; gebaut, nicht geflasht):
+  Karussell-Seite **„Tippen“** (EN „Type“, `typ tippen`, `firmware-ble/tippen.h`, App `tippenWidget` in `widgets.js`) in
+  der Gruppe Notieren: Recorder · Tippen · Kritzel · Schrift · Notiz. Oben die Textzeile (31 Zellen, linksbündig, die
+  letzten Zeichen), darunter die Reiter **Tasten · Ziffern · Strich · Sprache**; die Gruppen-Reiter bleiben im Kopf
+  - Tasten: QWERTZ mit Ä Ö Ü ß bzw. QWERTY (folgt der EDC-Sprache) wie Lab-Station 10; Touch in eigener Aufgabe (Klick
+    sofort, kein Anschlag geht verloren), Tasten nie neu gezeichnet, Textzeile gesammelt (0,3 s Pause, spätestens 1,5 s)
+  - Ziffern: das gemeinsame Ziffernfeld (rechts „,“ ⌫ OK, links der 0 Leerzeichen, rechts „:“), schreibt in dieselbe Zeile
+  - Strich: öffnet die vorhandene Strichschrift-Seite (eigene Textzeile, speichert als Notiz „schrift“) – noch nicht
+    dieselbe Zeile
+  - Sprache: KI halten wie überall; der Sticky meldet `ziel: tippen`, die App schickt den erkannten Text zurück an die
+    Schreibmarke (Opcode 0x31). Unklar erkannt oder zu spät: wie bisher eine Sprachnotiz; ohne Handy ebenso
+  - OK: der Text wird eine Notiz (Art „getippt“) über den Puffer (`notizen.jsonl`), die App holt sie bei Verbindung
+    sofort ab (`{"t":"puffer","a":"neu"}`), sonst beim nächsten Abgleich; Sorte „eingang“
+  - Vorschlag (umgesetzt) **Shift**: ⇧ macht den nächsten Buchstaben groß; angezeigt als Block-Schreibmarke statt
+    Strich, damit die Tasten nicht neu gezeichnet werden müssen (Lab zeichnete die Tastatur neu, ~0,85 s)
+  - Vorschlag (umgesetzt) **▲/▼ blättern wie überall** (nicht Art wechseln): die Reiter sind sichtbar, ▲/▼ bleibt
+    der Weg zur nächsten Seite
+  - Vorschlag (umgesetzt) die Sprachtaste des Labs ist auf EDC ein „?“ (Sprache stellt man in den Einstellungen); die
+    zuletzt genutzte Art bleibt (zurück auf „Tippen“ = dieselbe Art)
+  - Vorschlag (umgesetzt) der Text bleibt bis OK stehen, auch beim Seitenwechsel (im RAM; Ausschalten verwirft ihn)
+  - offen: Strichschrift in dieselbe Zeile; Zeichen außerhalb der Glyphen (z. B. „é“ aus dem Diktat) zeigt die Zeile
+    leer, in der Notiz stehen sie; Ziele (Zettel-Eintrag, Parkplatz) statt nur Notiz
 
 #### Kleine Eingaben (Markus, 15.11.2026)
 Neben Text und Zahlen braucht EDC ein paar Eingaben, die mit einem Tipp fertig sind – für Einstellungen am Sticky und

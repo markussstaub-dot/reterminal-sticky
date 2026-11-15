@@ -6,7 +6,7 @@
 export const GRUPPEN = [
   { id: 'zeit', de: 'Zeit', en: 'Time', glieder: ['widget timer', 'widget wecker', 'widget weltzeit'] },
   { id: 'messen', de: 'Messen', en: 'Measure', glieder: ['widget waage', 'widget lineal'] },
-  { id: 'notieren', de: 'Notieren', en: 'Capture', glieder: ['widget recorder', 'kritzel', 'schrift', 'notiz'] },   // Notiz-Knopfseite nur noch per Häkchen
+  { id: 'notieren', de: 'Notieren', en: 'Capture', glieder: ['widget recorder', 'widget tippen', 'kritzel', 'schrift', 'notiz'] },   // Notiz-Knopfseite nur noch per Häkchen
   { id: 'rechnen', de: 'Rechnen', en: 'Calculate', glieder: ['widget rechner', 'widget umrechner'] },
   { id: 'nachschlagen', de: 'Nachschlagen', en: 'Look up', glieder: ['bordbuch', 'zettel'] },
 ];
@@ -42,7 +42,7 @@ export function kachelAktion(k) {
  * null, wenn das Widget in keiner Gruppe mit mindestens zwei vorhandenen Gliedern steckt.
  */
 export function reiterFuer(name, eintraege) {
-  const e = `widget ${name.replace(/-(us|h)$/, '').replace(/-(us|h)$/, '')}`;
+  const e = `widget ${name.replace(/-(us|h)$/, '').replace(/-(us|h)$/, '').replace(/^tippen-(zf|sp)$/, 'tippen')}`;   // Arten der Tippen-Seite
   const g = gruppeVon(e);
   if (!g || !eintraege.includes(e)) return null;
   const glieder = g.glieder.map((x) => ({ e: x, i: eintraege.indexOf(x) })).filter((x) => x.i >= 0);

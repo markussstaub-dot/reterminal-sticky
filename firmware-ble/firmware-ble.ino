@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.36.1";
+static const char* FW_VERSION = "0.37.0";
 
 // ---- Sprache (FW 0.32.0, SPEC „Zweisprachig Deutsch/Englisch“): wirksame Sprache der Anzeige, Muster aus dem Sticky Lab.
 // Gesetzt in modus.h (uhrFormatLaden): Standard vom Handy, am Sticky überstimmbar. Nur Anzeige, Logs bleiben deutsch.
@@ -327,8 +327,9 @@ static void sendTouch(const char* a, int x, int y) {
 static bool tpDown = false;
 static int tpLastX = 0, tpLastY = 0;
 static volatile bool kzAn;   // Kritzelblock: eigene Aufgabe liest den Touch (modus.h)
+static volatile bool tipAn = false;   // Tippen: eigene Aufgabe liest den Touch (tippen.h, FW 0.37.0)
 static void touchPoll() {
-    if (!tpAddr || kzAn) return;
+    if (!tpAddr || kzAn || tipAn) return;
     uint8_t st;
     static int tpFehler = 0;
     if (!tpRead(0x814E, &st, 1)) { if (++tpFehler % 200 == 1) Serial.println("Touch: Lesefehler"); return; }
@@ -468,6 +469,7 @@ static void zeigeKarte() {
 #include "widget.h"
 #include "eingabe.h"
 #include "recorder.h"
+#include "tippen.h"
 
 // ---- Zustand -------------------------------------------------------------------
 static void sendState() {
@@ -632,6 +634,9 @@ class CmdCb : public NimBLECharacteristicCallbacks {
                 if (n > 2 && d[1] == M_BESTELL) bestellWunsch = d[2];
                 else if (n > 2) bbWunsch = d[2];
             }
+            break;
+        case 0x31:           // TIPPEN Text (UTF-8): erkanntes Diktat an die Schreibmarke der Tippen-Seite (FW 0.37.0)
+            if (n > 1 && !tipNeuDa) { size_t k = min(n - 1, sizeof tipNeu - 1); memcpy(tipNeu, d + 1, k); tipNeu[k] = 0; tipNeuDa = true; }
             break;
         case OP_HOME_VERSION: // 1A Text
             if (n > 1 && n - 1 < sizeof homeVersionNeu) { memcpy(homeVersionNeu, d + 1, n - 1); homeVersionNeu[n - 1] = 0; homeVersionDa = true; }

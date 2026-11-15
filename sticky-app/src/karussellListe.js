@@ -6,7 +6,7 @@ import { GRUPPEN } from './gruppen.js';
 /** alle Seiten in Standard-Reihenfolge: kanonisches Wort → Eintrag in karussell.txt */
 export const SEITEN = [
   ['home', 'home'], ['timer', 'widget timer'], ['wecker', 'widget wecker'], ['weltzeit', 'widget weltzeit'],
-  ['waage', 'widget waage'], ['lineal', 'widget lineal'], ['recorder', 'widget recorder'],
+  ['waage', 'widget waage'], ['lineal', 'widget lineal'], ['recorder', 'widget recorder'], ['tippen', 'widget tippen'],
   ['kritzel', 'kritzel'], ['schrift', 'schrift'], ['notiz', 'notiz'], ['rechner', 'widget rechner'], ['umrechner', 'widget umrechner'],
   ['bordbuch', 'bordbuch'], ['zettel', 'zettel'], ['spiel', 'app'], ['einstellungen', 'widget einstellungen'],
 ];

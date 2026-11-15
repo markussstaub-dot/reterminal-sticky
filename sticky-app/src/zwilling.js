@@ -1,6 +1,6 @@
 // Der Zwilling: Soll-Zustand des Sticky in der App (Quelle der Wahrheit) plus Übertragung.
 import { rahmenStart, rahmenDaten, rahmenEnde, rahmenKarte, rahmenPing, rahmenWach, nutzlastFuer, crc32, rahmenSpeichern, rahmenBbIndex, rahmenBbModus,
-  rahmenRueck, rahmenHome, rahmenHomeVersion, rahmenModus, rahmenZeit, rahmenFahrtLayout, rahmenPufferListe, rahmenPufferHolen, rahmenPufferLoeschen,
+  rahmenRueck, rahmenHome, rahmenHomeVersion, rahmenTippen, rahmenModus, rahmenZeit, rahmenFahrtLayout, rahmenPufferListe, rahmenPufferHolen, rahmenPufferLoeschen,
   rahmenListe, rahmenHolen, rahmenLoeschen, rahmenLeeren, rahmenSchreibStart, rahmenSchreibDaten, rahmenSchreibEnde } from './protokoll.js';
 import { Aufnahme, wav } from './audio.js';
 import { T } from './uebersetzen.js';
@@ -45,6 +45,7 @@ export class Zwilling {
         this.tLos = null;
         // Aufnahmezeit vom Sticky (Uhr), sonst Ankunft – zählt für Notiz, Dateiname und GPS-Entscheidung
         this.aufnahmeStart = e.ms > 1.7e12 ? e.ms : Date.now();
+        this.aufnahmeZiel = e.ziel ?? null;   // „tippen“: der Text gehört an die Schreibmarke (FW ≥ 0.37.0)
         this.#melde('aufnahmeLaeuft', { start: this.aufnahmeStart });
       }
       // Recorder (FW ≥ 0.34.0): live nur, wenn der Sticky „live“ meldet; die Datei liegt ohnehin auf seiner Karte
@@ -67,7 +68,7 @@ export class Zwilling {
         const r = this.aufnahme.ergebnis();
         this.aufnahme = null;
         const tStop = performance.now();
-        this.#melde('aufnahme', { ...r, wav: wav(r.pcm), geraet: e, tLos: this.tLos ?? tStop, tStop, start: this.aufnahmeStart ?? Date.now() });
+        this.#melde('aufnahme', { ...r, wav: wav(r.pcm), geraet: e, tLos: this.tLos ?? tStop, tStop, start: this.aufnahmeStart ?? Date.now(), ziel: this.aufnahmeZiel ?? null });
       }
       this.#melde('ereignis', e);
     };
@@ -143,6 +144,8 @@ export class Zwilling {
   async suchen(sekunden = 30) { await this.verbindung.schreiben(new Uint8Array([0x30, sekunden])); }
   async wach() { await this.verbindung.schreiben(rahmenWach()); }
   async homeVersion(text) { await this.verbindung.schreiben(rahmenHomeVersion(text)); }
+  /** Diktat-Text an die Schreibmarke der Tippen-Seite (FW ≥ 0.37.0) */
+  async tippen(text) { await this.verbindung.schreiben(rahmenTippen(text)); }
   async modusSetzen(m, seite = null) { await this.verbindung.schreiben(rahmenModus(m, seite)); }
   async zeitSetzen() { await this.verbindung.schreiben(rahmenZeit()); }
   async fahrtLayout(text) { await this.verbindung.schreiben(rahmenFahrtLayout(text)); }

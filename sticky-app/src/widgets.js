@@ -154,7 +154,7 @@ function handyZeichen(g, x, y) {
 const NAMEN = { home: ['Home', 'Home'], notiz: ['Notiz', 'Note'], bordbuch: ['Bordbuch', 'Logbook'], zettel: ['Zettel', 'Cards'],
   kritzel: ['Kritzel', 'Doodle'], schrift: ['Schrift', 'Writing'], app: ['Spiel', 'Game'] };
 const WIDGET_EN = { timer: 'Timer', wecker: 'Alarm', weltzeit: 'World clock', waage: 'Level', lineal: 'Ruler', rechner: 'Calculator',
-  umrechner: 'Converter', einstellungen: 'Settings', recorder: 'Recorder' };
+  umrechner: 'Converter', einstellungen: 'Settings', recorder: 'Recorder', tippen: 'Type' };
 export function kachelName(e) {
   if (e.startsWith('widget ')) { const w = e.slice(7); return T(w.replace(/^./, (b) => b.toUpperCase()), WIDGET_EN[w] ?? w.replace(/^./, (b) => b.toUpperCase())); }
   return NAMEN[e] ? T(...NAMEN[e]) : e;
@@ -701,8 +701,80 @@ export const EINGABEN = {
   'jn-rec': (h = false) => janeinWidget('Recorder', T('Aufnahme löschen?', 'Delete recording?'), h),
 };
 
+// ---- Tippen (SPEC „Eingabe: Tasten, Ziffern, Strich, Sprache“, FW ≥ 0.37.0) ------------------------------------------
+// Karussell-Seite „widget tippen“ (Gruppe Notieren): oben die Textzeile, darunter die Reiter Tasten · Ziffern · Strich ·
+// Sprache. Die App zeichnet alles, der Sticky führt den Text (firmware-ble/tippen.h). Ziffern und Sprache sind eigene
+// Bilder (tippen-zf, tippen-sp) unter demselben Seitennamen; Strich öffnet die vorhandene Strichschrift-Seite.
+
+/** Tastenreihen wie im Sticky Lab (Station 10): [Zeichen, Breite in Zehnteln einer Normaltaste]; Sondertasten mit Aktion */
+const TIPP_REIHEN = {
+  de: [[...'qwertzuiopü'], [...'asdfghjklöä'], [['⇧', 15, 'shift'], ...'yxcvbnmß', ['⌫', 15, 'weg']], [['?', 15], [',', 10], ['␣', 50, 'leer'], ['.', 10], ['OK', 15, 'ok']]],
+  en: [[...'qwertyuiop'], [...'asdfghjkl'], [['⇧', 15, 'shift'], ...'zxcvbnm', ['⌫', 15, 'weg']], [['?', 15], [',', 10], ['␣', 50, 'leer'], ['.', 10], ['OK', 15, 'ok']]],
+};
+/** Glyphen der Textzeile (Reihenfolge = Zellen in ziffern.bin): alles, was Tasten, Ziffern und ein Diktat meist liefern */
+export const TIPP_GLYPHEN = [...'abcdefghijklmnopqrstuvwxyz', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ', ...'äöüÄÖÜß', ...'0123456789', ...'.,:;-+#?!/()@&\'"%*=', ' '];
+const TIPP_ARTEN = [['Tasten', 'Keys', 0], ['Ziffern', 'Digits', 1], ['Strich', 'Stroke', 2], ['Sprache', 'Voice', 3]];
+
+/** Tippen-Seite der Art 0 (Tasten), 1 (Ziffern) oder 3 (Sprache); nur quer (wie im Lab) */
+export function tippenWidget(art = 0) {
+  const p = seite(false, T('Tippen', 'Type'), T('KI halten = sprechen · OK = Notiz', 'hold AI = speak · OK = note'));
+  const { g } = p;
+  // Textzeile: 31 Zellen à 24 × 44, die letzte frei für die Schreibmarke
+  const Z = { w: 24, h: 44 }, n = 31, tx = 24, ty = 58;
+  fenster(g, 16, 50, 768, 60);
+  // Reiter der Arten (Wisch-Gesten gibt es nicht; ▲/▼ blättert wie überall)
+  const rb = 768 / TIPP_ARTEN.length;
+  TIPP_ARTEN.forEach(([de, en, code], i) => {
+    if (code === art) braunKnopf(g, 16 + i * rb, 114, rb, 50, T(de, en), 'wahl', { gr: 22, rand: 4 });
+    else p.k(16 + i * rb, 114, 16 + (i + 1) * rb, 164, T(de, en), `art ${code}`, 'neben', 22);
+  });
+  const tasten = [];
+  const zeichen = (t) => { let i = tasten.indexOf(t); if (i < 0) { i = tasten.length; tasten.push(t); } return `zeichen ${i}`; };
+  if (art === 0) {
+    const KY = 168, KH = 78, X0 = 8, B = 784;
+    TIPP_REIHEN[appIstEn() ? 'en' : 'de'].forEach((reihe, r) => {
+      const ts = reihe.map((t) => (Array.isArray(t) ? t : [t, 10]));
+      const summe = ts.reduce((s, t) => s + t[1], 0);
+      let pos = 0;
+      for (const [t, b, aktion] of ts) {
+        const x = X0 + Math.round(pos * B / summe), w = X0 + Math.round((pos + b) * B / summe) - x;
+        pos += b;
+        const rolle = aktion === 'ok' ? 'haupt' : aktion && aktion !== 'leer' ? 'werkzeug' : 'neben';
+        const beschriftung = t === '␣' ? T('Leerzeichen', 'space') : t;
+        braunKnopf(g, x, KY + r * KH, w, KH, beschriftung, rolle, { gr: t.length > 1 || t === '␣' ? 22 : 32, rand: 4 });
+        const d = zuDisplay({ x, y: KY + r * KH, w, h: KH }, false);
+        p.felder.push(`knopf ${d.x} ${d.y} ${d.x + d.w} ${d.y + d.h} ${aktion ?? zeichen(t)}`);
+      }
+    });
+  } else if (art === 1) {
+    // das gemeinsame Ziffernfeld (wie Rechner, Umrechner, Eingabe „Ziffern“): rechts „,“ ⌫ OK, links der 0 Leerzeichen, rechts „:“
+    const aktion = { '⌫': 'weg', OK: 'ok', '␣': 'leer' };
+    for (const k of ziffernfeld(g, { x: 16, y: 168, w: 768, h: 308 }, [',', '⌫', 'OK'], '␣', ':')) {
+      p.felder.push(`knopf ${feldZuDisplay(k, false)} ${aktion[k.t] ?? zeichen(k.t === ',' ? T(',', '.') : k.t)}`);
+    }
+  } else {
+    g.fillStyle = '#000'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.font = `500 40px ${FONT}`;
+    g.fillText(T('KI-Taste halten und sprechen', 'Hold the AI key and speak'), 400, 222);
+    g.font = `24px ${FONT}`;
+    g.fillText(T('mit Handy: der Text kommt an die Schreibmarke', 'with the phone: the text goes to the cursor'), 400, 282);
+    g.fillText(T('ohne Handy: es wird eine Sprachnotiz', 'without the phone: it becomes a voice note'), 400, 318);
+    p.k(16, 380, 208, 472, '⌫', 'weg', 'werkzeug', 32);
+    p.k(216, 380, 576, 472, T('Leerzeichen', 'space'), 'leer', 'neben', 26);
+    p.k(584, 380, 784, 472, 'OK', 'ok', 'haupt', 32);
+  }
+  p.felder.unshift('typ tippen', `ziffern ${Z.w} ${Z.h}`, `glyphen ${TIPP_GLYPHEN.map((x) => (x === ' ' ? '_' : x)).join(' ')}`,
+    `text ${tx} ${ty} ${n}`, ...(tasten.length ? [`tasten ${tasten.join(' ')}`] : []));
+  return [
+    { n: 'ziffern.bin', daten: textBlatt(Z.w, Z.h, TIPP_GLYPHEN, false) },
+    { n: 'bild.bin', daten: p.bild() },
+    { n: 'felder.txt', daten: text(p.felder) },
+  ];
+}
+
 export const WIDGETS = { timer: timerWidget, waage: waageWidget, lineal: () => linealWidget(linealEcht()), rechner: rechnerWidget, umrechner: umrechnerWidget,
-  weltzeit: weltzeitWidget, wecker: weckerWidget, recorder: recorderWidget, ...EINGABEN, einstellungen: (h = false) => einstellungenWidget(h, HANDY_12H, HANDY_US),
+  weltzeit: weltzeitWidget, wecker: weckerWidget, recorder: recorderWidget, ...EINGABEN,
+  tippen: () => tippenWidget(0), 'tippen-zf': () => tippenWidget(1), 'tippen-sp': () => tippenWidget(3), einstellungen: (h = false) => einstellungenWidget(h, HANDY_12H, HANDY_US),
   'lineal-us': () => linealWidget(linealEcht(), true) };
 /** Kalibrierung aus der App (Mehr → Lineal): so viele echte mm misst die 80-mm-Marke */
 function linealEcht() { try { return parseFloat(localStorage.getItem(schluessel('lineal80'))) || 80; } catch { return 80; } }

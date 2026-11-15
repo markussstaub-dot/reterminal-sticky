@@ -28,6 +28,7 @@ Gedacht auch für den Microlino-Knopf: gleiche Rahmen, nur andere Bildgröße im
 | `19` | PUFFER_LOESCHEN | `19 Name` |
 | `14` | MODUS | `14 m [seite]` – 0 Home, 1 Bordbuch, 2 Notiz, 3 Bestellzettel; `seite` = Bordbuch-Seite bzw. Zettel (Fernbedienung aus der App) |
 | `30` | SUCHEN | `30 sekunden` – Sticky piept, bis eine Taste kommt → `{"t":"suche","a":"start|gefunden"}`; KI 3× am Sticky → `{"t":"suchen"}` (FW 0.25.0) |
+| `31` | TIPPEN | `31 text…` (UTF-8, ≤ 255 Byte) – erkanntes Diktat an die Schreibmarke der Tippen-Seite (FW 0.37.0) |
 | `1A` | HOME_VERSION | Text „crc;Anzahl Zettel“ nach dem Aufspielen der Home-Bilder |
 | `20` | LISTE | `20 pfad[|ab]` (unter `/ist` und `/soll`; mit `|ab` ab dem n-ten Eintrag weiterblättern) → `{"t":"liste","p","d":[{"n","b","ordner"?}],"mehr":bool}` (ab FW 0.10.0) |
 | `21` | HOLEN | `21 offset:u32 pfad` → ein Stück auf DATEI wie PUFFER_HOLEN |
@@ -52,6 +53,9 @@ Bild: Zeilen à 100 Byte, MSB = linkes Pixel, Bit 1 = schwarz. CRC-32 wie zlib.
   `{"t":"rec","a":"stop","datei","ms","pakete","verlust","live","merker":[ms…]}`; Fernbedienung vom Sticky:
   `{"t":"rec","a":"abspielen|pause","datei"}`, `{"t":"rec","a":"springe","r":-1|1}`. Die Datei liegt danach als
   `/ist/puffer/rJJMMTT-hhmmss.adp` (Pakete à 245 Byte) samt Notiz-Zeile `art: recorder`; Löschen = „hat Text“
+- Tippen (FW ≥ 0.37.0): `{"t":"audio","a":"start",…,"ziel":"tippen"}` = Diktat auf der Tippen-Seite, die App schickt den
+  Text mit TIPPEN zurück statt eine Notiz anzulegen; `{"t":"puffer","a":"neu"}` = neue Notiz-Zeile im Puffer (OK auf der
+  Tippen-Seite, Zeile `{"t","typ":"notiz","quelle":"sticky","art":"getippt","text","offline":true}`), die App holt gleich ab
 
 Fahrtenschreiber (ab FW 0.10.0): `/ist/log/JJJJ-MM-TT.txt` auf der Karte, je Zeile `HH:MM:SS Text` in Ortszeit
 (ohne gestellte Uhr `/ist/log/ohne-zeit.txt` mit `+Sekunden`). Die App holt per LISTE/HOLEN ab dem bekannten Stand
