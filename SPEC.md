@@ -701,6 +701,32 @@ Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzu
     Handy-Zeichen gleich dabei
   - Vorschlag: Wetter auf Home mit Uhrzeit des Stands, ab ~3 h alt ausgegraut
 
+### Eingabe: Tasten, Strich, Sprache (Markus, 15.11.2026, Entwurf)
+
+Anlass: Das Sticky Lab (Station 10) zeigt, dass eine Bildschirmtastatur auf e-Ink trägt – kein Anschlag geht
+verloren (Touch-Abfrage in eigener Aufgabe), Klick sofort, Textzeile gesammelt ~0,85 s; erster Mensch 49 Zeichen/min.
+Mockup: `docs/eingabe-mockup.html`.
+
+- Vorschlag **ein Baustein „Eingabe“** für alle Textziele (Notiz, Zettel-Eintrag, Spickzettel-Karte, Handbuch-Suche,
+  „Parkplatz“): oben die Textzeile, darunter eine von drei Arten **Tasten · Strich · Sprache**. Ein Modul `eingabe.h`
+  mit drei Unterseiten statt drei eigener Seiten. Kritzel bleibt eigene Seite (liefert Bild, keinen Text).
+- fest (bestehende Regel) **KI halten = Diktat**, auch mitten im Tippen; der Text landet an der Schreibmarke.
+- Vorschlag **Art wählen**: sichtbare Reiter oben rechts (tippen) und ▲/▼. **Keine neuen Wisch-Gesten**
+  (Markus skeptisch).
+- Vorschlag **jedes Ziel merkt sich die zuletzt genutzte Art** (Parkplatz → Tasten, Notiz → Sprache).
+- Vorschlag **Tasten** aus Lab-Station 10 übernehmen (MIT): QWERTZ mit Ä Ö Ü ß bzw. QWERTY, nur quer, Tasten nie neu
+  zeichnen, Textzeile gesammelt auffrischen (0,3 s Pause, spätestens 1,5 s), Teil-Refresh „wach“.
+- fest **Strich** = vorhandene Strichschrift (FW 0.27). Vorschlag: **Umlaut-Leiste** ä ö ü ß zum Antippen statt
+  Umlaut-Gesten (nur im deutschen Modus).
+- Vorschlag **Sprache**: Erkennung am Fold (Whisper) **in der App-Sprache** statt fest Deutsch; ohne Handy bleibt es
+  eine Sprachnotiz, bis der Abgleich sie zu Text macht.
+- Vorschlag **Englisch**: Oberfläche, Reiter („Keys · Stroke · Voice“) und Tastenbelegung folgen der EDC-Sprache.
+- offen: welche Ziele zuerst? (Vorschlag: Notiz und Zettel-Eintrag)
+- offen: Umlaute im englischen Tastenmodus (langes Drücken?)
+- offen: Strichschrift-Umlaute – Leiste reicht, oder doch Gesten?
+- offen: Diktat später per Ollama nachbessern (Satzzeichen, Groß/klein)?
+- offen: Einfach-Profil für ältere Angehörige – nur Sprache und Tasten, keine Strichschrift?
+
 ### Eigene Sensoren (laut Schaltplan, Bus MISC_I2C)
 | Baustein | Adresse | heute | Vorschlag |
 |---|---|---|---|
