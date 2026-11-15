@@ -460,6 +460,7 @@ static void widgetZeigen() {
 static void karussellGehe(int i);
 static void widgetAktion(const char* a, int wert) {
     if (!strcmp(a, "gehe")) { karussellGehe(wert); return; }
+    if (!strcmp(a, "gruppe")) { karussellGruppe((uint32_t)wert); return; }   // Menü-Kachel einer Gruppe (FW 0.36.0)
     if (!strcmp(a, "platz")) { if (!platzWechseln()) tone(PIN_BUZZER, 900, 120); return; }   // Menü-Kachel „Sticky Lab“
     if (!strcmp(a, "eingabe")) { eingabeOeffnen(wert); return; }   // Ja/Nein, Ziffern (FW 0.35.0)
     if ((wJaNein || wZiffern) && eingabeAktion(a, wert)) return;

@@ -672,6 +672,10 @@ static bool kiDiktat = false, upLang = false, downLang = false;
 static Modus karussell[16];   // bis 16 Einträge (FW 0.29.0; 0.26.0: 12, vorher 8)
 static char kWidget[16][16];   // Name zum Eintrag „widget <name>“
 static int kAnzahl = 0;
+// zuletzt besucht je Eintrag (laufender Zähler, nur im RAM) – für Menü-Kacheln „gruppe“ (SPEC „Gruppen im Menü“, FW 0.36.0)
+static uint32_t kBesucht[16] = {0};
+static uint32_t kBesuchZaehler = 0;
+static void karussellBesucht(int i) { if (i >= 0 && i < 16) kBesucht[i] = ++kBesuchZaehler; }
 
 static void karussellLaden() {
     kAnzahl = 0;
@@ -730,6 +734,7 @@ static void karussellSchritt(int richtung) {
         Modus m = karussell[k];
         if (!karussellDaI(k) || (m == modus && (m != M_WIDGET || !strcmp(kWidget[k], widgetName)))) continue;
         if (m == M_WIDGET) { strlcpy(widgetName, kWidget[k], sizeof widgetName); if (modus == M_WIDGET) neuZeichnen = true; }
+        karussellBesucht(k);
         if (m == M_BORDBUCH) bbWunsch = richtung > 0 ? bbToc : bbSeiten - 1;
         if (m == M_BESTELL) bestellAktuell = richtung > 0 ? 0 : bestellAnzahl - 1;
         modusWunsch = m;
@@ -748,7 +753,18 @@ static void karussellGehe(int i) {
     if (m == M_BORDBUCH) bbWunsch = bbToc;
     if (m == M_BESTELL) bestellAktuell = 0;
     if (m == M_WIDGET) { strlcpy(widgetName, kWidget[i], sizeof widgetName); if (modus == M_WIDGET) neuZeichnen = true; }
+    karussellBesucht(i);
     modusWunsch = m;
+}
+
+/** Menü-Gruppe: aus der Bitmaske der Karussell-Indizes das zuletzt besuchte (vorhandene) Glied öffnen, sonst das erste */
+static void karussellGruppe(uint32_t maske) {
+    int best = -1;
+    for (int i = 0; i < kAnzahl && i < 32; i++) {
+        if (!(maske & (1UL << i)) || !karussellDaI(i)) continue;
+        if (best < 0 || kBesucht[i] > kBesucht[best]) best = i;
+    }
+    karussellGehe(best);   // -1 → tiefer Ton
 }
 
 /** ▲/▼ kurz: innerhalb von Bordbuch und Zetteln blättern, an den Enden weiter im Karussell */

@@ -10,6 +10,7 @@ import { PAARE } from './umrechner.js';
 import { HANDY_12H, HANDY_US } from './zeit.js';
 import { schluessel } from './geraete.js';
 import { T, appIstEn } from './uebersetzen.js';
+import { menueKacheln, kachelAktion } from './gruppen.js';
 // Zweisprachig (SPEC „Zweisprachig Deutsch/Englisch“): Texte im Bild per T() beim Bauen (main.js baut im Sticky-Kontext).
 // felder.txt bleibt deutsch/Protokoll; Glyphenblätter enthalten die Zeichen beider Sprachen, denn der Sticky kann die
 // Sprache ohne Handy umschalten und setzt dann sofort „on/off“, „EN“, Punkt statt Komma und „Error“.
@@ -49,6 +50,12 @@ export function ziffernBlatt(w, h, zeichen = '0123456789:', hoch = false) {
   return rgbaZu1bpp(g.getImageData(0, 0, n * zw, zh).data, n * zw, zh);
 }
 
+/** Reiter der Gruppe für das Widget, das gerade gebaut wird (gruppen.js reiterFuer → { glieder, aktiv }), gesetzt von main.js */
+let reiterJetzt = null;
+export function mitReiter(reiter, bauen) { reiterJetzt = reiter; try { return bauen(); } finally { reiterJetzt = null; } }
+// Statuszeile des Sticky rechts oben: 288 px breit (24 h), 368 px mit a/p (12 h), 32 px hoch (firmware-ble/status.h)
+const REITER_QUER_B = 800 - 368 - 16, REITER_HOCH_B = 480 - 368 - 8;
+
 /** Seite logisch zeichnen: Leinwand mit Kopf, Knöpfe (Felder in Display-Koordinaten), am Ende gedreht als 1 bpp */
 function seite(hoch, titel, hinweis) {
   const { w: W, h: H } = groesse(hoch);
@@ -60,13 +67,28 @@ function seite(hoch, titel, hinweis) {
   g.textAlign = 'left';
   g.textBaseline = 'middle';
   g.font = `500 24px ${FONT}`;
-  g.fillText(titel, 16, 18);
-  if (hinweis && !hoch) {   // hochkant ist neben der Statuszeile kein Platz; die Hilfe (▲+▼) erklärt es
+  const reiter = reiterJetzt;
+  if (!reiter) g.fillText(titel, 16, 18);
+  if (hinweis && !hoch && !reiter) {   // hochkant ist neben der Statuszeile kein Platz; die Hilfe (▲+▼) erklärt es
     const tb = g.measureText(titel).width;
     g.font = `16px ${FONT}`;
     g.fillText(hinweis, 36 + tb, 19);
   }
   const felder = [];
+  if (reiter) {   // Gruppe: Reiter statt Seitenname (SPEC „Gruppen im Menü“); Tippen = gehe <Karussell-Index>
+    const feld = (x0, y0, x1, y1, ziel) => { const d = zuDisplay({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 }, hoch); felder.push(`knopf ${d.x} ${d.y} ${d.x + d.w} ${d.y + d.h} gehe ${ziel}`); };
+    if (!hoch) {
+      const n = reiter.glieder.length, b = Math.floor(REITER_QUER_B / n);
+      reiter.glieder.forEach((x, j) => {
+        braunKnopf(g, 8 + j * b, 0, b, 36, kachelName(x.e), j === reiter.aktiv ? 'wahl' : 'neben', { gr: n > 3 ? 18 : 22, rand: 3 });
+        if (j !== reiter.aktiv) feld(8 + j * b, 0, 8 + (j + 1) * b, 44, x.i);
+      });
+    } else {   // hochkant ist neben der Statuszeile nur Platz für eine Pille: aktueller Name, Tippen = nächstes Glied
+      const nach = reiter.glieder[(reiter.aktiv + 1) % reiter.glieder.length];
+      braunKnopf(g, 2, 0, REITER_HOCH_B, 36, `${kachelName(reiter.glieder[reiter.aktiv].e)} ›`, 'wahl', { gr: 17, rand: 3 });
+      feld(0, 0, REITER_HOCH_B + 4, 44, nach.i);
+    }
+  }
   return {
     g, W, H, felder,
     /** Knopf zeichnen (logisch) und als Feld eintragen (Display) */
@@ -139,25 +161,45 @@ function kachelName(e) {
 }
 
 /**
- * Menü (KI kurz auf Home): eine Kachel je Karussell-Eintrag, Tippen springt direkt hin (Aktion „gehe <i>“).
+ * Menü (KI kurz auf Home): eine Kachel je Gruppe (gruppen.js) bzw. je Eintrag ohne Gruppe. Gruppenkachel → „gruppe <Maske>“
+ * (die Firmware öffnet das zuletzt benutzte Glied, FW ≥ 0.36.0), Einzelkachel → „gehe <i>“.
  * eintraege: Zeilen wie in karussell.txt („home“, „widget timer“, …), Reihenfolge = Index im Karussell.
  * platz: Name der Firmware im anderen Platz (z. B. „Sticky Lab“, FW ≥ 0.33.0) → letzte Kachel schaltet dorthin um.
+ * gruppen: false = alte Einzelkacheln (Firmware vor 0.36.0 kennt „gruppe“ nicht).
  */
-export function menueWidget(eintraege, hoch = false, platz = null) {
+export function menueWidget(eintraege, hoch = false, platz = null, gruppen = true) {
   const p = seite(hoch, T('Menü', 'Menu'), T('Tippen = hin · KI = Home · ▲▼ = blättern', 'tap = go · AI = Home · ▲▼ = scroll'));
   p.felder.push('typ menue');
-  const n = eintraege.length + (platz ? 1 : 0);
+  const kacheln = gruppen ? menueKacheln(eintraege) : eintraege.map((e, i) => ({ gruppe: null, glieder: [{ e, i }] }));
+  const n = kacheln.length + (platz ? 1 : 0);
   const spalten = hoch ? (n > 12 ? 3 : 2) : n > 12 ? 4 : n > 6 ? 3 : 2;
   const zeilen = Math.ceil(n / spalten);
   const x0 = 16, y0 = hoch ? 48 : 44, w = (p.W - 32) / spalten, h = Math.min(hoch ? 180 : 140, (p.H - y0 - 12) / zeilen);
-  eintraege.forEach((e, i) => {
-    const name = kachelName(e);
+  kacheln.forEach((k, i) => {
     const x = Math.round(x0 + (i % spalten) * w), y = Math.round(y0 + Math.floor(i / spalten) * h);
-    p.k(x, y, Math.round(x + w), Math.round(y + h), name, `gehe ${i}`, e === 'home' ? 'wahl' : 'neben', 34);
-    if (NUR_MIT_HANDY.has(e)) handyZeichen(p.g, Math.round(x + w) - 40, Math.round(y + h / 2) - 14);   // rechts innen, mittig (Pillenform: Ecke liegt außerhalb)
+    const x1 = Math.round(x + w), y1 = Math.round(y + h);
+    const e = k.glieder[0].e;
+    if (!k.gruppe) {
+      p.k(x, y, x1, y1, kachelName(e), kachelAktion(k), e === 'home' ? 'wahl' : 'neben', 34);
+      if (NUR_MIT_HANDY.has(e)) handyZeichen(p.g, x1 - 40, Math.round(y + h / 2) - 14);   // rechts innen, mittig (Pillenform: Ecke liegt außerhalb)
+      return;
+    }
+    // Gruppe: Name groß, darunter klein die Glieder (eine Zeile, mit „·“)
+    p.k(x, y, x1, y1, '', kachelAktion(k), 'neben', 34);
+    const { g } = p;
+    g.fillStyle = '#000';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.font = `500 ${h > 100 ? 32 : 26}px ${FONT}`;
+    g.fillText(T(k.gruppe.de, k.gruppe.en), (x + x1) / 2, y + h * 0.42);
+    let klein = 18;
+    const liste = k.glieder.map((x2) => kachelName(x2.e)).join(' · ');
+    g.font = `${klein}px ${FONT}`;
+    while (klein > 12 && g.measureText(liste).width > w - 40) { klein -= 1; g.font = `${klein}px ${FONT}`; }
+    g.fillText(liste, (x + x1) / 2, y + h * 0.7);
   });
   if (platz) {   // Umschalten auf die andere Firmware (Werkzeug-Rolle: gerasterter Rand)
-    const i = eintraege.length, x = Math.round(x0 + (i % spalten) * w), y = Math.round(y0 + Math.floor(i / spalten) * h);
+    const i = kacheln.length, x = Math.round(x0 + (i % spalten) * w), y = Math.round(y0 + Math.floor(i / spalten) * h);
     p.k(x, y, Math.round(x + w), Math.round(y + h), `→ ${platz}`, 'platz', 'werkzeug', 34);
   }
   return [

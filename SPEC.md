@@ -858,6 +858,13 @@ Mockup: `docs/gruppen-mockup.html`.
 - Vorschlag **Szenen** wählen künftig Gruppen statt einzelner Seiten (Micro: Home, Zeit, Schreiben, Nachschlagen)
 - offen: Spiel und Einstellungen als eigene Gruppen oder unter „Mehr“? (Vorschlag: eigene Kacheln, ist ja nur zwei)
 - offen: Hilfe ▲+▼ zeigt die Reiter der Gruppe mit?
+- umgesetzt FW 0.36.0 + App (15.11.2026): `sticky-app/src/gruppen.js` (Gruppen, Menü-Kacheln, Reiter; Test
+  `tests/gruppen.test.js`), Menü mit einer Kachel je Gruppe (Name groß, Glieder klein), Aktion `gruppe <Bitmaske>`;
+  die Firmware merkt sich im RAM, welches Glied zuletzt besucht wurde (`kBesucht`, nach Neustart wieder das erste).
+  Reiter quer im Kopf links neben der Statuszeile (max. 416 px). Abweichung: **hochkant** ist neben der Statuszeile
+  nur Platz für eine Pille „Rechner ›“, Tippen = nächstes Glied. Reiter gibt es nur auf Widgets (Timer, Wecker,
+  Weltzeit, Waage, Lineal, Rechner, Umrechner, Recorder); Notiz, Kritzel, Schrift, Bordbuch und Zettel zeichnen ihren
+  Kopf anders und bleiben ohne Reiter – die Gruppe gilt dort nur im Menü
 
 ### Eingabe: Tasten, Ziffern, Strich, Sprache (Markus, 15.11.2026, abgenommen)
 

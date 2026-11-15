@@ -41,7 +41,8 @@ import { SORTEN, naechsteSorte } from './sorte.js';
 import { HILFE } from './hilfe.js';
 import { HANDGRIFFE_STANDARD } from './handgriffe.js';
 import { AppSeite } from './appseite.js';
-import { WIDGETS, EINGABEN, menueWidget } from './widgets.js';
+import { WIDGETS, EINGABEN, menueWidget, mitReiter } from './widgets.js';
+import { reiterFuer } from './gruppen.js';
 import { LAGE_STANDARD, LAGE_NAMEN, vomDisplay } from './lage.js';
 import { WOERTERBUCH_STANDARD, paareLesen, paareText, korrigiere, lernen, einpflegen } from './woerterbuch.js';
 import * as bb from './bordbuch.js';
@@ -969,7 +970,7 @@ function platzGeaendert() {   // je Gerät gemerkt; true, wenn sich „anders“
 }
 const platzKachel = () => { const a = (bauZ ?? zwilling).geraet.anders; return !a || a === 'firmware-ble' ? null : a === 'firmware' ? 'Sticky Lab' : a; };
 const widgetFunktionen = () => {
-  const w = { ...WIDGETS, menue: (h) => menueWidget(karussellText().trim().split('\n'), h, platzKachel()) };
+  const w = { ...WIDGETS, menue: (h) => menueWidget(karussellText().trim().split('\n'), h, platzKachel(), fwAb('0.36.0')) };
   if (!fwAb('0.34.0')) delete w.recorder;   // ältere Firmware kennt „typ recorder“ nicht
   if (!fwAb('0.35.0')) for (const n of Object.keys(EINGABEN)) delete w[n];   // Ja/Nein, Ziffern erst ab FW 0.35.0
   return w;
@@ -978,8 +979,10 @@ const widgetBauer = () => {
   const alle = widgetFunktionen();
   const b = {};
   for (const [n, f] of Object.entries(alle)) {
-    b[n] = () => f(hochkant(n));
-    if (auto(n)) b[`${n}-h`] = () => f(true);
+    // Reiter der Gruppe (SPEC „Gruppen im Menü“, FW ≥ 0.36.0): die App malt sie in den Kopf, die Firmware braucht dafür nichts
+    const reiter = n !== 'menue' && fwAb('0.36.0') ? reiterFuer(n, karussellText().trim().split('\n')) : null;
+    b[n] = () => mitReiter(reiter, () => f(hochkant(n)));
+    if (auto(n)) b[`${n}-h`] = () => mitReiter(reiter, () => f(true));
   }
   return b;
 };
