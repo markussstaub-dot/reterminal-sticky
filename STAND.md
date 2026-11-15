@@ -398,6 +398,9 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   "%LOCALAPPDATA%\sticky-build\firmware-ble" firmware-ble` (lief mit 921600 durch; bei Abbrüchen 460800).
   Neue Firmware lässt die Bordbuch-Seiten im Flash stehen
 - App: `sticky-app\apk.ps1` (Tests → Build → Gradle → `adb install -r` → App starten). OneDrive vorher anhalten
+  (15.11.2026: adb läuft auch über den magnetischen USB-Adapter am USB-A des Zenbook, nicht nur Laden. Legt OneDrive
+  die Web-Dateien als Platzhalter ab, scheitert Gradle mit „not a regular file“ → vorher
+  `attrib +P -U android\app\src\main\assets\* /S /D`)
   (`OneDrive.exe /shutdown`, danach `/background`), Build-Ausgaben liegen in `%LOCALAPPDATA%\sticky-app-build`
 - Pins (Schaltplan `reTerminal_Sticky_Schematic_diagram_260609.pdf`, Blatt SCH_TOP; Tasten am Gerät bestätigt):
   Tasten aktiv low KI GPIO4, ▲ GPIO5, ▼ GPIO6 · PWR_HOLD GPIO45 + PWR_LOCK GPIO46 (beide HIGH, sonst geht manches Gerät ohne USB aus) · Summer GPIO48 · Touch SCL 2 / SDA 3 / INT 21 /
