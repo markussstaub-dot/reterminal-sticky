@@ -436,6 +436,7 @@ static void widgetZeigen() {
 static void karussellGehe(int i);
 static void widgetAktion(const char* a, int wert) {
     if (!strcmp(a, "gehe")) { karussellGehe(wert); return; }
+    if (!strcmp(a, "platz")) { if (!platzWechseln()) tone(PIN_BUZZER, 900, 120); return; }   // Menü-Kachel „Sticky Lab“
     if (wWaage && !strcmp(a, "null")) {                 // aktuelle Lage als Null (schräge Unterlage)
         float n0 = wNull[0], n1 = wNull[1];
         wNull[0] = wNull[1] = 0;

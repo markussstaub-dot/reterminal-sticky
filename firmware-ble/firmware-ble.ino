@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.32.0";
+static const char* FW_VERSION = "0.33.0";
 
 // ---- Sprache (FW 0.32.0, SPEC „Zweisprachig Deutsch/Englisch“): wirksame Sprache der Anzeige, Muster aus dem Sticky Lab.
 // Gesetzt in modus.h (uhrFormatLaden): Standard vom Handy, am Sticky überstimmbar. Nur Anzeige, Logs bleiben deutsch.
@@ -462,19 +462,21 @@ static void zeigeKarte() {
 #include "fahrtenschreiber.h"
 #include "abgleich.h"
 #include "sensoren.h"
+#include "platz.h"
 #include "widget.h"
 
 // ---- Zustand -------------------------------------------------------------------
 static void sendState() {
     readBattery();
-    char j[520];
+    char j[600];
     snprintf(j, sizeof j,
-             "{\"fw\":\"%s\",\"seite\":\"%s\",\"bat\":%d,\"mv\":%d,\"ma\":%d,\"chg\":%s,\"mtu\":%u,\"phy\":%u,\"itvl\":%u,\"tp\":\"%ux%u\",\"fahrtv\":\"%08lx\",\"offen\":%d,\"uhr\":%s,\"modus\":\"%s\",\"homev\":\"%s\",\"usb\":%s,\"bb\":%d,\"zettel\":%d,\"temp\":%.1f,\"rf\":%.0f,\"taupunkt\":%.1f,\"fahrt\":%s,\"sensoren\":\"%s%s\",\"us\":%d,\"en\":%d,\"w\":\"%s\",\"lh\":%d}",
+             "{\"fw\":\"%s\",\"seite\":\"%s\",\"bat\":%d,\"mv\":%d,\"ma\":%d,\"chg\":%s,\"mtu\":%u,\"phy\":%u,\"itvl\":%u,\"tp\":\"%ux%u\",\"fahrtv\":\"%08lx\",\"offen\":%d,\"uhr\":%s,\"modus\":\"%s\",\"homev\":\"%s\",\"usb\":%s,\"bb\":%d,\"zettel\":%d,\"temp\":%.1f,\"rf\":%.0f,\"taupunkt\":%.1f,\"fahrt\":%s,\"sensoren\":\"%s%s\",\"us\":%d,\"en\":%d,\"w\":\"%s\",\"lh\":%d,\"platz\":%d,\"anders\":\"%s\"}",
              FW_VERSION, seite, batPct, batMv, batMa, laedt ? "true" : "false", mtu, phy, connItvl, tpResX, tpResY,
              (unsigned long)fahrtVersion, offeneNotizen, rtcDa ? "true" : "false",
              modusName(), homeVersion, usbDa() ? "true" : "false", bbAktuell, bestellAktuell,
              isnan(klimaT) ? -99.0f : klimaT, isnan(klimaRf) ? -1.0f : klimaRf, isnan(klimaTp) ? -99.0f : klimaTp,
-             fahrt ? "true" : "false", lsmDa ? "b" : "", shtDa ? "k" : "", einhUs ? 1 : 0, EN ? 1 : 0, modus == M_WIDGET ? widgetName : "", seiteHoch() ? 1 : 0);
+             fahrt ? "true" : "false", lsmDa ? "b" : "", shtDa ? "k" : "", einhUs ? 1 : 0, EN ? 1 : 0, modus == M_WIDGET ? widgetName : "", seiteHoch() ? 1 : 0,
+             platzNummer(), platzAndererName());
     if (connected && chState) {
         chState->setValue((const uint8_t*)j, strlen(j));
         chState->notify();
@@ -700,6 +702,7 @@ void setup() {
     Serial.begin(115200);
     delay(300);
     Serial.printf("\nSticky BLE-Durchstich %s\n", FW_VERSION);
+    platzNotausgang(PIN_BTN_UP);               // ▲ beim Einschalten halten = anderer Firmware-Platz (Sticky Lab)
 
     int ceVorher = digitalRead(PIN_CHG_EN_N);
     pinMode(PIN_CHG_EN_N, OUTPUT);

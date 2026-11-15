@@ -138,12 +138,14 @@ function kachelName(e) {
 /**
  * Menü (KI kurz auf Home): eine Kachel je Karussell-Eintrag, Tippen springt direkt hin (Aktion „gehe <i>“).
  * eintraege: Zeilen wie in karussell.txt („home“, „widget timer“, …), Reihenfolge = Index im Karussell.
+ * platz: Name der Firmware im anderen Platz (z. B. „Sticky Lab“, FW ≥ 0.33.0) → letzte Kachel schaltet dorthin um.
  */
-export function menueWidget(eintraege, hoch = false) {
+export function menueWidget(eintraege, hoch = false, platz = null) {
   const p = seite(hoch, T('Menü', 'Menu'), T('Tippen = hin · KI = Home · ▲▼ = blättern', 'tap = go · AI = Home · ▲▼ = scroll'));
   p.felder.push('typ menue');
-  const spalten = hoch ? (eintraege.length > 12 ? 3 : 2) : eintraege.length > 12 ? 4 : eintraege.length > 6 ? 3 : 2;
-  const zeilen = Math.ceil(eintraege.length / spalten);
+  const n = eintraege.length + (platz ? 1 : 0);
+  const spalten = hoch ? (n > 12 ? 3 : 2) : n > 12 ? 4 : n > 6 ? 3 : 2;
+  const zeilen = Math.ceil(n / spalten);
   const x0 = 16, y0 = hoch ? 48 : 44, w = (p.W - 32) / spalten, h = Math.min(hoch ? 180 : 140, (p.H - y0 - 12) / zeilen);
   eintraege.forEach((e, i) => {
     const name = kachelName(e);
@@ -151,6 +153,10 @@ export function menueWidget(eintraege, hoch = false) {
     p.k(x, y, Math.round(x + w), Math.round(y + h), name, `gehe ${i}`, e === 'home' ? 'wahl' : 'neben', 34);
     if (NUR_MIT_HANDY.has(e)) handyZeichen(p.g, Math.round(x + w) - 40, Math.round(y + h / 2) - 14);   // rechts innen, mittig (Pillenform: Ecke liegt außerhalb)
   });
+  if (platz) {   // Umschalten auf die andere Firmware (Werkzeug-Rolle: gerasterter Rand)
+    const i = eintraege.length, x = Math.round(x0 + (i % spalten) * w), y = Math.round(y0 + Math.floor(i / spalten) * h);
+    p.k(x, y, Math.round(x + w), Math.round(y + h), `→ ${platz}`, 'platz', 'werkzeug', 34);
+  }
   return [
     { n: 'bild.bin', daten: p.bild() },
     { n: 'felder.txt', daten: text(p.felder) },

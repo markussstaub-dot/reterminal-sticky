@@ -935,8 +935,8 @@ function einstellungenAufspielen(s = null) {
 async function karussellAufspielen() {
   const n = await einstellungenAufspielen();
   if (n) eintrag(`${T('Karussell', 'Carousel')}: ${karussellText().trim().split('\n').join(' → ')}`);
-  // Menü-Kacheln folgen dem Karussell (FW ≥ 0.19.0)
-  if (n && fwAb('0.19.0')) for (const [name, bauen] of Object.entries(widgetBauer())) if (name.startsWith('menue')) await zwilling.sollAbgleich(`widgets/${name}`, bauen());
+  // Menü-Kacheln folgen dem Karussell (FW ≥ 0.19.0) und dem anderen Firmware-Platz (Kachel „Sticky Lab“, FW ≥ 0.33.0)
+  if ((n | platzGeaendert()) && fwAb('0.19.0')) for (const [name, bauen] of Object.entries(widgetBauer())) if (name.startsWith('menue')) await zwilling.sollAbgleich(`widgets/${name}`, bauen());
 }
 // ---- Lage der Seiten (SPEC „Hoch/Quer in zwei Stufen“, Stufe 1, FW ≥ 0.21.0) -------------------------------------
 function lagen() {
@@ -955,7 +955,14 @@ const lageText = () => Object.entries(lagen()).map(([s, l]) => `${s} ${l}`).join
 const auto = (seite) => fwAb('0.22.0') && lagen()[seite] === 'auto';
 /** bei „auto“ (Stufe 2, FW ≥ 0.22.0) beide Lagen: <name> quer, <name>-h hochkant; der Sticky nimmt laut Lagesensor */
 /** alle Widgets als Funktion der Lage; das Menü folgt dem Karussell (auch für den Spiegel) */
-const widgetFunktionen = () => ({ ...WIDGETS, menue: (h) => menueWidget(karussellText().trim().split('\n'), h) });
+/** Firmware im anderen Platz (Zustand „anders“, FW ≥ 0.33.0): „firmware“ = Sticky Lab; EDC selbst oder leer = keine Kachel */
+function platzGeaendert() {   // je Gerät gemerkt; true, wenn sich „anders“ seit dem letzten Menü geändert hat
+  const jetzt = zwilling.geraet.anders ?? '';
+  try { if (localStorage.getItem(schluessel('platz')) === jetzt) return false; localStorage.setItem(schluessel('platz'), jetzt); } catch { /* egal */ }
+  return true;
+}
+const platzKachel = () => { const a = (bauZ ?? zwilling).geraet.anders; return !a || a === 'firmware-ble' ? null : a === 'firmware' ? 'Sticky Lab' : a; };
+const widgetFunktionen = () => ({ ...WIDGETS, menue: (h) => menueWidget(karussellText().trim().split('\n'), h, platzKachel()) });
 const widgetBauer = () => {
   const alle = widgetFunktionen();
   const b = {};

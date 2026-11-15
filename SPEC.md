@@ -194,6 +194,25 @@ Rechenarbeit im Handy, KI und Cloud nur als zuschaltbare Zusatzstufe.
   Rastermatsch, kleiner im Flash)
 - ~~Bestellzettel zum Vorzeigen~~ → umgesetzt, siehe „Home, Modi und Bestellzettel“ unten
 
+### Ideen mit Handy (Markus, 15.11.2026, geparkt – nur sammeln, nichts entschieden)
+Lab und EDC gelten als rund; das hier ist, was Sticky und Handy zusammen noch könnten. Von naheliegend bis Größenwahn.
+- naheliegend (Handy liefert, Sticky zeigt):
+  - **Kontextseite je Ort**: Micro → Akku, Reichweite, Tempolimit aus Bubble Log; Supermarkt → Zettel nach vorn;
+    daheim → Termine, Wetter. Das Handy kennt den Ort, der Sticky wechselt die Szene selbst
+  - **Rückfragen der App** mit den kleinen Eingaben („Fahrt beendet – wie war's? 1–5“, „Parkplatz merken? Ja/Nein“)
+  - **ausgewählte Benachrichtigungen dauerhaft** auf e-Ink (Paket, Ladeende, eine Person), ohne Handy-Display
+- mutiger (Sticky als Fernbedienung und zweiter Bildschirm):
+  - **Medienknopf**: Earbuds/Podcast-Kapitel/Recorder-Wiedergabe steuern, Ton vom Handy
+  - **Navigation light**: nur nächster Abbiegepfeil und Meter, groß im Micro, keine Karte
+  - **Kamera-Auslöser**: Fold auf dem Stativ, Tipp am Sticky = Foto, Vorschau aufs e-Ink
+  - **Fold als Rechenknecht**: Kritzel → Handschrift → Text; Foto vom Typenschild → passender Handbuch-Abschnitt
+- Größenwahn:
+  - **KI-Terminal**: KI halten, fragen, Fold oder Claude antwortet in drei Zeilen aufs e-Ink
+  - **Familien-Stickys**: zwei Stickys tauschen über ihre Handys Zettel, Grüße, Kritzel („Kühlschrankzettel über
+    600 km“); n:m bleibt verboten, es wären zwei Apps mit einem gemeinsamen Briefkasten
+  - **Liegengelassen-Wächter**: Handy piept, wenn Sticky und Handy sich trennen; der Bewegungssensor merkt, wo er
+    zuletzt lag
+
 ### Anregungen aus dem Seeed-Playground (11.11.2026, seeedstudio.com/sticky/playground/firmware/)
 Gesichtet: 38 Firmwares. Passend zu unserer Rolle (Handy-Erweiterung, Microlino), alles geparkt:
 - **Erinnerung aus Diktat** (vgl. RxNudge, Followup): „dran denken, morgen gelbe Tonne“ (kam so auf der
@@ -737,6 +756,10 @@ Mockup: `docs/eingabe-mockup.html`.
 - offen: Umlaute im englischen Tastenmodus (langes Drücken?)
 - fest (Markus, 15.11.2026): **Eingabewege sauber getrennt**, in EDC keine neuen Gesten. Umlaut- und andere Gesten
   bleiben ein Kandidat fürs Sticky Lab (erst dort ausprobieren, dann entscheiden); in EDC gilt die Umlaut-Leiste
+  - Klarstellung (Markus, 15.11.2026): **„keine neuen Gesten“ meint Wisch-Befehle zum Bedienen** (blättern, Art
+    wechseln, zurück) – unsichtbar, überall auf dem Bildschirm, leicht aus Versehen. Die **Strichschrift** sind zwar
+    auch Gesten, aber mit festem Ort (Schreibfeld) und festem Zweck (ein Zeichen), sichtbarem Ergebnis und Ausweg
+    (Tasten, Ziffern, Sprache); sie bleibt. Umlaut-Gesten liegen dazwischen (mehr auswendig) → Lab
 - offen: Diktat später per Ollama nachbessern (Satzzeichen, Groß/klein)?
 - offen: Einfach-Profil für ältere Angehörige – nur Sprache und Tasten, keine Strichschrift?
 
@@ -819,6 +842,10 @@ abtippen, sortieren, Ziele). Nimmt die Idee „Gesprächs-/Meeting-Notizen“ au
   - fest: Updates schreiben nur in den eigenen Platz (EDC → `app0`), nie „in den freien“. Gilt auch für Firmware von
     der Karte und die Firmware-Bibliothek in der App
   - Daten bleiben getrennt: EDC `/soll` `/ist` und LittleFS, Lab nur `/lab/` und NVS-Namensraum `lab`
+  - umgesetzt FW 0.33.0 (15.11.2026, gebaut, noch nicht geflasht): `firmware-ble/platz.h` (gleich im Lab), Zustand
+    meldet `platz` und `anders` (Projektname im anderen Platz: `firmware` = Lab); die App hängt dann ans Menü die
+    Kachel „→ Sticky Lab“ (Aktion `platz`); ▲ 1 s beim Einschalten = anderer Platz (nur nach echtem Einschalten).
+    Lab nach `app1`: `sticky-lab\werkzeuge\lab-nach-app1.ps1 -Port COMx` (nie `arduino-cli upload`, das trifft `app0`)
 - Merker (Markus, 15.11.2026): **Akku-Symbol nach Tiefentladung unzuverlässig** – beide Stickys über Nacht leer,
   kurz geladen, abgesteckt: Symbol zeigte halbvoll, trotzdem aus (Neustart beim Einstecken mit `POWERON`, e-Ink
   behielt das alte Bild samt „verbunden“). Der BQ27220 meldete danach Unsinn (45 % bzw. 83 %, „lädt“ mit 3–5 A).
