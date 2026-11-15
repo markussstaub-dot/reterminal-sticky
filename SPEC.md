@@ -402,6 +402,21 @@ Die App ist Lieferant und Abholer, kaum noch Fernsteuerung. Das Handy ist nur no
   auto/metrisch/US (°C/°F, Lineal mm/Zoll); Uhr von Hand stellen (FW 0.31.0)
 - Vorschlag später auf derselben Seite: 180° gedreht, im Schlummer findbar, Lage je Seite
 
+#### Stiller Modus (Markus, 16.11.2026, Entwurf)
+Anlass: Ton-Rückmeldung hilft, ist aber nicht diskret (Café, Besprechung).
+- Vorschlag **Einstellung „Ton“** auf der Einstellungsseite, drei Stufen statt Lautstärkeregler:
+  **an** (wie heute) · **nur Wecker/Timer** (Klicks und Bestätigungen still, Wecker und Timer-Ende piepen) · **aus**
+  (alles still, auch Wecker – dann blinkt der Bildschirm kurz invertiert und ein Hinweis bleibt stehen)
+- Vorschlag Standard: **an**; die App kann die Stufe je Szene setzen (z. B. Szene „Café“ = nur Wecker/Timer)
+- Vorschlag **stille Rückmeldung**: Tipps quittiert schon der Rahmen ums Feld; dazu ✓ bzw. ! kurz in der Statuszeile
+  für „gespeichert“/„Fehler“, solange der Ton nicht an ist
+- verworfen: „leiser“ – der Piezo lässt sich nur grob übers Tastverhältnis dämpfen, klingt dann kratzig
+- verworfen: Schnellschalter per Tastenkombination (keine neuen Gesten); zwei Tipps über die Einstellungen reichen
+- offen: Lade-LED als stilles Signal? Laut Lab hängt sie am Ladechip (GPIO40 = „lädt“) – erst im Lab prüfen, ob die
+  Firmware sie schalten kann
+- Technik: ein zentraler Wrapper statt der vielen `tone()`-Aufrufe (Art des Tons: Klick, Bestätigung, Fehler, Alarm),
+  der je Stufe entscheidet; Wahl auf der Karte wie die anderen Einstellungen
+
 #### Zweisprachig Deutsch/Englisch (Markus, 15.11.2026, abgenommen: Seiten ziehen beim Verbinden nach, Englisch mit Dezimalpunkt)
 Bestand: Die Firmware zeichnet selbst kaum Text (Startbild ohne App, „Aufnahme“, „Fehler“, Werte auf der
 Einstellungs-Seite und im Wecker). Alles andere am Sticky (Home, Menü, Widgets, Tastenhilfe ▲+▼, Notiz-Layout,
