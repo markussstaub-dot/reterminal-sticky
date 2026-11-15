@@ -41,7 +41,8 @@ import { SORTEN, naechsteSorte } from './sorte.js';
 import { HILFE } from './hilfe.js';
 import { HANDGRIFFE_STANDARD } from './handgriffe.js';
 import { AppSeite } from './appseite.js';
-import { WIDGETS, EINGABEN, menueWidget, mitReiter } from './widgets.js';
+import { WIDGETS, EINGABEN, menueWidget, mitReiter, kachelName } from './widgets.js';
+import { zustandAus, wortliste, umschalten, blockSchieben, gliedSchieben, EINTRAG } from './karussellListe.js';
 import { reiterFuer } from './gruppen.js';
 import { LAGE_STANDARD, LAGE_NAMEN, vomDisplay } from './lage.js';
 import { WOERTERBUCH_STANDARD, paareLesen, paareText, korrigiere, lernen, einpflegen } from './woerterbuch.js';
@@ -1038,11 +1039,58 @@ $('dreh180').onchange = () => {
 $('pttAblage').checked = pttAblage();
 $('pttAblage').onchange = () => { try { localStorage.setItem('sticky.pttAblage', $('pttAblage').checked ? '1' : '0'); } catch { /* egal */ } };
 
-$('karussell').value = localStorage.getItem(schluessel('karussell')) || karussellStandard();
-$('karussell').onchange = () => {
-  localStorage.setItem(schluessel('karussell'), $('karussell').value);
-  if (zwilling.verbunden && fwAb('0.13.0')) karussellAufspielen().catch((e) => eintrag(T(`Karussell: ${e.message}`, `Carousel: ${e.message}`), true));
-};
+// Liste nach Gruppen (Häkchen + Pfeile) statt Textfeld; gespeichert wird weiter die Wortliste
+function karussellEintraegeRoh() {   // ohne Firmware-Filter, damit die Liste alles zeigt
+  const wort = (w) => (KARUSSELL_LOKAL[w] ? `widget ${KARUSSELL_LOKAL[w]}` : KARUSSELL_WOERTER[w]);
+  return (localStorage.getItem(schluessel('karussell')) || karussellStandard()).split(/[,;\n]/).map((w) => wort(w.trim().toLowerCase())).filter(Boolean);
+}
+// Einmalig (Markus, 15.11.2026): eigene Karussell-Listen von vor dem Recorder bekommen ihn hinter die Notiz
+(function recorderNachtragen() {
+  try {
+    const k = schluessel('karussell'), merk = schluessel('karussellRecorder'), alt = localStorage.getItem(k);
+    if (!alt || localStorage.getItem(merk)) return;
+    localStorage.setItem(merk, '1');
+    const w = alt.split(/[,;\n]/).map((x) => x.trim()).filter(Boolean);
+    if (w.some((x) => x.toLowerCase() === 'recorder')) return;
+    const nach = w.findIndex((x) => ['notiz', 'note', 'notes'].includes(x.toLowerCase()));
+    w.splice(nach >= 0 ? nach + 1 : w.length, 0, 'Recorder');
+    localStorage.setItem(k, w.join(', '));
+  } catch { /* egal */ }
+})();
+let karussellZ = null;
+function karussellListeZeigen() {
+  if (!karussellZ) karussellZ = zustandAus(karussellEintraegeRoh());
+  const z = karussellZ, ziel = $('karussellListe');
+  const knopf = (txt, titel, f) => { const b = document.createElement('button'); b.className = 'kpfeil'; b.textContent = txt; b.title = titel; b.onclick = f; return b; };
+  const aendern = (neu) => {
+    karussellZ = neu;
+    localStorage.setItem(schluessel('karussell'), wortliste(neu));
+    karussellListeZeigen();
+    if (zwilling.verbunden && fwAb('0.13.0')) karussellAufspielen().catch((e) => eintrag(T(`Karussell: ${e.message}`, `Carousel: ${e.message}`), true));
+  };
+  const zeile = (w, mitPfeilen) => {
+    const d = document.createElement('div'); d.className = 'kzeile' + (z.an.has(w) ? '' : ' aus');
+    const l = document.createElement('label'), c = document.createElement('input');
+    c.type = 'checkbox'; c.checked = z.an.has(w); c.disabled = w === 'home'; c.onchange = () => aendern(umschalten(z, w));
+    l.append(c, kachelName(EINTRAG[w]));
+    d.append(l);
+    if (mitPfeilen) d.append(knopf('▲', T('höher', 'up'), () => aendern(gliedSchieben(z, w, -1))), knopf('▼', T('tiefer', 'down'), () => aendern(gliedSchieben(z, w, 1))));
+    return d;
+  };
+  ziel.replaceChildren(...z.bloecke.map((b) => {
+    const blockPfeile = b.id === 'home' ? [] : [knopf('▲', T('Gruppe höher', 'group up'), () => aendern(blockSchieben(z, b.id, -1))), knopf('▼', T('Gruppe tiefer', 'group down'), () => aendern(blockSchieben(z, b.id, 1)))];
+    const d = document.createElement('div'); d.className = 'kblock';
+    if (!b.gruppe) {   // Einzelseite: Häkchen und Pfeile in einer Zeile
+      const r = zeile(b.glieder[0], false); r.append(...blockPfeile); d.append(r); return d;
+    }
+    const kopf = document.createElement('div'); kopf.className = 'kkopf';
+    const n = document.createElement('span'); n.className = 'name'; n.textContent = T(b.gruppe.de, b.gruppe.en);
+    kopf.append(n, ...blockPfeile);
+    d.append(kopf, ...b.glieder.map((w) => zeile(w, true)));
+    return d;
+  }));
+}
+karussellListeZeigen();
 
 // ---- Fahrtenschreiber (SPEC „Zwilling 2.0“): /ist/log/JJJJ-MM-TT.txt auf der Karte des Sticky ----------------------
 // Die App holt nur den neuen Teil (Stand je Datei in localStorage) und hängt ihn an ihre Kopie an

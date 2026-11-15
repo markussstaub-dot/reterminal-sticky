@@ -866,6 +866,10 @@ Mockup: `docs/gruppen-mockup.html`.
   nur Platz für eine Pille „Rechner ›“, Tippen = nächstes Glied. Reiter gibt es nur auf Widgets (Timer, Wecker,
   Weltzeit, Waage, Lineal, Rechner, Umrechner, Recorder); Notiz, Kritzel, Schrift, Bordbuch und Zettel zeichnen ihren
   Kopf anders und bleiben ohne Reiter – die Gruppe gilt dort nur im Menü
+- umgesetzt App (15.11.2026, Markus: „Mehr → Karussell mit Gruppen unklar“): **Karussell als Liste nach Gruppen**
+  statt Textfeld (`src/karussellListe.js`): Gruppen-Blöcke mit Häkchen (drin/raus) und Pfeilen (Gruppe bzw. Werkzeug
+  höher/tiefer), Home immer an und oben. Gespeichert wird weiter die Wortliste. Einmalig wird der Recorder in ältere
+  eigene Listen hinter die Notiz eingetragen
 
 ### Eingabe: Tasten, Ziffern, Strich, Sprache (Markus, 15.11.2026, abgenommen)
 

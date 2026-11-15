@@ -146,3 +146,15 @@ label.lage { display: flex; justify-content: space-between; align-items: center;
 .geraete li.aktiv input { font-weight: 600; }
 .geraete input { flex: 1 1 8em; min-width: 8em; }
 .geraete .klein { flex-basis: 100%; opacity: .7; }
+
+/* Karussell als Liste nach Gruppen (Mehr → Karussell) */
+.kliste { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.kblock { border: 1px solid var(--linie, #ccc); border-radius: 12px; padding: 6px 8px; }
+.kkopf, .kzeile { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+.kkopf { font-weight: 600; }
+.kzeile label { flex: 1; display: flex; align-items: center; gap: 10px; }
+.kzeile input { width: 22px; height: 22px; }
+.kzeile.aus label { opacity: .5; }
+.kkopf .name { flex: 1; }
+.kpfeil { min-width: 40px; min-height: 40px; border-radius: 20px; }
+.kblock .kzeile { padding-left: 8px; }
