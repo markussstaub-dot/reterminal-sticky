@@ -819,6 +819,38 @@ Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzu
     Handy-Zeichen gleich dabei
   - Vorschlag: Wetter auf Home mit Uhrzeit des Stands, ab ~3 h alt ausgegraut
 
+### Gruppen im Menü: Werkzeuge mit Reitern (Markus, 15.11.2026, Entwurf)
+Anlass: 15 Kacheln im Menü sind zu viele; manches gehört zusammen (Waage und Lineal, Rechner und Umrechner).
+Mockup: `docs/gruppen-mockup.html`.
+- fest **Weg A: Reiter statt Untermenü**: eine Kachel je Gruppe; im Werkzeug oben Reiter der Gruppe („Waage · Lineal“),
+  Tippen wechselt. Gleiches Muster wie die Eingabe-Arten (Tasten · Ziffern · Strich · Sprache). Untermenüs (Weg B)
+  verworfen: ein Tipp mehr für zwei, drei Werkzeuge
+- Vorschlag **Gruppen** (Standard, in der App änderbar wie das Karussell):
+  | Gruppe | Werkzeuge |
+  |---|---|
+  | Home | Home |
+  | Zeit | Timer · Wecker · Weltzeit |
+  | Messen | Waage · Lineal (später Winkel aus dem Bewegungssensor) |
+  | Schreiben | Notiz · Kritzel · Schrift (später Recorder) |
+  | Rechnen | Rechner · Umrechner |
+  | Nachschlagen | Bordbuch · Zettel (später Spickzettel getrennt vom Bordbuch) |
+  | Spiel · Einstellungen | je allein |
+  → 8 Kacheln statt 15
+- Vorschlag **▲/▼ bleibt flach**: das Karussell geht weiter durch jedes Werkzeug einzeln (heutige Reihenfolge, nach
+  Gruppen sortiert); am Reiter sieht man, wo man ist. Damit gilt „▲/▼ = blättern“ unverändert, und am letzten Reiter
+  geht es in die nächste Gruppe. Gruppen ordnen nur Menü und Reiter
+- Vorschlag **Menü-Kachel = zuletzt benutztes Werkzeug der Gruppe** (merkt der Sticky, nicht die App); neue Aktion
+  `gruppe <i0> <i1> …` in `felder.txt`, die Firmware springt zum zuletzt besuchten Index daraus
+- fest (Markus, 15.11.2026) **jedes Werkzeug behält seine Lage**: wechselt der Reiter von Waage (quer) zu Lineal
+  (hochkant), dreht das Bild mit (voller Refresh ~2 s). Der Sticky ist träge genug, dass das nicht nervt; mit Lage
+  „auto“ entscheidet wie bisher der Lagesensor
+- Vorschlag **Zeichnen**: die App malt die Reiter in den Kopf jedes Widget-Bilds (Rolle wie Auswahl: aktiver Reiter
+  schwarz gefüllt) und legt je Reiter ein Knopffeld `gehe <i>` an – dafür braucht die Firmware nichts Neues. Nur
+  Home behält seinen Kopf ohne Reiter
+- Vorschlag **Szenen** wählen künftig Gruppen statt einzelner Seiten (Micro: Home, Zeit, Schreiben, Nachschlagen)
+- offen: Spiel und Einstellungen als eigene Gruppen oder unter „Mehr“? (Vorschlag: eigene Kacheln, ist ja nur zwei)
+- offen: Hilfe ▲+▼ zeigt die Reiter der Gruppe mit?
+
 ### Eingabe: Tasten, Ziffern, Strich, Sprache (Markus, 15.11.2026, abgenommen)
 
 Anlass: Das Sticky Lab (Station 10) zeigt, dass eine Bildschirmtastatur auf e-Ink trägt – kein Anschlag geht
