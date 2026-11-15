@@ -881,6 +881,9 @@ Anlass: Merker „Globus-Ansicht“ – „das kann e-Ink ab“. Mockup: `docs/w
 - Vorschlag: bleibt das Widget „Weltzeit“ (Gruppe Zeit); die heutige Liste entfällt zugunsten der Karte
 - fest (mit der Abnahme): Kartenmitte **Greenwich** (Europa mittig, vertraut)
 - Vorschlag Strom: wach alle 15 min, im Schlummer nur zur vollen Stunde (im vorhandenen Stundenfenster); nach Messung im Lab ggf. anpassen
+- umgesetzt **Stufe 1** (App, 16.11.2026): `src/weltkarte.js` zeichnet Karte und Schatten beim Abgleich (quer), Kacheln
+  je Stadt mit Ziffernfeld; „HIER“ sitzt am letzten Wetter-Ort (bleibt im Gerät). Schatten steht ohne Handy still bis
+  zum nächsten Abgleich. Hochkant bleibt vorerst die Liste. Stufe 2 (Sticky rechnet den Schatten) folgt
 
 ### Bedienung und Oberfläche (Markus, 13.11.2026, Mockup abgenommen)
 - fest **Tastenregeln überall gleich**: KI kurz = Home, KI halten = Diktat (Rettungsanker, nie anders belegt);

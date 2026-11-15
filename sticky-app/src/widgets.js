@@ -11,6 +11,7 @@ import { HANDY_12H, HANDY_US } from './zeit.js';
 import { schluessel } from './geraete.js';
 import { T, appIstEn } from './uebersetzen.js';
 import { menueKacheln, kachelAktion } from './gruppen.js';
+import { zeichneKarte } from './weltkarte.js';
 // Zweisprachig (SPEC „Zweisprachig Deutsch/Englisch“): Texte im Bild per T() beim Bauen (main.js baut im Sticky-Kontext).
 // felder.txt bleibt deutsch/Protokoll; Glyphenblätter enthalten die Zeichen beider Sprachen, denn der Sticky kann die
 // Sprache ohne Handy umschalten und setzt dann sofort „on/off“, „EN“, Punkt statt Komma und „Error“.
@@ -487,12 +488,14 @@ export function versatzMin(zone, wann = new Date()) {
   return Math.round((dort - Math.floor(wann.getTime() / 60000) * 60000) / 60000);
 }
 /** Standard-Städte: Lebensstationen (Kürzel wie auf dem Weltzeitring) */
-const stadt = (kurzDe, kurzEn, nameDe, nameEn, zone) => ({ get kurz() { return T(kurzDe, kurzEn); }, get name() { return T(nameDe, nameEn); }, zone });
+const stadt = (kurzDe, kurzEn, nameDe, nameEn, zone, lon, lat, hier = false) => ({ get kurz() { return T(kurzDe, kurzEn); }, get name() { return T(nameDe, nameEn); }, zone, lon, lat, hier });
+/** „HIER“ auf der Karte: letzter Wetter-Ort vom Handy (auf ~1 km gerundet, bleibt im Gerät), sonst Mitteleuropa */
+function hierOrt() { try { const o = JSON.parse(localStorage.getItem('sticky.wetterOrt') || 'null'); if (o?.lat != null) return [o.lon, o.lat]; } catch { /* egal */ } return [10, 51]; }
 export const STAEDTE = [
-  stadt('HIER', 'HOME', 'Zuhause', 'Home', 'Europe/Berlin'),
-  stadt('TYO', 'TYO', 'Tokio', 'Tokyo', 'Asia/Tokyo'),
-  stadt('NYC', 'NYC', 'New York', 'New York', 'America/New_York'),
-  stadt('LAX', 'LAX', 'Los Angeles', 'Los Angeles', 'America/Los_Angeles'),
+  { ...stadt('HIER', 'HOME', 'Zuhause', 'Home', 'Europe/Berlin', 10, 51, true), get lon() { return hierOrt()[0]; }, get lat() { return hierOrt()[1]; }, get kurz() { return T('HIER', 'HOME'); }, get name() { return T('Zuhause', 'Home'); } },
+  stadt('TYO', 'TYO', 'Tokio', 'Tokyo', 'Asia/Tokyo', 139.7, 35.7),
+  stadt('NYC', 'NYC', 'New York', 'New York', 'America/New_York', -74.0, 40.7),
+  stadt('LAX', 'LAX', 'Los Angeles', 'Los Angeles', 'America/Los_Angeles', -118.2, 34.1),
 ];
 
 /** Weltzeit: je Stadt Kürzel und Name links, Uhrzeit mit ☀/☾ rechts (der Sticky zählt jede Minute selbst weiter) */
@@ -500,9 +503,29 @@ export function weltzeitWidget(hoch = false, staedte = STAEDTE) {
   const p = seite(hoch, T('Weltzeit', 'World clock'), T('zählt selbst weiter · ▲▼ = blättern · KI = Home', 'runs on the Sticky · ▲▼ = scroll · AI = Home'));
   // Hinweis gekürzt: vorher bis x 532, lief unter die Statuszeile (ab x 512)
   const { g } = p;
-  const Z = { w: 40, h: 64 }, n = 8;                   // „23:52 ☾“ bzw. 12 h „11:52p ☾“
   const glyphen = [...'0123456789:ap', ' ', '☀', '☾'];
   const zeilen = [];
+  if (!hoch) {   // quer: Weltkarte mit Tag/Nacht oben, darunter je Stadt eine Kachel (SPEC „Weltzeit mit Karte“, Stufe 1)
+    const Z = { w: 24, h: 40 }, n = 7, KY = 330, KB = 800 / 4;   // Zellbreite Vielfaches von 8 (Sticky kopiert byteweise); 7 Zeichen „23:52 ☾“ passen in die Kachel
+    zeichneKarte(g, 0, 50, 800, 270, staedte.slice(0, 4), Date.now(), leinwand);
+    staedte.slice(0, 4).forEach((s, i) => {
+      const x = i * KB;
+      braunKnopf(g, x + 4, KY, KB - 8, 146, '', 'neben', { rand: 2 });
+      if (s.hier) braunKnopf(g, x + 4, KY, KB - 8, 146, '', 'haupt', { rand: 2 });
+      g.fillStyle = '#000'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.font = `600 24px ${FONT}`; g.fillText(s.kurz, x + KB / 2, KY + 26);
+      g.font = `400 16px ${FONT}`; g.fillText(s.name, x + KB / 2, KY + 124);
+      const tx = (x + (KB - n * Z.w) / 2) & ~7, ty = KY + 52;
+      zeilen.push(`stadt ${versatzMin(s.zone)}`, `text ${tx} ${ty} ${n}`);
+    });
+    p.felder.unshift('typ weltzeit', `ziffern ${Z.w} ${Z.h}`, `glyphen ${glyphen.map((x) => (x === ' ' ? '_' : x)).join(' ')}`, ...zeilen);
+    return [
+      { n: 'ziffern.bin', daten: textBlatt(Z.w, Z.h, glyphen, false) },
+      { n: 'bild.bin', daten: p.bild() },
+      { n: 'felder.txt', daten: text(p.felder) },
+    ];
+  }
+  const Z = { w: 40, h: 64 }, n = 8;                   // „23:52 ☾“ bzw. 12 h „11:52p ☾“
   staedte.slice(0, 4).forEach((s, i) => {
     const y = hoch ? 56 + i * 184 : 52 + i * 106;
     g.fillStyle = '#000'; g.textAlign = 'left'; g.textBaseline = 'top';
