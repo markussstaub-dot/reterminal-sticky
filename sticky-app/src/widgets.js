@@ -106,6 +106,18 @@ export function timerWidget(hoch = false) {
   ];
 }
 
+/** Seiten, die nur mit verbundenem Handy gehen (SPEC „Blick von außen“, 15.11.2026): Kachel bekommt ein Handy-Zeichen */
+const NUR_MIT_HANDY = new Set(['app']);
+/** kleines Handy (18 × 28 px) oben rechts in der Kachel */
+function handyZeichen(g, x, y) {
+  g.save();
+  g.fillStyle = '#000';
+  g.beginPath(); g.roundRect(x, y, 18, 28, 4); g.fill();
+  g.fillStyle = '#fff';
+  g.fillRect(x + 3, y + 4, 12, 17);
+  g.beginPath(); g.arc(x + 9, y + 24.5, 1.6, 0, Math.PI * 2); g.fill();
+  g.restore();
+}
 const NAMEN = { home: 'Home', notiz: 'Notiz', bordbuch: 'Bordbuch', zettel: 'Zettel', kritzel: 'Kritzel', schrift: 'Schrift', app: 'Spiel' };
 
 /**
@@ -122,6 +134,7 @@ export function menueWidget(eintraege, hoch = false) {
     const name = e.startsWith('widget ') ? e.slice(7).replace(/^./, (b) => b.toUpperCase()) : NAMEN[e] ?? e;
     const x = Math.round(x0 + (i % spalten) * w), y = Math.round(y0 + Math.floor(i / spalten) * h);
     p.k(x, y, Math.round(x + w), Math.round(y + h), name, `gehe ${i}`, e === 'home' ? 'wahl' : 'neben', 34);
+    if (NUR_MIT_HANDY.has(e)) handyZeichen(p.g, Math.round(x + w) - 40, Math.round(y + h / 2) - 14);   // rechts innen, mittig (Pillenform: Ecke liegt außerhalb)
   });
   return [
     { n: 'bild.bin', daten: p.bild() },

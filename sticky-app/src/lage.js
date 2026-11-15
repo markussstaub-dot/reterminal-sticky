@@ -2,7 +2,7 @@
 // hochkant 480 × 800) und für das Display gedreht. Hochkant: logisch (lx, ly) ↔ Display (ly, 479 − lx), wie bei Home.
 
 export const LAGE_STANDARD = { menue: 'quer', timer: 'quer', wecker: 'quer', weltzeit: 'quer', waage: 'quer', rechner: 'hoch', umrechner: 'hoch', app: 'hoch', kritzel: 'quer' };
-export const LAGE_NAMEN = { menue: 'Menü', timer: 'Timer', wecker: 'Wecker', weltzeit: 'Weltzeit', waage: 'Wasserwaage', rechner: 'Rechner', umrechner: 'Umrechner', app: 'App-Seite', kritzel: 'Kritzelblock' };
+export const LAGE_NAMEN = { menue: 'Menü', timer: 'Timer', wecker: 'Wecker', weltzeit: 'Weltzeit', waage: 'Wasserwaage', rechner: 'Rechner', umrechner: 'Umrechner', app: 'Spiel', kritzel: 'Kritzel' };
 
 /** logische Größe */
 export const groesse = (hoch) => (hoch ? { w: 480, h: 800 } : { w: 800, h: 480 });

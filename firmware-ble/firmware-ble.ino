@@ -12,7 +12,7 @@
  *   AUDIO    b1e50005-…  notify                     Gerät → App, IMA-ADPCM 16 kHz (audio.h)
  *
  * Pins laut Schaltplan reTerminal_Sticky_Schematic_diagram_260609.pdf (Blatt SCH_TOP), Tasten am Gerät bestätigt:
- *   Tasten (aktiv low): KI GPIO4, UP GPIO5, DOWN GPIO6 · PWR_HOLD GPIO45 · Summer GPIO48
+ *   Tasten (aktiv low): KI GPIO4, UP GPIO5, DOWN GPIO6 · PWR_HOLD GPIO45 + PWR_LOCK GPIO46 · Summer GPIO48
  *   Touch GT911: SCL GPIO2, SDA GPIO3, INT GPIO21, RST GPIO41, TP_PWR_EN GPIO42
  *   Akku BQ27220 (0x55): SCL GPIO0, SDA GPIO1 · CHARGE_STATE GPIO40 (low = lädt)
  *
@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.31.7";
+static const char* FW_VERSION = "0.31.9";
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "EDC Sticky";   // Startbild ohne App (Playground: neutral, nicht der Autor)
@@ -39,6 +39,7 @@ static const int PIN_BTN_PWR  = 4;
 static const int PIN_BTN_UP   = 5;
 static const int PIN_BTN_DOWN = 6;
 static const int PIN_PWR_HOLD = 45;
+static const int PIN_PWR_LOCK = 46;          // zweiter Haltepin (Seeed pin_config.h); ohne ihn geht manches Gerät ohne USB sofort aus
 static const int PIN_TP_SCL = 2, PIN_TP_SDA = 3, PIN_TP_INT = 21, PIN_TP_RST = 41, PIN_TP_EN = 42;
 static const int PIN_BFG_SCL = 0, PIN_BFG_SDA = 1;
 static const int PIN_CHG_STATE = 40;
@@ -686,6 +687,8 @@ void setup() {
     setCpuFrequencyMhz(80);                    // reicht für BLE, Display und ADPCM; spart Strom gegenüber 240 MHz
     pinMode(PIN_PWR_HOLD, OUTPUT);
     digitalWrite(PIN_PWR_HOLD, HIGH);          // Selbsthaltung, sonst geht er im Akkubetrieb aus
+    pinMode(PIN_PWR_LOCK, OUTPUT);
+    digitalWrite(PIN_PWR_LOCK, HIGH);          // zweiter Haltepin, wie Seeeds demo_board_init()
     Serial.begin(115200);
     delay(300);
     Serial.printf("\nSticky BLE-Durchstich %s\n", FW_VERSION);

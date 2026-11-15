@@ -1,5 +1,5 @@
-// App-Seite im Karussell (SPEC „Widgets ohne ständiges Flashen“, FW ≥ 0.17.0): die App zeichnet, der Sticky zeigt und
-// meldet Tipper. Widgets: Taschenrechner und Umrechner, ▲/▼ kurz wechselt. Quer 800 × 480, rechts oben bleibt die
+// Spielseite im Karussell (SPEC „Widgets ohne ständiges Flashen“, FW ≥ 0.17.0): die App zeichnet, der Sticky zeigt und
+// meldet Tipper. Seit 15.11.2026 nur noch das Burgduell (Rechner/Umrechner sind eigene Widgets). Quer 800 × 480, rechts oben bleibt die
 // Statuszeile (288 × 32) frei. Nach einem Tipp geht nur das Nötige als Teilbild rüber.
 import { BREITE, HOEHE, rgbaZu1bpp } from './protokoll.js';
 import { Rechner, TASTEN, ROLLE } from './rechner.js';
@@ -14,13 +14,13 @@ const FONT = BRAUN_FONT;
 // darunter die Reiter über die ganze Breite.
 const LAGEN = {
   quer: {
-    REITER: [{ x0: 16, x1: 176, text: 'Burgduell' }, { x0: 184, x1: 344, text: 'Rechner' }, { x0: 352, x1: 504, text: 'Umrechner' }], REITER_Y: 0, REITER_H: 58,
+    REITER: [{ x0: 16, x1: 176, text: 'Burgduell' }], REITER_Y: 0, REITER_H: 58,
     ANZEIGE: { x: 16, y: 66, w: 768, h: 80 }, UNTEN: { x: 0, y: 64, w: 800, h: 416 },
     R_FELD: { x: 16, y: 154, w: 768, h: 320 },
     U_LISTE: { x: 16, y: 154, w: 248, h: 320 }, U_FELD: { x: 272, y: 154, w: 512, h: 320 },
   },
   hoch: {
-    REITER: [{ x0: 16, x1: 164, text: 'Burgduell' }, { x0: 168, x1: 316, text: 'Rechner' }, { x0: 320, x1: 468, text: 'Umrechner' }], REITER_Y: 38, REITER_H: 58,
+    REITER: [{ x0: 16, x1: 164, text: 'Burgduell' }], REITER_Y: 38, REITER_H: 58,
     ANZEIGE: { x: 16, y: 104, w: 448, h: 96 }, UNTEN: { x: 0, y: 104, w: 480, h: 696 },
     R_FELD: { x: 16, y: 208, w: 448, h: 576 },
     U_LISTE: { x: 16, y: 208, w: 448, h: 232 }, U_FELD: { x: 16, y: 448, w: 448, h: 336 },
@@ -116,7 +116,9 @@ export class AppSeite {
   /** senden(bytes, bereich|null): ganzes Bild oder Teilbild an den Sticky */
   constructor(senden) {
     this.senden = senden;
-    this.widgets = [burgduellWidget((g) => kopf(g, 0)), rechnerWidget, umrechnerWidget];   // Burgduell (Kür 14.11.2026) vorn
+    // Nur noch Burgduell (15.11.2026, SPEC „Blick von außen“): Rechner und Umrechner sind eigene Widgets, die ohne
+    // Handy laufen – doppelt auf der Spielseite verwirrte nur. rechnerWidget/umrechnerWidget bleiben für alte FW (< 0.28)
+    this.widgets = [burgduellWidget((g) => kopf(g, 0))];
     this.zustand = this.widgets.map((w) => w.neu());
     this.aktiv = 0;
     this.hoch = false;   // Lage (Mehr → Lage der Seiten), FW ≥ 0.21.0

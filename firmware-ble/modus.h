@@ -723,7 +723,11 @@ static void karussellSchritt(int richtung) {
 }
 
 /** Menü: direkt zum Karussell-Eintrag i */
+static void hilfeZeigen(const char* pfad = nullptr);
+// Spiel ohne Handy (SPEC „Blick von außen“, FW 0.31.8): statt nur tief zu piepen erklärt eine Seite, warum
+static const char* OFFLINE_HINWEIS = "hilfe/offline.bin";
 static void karussellGehe(int i) {
+    if (i >= 0 && i < kAnzahl && karussell[i] == M_APP && !appDa()) { hilfeZeigen(OFFLINE_HINWEIS); return; }
     if (i < 0 || i >= kAnzahl || !karussellDaI(i)) { tone(PIN_BUZZER, 900, 120); return; }
     Modus m = karussell[i];
     if (m == M_BORDBUCH) bbWunsch = bbToc;
@@ -808,16 +812,17 @@ static const char* hilfeName() {
          : modus == M_KRITZEL ? "hilfe/kritzel.bin" : modus == M_SCHRIFT ? "hilfe/schrift.bin" : modus == M_WIDGET ? widgetHilfe() : modus == M_APP ? "hilfe/app.bin" : "hilfe/zettel.bin";
 }
 
-static void hilfeZeigen() {
+static void hilfeZeigen(const char* pfad) {
+    if (!pfad) pfad = hilfeName();
     if (kzModusAktiv()) {              // Blatt sichern, die Hilfe überschreibt imgBuf
         if (!kzBlatt) kzBlatt = (uint8_t*)ps_malloc(IMG_BYTES);
         if (kzBlatt) { memcpy(kzBlatt, imgBuf, IMG_BYTES); kzBlattGesichert = true; }
         kzPanelSchlaf();
     }
-    if (!sollLesen(hilfeName(), imgBuf, IMG_BYTES)) { tone(PIN_BUZZER, 900, 120); return; }   // noch keine Hilfe aufgespielt
+    if (!sollLesen(pfad, imgBuf, IMG_BYTES)) { tone(PIN_BUZZER, 900, 120); return; }   // noch keine Hilfe aufgespielt
     hilfeAn = true;
     hilfeNeuGedrueckt = false;
-    protokoll("Hilfe %s", hilfeName() + 6);
+    protokoll("Hilfe %s", pfad + 6);
     bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
     display.update();
     seite = "hilfe";
@@ -966,7 +971,7 @@ static void modusLoop() {
         if (m != modus || m == M_NOTIZ || m == M_BESTELL) setzeModus(m);
     }
     if (modus != M_HOME && !audioLaeuft && millis() - letzteBedienung > ZURUECK_MS) setzeModus(M_HOME);
-    if (modus == M_APP && !appDa()) { protokoll("App weg, zurück nach Home"); setzeModus(M_HOME); }
+    if (modus == M_APP && !appDa()) { protokoll("App weg, zurück nach Home"); setzeModus(M_HOME); hilfeZeigen(OFFLINE_HINWEIS); }
     if (modus == M_HOME && homeDa && !audioLaeuft && !hilfeAn && uhrZeichnen()) uhrAuffrischen(uhrMinute == 0);
     static uint32_t akkuZuletzt = 0;
     (void)akkuZuletzt;

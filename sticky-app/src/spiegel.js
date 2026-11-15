@@ -20,7 +20,7 @@ function akkuSymbol(g, stufe, usb) {
 /** Namen der Widgets für den Hinweis unter der Vorschau */
 const WIDGET_NAMEN = { menue: 'Menü', timer: 'Timer', wecker: 'Wecker', weltzeit: 'Weltzeit', waage: 'Wasserwaage', lineal: 'Lineal',
   'lineal-us': 'Lineal (Zoll)', rechner: 'Rechner', umrechner: 'Umrechner', einstellungen: 'Einstellungen' };
-const SEITEN_NAMEN = { home: 'Home', notiz: 'Notiz', kritzel: 'Kritzelblock', schrift: 'Strichschrift', app: 'App-Seite' };
+const SEITEN_NAMEN = { home: 'Home', notiz: 'Notiz', kritzel: 'Kritzel', schrift: 'Schrift', app: 'Spiel' };
 
 /** Display-Bild (800 × 480, 1 bpp, Bit 1 = schwarz) in die Vorschau; hochkant zurückdrehen: Display (dx, dy) = logisch (479 − dy, dx) */
 function zeichne1bpp(g, daten, hoch) {

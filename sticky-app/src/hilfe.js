@@ -22,7 +22,7 @@ export const HILFE = {
       '▼ 1 s halten   nächster Eintrag im Karussell', 'KI kurz   Home · KI halten   Diktat', '!Zurück', 'beliebige Taste schließt diese Hilfe'],
   },
   kritzel: {
-    titel: 'Hilfe · Kritzelblock',
+    titel: 'Hilfe · Kritzel',
     zeilen: ['!Zeichnen', 'mit dem Finger auf das Blatt', '!Speichern', 'Seite verlassen (▲ ▼ oder KI) = Blatt speichern',
       'wiederkommen = neues, leeres Blatt', 'die App holt es ab, es erscheint als Notiz', '!Zurück', 'beliebige Taste schließt diese Hilfe'],
   },
@@ -79,14 +79,22 @@ export const HILFE = {
       '!Tasten', '▲ ▼   blättern · KI   Home', '!Zurück', 'beliebige Taste schließt diese Hilfe'],
   },
   app: {
-    titel: 'Hilfe · App-Seite',
-    zeilen: ['!Tippen', 'die App auf dem Handy antwortet (nur mit Verbindung)', '!Tasten', '▲ ▼ kurz   blättern im Karussell', 'KI kurz   Home · KI halten   Diktat',
-      '!Ohne Handy', 'gibt es hier nichts zu zeigen, der Sticky geht zurück nach Home', '!Zurück', 'beliebige Taste schließt diese Hilfe'],
+    titel: 'Hilfe · Spiel',
+    zeilen: ['!Burgduell', 'Tippen ins Feld zielt und schießt; die App auf dem Handy rechnet (nur mit Verbindung)',
+      '!Zu zweit', 'zeigen zwei verbundene Stickys das Spiel, beginnt das Duell', '!Tasten', '▲ ▼ kurz   blättern im Karussell', 'KI kurz   Home · KI halten   Diktat',
+      '!Ohne Handy', 'zeigt der Sticky „braucht das Handy“', '!Zurück', 'beliebige Taste schließt diese Hilfe'],
+  },
+  // kein Modus: zeigt der Sticky, wenn „Spiel“ ohne Verbindung gewählt wird oder das Handy mitten im Spiel weg ist (FW 0.31.8)
+  offline: {
+    titel: 'Spiel braucht das Handy',
+    zeilen: ['!Gerade nicht verbunden', 'Das Burgduell rechnet die App auf dem Handy.', '!Was hilft', 'App auf dem Handy öffnen, Bluetooth an – dann noch mal antippen',
+      '!Ohne Handy geht', 'Uhr, Timer, Wecker, Weltzeit, Rechner, Umrechner, Waage, Lineal, Notiz, Diktat, Kritzel, Schrift, Bordbuch, Zettel',
+      '!Zurück', 'beliebige Taste'],
   },
   zettel: {
     titel: 'Hilfe · Zettel',
     zeilen: ['!Tasten', '▲ ▼ kurz   Zettel zurück / vor', '▲ 1 s halten   erster Zettel', '▼ 1 s halten   nächster Eintrag im Karussell',
-      'KI kurz   Home · KI halten   Diktat', '!Zettel ändern', 'in der App unter „Bestellen“ bzw. „Karten“',
+      'KI kurz   Home · KI halten   Diktat', '!Zettel ändern', 'in der App unter „Zettel“ bzw. „Karten“',
       '!Zurück', 'beliebige Taste schließt diese Hilfe'],
   },
 };

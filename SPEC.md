@@ -658,6 +658,22 @@ Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzu
 - Tastenregeln und Karussell (FW 0.13.0), Statuszeile (0.14.0), Tastenhilfe und Tipp-Rahmen (0.15.0) umgesetzt ( Szenen noch nicht: ein Karussell für alles)
 - Reihenfolge: Tastenregeln, Karussell, Statuszeile zuerst (Grundlage für die Widgets), dann Schlafbild-Regel,
   Rückmeldung, Hilfe
+- **Blick von außen** (Markus, 15.11.2026): was geht ohne Handy? Fast alles: Widgets, Notiz/Diktat/Kritzel/Schrift
+  (gepuffert), Bordbuch, Zettel. Nur **Spiel** braucht das Handy (rechnet die App), dazu Benachrichtigungen;
+  Wetter auf Home veraltet still
+  - fest (umgesetzt FW 0.31.8): **Handy-Zeichen auf Menü-Kacheln**, die nur verbunden gehen (heute: Spiel)
+  - fest (umgesetzt FW 0.31.8): **Hinweisseite statt stummem Rücksprung**: Spiel ohne Verbindung zeigt „braucht das
+    Handy“, KI = Home
+  - fest (umgesetzt): **Spielseite nur noch Burgduell** – Rechner/Umrechner gibt es als eigene Widgets (ohne Handy)
+  - fest (umgesetzt): **ein Name je Sache, der vom Sticky**: Zettel (App-Reiter hieß „Bestellen“), Spiel (statt
+    „App-Seite“), Kritzel (statt „Kritzelblock“)
+  - Vorschlag: Statuszeile zeigt **Zeit des letzten Kontakts** („📱 08:44“) statt „verbunden“ – e-Ink behält sonst
+    ein falsches „verbunden“ (15.11.: Akku leer, Bild blieb stehen)
+  - Vorschlag: App-Reiter **„Mehr“ in zwei Gruppen**: Einrichten (Stickys, Karussell, Lage, Benachrichtigungen,
+    PTT) und Werkstatt (Spracherkennung, Wörterbuch, Fahrtenschreiber, Ereignisse)
+  - Vorschlag: **Karussell mit Häkchen und Pfeilen** statt Textfeld (Tippfehler fallen heute stumm raus),
+    Handy-Zeichen gleich dabei
+  - Vorschlag: Wetter auf Home mit Uhrzeit des Stands, ab ~3 h alt ausgegraut
 
 ### Eigene Sensoren (laut Schaltplan, Bus MISC_I2C)
 | Baustein | Adresse | heute | Vorschlag |
@@ -669,6 +685,9 @@ Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzu
 | Lade-LED rot/grün, Summer, Mikro, Tasten, Touch | – | teils | LED als stille Rückmeldung (z. B. „Diktat gepuffert“) |
 
 ### Offen
+- fest (15.11.2026, FW 0.31.9): **Stromhaltung braucht zwei Pins**, PWR_HOLD GPIO45 und PWR_LOCK GPIO46, beide HIGH
+  (wie Seeeds Beispiele, `pin_config.h`/`demo_board_init()`), im Leichtschlaf beide per `gpio_hold`. Ohne GPIO46 ging ein
+  Sticky beim Abziehen des USB-Kabels sofort aus, ein anderes hielt (Platinen-Version oder Zufall)
 - fest (Schaltplan 260609, Seite 5): **MISC_I2C = Akku-Bus** (SCL GPIO0, SDA GPIO1), alle Sensoren dort.
   **6D_INTn = GPIO7**, teilt sich die Leitung mit BFG_INT (Akku-Interrupt); GPIO7 ist RTC-fähig, also Wecken aus
   dem Schlaf möglich. **RED_LED = CHARGE_STATE = GPIO40**: die rote LED ist die Lade-Anzeige des Laders, nur bedingt
