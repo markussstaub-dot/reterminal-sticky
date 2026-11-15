@@ -64,7 +64,7 @@ svg text{font-family:Helvetica,Arial,sans-serif;fill:#111}
  <text x="456" y="260" font-size="56" font-weight="bold" text-anchor="end">26,10</text>
  <g id="paare"></g>
  <g id="tastenU"></g>
-</svg></div><figcaption>Gruppe Rechnen, Reiter Umrechner (hochkant wie der Rechner); größere Schrift, wie im Merker vom 14.11. gewünscht. Rechner und Umrechner teilen sich die Braun-Tasten.</figcaption></figure>
+</svg></div><figcaption>Gruppe Rechnen, Reiter Umrechner (hochkant wie der Rechner); größere Schrift, wie im Merker vom 14.11. gewünscht. Rechner, Umrechner und die Eingabe „Ziffern“ haben dasselbe Ziffernfeld (gleiche Tasten an gleicher Stelle, rechts die Sondertasten gerastert).</figcaption></figure>
 </div>
 
 <script>
@@ -104,6 +104,9 @@ for (let mm = 0; mm <= 70; mm++) { const y = 780 - mm * 10, len = mm % 10 === 0 
 // Umrechner: Paare und Tasten
 const u = document.getElementById('umrechner'), P = document.getElementById('paare'), T = document.getElementById('tastenU');
 ['km mi', '°C °F', 'kg lb', 'l gal'].forEach((p, i) => { const x = 16 + i * 114; P.appendChild(el('rect', { x, y: 290, width: 106, height: 58, rx: 29, fill: i === 0 ? '#111' : 'none', stroke: '#111', 'stroke-width': 2 })); const t = el('text', { x: x + 53, y: 327, 'font-size': 20, 'text-anchor': 'middle' }, p); if (i === 0) t.setAttribute('style', 'fill:#f4f2ec'); P.appendChild(t); });
-['789', '456', '123', '0,←'].forEach((r, ri) => [...r].forEach((c, ci) => { const cx = 80 + ci * 160, cy = 430 + ri * 92; T.appendChild(el('circle', { cx, cy, r: 40, fill: /\d/.test(c) ? '#111' : 'none', stroke: '#111', 'stroke-width': 2 })); const t = el('text', { x: cx, y: cy + 12, 'font-size': 34, 'text-anchor': 'middle' }, c); if (/\d/.test(c)) t.setAttribute('style', 'fill:#f4f2ec'); T.appendChild(t); }));
+// dasselbe Ziffernfeld wie Rechner und Eingabe „Ziffern“: 7-8-9 oben, 0 unten Mitte, rechte Spalte Sonder-/Rechentasten
+['789,', '456←', '123=', ' 0 '].forEach((r, ri) => [...r].forEach((c, ci) => { if (c === ' ') return; const cx = 70 + ci * 113, cy = 430 + ri * 92, ziffer = /\d/.test(c);
+  T.appendChild(el('circle', { cx, cy, r: 40, fill: ziffer ? '#111' : 'none', stroke: ci === 3 ? 'url(#r)' : '#111', 'stroke-width': ci === 3 ? 6 : 2 }));
+  const t = el('text', { x: cx, y: cy + 12, 'font-size': 34, 'text-anchor': 'middle' }, c); if (ziffer) t.setAttribute('style', 'fill:#f4f2ec'); T.appendChild(t); }));
 </script>
 </body></html>

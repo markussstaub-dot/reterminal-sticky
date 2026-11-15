@@ -832,7 +832,7 @@ Mockup: `docs/gruppen-mockup.html`.
   | Zeit | Timer · Wecker · Weltzeit |
   | Messen | Waage · Lineal (später Winkel aus dem Bewegungssensor) |
   | Schreiben | Notiz · Kritzel · Schrift (später Recorder) |
-  | Rechnen | Rechner · Umrechner |
+  | Rechnen | Rechner · Umrechner (eine Gruppe, fest) |
   | Nachschlagen | Bordbuch · Zettel (später Spickzettel getrennt vom Bordbuch) |
   | Spiel · Einstellungen | je allein |
   → 8 Kacheln statt 15
@@ -841,6 +841,9 @@ Mockup: `docs/gruppen-mockup.html`.
   geht es in die nächste Gruppe. Gruppen ordnen nur Menü und Reiter
 - Vorschlag **Menü-Kachel = zuletzt benutztes Werkzeug der Gruppe** (merkt der Sticky, nicht die App); neue Aktion
   `gruppe <i0> <i1> …` in `felder.txt`, die Firmware springt zum zuletzt besuchten Index daraus
+- fest (Markus, 15.11.2026) **ein Ziffernfeld für alles**: Rechner, Umrechner und die Eingabe-Art „Ziffern“ zeigen
+  dasselbe Tastenfeld im ET66-Stil – gleiche Tasten an gleicher Stelle (7-8-9 oben, 0 unten Mitte, rechte Spalte für
+  Sonder-/Rechentasten). Wer eins kann, kann alle; die App zeichnet es aus einem gemeinsamen Baustein
 - fest (Markus, 15.11.2026) **jedes Werkzeug behält seine Lage**: wechselt der Reiter von Waage (quer) zu Lineal
   (hochkant), dreht das Bild mit (voller Refresh ~2 s). Der Sticky ist träge genug, dass das nicht nervt; mit Lage
   „auto“ entscheidet wie bisher der Lagesensor
