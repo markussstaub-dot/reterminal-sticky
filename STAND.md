@@ -3,8 +3,8 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.37.0 + APK 2026.11.15-2216 (15.11.2026, auf meinem Sticky) – EDC-Sticky, allein nützlich: Gruppen im Menü (Zeit, Messen, Notieren, Rechnen, Nachschlagen) mit Reitern; Recorder, Tippen (Tastatur, Num-Pad), Ja/Nein; Uhr/Wecker/Weltzeit, Rechner/Umrechner (ein Ziffernfeld), Strichschrift, Waage, Lineal, Zettel mit QR, Einstellungen; DE/EN; Braun-Optik; Umschalten EDC ↔ Sticky Lab (app0/app1); App: Karussell als Liste nach Gruppen, Meldungen auf Home, Parkplatz-Rückfrage, Orte; MIT, Repo öffentlich seit 15.11.; Release noch 0.31.6. Nächstes: Dokumente (Handbuch auf SD, Spickzettel getrennt) in Arbeit
-wartet: Markus: FW 0.37.0 + APK 2026.11.15-2216 sind drauf (15.11.) – Tippen, Notieren ohne Knopfseite; – Gruppen, Recorder, Num-Pad ausprobieren; – Positivliste und erste Orte eintragen, auf Englisch alle Seiten auf Überläufe prüfen; Playground-Update-PR #125 (0.31.6) im Blick behalten; Lineal nachmessen, Einfügen in WhatsApp probieren; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Spickzettel-Konsole (Lab-Console, Reiter „Spickzettel“) ausprobieren: Karte am Zenbook → Zwischenablage → Fold → Aufspielen; Nachtverbrauch messen
+version: FW 0.37.0 + APK 2026.11.15-2216 (15.11.2026, auf meinem Sticky) – EDC-Sticky, allein nützlich: Gruppen im Menü (Zeit, Messen, Notieren, Rechnen, Nachschlagen) mit Reitern; Recorder, Tippen (Tastatur, Num-Pad), Ja/Nein; Uhr/Wecker/Weltzeit, Rechner/Umrechner (ein Ziffernfeld), Strichschrift, Waage, Lineal, Zettel mit QR, Einstellungen; DE/EN; Braun-Optik; Umschalten EDC ↔ Sticky Lab (app0/app1); App: Karussell als Liste nach Gruppen, Meldungen auf Home, Parkplatz-Rückfrage, Orte; MIT, Repo öffentlich seit 15.11.; Release noch 0.31.6. FW 0.38.0 + App „Dokumente“ (Handbuch auf SD, Spickzettel getrennt) gebaut, noch nicht geflasht
+wartet: Markus: FW 0.38.0 + APK mit „Dokumente“ flashen/installieren (gebaut 15.11., Ja fehlt); FW 0.37.0 + APK 2026.11.15-2216 sind drauf (15.11.) – Tippen, Notieren ohne Knopfseite; – Gruppen, Recorder, Num-Pad ausprobieren; – Positivliste und erste Orte eintragen, auf Englisch alle Seiten auf Überläufe prüfen; Playground-Update-PR #125 (0.31.6) im Blick behalten; Lineal nachmessen, Einfügen in WhatsApp probieren; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Spickzettel-Konsole (Lab-Console, Reiter „Spickzettel“) ausprobieren: Karte am Zenbook → Zwischenablage → Fold → Aufspielen; Nachtverbrauch messen
 ---
 
 Repo: github.com/markussstaub-dot/reterminal-sticky (öffentlich seit 15.11.2026, Geschichte vorher gesäubert: Name und Hinweis auf Angehörige, MAC; Sicherung der alten Geschichte lokal unter `%LOCALAPPDATA%\sticky-backup`). `backup/`, Modelle und
@@ -396,6 +396,15 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   Textzeile gesammelt), Ziffern = gemeinsames Ziffernfeld, Strich öffnet die Strichschrift, Sprache = KI halten (mit
   Handy kommt der Text an die Schreibmarke, Opcode 0x31). OK = Notiz „getippt“ über den Puffer → Eingang. Eigene
   Karussell-Listen bekommen „Tippen“ einmalig hinter den Recorder. Gebaut, noch nicht am Gerät
+- **Dokumente (FW 0.38.0, 15.11.2026, SPEC „Dokumente: App-Reiter als Dokumenten-Manager …“):** aus dem Bordbuch werden
+  Handbuch und Spickzettel. Firmware `firmware-ble/doku.h` (statt `bordbuch.h`): Handbücher auf der Karte unter
+  `/soll/doku/<name>/` (Bibliothek → Inhaltsverzeichnis → Seite, letzte Seite je Dokument, Lesezeichen ▲ 1 s, Tippen auf
+  eine Seite = Inhalt), Spickzettel unter `/soll/spick/` (Titel-Liste links, Karte rechts). Das Bordbuch zieht beim ersten
+  Start nach `/soll/doku/microlino`. App: Reiter „Dokumente“ (`src/dokumenteSeite.js`, Logik `src/dokumente.js`): Handbücher
+  mit Schalter, + PDF, Suche (Sticky springt hin), Inhaltsverzeichnis, Umbenennen, Löschen; Spickzettel mit Szenen-Marken,
+  Handgriffe einmalig als Karten. Gruppe Nachschlagen = Handbuch · Spickzettel · Zettel, eigene Karussell-Listen einmalig
+  umgestellt. Verrutschte Seiten benennt der Sticky um (`umbenennen.txt`) statt sie neu zu bekommen. Kompiliert
+  (1 045 139 Byte), Tests 77/77, vite build ok, im Simulator geprüft; nicht geflasht, APK nicht gebaut
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

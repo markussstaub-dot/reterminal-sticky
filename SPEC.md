@@ -684,6 +684,38 @@ Mockup: `docs/dokumente-mockup.html`.
 - fest (Markus): Handbuch-Seiten **auf der SD-Karte** (`/soll/doku/<name>/`), viel mehr Platz; das heutige Bordbuch
   zieht beim ersten Start aus dem Flash dorthin um
 - fest (Markus): am Sticky heißt es **„Handbuch“** (EN „Manual“)
+- **gebaut 15.11.2026 (FW 0.38.0 + App, nicht geflasht)**: `firmware-ble/doku.h` ersetzt `bordbuch.h`, App
+  `src/dokumente.js` (Logik, Zeichnen, Tests) und `src/dokumenteSeite.js` (Reiter). Ablage und Formate: `PROTOKOLL.md`
+  „Dokumente“. Selbst entschieden:
+  - Vorschlag (umgesetzt) **Die App zeichnet alles**, der Sticky schreibt nur Seitenzahlen selbst ins Bild („S. 87 / 212“
+    in der Kachel, „Lesezeichen S. 87“ im Inhaltsverzeichnis; ASCII-Schrift der Firmware, Umlaute kann sie nicht). Neues
+    Handbuch = neuer Ordner, kein Flashen
+  - Vorschlag (umgesetzt) **Bibliothek**: bis 8 Kacheln, Reihenfolge nach „zuletzt gelesen“, wie die App es beim nächsten
+    Aufspielen kennt; die zuletzt gelesene Kachel bekommt am Sticky sofort einen dicken Rahmen. Tippen auf eine Kachel =
+    dort weiter, wo man war (neu: Inhaltsverzeichnis)
+  - Vorschlag (umgesetzt) **Inhaltsverzeichnis** = Bildschirm 00 jedes Handbuchs, bis 14 Kapitel (zwei Spalten ab 8);
+    automatisch aus den PDF-Lesezeichen, sonst aus der INHALT-Seite (Microlino), in der App als „Titel | Seite“ änderbar
+  - Vorschlag (umgesetzt) **Bedienung**: Tippen auf eine Handbuch-Seite = Inhaltsverzeichnis (PDF-Seiten haben sonst nichts
+    zum Tippen); ▲ 1 s auf einer Seite = Lesezeichen (zwei helle Töne), ▲ 1 s im Inhaltsverzeichnis = Bibliothek
+  - Vorschlag (umgesetzt) **Spickzettel am Sticky**: Titel-Liste links in fester Reihenfolge (wie in der App, ein Fenster
+    von 6 Titeln um die gewählte Karte), nicht „zuletzt benutzte oben“ – sonst müsste jede Karte bei jedem Blättern neu
+    gezeichnet werden. Der Sticky merkt sich die zuletzt gelesene Karte
+  - Vorschlag (umgesetzt) **Szene in der App**: Knöpfe „Alle · #micro · #werkstatt …“ über der Karten-Liste; aufgespielt
+    werden die Karten der gewählten Szene (ohne Marke = immer). Damit ist Stufe 2 der Spickzettel-Konsole (Marken in der
+    App) da; „Aus Zwischenablage übernehmen“ fehlt noch
+  - Vorschlag (umgesetzt) **Handgriffe** werden einmalig Karten im Spickzettel (gleiche Titel nicht doppelt), das eigene
+    Feld entfällt; die Standard-Karten tragen Marken (#micro, #notfall, #lab, #unterwegs)
+  - Vorschlag (umgesetzt) **Umzug ohne Neuübertragung**: die Firmware benennt `/soll/bordbuch` in `/soll/doku/microlino`
+    um; die App erkennt am Bestand (`stand.txt`), welche Seiten nur verrutscht sind, und lässt den Sticky sie umbenennen
+    (`umbenennen.txt`), statt sie neu zu schicken. Im Simulator geprüft (8 verschobene Karten: nur 2 kleine Dateien)
+  - Vorschlag (umgesetzt) **Suche**: in der App je Handbuch, Treffer mit Textstück, Tippen = der Sticky springt hin
+    (`/soll/doku/sprung.txt`); die Vektor-Suche aus „handbuch-vektor“ kann später dieselbe Datei schreiben
+  - Vorschlag (umgesetzt) **Platz**: die App zeigt, wie viel die Dokumente belegen und wie groß die Karte ist (Zustand
+    `sdmb`); freier Platz wäre teuer zu messen (FAT-Scan)
+  - geparkt **Teilen-Ziel** („Teilen → Sticky“ aus einer anderen App): braucht ein Capacitor-Plugin und einen
+    Intent-Filter, nicht billig; bis dahin „+ PDF“
+  - Hinweis: Dokumente brauchen FW ≥ 0.38.0; mit älterer Firmware bleibt im Karussell „Bordbuch“ stehen, der Reiter sagt,
+    dass er die neue Firmware braucht. Vorschau (Spiegel) zeigt Handbuch und Spickzettel als Bildschirmfoto
 
 ### Spickzettel-Konsole: Karten am Zenbook pflegen (Markus, 15.11.2026, abgenommen)
 Anlass: Karten am Fold abzutippen ist mühsam (heute: `sticky-lab/SPICKZETTEL-EDC.md` → App, Bordbuch-Tab → Spickzettel).
@@ -863,7 +895,7 @@ Mockup: `docs/gruppen-mockup.html`.
   | Messen | Waage · Lineal (später Winkel aus dem Bewegungssensor) |
   | Notieren (vorher „Schreiben“) | Recorder · Kritzel · Schrift (Notiz-Knopfseite nur per Häkchen) |
   | Rechnen | Rechner · Umrechner (eine Gruppe, fest) |
-  | Nachschlagen | Bordbuch · Zettel (später Spickzettel getrennt vom Bordbuch) |
+  | Nachschlagen | Handbuch · Spickzettel · Zettel (seit FW 0.38.0, „Dokumente“; vorher Bordbuch · Zettel) |
   | Spiel · Einstellungen | je allein |
   → 8 Kacheln statt 15
 - Vorschlag **▲/▼ bleibt flach**: das Karussell geht weiter durch jedes Werkzeug einzeln (heutige Reihenfolge, nach

@@ -26,7 +26,7 @@ Gedacht auch für den Microlino-Knopf: gleiche Rahmen, nur andere Bildgröße im
 | `17` | PUFFER_LISTE | Antwort `{"t":"puffer","dateien":[{"n","b"}]}` |
 | `18` | PUFFER_HOLEN | `18 offset:u32 Name` → ein Stück auf DATEI (Anfrage/Antwort, App wiederholt bei Verlust) |
 | `19` | PUFFER_LOESCHEN | `19 Name` |
-| `14` | MODUS | `14 m [seite]` – 0 Home, 1 Bordbuch, 2 Notiz, 3 Bestellzettel; `seite` = Bordbuch-Seite bzw. Zettel (Fernbedienung aus der App) |
+| `14` | MODUS | `14 m [seite]` – 0 Home, 1 Handbuch (bis FW 0.37.0 Bordbuch), 2 Notiz, 3 Bestellzettel, 8 Spickzettel (ab FW 0.38.0); `seite` = Bildschirm im offenen Handbuch, Karte bzw. Zettel (Fernbedienung aus der App) |
 | `30` | SUCHEN | `30 sekunden` – Sticky piept, bis eine Taste kommt → `{"t":"suche","a":"start|gefunden"}`; KI 3× am Sticky → `{"t":"suchen"}` (FW 0.25.0) |
 | `31` | TIPPEN | `31 text…` (UTF-8, ≤ 255 Byte) – erkanntes Diktat an die Schreibmarke der Tippen-Seite (FW 0.37.0) |
 | `1A` | HOME_VERSION | Text „crc;Anzahl Zettel“ nach dem Aufspielen der Home-Bilder |
@@ -46,8 +46,9 @@ Bild: Zeilen à 100 Byte, MSB = linkes Pixel, Bit 1 = schwarz. CRC-32 wie zlib.
 - `{"t":"touch","a":"down|up","x":…,"y":…,"rx":…,"ry":…}`: x/y in Display-Koordinaten 800×480 (Querformat, USB oben rechts), rx/ry roh vom GT911
 - `{"t":"img","ok":true,"ms":Empfang,"show":Anzeige,"mtu":…,"phy":1|2,"n":Rahmen,"dle":Byte}` bzw. `{"t":"img","ok":false,"err":"crc|format"}`
 - `{"t":"itvl","v":Intervall×1,25 ms,"lat":…}` bei jedem Wechsel der Verbindungsparameter
-- `{"t":"modus","m":"home|notiz|bordbuch|bestell|kritzel|schrift|app|widget","zettel":n,"hoch":0|1,"w":"menue|timer|…","lh":0|1}` (hoch = Lage der App-Seite, ab FW 0.22.0; w = offenes Widget, sonst leer, und lh = Lage der gezeigten Seite, beide ab FW 0.31.2), `{"t":"seite","n":…,"von":…}`, `{"t":"bordbuch","seiten","belegtKB"}`,
-  `{"t":"img","ok":…,"gespeichert":n}` nach BILD_ENDE Modus 3
+- `{"t":"modus","m":"home|notiz|handbuch|spick|bestell|kritzel|schrift|app|widget","zettel":n,"hoch":0|1,"w":"menue|timer|…","lh":0|1}` (hoch = Lage der App-Seite, ab FW 0.22.0; w = offenes Widget, sonst leer, und lh = Lage der gezeigten Seite, beide ab FW 0.31.2; bis FW 0.37.0 „bordbuch“ statt handbuch/spick)
+- Dokumente (FW ≥ 0.38.0): `{"t":"seite","d":Dokument,"n":Bildschirm,"von":…,"bib":0|1}` (Handbuch; in der Bibliothek n = −1),
+  `{"t":"spick","n":Karte,"von":…}`. Bis FW 0.37.0: `{"t":"seite","n","von"}` und `{"t":"bordbuch","seiten","belegtKB"}`
 - `{"t":"audio","a":"start","rate":16000,"codec":"ima-adpcm","n":480}`, `{"t":"audio","a":"stop","pakete","verworfen","ms","spitze"}`,
   `{"t":"audio","a":"fehler","err":"mtu|mikro"}`
 - Recorder (FW ≥ 0.34.0): `{"t":"rec","a":"start","rate","codec","n","ms","datei","live":0|1}` (bei live kommen die Pakete
@@ -63,12 +64,28 @@ Fahrtenschreiber (ab FW 0.10.0): `/ist/log/JJJJ-MM-TT.txt` auf der Karte, je Zei
 (ohne gestellte Uhr `/ist/log/ohne-zeit.txt` mit `+Sekunden`). Die App holt per LISTE/HOLEN ab dem bekannten Stand
 und löscht vergangene Tage.
 
-Soll/Ist auf der Karte (ab FW 0.11.0): `/soll/home/` (0–8.bin, version.txt), `/soll/bordbuch/` (NN.bin, index.txt),
+Soll/Ist auf der Karte (ab FW 0.11.0): `/soll/home/` (0–8.bin, version.txt), `/soll/bordbuch/` (NN.bin, index.txt; ab FW 0.38.0
+`/soll/doku/<name>/` und `/soll/spick/`, siehe unten),
 `/soll/notiz/` (layout.txt, rNN.bin = x,y,w,h je u16 + 1 bpp) schreibt nur die App; `/ist/log/`, `/ist/puffer/`
 nur der Sticky. Jeder Soll-Ordner hat eine Bestandsliste `stand.txt` („name crc“ je Zeile), die App schreibt nur,
 was sich unterscheidet, und `stand.txt` zuletzt. Auslöser fürs Neuladen: `home/version.txt`, `bordbuch/index.txt`,
 `notiz/layout.txt`. Ohne Karte landet das Soll im Flash (alte Pfade), Home 0–2 und version.txt liegen immer auch dort.
-Die alten Spezialbefehle (BILD_ENDE 3/5, BB_INDEX, FAHRT_LAYOUT, HOME_VERSION, PUFFER_*) gehen weiter.
+Die alten Spezialbefehle (BILD_ENDE 5, FAHRT_LAYOUT, HOME_VERSION, PUFFER_*) gehen weiter; BILD_ENDE 3 und BB_INDEX
+(Bordbuch ohne Karte, App vor FW 0.11.0) gibt es seit FW 0.38.0 nicht mehr.
+
+Dokumente (ab FW 0.38.0, `firmware-ble/doku.h`, nur auf der Karte):
+- `/soll/doku/<name>/` je Handbuch: `NN.bin` (Bildschirme, 00 = Inhaltsverzeichnis) und `index.txt` mit `seiten=N`,
+  `toc=K`, `pdf=a,b,…` (PDF-Seite je Bildschirm), `f s x0 y0 x1 y1 z` (Feld auf Bildschirm s → Bildschirm z),
+  `g s x0 y0 x1 y1 i` (Feld → Karussell-Eintrag i, s = −1: überall), `lz x0 y0 x1 y1` (Lesezeichen-Feld, der Sticky schreibt
+  „S. n“ hinein). `/soll/doku/bibliothek.bin` + `bibliothek.txt` (`d x0 y0 x1 y1 <name>` je Kachel, `g …`)
+- `/soll/spick/`: `NN.bin` je Karte, `index.txt` wie oben (`toc=-1`, `f`-Felder der Titel-Liste)
+- `/soll/doku/sprung.txt` „<name> <bildschirm>“: der Sticky öffnet das Handbuch dort und löscht die Datei (Suche in der App)
+- `<ordner>/umbenennen.txt` „alt neu“ je Zeile, in jedem Soll-Ordner: der Sticky benennt um (erst alle nach `*.umz`,
+  dann ans Ziel) und löscht die Datei; die App schreibt danach `stand.txt` neu. So wandern verschobene Seiten, statt neu
+  übertragen zu werden
+- `/ist/doku.txt` (schreibt nur der Sticky): `<name> <bildschirm> <lesezeichen>` je Handbuch, `zuletzt <name>`, `spick <karte>`
+- Zustand zusätzlich `"sdmb"` (Kartengröße in MB), `"dok"` (Handbücher auf der Karte), `"spick"` (Karten)
+- Umzug beim ersten Start: `/soll/bordbuch` wird `/soll/doku/microlino`
 
 ## Zustand (JSON)
 `{"fw","modus","bb":Bordbuch-Seite,"zettel":Bestellzettel,"usb","seite":"karte|bild","bat":%,"mv","ma","chg","mtu","phy","itvl":×1,25 ms,"tp":"BxH","fahrtv":CRC des Layouts,"offen":Notizen im Puffer,"uhr":bool, …, "us":0|1, "en":0|1, "w", "lh"}` (w und lh wie beim Ereignis modus, ab FW 0.31.2; `us` = US-Einheiten, `en` = wirksame Sprache Englisch, ab FW 0.32.0) – bei Verbindung,
