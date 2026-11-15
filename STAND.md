@@ -3,7 +3,7 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.31.6 – EDC-Sticky, allein nützlich: Uhr/Wecker/Weltzeit, Rechner/Umrechner, Strichschrift, Waage, Lineal, Zettel mit QR, Einstellungen am Sticky; Braun-Optik, Hoch/Quer; MIT-Lizenz (14.11.2026: App-Vorschau = Bildschirmfoto, Multiclient Stufe 2: zwei Stickys gleichzeitig)
+version: FW 0.31.7 – EDC-Sticky, allein nützlich: Uhr/Wecker/Weltzeit, Rechner/Umrechner, Strichschrift, Waage, Lineal, Zettel mit QR, Einstellungen am Sticky; Braun-Optik, Hoch/Quer; MIT-Lizenz (14.11.2026: App-Vorschau = Bildschirmfoto, Multiclient Stufe 2: zwei Stickys gleichzeitig; 15.11.: sparsamer schlummern, Release noch 0.31.6)
 wartet: Markus: Playground-Update-PR #125 (0.31.6) im Blick behalten; Lineal nachmessen, Einfügen in WhatsApp probieren; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 

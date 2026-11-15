@@ -1,14 +1,14 @@
 // ---- Schlummern im Akkubetrieb (Markus, 12.11.2026: über Nacht ~50 % Akku weg) -----------------
 // Der Arduino-Kern hat kein automatisches Light-Sleep (CONFIG_PM_ENABLE fehlt): solange BLE läuft, läuft die CPU
 // durch. Darum nach SCHLAF_NACH ohne Bedienung: Ereignis „schlaf“ an die App, Funk und Touch aus, dann Leichtschlaf
-// bis zur nächsten vollen Minute (Uhr, Akkusymbol) oder bis eine Taste gedrückt wird. Zur vollen Stunde geht der
+// bis zur nächsten vollen Minute (Uhr, Akkusymbol) oder bis eine Taste gedrückt wird. Zur vollen Stunde (nicht 1–5 Uhr) geht der
 // Funk für STUNDEN_FENSTER an, damit die App abgleichen kann (Wetter, Zettel, Notizen abholen). Am USB nie.
 // Touch weckt nicht (Controller stromlos) – eine Taste weckt alles.
 #include <esp_sleep.h>
 #include <driver/gpio.h>
 
-static const uint32_t SCHLAF_NACH = 120000;      // ms ohne Bedienung bzw. ohne Befehle der App
-static const uint32_t STUNDEN_FENSTER = 60000;   // so lange ist der Funk zur vollen Stunde an, wenn niemand kommt
+static const uint32_t SCHLAF_NACH = 60000;       // ms ohne Bedienung bzw. ohne Befehle der App (15.11.2026: 2 min → 1 min)
+static const uint32_t STUNDEN_FENSTER = 30000;   // so lange ist der Funk zur vollen Stunde an, wenn niemand kommt (15.11.2026: 1 min → 30 s)
 static bool funkAn = true, touchAn = true;
 static uint32_t schlafZaehler = 0;
 
@@ -132,9 +132,11 @@ static void schlafPruefen() {
     struct tm t;
     localtime_r(&jetzt, &t);
     if (t.tm_year > 120 && t.tm_min % 15 == 0) klimaMessen();   // Klima alle 15 min auch im Schlummern
-    if (t.tm_year > 120 && t.tm_min == 0) {        // volle Stunde: kurz erreichbar für den Abgleich
+    // volle Stunde: kurz erreichbar für den Abgleich; nachts 1–5 Uhr nicht (15.11.2026, Strom sparen),
+    // Mitternacht bleibt: da schickt die App die Home-Karte mit dem neuen Datum
+    if (t.tm_year > 120 && t.tm_min == 0 && (t.tm_hour == 0 || t.tm_hour >= 6)) {
         funkEin(true);
-        protokoll("Stundenfenster: Funk 1 min an (Akku %d %%, %lu Fehlalarme Bewegung)", batPct, (unsigned long)fehlalarme);
+        protokoll("Stundenfenster: Funk %lu s an (Akku %d %%, %lu Fehlalarme Bewegung)", (unsigned long)(STUNDEN_FENSTER / 1000), batPct, (unsigned long)fehlalarme);
         fehlalarme = 0;
         letzteAktivitaet = millis() - (SCHLAF_NACH - STUNDEN_FENSTER);
     }

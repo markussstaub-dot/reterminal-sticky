@@ -270,7 +270,7 @@ async function zeigeAufnahme(a) {
   } catch (e) { eintrag(`Speichern fehlgeschlagen: ${e.message}`, true); }
 }
 
-// Der Sticky schlummert im Akkubetrieb nach 2 min ohne Bedienung (Firmware 0.8.0, schlaf.h) und meldet das vorher
+// Der Sticky schlummert im Akkubetrieb nach 1 min ohne Bedienung (Firmware 0.8.0, ab 0.31.7 1 statt 2 min, schlaf.h) und meldet das vorher
 let stickySchlaeft = false;
 zwilling.beobachte((art, d) => {
   if (art === 'zustand') stickySchlaeft = false;

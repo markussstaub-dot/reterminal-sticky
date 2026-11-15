@@ -698,6 +698,9 @@ Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzu
   Vorschlag: Symbol zusätzlich an der Spannung festmachen (unter ~3,5 V „fast leer“, egal was der Chip meldet) und
   beim Abschalten wegen Unterspannung ein „Akku leer“-Bild zeichnen, damit kein veraltetes Bild stehen bleibt.
   Bis dahin: nach Tiefentladung einmal voll laden, dann lernt der Chip neu
+- fest (Markus, 15.11.2026): **~24 h Akku reichen als EDC**; sparsamer schlummern (FW 0.31.7): Schlummern nach 1 statt
+  2 min, Stundenfenster 30 s statt 1 min, 1–5 Uhr kein Stundenfenster (Mitternacht bleibt für die neue Home-Karte).
+  Danach (nach Blick in die Fahrtenschreiber-Logs): Vorschlag **Slave-Latenz** bei stehender Verbindung (`SLOW_LAT` > 0)
 
 ## Für Fremd-Apps: eigene App für den Sticky bauen (Markus, 13.11.2026)
 
