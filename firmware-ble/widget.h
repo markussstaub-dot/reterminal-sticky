@@ -211,6 +211,12 @@ static void wTextZeichnen(const char* s, const char* links) {
         if (g >= 0 && start > 1) wZelle(wTx, wTy, g);
     }
 }
+/** Zahl aus dem Rechner für die Anzeige: auf Englisch Punkt statt Komma, „Error“ statt „Fehler“ */
+static void wSprachZahl(char* s, size_t n) {
+    if (!EN) return;
+    if (strstr(s, "Fehler")) { strlcpy(s, "Error", n); return; }
+    for (char* p = s; *p; p++) if (*p == ',') *p = '.';
+}
 /** Textzeile i auswählen (für wTextZeichnen) */
 static bool wFeld(int i) {
     if (i >= wTextAnzahl) return false;
@@ -238,11 +244,12 @@ static void wAnzeigeZeichnen() {
         if (uhr12) snprintf(z, sizeof z, "%d:%02d%c", stundeZeigen(weckH), weckM, weckH >= 12 ? 'p' : 'a');
         else snprintf(z, sizeof z, "%02d:%02d", weckH, weckM);
         if (wFeld(0)) wTextZeichnen(z, nullptr);
-        if (wFeld(1)) wTextZeichnen(weckAn ? "an" : "aus", nullptr);
+        if (wFeld(1)) wTextZeichnen(weckAn ? T("an", "on") : T("aus", "off"), nullptr);
         wFeld(0);
     }
     if (wEinst && wFeld(0)) { wTextZeichnen(uhr12Lokal < 0 ? "auto" : uhr12 ? "12 h" : "24 h", nullptr); wFeld(0); }
     if (wEinst && wFeld(2)) { wTextZeichnen(einhUsLokal < 0 ? "auto" : einhUs ? "US" : "metr", nullptr); wFeld(0); }
+    if (wEinst && wFeld(3)) { wTextZeichnen(sprLokal < 0 ? "auto" : EN ? "EN" : "DE", nullptr); wFeld(0); }   // FW 0.32.0
     if (wEinst && wFeld(1)) {
         char z[20] = "--.--.-- --:--";
         if (zeitGesetzt) {
@@ -254,8 +261,9 @@ static void wAnzeigeZeichnen() {
         wTextZeichnen(z, nullptr);
         wFeld(0);
     }
-    if (wRechner) wTextZeichnen(wRe.anzeige, wRe.mem != 0 ? "M" : nullptr);
-    if (wUmrechner) { char a[64]; uAnzeige(wUm, a, sizeof a); wTextZeichnen(a, nullptr); }
+    // Rechnen bleibt intern deutsch (Komma, „Fehler“, wie die Tests); auf Englisch nur die Anzeige mit Punkt (FW 0.32.0)
+    if (wRechner) { char a[64]; strlcpy(a, wRe.anzeige, sizeof a); wSprachZahl(a, sizeof a); wTextZeichnen(a, wRe.mem != 0 ? "M" : nullptr); }
+    if (wUmrechner) { char a[64]; uAnzeige(wUm, a, sizeof a); wSprachZahl(a, sizeof a); wTextZeichnen(a, nullptr); }
 }
 static void wAnzeigeZeigen() {
     wAnzeigeZeichnen();
@@ -446,6 +454,7 @@ static void widgetAktion(const char* a, int wert) {
     if (wEinst && !strcmp(a, "set")) {
         if (wert == 1) { uhrFormatWeiter(); uhrMinute = -1; }
         if (wert == 2) einheitenWeiter();
+        if (wert == 3) spracheWeiter();
         if (wert >= 11 && wert <= 26) {   // Uhr von Hand stellen (Ortszeit), ohne gültige Zeit ab heute 12:00 laut Firmware-Datum
             tm t;
             if (zeitGesetzt) { time_t s = time(nullptr); localtime_r(&s, &t); }

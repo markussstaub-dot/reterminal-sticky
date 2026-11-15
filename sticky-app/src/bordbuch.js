@@ -1,6 +1,7 @@
 // Bordbuch (SPEC „MVP 2“): Die App rendert alle Seiten (Titel + Inhalt, Spickzettel, Handbuch) für 800×480
 // und spielt sie einmalig in den Flash des Sticky. Dort sind sie ohne Handy lesbar.
 import { BREITE, HOEHE, rgbaZu1bpp } from './protokoll.js';
+import { T } from './uebersetzen.js';
 
 // Spickzettel: als Text gepflegt (in der App änderbar). „## Titel“ beginnt eine Seite, „!“ am Zeilenanfang = fett.
 // Werte aus der Bedienungsanleitung DE 2026 (Seitenangaben in Klammern); „(prüfen)“ = bitte am Fahrzeug bestätigen.
@@ -89,9 +90,9 @@ function kopf(g, titel, rechts) {
   g.fillStyle = '#000';
 }
 
-/** Textseite (Spickzettel) */
+/** Textseite (Spickzettel); seite.fuss (Tastenhilfe, schon übersetzt) geht vor fuss */
 export function zeichneTextseite(g, seite, fuss) {
-  kopf(g, seite.titel, fuss);
+  kopf(g, seite.titel, seite.fuss ?? fuss);
   // Zu lange Zeilen umbrechen (an Leerzeichen, Fortsetzung eingerückt) statt abschneiden (14.11.2026: Hilfen
   // für Rechner, Weltzeit, Einstellungen endeten mit „…“); Schrift nur so weit verkleinern, bis alles passt
   const umbrechen = (t, fett, groesse) => {
@@ -126,7 +127,7 @@ export function zeichneTextseite(g, seite, fuss) {
 
 /** Titelseite mit Inhaltsverzeichnis; liefert die Touch-Felder [{x0,y0,x1,y1,seite}] */
 export function zeichneInhalt(g, links, rechts) {
-  kopf(g, 'Microlino · Bordbuch', '▲▼ blättern · ▲ 1 s = Inhalt · ▲+▼ = Hilfe');
+  kopf(g, T('Microlino · Bordbuch', 'Microlino · Logbook'), T('▲▼ blättern · ▲ 1 s = Inhalt · ▲+▼ = Hilfe', '▲▼ scroll · ▲ 1 s = contents · ▲+▼ = Help'));
   const felder = [];
   const spalte = (eintraege, x0, ueber) => {
     g.font = `bold 22px ${FONT}`;
@@ -149,8 +150,8 @@ export function zeichneInhalt(g, links, rechts) {
     });
   };
   g.textBaseline = 'middle';
-  spalte(links, 10, 'Spickzettel');
-  if (rechts.length) spalte(rechts, 406, 'Handbuch (Seite)');
+  spalte(links, 10, T('Spickzettel', 'Cheat sheets'));
+  if (rechts.length) spalte(rechts, 406, T('Handbuch (Seite)', 'Manual (page)'));
   return felder;
 }
 

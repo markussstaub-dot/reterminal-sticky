@@ -3,8 +3,8 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.31.9 – EDC-Sticky, allein nützlich: Uhr/Wecker/Weltzeit, Rechner/Umrechner, Strichschrift, Waage, Lineal, Zettel mit QR, Einstellungen am Sticky; Braun-Optik, Hoch/Quer; MIT-Lizenz (14.11.2026: App-Vorschau = Bildschirmfoto, Multiclient Stufe 2: zwei Stickys gleichzeitig; 15.11.: sparsamer schlummern, Spiel ohne Handy erklärt, Namen vereinheitlicht; 0.31.9: zweiter Haltepin GPIO46; Release noch 0.31.6)
-wartet: Markus: Playground-Update-PR #125 (0.31.6) im Blick behalten; Lineal nachmessen, Einfügen in WhatsApp probieren; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
+version: FW 0.32.0 – EDC-Sticky, allein nützlich: Uhr/Wecker/Weltzeit, Rechner/Umrechner, Strichschrift, Waage, Lineal, Zettel mit QR, Einstellungen am Sticky; Braun-Optik, Hoch/Quer; MIT-Lizenz (14.11.2026: App-Vorschau = Bildschirmfoto, Multiclient Stufe 2: zwei Stickys gleichzeitig; 15.11.: sparsamer schlummern, Spiel ohne Handy erklärt, Namen vereinheitlicht; 0.31.9: zweiter Haltepin GPIO46; 0.32.0: zweisprachig DE/EN, gebaut, noch nicht geflasht; Release noch 0.31.6)
+wartet: Markus: FW 0.32.0 flashen + APK 2026.11.15-1452 installieren (Ja + Gerät), dann auf Englisch alle Seiten auf Überläufe prüfen; Playground-Update-PR #125 (0.31.6) im Blick behalten; Lineal nachmessen, Einfügen in WhatsApp probieren; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Nachtverbrauch messen
 ---
 
 Repo: github.com/markussstaub-dot/reterminal-sticky (privat, seit 11.11.2026). `backup/`, Modelle und
@@ -371,6 +371,15 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   `/ist/zeit.txt` „einh“), Uhr stellen (±1 h/±10/±1 min, ±Tag/Monat/Jahr, Sekunden 0, in den Uhrenchip; für den Fall
   „Akku ganz leer, kein Handy“). US wirkt auf Widgets mit US-Fassung (`widgets/<name>-us/`, Lineal in Zoll mit
   1/16″-Strichen) und über das Zustandsfeld `us` auf das Home-Wetter (°F, die App zeichnet neu). Am Gerät: „klappt“
+- **Zweisprachig DE/EN (FW 0.32.0, APK 2026.11.15-1452, 15.11.2026, SPEC „Zweisprachig Deutsch/Englisch“):** eine
+  Sprache je Gerät wie 12/24 h: Standard aus der App (Umschalter im Tab „Mehr“, automatisch = Handysprache), als
+  „sprache de|en“ in `einstellungen/zeit.txt`; am Sticky auf der Einstellungs-Seite überstimmbar (Zeile 4, auto → DE →
+  EN, `/ist/zeit.txt` „spr“), wirksam im Zustand `en`. Firmware: `EN` + `T()` wie im Lab (Startbild, „Recording“,
+  on/off, Rechner mit Punkt/„Error“ nur in der Anzeige). App: `src/uebersetzen.js` (`T`, `fuerSticky`): alles für
+  den Sticky Gezeichnete in dessen Sprache; meldet er eine andere, zeichnet die App alles neu (`alleSeitenNeu`).
+  Feste HTML-Texte über `data-en`. Logs, Dateien, Schlüssel, Karussell-Wörter bleiben deutsch (Karussell versteht
+  zusätzlich englische Wörter). Noch nicht am Gerät geprüft. Offen: Einstellungs-Seite hochkant ist gebaut, aber in
+  der App nicht als Lage wählbar (kein Eintrag in `lage.js`)
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

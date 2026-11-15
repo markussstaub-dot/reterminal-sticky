@@ -10,73 +10,73 @@
 <body>
   <header>
     <h1>Sticky</h1>
-    <span id="status" class="pille aus">getrennt</span>
+    <span id="status" class="pille aus" data-en="disconnected">getrennt</span>
   </header>
 
   <main>
     <!-- ======================= Sticky ======================= -->
     <div class="tab" data-tab="sticky">
       <section class="leiste">
-        <button id="verbinden" class="haupt">Verbinden</button>
+        <button id="verbinden" class="haupt" data-en="Connect">Verbinden</button>
         <label id="simWahl" class="schalter" hidden><input type="checkbox" id="sim"> Simulator</label>
         <span id="geraet" class="klein"></span>
       </section>
 
       <section>
-        <h2>Modus am Sticky</h2>
+        <h2 data-en="Sticky mode">Modus am Sticky</h2>
         <div class="leiste">
           <button id="homeZeigen" disabled>Home</button>
-          <button id="fahrtZeigen" disabled>Notiz</button>
-          <button id="bbZeigen" disabled>Bordbuch</button>
-          <button id="stickySuchen" class="werkzeug" disabled>Sticky suchen</button>
+          <button id="fahrtZeigen" disabled data-en="Note">Notiz</button>
+          <button id="bbZeigen" disabled data-en="Logbook">Bordbuch</button>
+          <button id="stickySuchen" class="werkzeug" disabled data-en="Find Sticky">Sticky suchen</button>
         </div>
-        <button id="handyRuhe" class="haupt" hidden>Handy gefunden – Ruhe</button>
-        <p id="aufnahmeStatus" class="klein" hidden>● Aufnahme läuft …</p>
+        <button id="handyRuhe" class="haupt" hidden data-en="Phone found – silence">Handy gefunden – Ruhe</button>
+        <p id="aufnahmeStatus" class="klein" hidden data-en="● Recording …">● Aufnahme läuft …</p>
       </section>
 
       <section class="spiegel">
-        <h2>Am Sticky <span class="klein" style="text-transform:none;letter-spacing:0">– tippen und ▲▼ steuern den Sticky</span></h2>
+        <h2><span data-en="On the Sticky">Am Sticky</span> <span class="klein" style="text-transform:none;letter-spacing:0" data-en="– tap and ▲▼ control the Sticky">– tippen und ▲▼ steuern den Sticky</span></h2>
         <div class="spiegelrahmen"><canvas id="spiegel" width="800" height="480"></canvas></div>
         <div class="unter">
-          <span id="spiegelHinweis" class="pille">nicht verbunden</span>
-          <button id="fernAuf" aria-label="hoch">▲</button>
-          <button id="fernAb" aria-label="runter">▼</button>
+          <span id="spiegelHinweis" class="pille" data-en="not connected">nicht verbunden</span>
+          <button id="fernAuf" aria-label="hoch" data-en-title="up">▲</button>
+          <button id="fernAb" aria-label="runter" data-en-title="down">▼</button>
         </div>
       </section>
 
       <section id="simTasten" class="werkzeuge" hidden>
-        <span class="klein">Simulierter Sticky:</span>
+        <span class="klein" data-en="Simulated Sticky:">Simulierter Sticky:</span>
         <button data-taste="up">▲</button>
         <button data-taste="down">▼</button>
-        <button data-taste="ki">KI</button>
+        <button data-taste="ki" data-en="AI">KI</button>
       </section>
 
       <details class="werkstatt">
-        <summary class="klein">Werkstatt: frei zeichnen und senden</summary>
+        <summary class="klein" data-en="Workshop: draw freely and send">Werkstatt: frei zeichnen und senden</summary>
         <section class="vorschau">
           <div class="rahmen">
             <canvas id="bild" width="800" height="480"></canvas>
             <canvas id="ueber" width="800" height="480"></canvas>
           </div>
           <div class="unter">
-            <span id="abgleich" class="pille">Entwurf</span>
+            <span id="abgleich" class="pille" data-en="Draft">Entwurf</span>
             <div id="balken"><div></div></div>
           </div>
         </section>
         <section class="werkzeuge">
-          <button data-werkzeug="stift" class="an">Stift</button>
-          <button data-werkzeug="radierer">Radierer</button>
-          <button id="muster">Muster</button>
-          <button id="leeren">Leeren</button>
+          <button data-werkzeug="stift" class="an" data-en="Pen">Stift</button>
+          <button data-werkzeug="radierer" data-en="Eraser">Radierer</button>
+          <button id="muster" data-en="Pattern">Muster</button>
+          <button id="leeren" data-en="Clear">Leeren</button>
         </section>
         <section class="werkzeuge">
-          <input id="text" placeholder="Text für den Sticky" maxlength="60">
+          <input id="text" placeholder="Text für den Sticky" data-en-placeholder="Text for the Sticky" maxlength="60">
           <button id="textSetzen">Text</button>
         </section>
         <section class="leiste">
-          <button id="senden" class="haupt" disabled>Senden</button>
-          <label class="schalter"><input type="checkbox" id="schnell"> schnell</label>
-          <button id="karte" disabled>Visitenkarte</button>
+          <button id="senden" class="haupt" disabled data-en="Send">Senden</button>
+          <label class="schalter"><input type="checkbox" id="schnell"> <span data-en="fast">schnell</span></label>
+          <button id="karte" disabled data-en="Business card">Visitenkarte</button>
         </section>
       </details>
     </div>
@@ -85,19 +85,19 @@
     <div class="tab" data-tab="notizen" hidden>
       <section id="fahrt">
         <div class="leiste">
-          <button id="notizenTeilen" class="haupt">Notizen teilen</button>
+          <button id="notizenTeilen" class="haupt" data-en="Share notes">Notizen teilen</button>
         </div>
         <details>
-          <summary class="klein">Schnellknöpfe der Notiz-Seite</summary>
+          <summary class="klein" data-en="Quick buttons of the note page">Schnellknöpfe der Notiz-Seite</summary>
           <div class="leiste">
-            <input id="knoepfe" placeholder="Schnellknöpfe, durch Komma getrennt">
+            <input id="knoepfe" placeholder="Schnellknöpfe, durch Komma getrennt" data-en-placeholder="Quick buttons, separated by commas">
           </div>
         </details>
-        <h2>Heute</h2>
+        <h2 data-en="Today">Heute</h2>
         <ol id="notizen"></ol>
       </section>
       <section>
-        <h2>Aufnahmen <span class="klein" style="text-transform:none;letter-spacing:0">– KI-Taste am Sticky halten</span></h2>
+        <h2><span data-en="Recordings">Aufnahmen</span> <span class="klein" style="text-transform:none;letter-spacing:0" data-en="– hold AI on the Sticky">– KI-Taste am Sticky halten</span></h2>
         <ol id="aufnahmen"></ol>
       </section>
     </div>
@@ -106,22 +106,22 @@
     <div class="tab" data-tab="bordbuch" hidden>
       <section id="bordbuch">
         <div class="leiste">
-          <label class="dateiwahl"><input type="file" id="pdfDatei" accept="application/pdf" hidden><span>Handbuch-PDF wählen</span></label>
-          <span id="pdfName" class="klein">kein Handbuch</span>
+          <label class="dateiwahl"><input type="file" id="pdfDatei" accept="application/pdf" hidden><span data-en="Choose manual PDF">Handbuch-PDF wählen</span></label>
+          <span id="pdfName" class="klein" data-en="no manual">kein Handbuch</span>
         </div>
         <div class="leiste">
-          <button id="bbAufspielen" disabled>Bordbuch aufspielen</button>
+          <button id="bbAufspielen" disabled data-en="Upload logbook">Bordbuch aufspielen</button>
         </div>
         <p id="bbStatus" class="klein"></p>
         <details>
-          <summary class="klein">Spickzettel bearbeiten</summary>
+          <summary class="klein" data-en="Edit cheat sheets">Spickzettel bearbeiten</summary>
           <textarea id="spickzettel" rows="18" spellcheck="false"></textarea>
-          <button id="spickStandard">Standard wiederherstellen</button>
+          <button id="spickStandard" data-en="Restore default">Standard wiederherstellen</button>
         </details>
         <details>
-          <summary class="klein">Handgriffe bearbeiten (kurze Anleitungen, im Bordbuch nach den Spickzetteln)</summary>
+          <summary class="klein" data-en="Edit how-tos (short guides, in the logbook after the cheat sheets)">Handgriffe bearbeiten (kurze Anleitungen, im Bordbuch nach den Spickzetteln)</summary>
           <textarea id="handgriffe" rows="14" spellcheck="false"></textarea>
-          <button id="handgriffeStandard">Standard wiederherstellen</button>
+          <button id="handgriffeStandard" data-en="Restore default">Standard wiederherstellen</button>
         </details>
       </section>
     </div>
@@ -129,76 +129,87 @@
     <!-- ======================= Bestellen ======================= -->
     <div class="tab" data-tab="bestellen" hidden>
       <section id="bestellung">
-        <p class="klein">Am Sticky: ▼ auf Home, dann ▼/▲ blättern, KI zurück.</p>
+        <p class="klein" data-en="On the Sticky: ▼ on Home, then ▼/▲ to flip, AI to go back.">Am Sticky: ▼ auf Home, dann ▼/▲ blättern, KI zurück.</p>
         <div class="leiste">
-          <button id="bestellZeigen" disabled>Zettel zeigen</button>
+          <button id="bestellZeigen" disabled data-en="Show lists">Zettel zeigen</button>
         </div>
-        <h2>Zettel (bis zu 6, „## Titel“ beginnt einen)</h2>
-        <p class="klein">Reihenfolge am Sticky wie hier. Mit einer dieser Zeilen wird der Zettel ein QR-Code:
-          <code>wlan: Name | Passwort</code> (Gast-WLAN), <code>link: https://…</code>, <code>qr: Inhalt</code>
-          (z. B. Kundenkarte, Inhalt einmal mit einer Scanner-App auslesen). Bleibt nur in der App und im Sticky.</p>
+        <h2 data-en="Lists (up to 6, “## Title” starts one)">Zettel (bis zu 6, „## Titel“ beginnt einen)</h2>
+        <p class="klein"><span data-en="Same order on the Sticky as here. With one of these lines a list becomes a QR code:">Reihenfolge am Sticky wie hier. Mit einer dieser Zeilen wird der Zettel ein QR-Code:</span>
+          <code>wlan: Name | <span data-en="Password">Passwort</span></code> <span data-en="(guest Wi-Fi),">(Gast-WLAN),</span> <code>link: https://…</code>, <code>qr: <span data-en="content">Inhalt</span></code>
+          <span data-en="(e.g. a loyalty card; read the content once with a scanner app). Stays in the app and on the Sticky only.">(z. B. Kundenkarte, Inhalt einmal mit einer Scanner-App auslesen). Bleibt nur in der App und im Sticky.</span></p>
         <textarea id="zettelText" rows="18" spellcheck="false"></textarea>
-        <button id="zettelStandard" class="werkzeug">Beispiel wiederherstellen</button>
+        <button id="zettelStandard" class="werkzeug" data-en="Restore example">Beispiel wiederherstellen</button>
       </section>
     </div>
 
     <!-- ======================= Mehr ======================= -->
     <div class="tab" data-tab="mehr" hidden>
       <section>
+        <h2>Sprache · Language</h2>
+        <div class="leiste">
+          <label class="schalter"><select id="sprachWahl">
+            <option value="auto">automatisch · automatic</option>
+            <option value="de">Deutsch</option>
+            <option value="en">English</option>
+          </select></label>
+        </div>
+        <p class="klein" data-en="App and Sticky. Automatic follows the phone. The Sticky can override it on its Settings page.">App und Sticky. Automatisch folgt dem Handy. Der Sticky kann es auf seiner Seite „Einstellungen“ selbst überstimmen.</p>
+      </section>
+      <section>
         <h2>Stickys</h2>
-        <p class="klein">Mehrere Stickys an einer App, verbunden ist einer zur Zeit. Das Profil bestimmt Karussell, Lage, Zettel, Spickzettel, Handgriffe und Wörterbuch – Geräte mit demselben Profil teilen sie.</p>
+        <p class="klein" data-en="Several Stickys on one app, one connected at a time. The profile sets carousel, orientation, lists, cheat sheets, how-tos and dictionary – devices with the same profile share them.">Mehrere Stickys an einer App, verbunden ist einer zur Zeit. Das Profil bestimmt Karussell, Lage, Zettel, Spickzettel, Handgriffe und Wörterbuch – Geräte mit demselben Profil teilen sie.</p>
         <ul id="geraeteListe" class="geraete"></ul>
-        <div class="leiste"><button id="geraetNeu">Sticky hinzufügen</button></div>
+        <div class="leiste"><button id="geraetNeu" data-en="Add Sticky">Sticky hinzufügen</button></div>
       </section>
       <section>
-        <h2>Spracherkennung</h2>
+        <h2 data-en="Speech recognition">Spracherkennung</h2>
         <div class="leiste">
-          <label class="schalter">Modell <select id="modell"></select></label>
+          <label class="schalter"><span data-en="Model">Modell</span> <select id="modell"></select></label>
         </div>
         <div class="leiste">
-          <input id="woerter" placeholder="Wortliste für die Erkennung (Eigennamen, durch Komma getrennt)">
+          <input id="woerter" placeholder="Wortliste für die Erkennung (Eigennamen, durch Komma getrennt)" data-en-placeholder="Word list for recognition (names, separated by commas)">
         </div>
       </section>
       <section>
-        <h2>Wörterbuch</h2>
-        <p class="klein">Wird nach jeder Erkennung angewandt, je Zeile „falsch → richtig“. Korrigierst du eine Notiz (antippen), lernt es von selbst dazu.</p>
+        <h2 data-en="Dictionary">Wörterbuch</h2>
+        <p class="klein" data-en="Applied after every recognition, one “wrong → right” per line. Correct a note (tap it) and it learns by itself.">Wird nach jeder Erkennung angewandt, je Zeile „falsch → richtig“. Korrigierst du eine Notiz (antippen), lernt es von selbst dazu.</p>
         <textarea id="woerterbuch" rows="6" spellcheck="false"></textarea>
       </section>
       <section>
-        <h2>Benachrichtigungen</h2>
-        <p class="klein">Sparsam: nur ausgewählte Apps (zum Testen die Sticky-App selbst, Bubble Log später) erscheinen kurz unten am Sticky, wenn er Home oder Notiz zeigt. Nichts wird gespeichert. Den Zugriff gibst du einmal selbst in den Android-Einstellungen frei.</p>
-        <p class="klein" id="meldeStatus">Zugriff: wird geprüft …</p>
-        <div class="leiste"><button id="meldeZugriff">Zugriff freigeben …</button><button id="meldeTest">Test-Meldung</button></div>
+        <h2 data-en="Notifications">Benachrichtigungen</h2>
+        <p class="klein" data-en="Sparing: only selected apps (for testing the Sticky app itself, Bubble Log later) show briefly at the bottom of the Sticky while it shows Home or Note. Nothing is stored. You grant access once yourself in the Android settings.">Sparsam: nur ausgewählte Apps (zum Testen die Sticky-App selbst, Bubble Log später) erscheinen kurz unten am Sticky, wenn er Home oder Notiz zeigt. Nichts wird gespeichert. Den Zugriff gibst du einmal selbst in den Android-Einstellungen frei.</p>
+        <p class="klein" id="meldeStatus" data-en="Access: checking …">Zugriff: wird geprüft …</p>
+        <div class="leiste"><button id="meldeZugriff" data-en="Grant access …">Zugriff freigeben …</button><button id="meldeTest" data-en="Test notification">Test-Meldung</button></div>
       </section>
       <section>
         <h2>Push-to-Talk</h2>
-        <label class="lage">Diktat zusätzlich in die Zwischenablage <input type="checkbox" id="pttAblage"></label>
-        <p class="klein">KI am Sticky halten, sprechen, loslassen: der erkannte Text liegt danach in der Zwischenablage und lässt sich in jeder App einfügen (WhatsApp, Mail, Suche). Die Notiz bleibt trotzdem.</p>
+        <label class="lage"><span data-en="Also copy dictation to the clipboard">Diktat zusätzlich in die Zwischenablage</span> <input type="checkbox" id="pttAblage"></label>
+        <p class="klein" data-en="Hold AI on the Sticky, speak, release: the recognised text is then on the clipboard, ready to paste into any app (WhatsApp, mail, search). The note is kept too.">KI am Sticky halten, sprechen, loslassen: der erkannte Text liegt danach in der Zwischenablage und lässt sich in jeder App einfügen (WhatsApp, Mail, Suche). Die Notiz bleibt trotzdem.</p>
       </section>
       <section>
-        <h2>Karussell</h2>
+        <h2 data-en="Carousel">Karussell</h2>
         <div class="leiste">
-          <input id="karussell" placeholder="Home, Notiz, Bordbuch, Zettel">
+          <input id="karussell" placeholder="Home, Notiz, Bordbuch, Zettel" data-en-placeholder="Home, Note, Logbook, List">
         </div>
-        <p class="klein">Reihenfolge, in der ▲/▼ am Sticky blättern (Home, Notiz, Bordbuch, Zettel). ▼ lang = nächster Eintrag, KI kurz = Home.</p>
+        <p class="klein" data-en="Order in which ▲/▼ flip through on the Sticky (Home, Note, Logbook, List …). ▼ long = next entry, AI short = Home.">Reihenfolge, in der ▲/▼ am Sticky blättern (Home, Notiz, Bordbuch, Zettel). ▼ lang = nächster Eintrag, KI kurz = Home.</p>
       </section>
       <section>
-        <h2>Lage der Seiten</h2>
+        <h2 data-en="Page orientation">Lage der Seiten</h2>
         <div id="lagen"></div>
-        <label class="lage">Sticky steht auf dem Kopf (180° gedreht) <input type="checkbox" id="dreh180"></label>
-        <label class="lage">Lineal: die 8-cm-Marke misst in echt (mm) <input id="lineal80" inputmode="decimal" size="5"></label>
-        <p class="klein">Hochkant oder quer, je Seite. Home und Notiz bleiben hochkant. Gilt ab Firmware 0.21.0.</p>
+        <label class="lage"><span data-en="Sticky is upside down (rotated 180°)">Sticky steht auf dem Kopf (180° gedreht)</span> <input type="checkbox" id="dreh180"></label>
+        <label class="lage"><span data-en="Ruler: the 8 cm mark really measures (mm)">Lineal: die 8-cm-Marke misst in echt (mm)</span> <input id="lineal80" inputmode="decimal" size="5"></label>
+        <p class="klein" data-en="Portrait or landscape, per page. Home and Note stay portrait. From firmware 0.21.0.">Hochkant oder quer, je Seite. Home und Notiz bleiben hochkant. Gilt ab Firmware 0.21.0.</p>
       </section>
       <section>
-        <h2>Fahrtenschreiber</h2>
+        <h2 data-en="Trip recorder">Fahrtenschreiber</h2>
         <div class="leiste">
           <select id="logTag"></select>
-          <button id="logHolen">Abholen</button>
+          <button id="logHolen" data-en="Fetch">Abholen</button>
         </div>
         <pre id="logText" class="klein protokoll"></pre>
       </section>
       <section>
-        <h2>Ereignisse vom Sticky</h2>
+        <h2 data-en="Events from the Sticky">Ereignisse vom Sticky</h2>
         <ol id="ereignisse"></ol>
       </section>
       <footer><span id="messung"></span><span id="version"></span></footer>
@@ -206,11 +217,11 @@
   </main>
 
   <nav id="tabs">
-    <button data-ziel="sticky" class="an"><span>◧</span>Sticky</button>
-    <button data-ziel="notizen"><span>✎</span>Notizen</button>
-    <button data-ziel="bordbuch"><span>☰</span>Bordbuch</button>
-    <button data-ziel="bestellen"><span>▤</span>Zettel</button>
-    <button data-ziel="mehr"><span>⋯</span>Mehr</button>
+    <button data-ziel="sticky" class="an"><span>◧</span><span>Sticky</span></button>
+    <button data-ziel="notizen"><span>✎</span><span data-en="Notes">Notizen</span></button>
+    <button data-ziel="bordbuch"><span>☰</span><span data-en="Logbook">Bordbuch</span></button>
+    <button data-ziel="bestellen"><span>▤</span><span data-en="Lists">Zettel</span></button>
+    <button data-ziel="mehr"><span>⋯</span><span data-en="More">Mehr</span></button>
   </nav>
   <script type="module" src="./src/main.js"></script>
 </body>

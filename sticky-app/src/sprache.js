@@ -1,6 +1,7 @@
 // Spracherkennung Stufe 1 (Handy, offline): eigenes Android-Plugin mit whisper.cpp.
 // Im Browser eine Attrappe mit festem Text, damit die Oberfläche ohne Gerät testbar ist.
 import { registerPlugin } from '@capacitor/core';
+import { T } from './uebersetzen.js';
 
 const warte = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -12,7 +13,7 @@ export const Spracherkennung = registerPlugin('Spracherkennung', {
     async vorladen() { return { ladeMs: 0 }; },
     async erkennen({ modell }) {
       await warte(400);
-      return { text: 'Das ist eine Attrappe aus dem Browser, die echte Erkennung läuft nur in der APK.', ms: 400, ladeMs: 0, modell, threads: 0 };
+      return { text: T('Das ist eine Attrappe aus dem Browser, die echte Erkennung läuft nur in der APK.', 'This is a browser dummy, real recognition only runs in the APK.'), ms: 400, ladeMs: 0, modell, threads: 0 };
     },
   },
 });

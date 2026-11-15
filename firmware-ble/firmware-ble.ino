@@ -27,12 +27,19 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.31.9";
+static const char* FW_VERSION = "0.32.0";
+
+// ---- Sprache (FW 0.32.0, SPEC „Zweisprachig Deutsch/Englisch“): wirksame Sprache der Anzeige, Muster aus dem Sticky Lab.
+// Gesetzt in modus.h (uhrFormatLaden): Standard vom Handy, am Sticky überstimmbar. Nur Anzeige, Logs bleiben deutsch.
+// FreeSans kennt nur ASCII: keine Umlaute in T()-Texten.
+static bool EN = false;
+static int sprSoll = -1;                        // vom Handy: -1 = noch nicht bekannt, 0 = de, 1 = en
+#define T(de, en) (EN ? (en) : (de))
 
 // ---- Visitenkarte -----------------------------------------------------------
 static const char* NAME     = "EDC Sticky";   // Startbild ohne App (Playground: neutral, nicht der Autor)
 static const char* QR_TEXT  = "https://github.com/markussstaub-dot/reterminal-sticky";
-static const char* QR_LABEL = "App + Anleitung auf GitHub";
+
 
 // ---- Pins ------------------------------------------------------------------
 static const int PIN_BTN_PWR  = 4;
@@ -431,9 +438,10 @@ static void zeichneKarte() {   // nur in den Bildpuffer, ohne Refresh
     display.setTextSize(1);
     display.fillRect(40, H / 2 + 40, leftW - 60, 4, TFT_BLACK);
     display.setFreeFont(&FreeSans12pt7b);
-    display.drawString("Scan mich", leftW / 2 + 10, H / 2 + 80);
+    // Sprache noch unbekannt (nie mit der App verbunden): beides
+    display.drawString(sprSoll < 0 ? "Scan me / Scan mich" : T("Scan mich", "Scan me"), leftW / 2 + 10, H / 2 + 80);
     display.setFreeFont(nullptr);
-    display.drawString(QR_LABEL, leftW / 2 + 10, H / 2 + 115, 2);
+    display.drawString(sprSoll < 0 || EN ? "App + guide on GitHub" : "App + Anleitung auf GitHub", leftW / 2 + 10, H / 2 + 115, 2);
     malenGedreht(false);
 }
 static void zeigeKarte() {
@@ -461,12 +469,12 @@ static void sendState() {
     readBattery();
     char j[520];
     snprintf(j, sizeof j,
-             "{\"fw\":\"%s\",\"seite\":\"%s\",\"bat\":%d,\"mv\":%d,\"ma\":%d,\"chg\":%s,\"mtu\":%u,\"phy\":%u,\"itvl\":%u,\"tp\":\"%ux%u\",\"fahrtv\":\"%08lx\",\"offen\":%d,\"uhr\":%s,\"modus\":\"%s\",\"homev\":\"%s\",\"usb\":%s,\"bb\":%d,\"zettel\":%d,\"temp\":%.1f,\"rf\":%.0f,\"taupunkt\":%.1f,\"fahrt\":%s,\"sensoren\":\"%s%s\",\"us\":%d,\"w\":\"%s\",\"lh\":%d}",
+             "{\"fw\":\"%s\",\"seite\":\"%s\",\"bat\":%d,\"mv\":%d,\"ma\":%d,\"chg\":%s,\"mtu\":%u,\"phy\":%u,\"itvl\":%u,\"tp\":\"%ux%u\",\"fahrtv\":\"%08lx\",\"offen\":%d,\"uhr\":%s,\"modus\":\"%s\",\"homev\":\"%s\",\"usb\":%s,\"bb\":%d,\"zettel\":%d,\"temp\":%.1f,\"rf\":%.0f,\"taupunkt\":%.1f,\"fahrt\":%s,\"sensoren\":\"%s%s\",\"us\":%d,\"en\":%d,\"w\":\"%s\",\"lh\":%d}",
              FW_VERSION, seite, batPct, batMv, batMa, laedt ? "true" : "false", mtu, phy, connItvl, tpResX, tpResY,
              (unsigned long)fahrtVersion, offeneNotizen, rtcDa ? "true" : "false",
              modusName(), homeVersion, usbDa() ? "true" : "false", bbAktuell, bestellAktuell,
              isnan(klimaT) ? -99.0f : klimaT, isnan(klimaRf) ? -1.0f : klimaRf, isnan(klimaTp) ? -99.0f : klimaTp,
-             fahrt ? "true" : "false", lsmDa ? "b" : "", shtDa ? "k" : "", einhUs ? 1 : 0, modus == M_WIDGET ? widgetName : "", seiteHoch() ? 1 : 0);
+             fahrt ? "true" : "false", lsmDa ? "b" : "", shtDa ? "k" : "", einhUs ? 1 : 0, EN ? 1 : 0, modus == M_WIDGET ? widgetName : "", seiteHoch() ? 1 : 0);
     if (connected && chState) {
         chState->setValue((const uint8_t*)j, strlen(j));
         chState->notify();

@@ -2,6 +2,7 @@
 // als Text in der App gepflegt („## Titel“ beginnt einen Zettel), quer und so groß wie möglich gerendert.
 import { BREITE, HOEHE } from './protokoll.js';
 import { BRAUN_FONT } from './braun.js';
+import { T } from './uebersetzen.js';
 
 export const BESTELL_STANDARD = `## Bäcker
 2 Laugenbrötchen
@@ -35,7 +36,7 @@ export function zeichneZettel(g, z, nr, von) {
   g.fillText(z.titel, 24, 30);
   g.textAlign = 'right';   // rechts oben sitzt die Statuszeile des Sticky (288 × 32), der Zähler darunter
   g.font = `16px ${FONT}`;
-  g.fillText(`Zettel ${nr}/${von}`, BREITE - 24, 44);
+  g.fillText(T(`Zettel ${nr}/${von}`, `Card ${nr}/${von}`), BREITE - 24, 44);
   g.fillRect(24, 54, BREITE - 48, 3);
   const oben = 70, unten = HOEHE - 16;
   const n = z.zeilen.length;

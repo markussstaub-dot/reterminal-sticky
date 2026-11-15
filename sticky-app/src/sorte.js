@@ -2,13 +2,17 @@
 // am Anfang geht immer vor, Unsicheres kommt in den Eingang. Offline, ohne KI; Claude räumt später den Eingang auf.
 // Ohne Abhängigkeiten, damit es in node --test läuft.
 
+import { T } from './uebersetzen.js';
+
+// name und ziel sind Anzeige: Getter, damit sie in der wirksamen Sprache kommen; die Schlüssel bleiben deutsch (gespeichert)
+const sorte = (de, en, zielDe, zielEn) => ({ get name() { return T(de, en); }, get ziel() { return T(zielDe, zielEn); } });
 export const SORTEN = {
-  fahrt: { name: 'Fahrt', ziel: 'Testnotiz zur Fahrt (Bubble Log)' },
-  erledigung: { name: 'Erledigung', ziel: 'Zettel' },
-  erinnerung: { name: 'Erinnerung', ziel: 'Kalender' },
-  idee: { name: 'Idee', ziel: 'Vault' },
-  erzaehlung: { name: 'Erzählung', ziel: 'Vault, Lebensstationen' },
-  eingang: { name: 'Eingang', ziel: 'abends aufräumen' },
+  fahrt: sorte('Fahrt', 'Ride', 'Testnotiz zur Fahrt (Bubble Log)', 'test note for the ride (Bubble Log)'),
+  erledigung: sorte('Erledigung', 'Errand', 'Zettel', 'list'),
+  erinnerung: sorte('Erinnerung', 'Reminder', 'Kalender', 'calendar'),
+  idee: sorte('Idee', 'Idea', 'Vault', 'vault'),
+  erzaehlung: sorte('Erzählung', 'Story', 'Vault, Lebensstationen', 'vault, life stations'),
+  eingang: sorte('Eingang', 'Inbox', 'abends aufräumen', 'tidy up in the evening'),
 };
 export const SORTEN_REIHE = Object.keys(SORTEN);
 

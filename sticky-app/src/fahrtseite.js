@@ -3,6 +3,7 @@
 // USB unten. Die App zeichnet hochkant (480×800) und dreht das Bild fürs Display (800×480); der Sticky meldet
 // Touch weiter in Display-Koordinaten, die App rechnet zurück. Die Firmware merkt davon nichts.
 import { BREITE, HOEHE, rgbaZu1bpp } from './protokoll.js';
+import { T } from './uebersetzen.js';
 
 export const STANDARD_KNOEPFE = ['Bug', 'Erkennung falsch', 'Ampel', 'holprig', 'Merken'];
 export const PB = HOEHE, PH = BREITE;   // Hochkant: 480 breit, 800 hoch
@@ -51,7 +52,7 @@ export function fahrtHochkant(knoepfe = STANDARD_KNOEPFE) {
   p.textBaseline = 'middle';
   p.textAlign = 'left';
   p.font = 'bold 32px system-ui, sans-serif';
-  p.fillText('Notiz', 18, 34);   // rechts davon die Statuszeile des Sticky
+  p.fillText(T('Notiz', 'Note'), 18, 34);   // rechts davon die Statuszeile des Sticky
   STREIFEN.forEach((k, i) => {
     const t = knoepfe[i];
     if (!t) return;
@@ -68,7 +69,7 @@ export function fahrtHochkant(knoepfe = STANDARD_KNOEPFE) {
   p.textAlign = 'center';
   p.font = '22px system-ui, sans-serif';
   p.fillStyle = '#000';
-  p.fillText('KI halten = Diktat · KI = Home · ▲ = Bordbuch', PB / 2, 698);
+  p.fillText(T('KI halten = Diktat · KI = Home · ▲ = Bordbuch', 'hold AI = dictate · AI = Home · ▲ = Logbook'), PB / 2, 698);
   return c;
 }
 

@@ -73,11 +73,16 @@ static int uhr12Lokal = -1;
 // z. B. Lineal in Zoll) und über den Zustand („us“) auf das, was die App zeichnet (Home-Wetter in °F).
 static bool einhUsSoll = false, einhUs = false;
 static int einhUsLokal = -1;
+// Sprache (FW 0.32.0): gleiches Muster, „sprache de|en“ in zeit.txt, am Sticky „spr -1|0|1“ in /ist/zeit.txt. EN und
+// sprSoll stehen in firmware-ble.ino. Die wirksame Sprache geht über den Zustand („en“) an die App, die ihre Seiten
+// dann in dieser Sprache neu zeichnet; ohne Handy wechseln sofort nur die Firmware-Texte.
+static int sprLokal = -1;
 static void uhrFormatLaden() {
     String t;
     bool da = sollText("einstellungen/zeit.txt", t);
     uhr12Soll = da && t.indexOf("format 12") >= 0;
     einhUsSoll = da && t.indexOf("einheiten us") >= 0;
+    sprSoll = !da ? sprSoll : t.indexOf("sprache en") >= 0 ? 1 : t.indexOf("sprache de") >= 0 ? 0 : sprSoll;
     if (sdEin()) {
         File f = SD.open("/ist/zeit.txt", FILE_READ);
         if (f) {
@@ -86,15 +91,17 @@ static void uhrFormatLaden() {
                 int v;
                 if (sscanf(z.c_str(), "lokal %d", &v) == 1) uhr12Lokal = constrain(v, -1, 1);
                 if (sscanf(z.c_str(), "einh %d", &v) == 1) einhUsLokal = constrain(v, -1, 1);
+                if (sscanf(z.c_str(), "spr %d", &v) == 1) sprLokal = constrain(v, -1, 1);
             }
             f.close();
         }
     }
     uhr12 = uhr12Lokal >= 0 ? uhr12Lokal == 1 : uhr12Soll;
     einhUs = einhUsLokal >= 0 ? einhUsLokal == 1 : einhUsSoll;
+    EN = sprLokal >= 0 ? sprLokal == 1 : sprSoll == 1;
 }
 static void lokalSichern() {
-    if (sdEin()) { SD.mkdir("/ist"); File f = SD.open("/ist/zeit.txt", FILE_WRITE); if (f) { f.printf("lokal %d\neinh %d\n", uhr12Lokal, einhUsLokal); f.close(); } }
+    if (sdEin()) { SD.mkdir("/ist"); File f = SD.open("/ist/zeit.txt", FILE_WRITE); if (f) { f.printf("lokal %d\neinh %d\nspr %d\n", uhr12Lokal, einhUsLokal, sprLokal); f.close(); } }
 }
 /** Einstellungs-Seite: Einheiten automatisch → metrisch → US → automatisch */
 static void einheitenWeiter() {
@@ -103,6 +110,14 @@ static void einheitenWeiter() {
     lokalSichern();
     wantState = true;                               // die App zeichnet Home dann in °F bzw. °C
     protokoll("Einheiten: %s", einhUsLokal < 0 ? "wie das Handy" : einhUs ? "US" : "metrisch");
+}
+/** Einstellungs-Seite: Sprache automatisch → Deutsch → English → automatisch (FW 0.32.0) */
+static void spracheWeiter() {
+    sprLokal = sprLokal == -1 ? 0 : sprLokal == 0 ? 1 : -1;
+    EN = sprLokal >= 0 ? sprLokal == 1 : sprSoll == 1;
+    lokalSichern();
+    wantState = true;                               // die App zeichnet die Seiten dann in dieser Sprache neu
+    protokoll("Sprache: %s", sprLokal < 0 ? "wie das Handy" : EN ? "englisch" : "deutsch");
 }
 /** Einstellungs-Seite: automatisch → 24 h → 12 h → automatisch */
 static void uhrFormatWeiter() {

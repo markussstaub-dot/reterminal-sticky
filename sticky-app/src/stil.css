@@ -116,7 +116,7 @@ main { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   display: grid; justify-items: center; gap: 2px; min-height: 60px; padding: 6px 2px;
   background: none; border: 0; border-radius: 14px; color: var(--leise); font-size: 12px; box-shadow: none;
 }
-#tabs button span { font-size: 22px; line-height: 1; }
+#tabs button span:first-child { font-size: 22px; line-height: 1; }
 #tabs button.an { color: var(--akzent); background: var(--grund); box-shadow: inset 0 2px 4px rgba(0, 0, 0, .6); }
 .werkstatt { border: 1px solid var(--linie); border-radius: 12px; padding: 8px 12px; display: grid; gap: 10px; }
 .werkstatt[open] summary { margin-bottom: 6px; }

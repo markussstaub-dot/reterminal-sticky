@@ -319,6 +319,32 @@ Einrichten, Abholen, Rechner/Umrechner.
   auto/metrisch/US (°C/°F, Lineal mm/Zoll); Uhr von Hand stellen (FW 0.31.0)
 - Vorschlag später auf derselben Seite: 180° gedreht, im Schlummer findbar, Lage je Seite
 
+#### Zweisprachig Deutsch/Englisch (Markus, 15.11.2026, abgenommen: Seiten ziehen beim Verbinden nach, Englisch mit Dezimalpunkt)
+Bestand: Die Firmware zeichnet selbst kaum Text (Startbild ohne App, „Aufnahme“, „Fehler“, Werte auf der
+Einstellungs-Seite und im Wecker). Alles andere am Sticky (Home, Menü, Widgets, Tastenhilfe ▲+▼, Notiz-Layout,
+Zettel, Bordbuch-Rahmen, Strichschrift-Spickzettel) rendert die App und legt es unter `/soll/` ab.
+- fest: **eine** Sprache je Gerät, gleiches Muster wie 12/24 h und Einheiten: Standard vom Handy
+  (`einstellungen/zeit.txt` „sprache de|en“), am Sticky überstimmbar auf der Einstellungs-Seite (auto → DE → EN,
+  gespeichert in `/ist/zeit.txt` „spr -1|0|1“). Der Sticky gewinnt und meldet die wirksame Sprache im Zustand
+  (`"en":0|1`, wie `us`)
+- fest: Übersetzt wird nur die Anzeige. Log- und Protokolltexte, Dateinamen, Protokoll-Schlüssel, CSV-Köpfe und die
+  Karussell-Wörter in `karussell.txt` bleiben deutsch
+- Vorschlag **App**: Umschalter „Sprache: automatisch / Deutsch / English“ in den App-Einstellungen; automatisch =
+  Sprache des Handys (Deutsch bei `de-*`, sonst Englisch). Er gilt für die App-Oberfläche und ist der Standard für
+  den Sticky
+- Vorschlag **Seiten auf dem Sticky** folgen der wirksamen Sprache des Sticky: Meldet er eine andere Sprache als
+  die, in der die Karte bespielt ist, zeichnet die App Hilfe, Widgets, Menü und Home neu und gleicht ab (wie beim
+  Wechsel auf US-Einheiten). Ohne Handy wechseln am Sticky sofort nur die Firmware-Texte; die gerenderten Seiten
+  ziehen beim nächsten Verbinden nach. Begründung: Sprache wechselt man fast nie, doppelte Seiten auf der Karte
+  hießen doppelte Übertragung bei jedem Abgleich
+- Vorschlag **Firmware**: Muster aus dem Sticky Lab, globaler Schalter `EN` und `T("deutsch", "english")`; FreeSans
+  kann nur ASCII, deshalb keine Umlaute in Firmware-Texten (bisher keine nötig). Startbild ohne App zweisprachig
+  („Scan mich · Scan me“), weil dann noch keine Sprache bekannt ist
+- Vorschlag **Zahlen**: Rechner/Umrechner auf Englisch mit Dezimalpunkt statt Komma (Taste `,` zeigt dann `.`)
+- offen: Spracherkennung (whisper) in der App-Sprache statt fest Deutsch; Strichschrift-Umlaut-Tipp nur auf Deutsch?
+  Erst einmal unverändert lassen
+- offen: Handbücher/Spickzettel (Bordbuch-Inhalte) sind Inhalt, nicht Oberfläche, und bleiben, wie sie sind
+
 #### Nächstes Flash-Paket: mehr lokal (Markus, 13.11.2026, geparkt)
 Alles als neue Widget-Typen der Widget-Maschine: die App liefert Optik (Braun-Stil) und Einstellungen in `felder.txt`,
 die Firmware rechnet. Ein Flash für alles.
@@ -749,6 +775,7 @@ unseren App-Code lesen zu müssen.** Die Firmware bleibt dieselbe, Bluetooth LE 
 | `/soll/bordbuch/NN.bin`, `index.txt` | App | Bordbuch-Seiten, Inhaltsverzeichnis (Auslöser) |
 | `/soll/einstellungen/karussell.txt` | App | Reihenfolge für ▲/▼: `home`, `notiz`, `bordbuch`, `zettel`, `kritzel`, `app`, `widget <name>` |
 | `/soll/einstellungen/lage.txt` | App | je Seite `<seite> hoch\|quer\|auto`, dazu `dreh 0\|180` |
+| `/soll/einstellungen/zeit.txt` | App | Standards vom Handy: `format 12\|24`, `einheiten us\|metrisch`, `sprache de\|en` (FW 0.32.0); am Sticky überstimmbar, Wahl in `/ist/zeit.txt`, wirksam im Zustand `us`, `en` |
 | `/soll/widgets/<name>/bild.bin`, `ziffern.bin`, `felder.txt` | App | eigene Seiten ohne Handy (Timer, Waage, Menü); Format im Kopf von `firmware-ble/widget.h`. Bei Lage `auto` zusätzlich `<name>-h/` hochkant |
 | `/soll/hilfe/<modus>.bin`, `w-<name>.bin` | App | Tastenhilfe (▲+▼) je Seite |
 | `/ist/log/JJJJ-MM-TT.txt` | Sticky | Fahrtenschreiber, „HH:MM:SS Text“ |

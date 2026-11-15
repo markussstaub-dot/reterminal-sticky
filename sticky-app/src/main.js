@@ -30,6 +30,7 @@ import { holeWetter, letztesWetter } from './wetter.js';
 import { BESTELL_STANDARD, zeichneZettel } from './bestellung.js';
 import { zettelListe, zettelUmzug } from './zettel.js';
 import { uhrzeit, zeitDatei, HANDY_US } from './zeit.js';
+import { T, fuerSticky, sprachWahl, sprachWahlSetzen, stickyEnSetzen, appIstEn, lang } from './uebersetzen.js';
 let letzteEinheitUs = null;
 setzeEinheitUs(HANDY_US);   // bis der Sticky seine Einheit meldet
 import { alphabetDatei, glyphenBlatt, schriftHintergrund, schriftHilfe } from './strichschrift.js';
@@ -49,9 +50,16 @@ import { spiegelEinrichten } from './spiegel.js';
 import { BREITE, HOEHE, rgbaZu1bpp, crc32, rueckDatei } from './protokoll.js';
 import { BleVerbindung, SimVerbindung } from './verbindung.js';
 import { Zwilling } from './zwilling.js';
-import { schluessel, schluesselFuer, mitGeraet, karteFuer, kurz, geraete, aktivesGeraet, aktivSetzen, geraetAendern, geraetVergessen, PROFILE } from './geraete.js';
+import { schluessel, schluesselFuer, mitGeraet, karteFuer, kurz, geraete, aktivesGeraet, aktivSetzen, geraetAendern, geraetVergessen, PROFILE, profilName } from './geraete.js';
 
 const $ = (id) => document.getElementById(id);
+// Feste Texte in index.html: Deutsch steht im HTML, Englisch in data-en (Text), data-en-placeholder, data-en-title
+if (appIstEn()) {
+  document.documentElement.lang = 'en';
+  for (const el of document.querySelectorAll('[data-en]')) el.textContent = el.dataset.en;
+  for (const el of document.querySelectorAll('[data-en-placeholder]')) el.placeholder = el.dataset.enPlaceholder;
+  for (const el of document.querySelectorAll('[data-en-title]')) el.title = el.dataset.enTitle;
+}
 const nativ = Capacitor.isNativePlatform();
 const zwilling = new Zwilling();
 let verbindung = null;
@@ -80,7 +88,7 @@ function muster() {
   g.fillStyle = '#fff';
   g.font = 'bold 40px system-ui, sans-serif';
   g.textBaseline = 'middle';
-  g.fillText('Hallo vom Fold', 24, 37);
+  g.fillText(T('Hallo vom Fold', 'Hello from the Fold'), 24, 37);
   const jetzt = new Date();
   g.textAlign = 'right';
   g.font = '28px system-ui, sans-serif';
@@ -88,10 +96,10 @@ function muster() {
   g.textAlign = 'left';
   g.fillStyle = '#000';
   g.font = '30px system-ui, sans-serif';
-  g.fillText(jetzt.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }), 24, 120);
+  g.fillText(jetzt.toLocaleDateString(lang(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }), 24, 120);
   g.font = '24px system-ui, sans-serif';
-  g.fillText('Twin-Durchstich: Bild per BLE, Taste zurück.', 24, 170);
-  g.fillText('Drück ▲, ▼ oder tipp aufs Display.', 24, 210);
+  g.fillText(T('Twin-Durchstich: Bild per BLE, Taste zurück.', 'Twin test: image via BLE, key press back.'), 24, 170);
+  g.fillText(T('Drück ▲, ▼ oder tipp aufs Display.', 'Press ▲, ▼ or tap the display.'), 24, 210);
   // Raster unten zum Prüfen von Schärfe und Spiegelung
   for (let i = 0; i < 16; i++) {
     const x = 24 + i * 47;
@@ -161,12 +169,17 @@ const bildBytes = () => rgbaZu1bpp(g.getImageData(0, 0, BREITE, HOEHE).data);
 function pruefeAbgleich() {
   const gleich = zwilling.gesendetCrc != null && crc32(bildBytes()) === zwilling.gesendetCrc;
   const p = $('abgleich');
-  p.textContent = gleich ? 'gleich wie auf dem Sticky' : (zwilling.geraet.seite === 'karte' ? 'Sticky zeigt Visitenkarte' : 'Entwurf, nicht gesendet');
+  p.textContent = gleich ? T('gleich wie auf dem Sticky', 'same as on the Sticky') : (zwilling.geraet.seite === 'karte' ? T('Sticky zeigt Visitenkarte', 'Sticky shows business card') : T('Entwurf, nicht gesendet', 'Draft, not sent'));
   p.classList.toggle('gleich', gleich);
 }
 
 // ---- Ereignisse --------------------------------------------------------------------
-const TASTEN = { up: '▲', down: '▼', ki: 'KI' };
+const TASTEN = { up: '▲', down: '▼', ki: T('KI', 'AI') };
+/** Gründe, die als Daten (deutsch) in der Notiz stehen, für die Anzeige */
+const GRUND_EN = { 'zu kurz': 'too short', 'zu leise': 'too quiet', 'keine klare Sprache': 'no clear speech', 'nur Wörter der Liste': 'only words from the list', 'von Hand': 'by hand' };
+const grundText = (g) => T(g, GRUND_EN[g] ?? g);
+/** „(unklar)“ steht als Text in der Notiz (Daten), angezeigt wird es übersetzt */
+const notizText = (t) => (t === '(unklar)' ? T(t, '(unclear)') : t);
 function eintrag(text, fehler = false) {
   const li = document.createElement('li');
   li.className = fehler ? 'neu fehler' : 'neu';
@@ -214,20 +227,20 @@ async function zeigeAufnahme(a) {
   werte.className = 'werte';
   const verlust = a.fehlend + (a.geraet.verworfen || 0);
   const quote = a.pakete + verlust ? (100 * verlust / (a.pakete + verlust)).toFixed(1) : '0';
-  werte.textContent = `${a.kbitS} kbit/s · ${a.pakete} Pakete · Verlust ${verlust} (${quote} %) · Spitze ${a.spitze}`;
+  werte.textContent = T(`${a.kbitS} kbit/s · ${a.pakete} Pakete · Verlust ${verlust} (${quote} %) · Spitze ${a.spitze}`, `${a.kbitS} kbit/s · ${a.pakete} packets · lost ${verlust} (${quote} %) · peak ${a.spitze}`);
   const link = document.createElement('a');
   link.href = url;
   link.download = name;
-  link.textContent = 'WAV laden';
+  link.textContent = T('WAV laden', 'Download WAV');
   link.style.color = 'var(--akzent)';
   // Spracherkennung (Stufe 1: Handy, offline)
   const text = document.createElement('div');
   text.className = 'text warte';
-  text.textContent = 'erkenne …';
+  text.textContent = T('erkenne …', 'recognising …');
   const zeile = document.createElement('div');
   zeile.className = 'zeile';
   const kopieren = document.createElement('button');
-  kopieren.textContent = 'Kopieren';
+  kopieren.textContent = T('Kopieren', 'Copy');
   kopieren.disabled = true;
   zeile.append(kopieren);
   li.append(kopf, text, zeile, player, werte);
@@ -237,37 +250,39 @@ async function zeigeAufnahme(a) {
   erkenne(a.pcm).then((r) => {
     const gesamt = Math.round(performance.now() - a.tLos);
     text.className = 'text';
-    text.textContent = r.text || '(nichts erkannt)';
+    text.textContent = notizText(r.text) || T('(nichts erkannt)', '(nothing recognised)');
     kopieren.disabled = !r.text || !!r.unklar;
     kopieren.onclick = async () => {
-      try { await Clipboard.write({ string: r.text }); kopieren.textContent = 'Kopiert ✓'; } catch (e) { eintrag(`Kopieren fehlgeschlagen: ${e.message}`, true); }
+      try { await Clipboard.write({ string: r.text }); kopieren.textContent = T('Kopiert ✓', 'Copied ✓'); } catch (e) { eintrag(T(`Kopieren fehlgeschlagen: ${e.message}`, `Copy failed: ${e.message}`), true); }
     };
-    const zusatz = r.unklar ? ` · nicht erkannt: ${r.unklar} (${r.pruefung?.dauerMs} ms, Spitze ${r.pruefung?.spitzeDb} dBFS, Grund ${r.pruefung?.grundDb} dBFS)` : ` · Text nach ${gesamt} ms (Erkennung ${r.ms} ms${r.ladeMs ? `, Laden ${r.ladeMs} ms` : ''}${r.zweiterLauf ? ', 2. Lauf wegen Wiederholung' : ''}, ${r.modell.replace('ggml-', '').replace('.bin', '')})`;
+    const zusatz = r.unklar ? T(` · nicht erkannt: ${r.unklar} (${r.pruefung?.dauerMs} ms, Spitze ${r.pruefung?.spitzeDb} dBFS, Grund ${r.pruefung?.grundDb} dBFS)`, ` · not recognised: ${grundText(r.unklar)} (${r.pruefung?.dauerMs} ms, peak ${r.pruefung?.spitzeDb} dBFS, floor ${r.pruefung?.grundDb} dBFS)`)
+      : T(` · Text nach ${gesamt} ms (Erkennung ${r.ms} ms${r.ladeMs ? `, Laden ${r.ladeMs} ms` : ''}${r.zweiterLauf ? ', 2. Lauf wegen Wiederholung' : ''}, ${r.modell.replace('ggml-', '').replace('.bin', '')})`,
+        ` · text after ${gesamt} ms (recognition ${r.ms} ms${r.ladeMs ? `, loading ${r.ladeMs} ms` : ''}${r.zweiterLauf ? ', 2nd run due to repetition' : ''}, ${r.modell.replace('ggml-', '').replace('.bin', '')})`);
     werte.textContent += zusatz;
     console.info('[sticky] sprache', JSON.stringify({ dauer: a.dauerMs, gesamt, erkennung: r.ms, laden: r.ladeMs, modell: r.modell, zweiter: r.zweiterLauf, text: r.text, umweg: Math.round(tErk - a.tLos) }));
     const spaet = Date.now() - a.start - a.dauerMs > VERSPAETET_MS;
     // Push-to-Talk (SPEC „Push-to-Talk“, Weg 1): frischer, sicher erkannter Text gleich in die Zwischenablage
     if (pttAblage() && r.text && !r.unklar && !spaet) {
-      Clipboard.write({ string: r.text }).then(() => { kopieren.textContent = 'Kopiert ✓'; eintrag('Diktat in der Zwischenablage'); }).catch((e) => eintrag(`Zwischenablage: ${e.message}`, true));
+      Clipboard.write({ string: r.text }).then(() => { kopieren.textContent = T('Kopiert ✓', 'Copied ✓'); eintrag(T('Diktat in der Zwischenablage', 'Dictation copied to clipboard')); }).catch((e) => eintrag(T(`Zwischenablage: ${e.message}`, `Clipboard: ${e.message}`), true));
     }
     neueNotiz({ t: a.start, art: 'diktat', text: r.text || '', ...(a.wer ? { geraet: a.wer } : {}), ...((a.sitzung ? a.sitzung.z : zwilling).geraet.fahrt ? { faehrt: true } : {}), ...(r.roh ? { roh: r.roh } : {}), ...(r.unklar ? { unklar: r.unklar } : {}), audio: nativ ? `aufnahmen/${name}` : name, dauerMs: a.dauerMs, ...(spaet ? { offline: true } : {}) },
       spaet ? null : a.ort, 'Diktat', a.sitzung);
   }).catch((e) => {
     text.className = 'text';
-    text.textContent = `Erkennung fehlgeschlagen: ${e.message}`;
+    text.textContent = T(`Erkennung fehlgeschlagen: ${e.message}`, `Recognition failed: ${e.message}`);
   });
   $('aufnahmen').prepend(li);
   // Latenz: Taste losgelassen → Wiedergabe startet
   player.addEventListener('playing', () => {
     const ms = Math.round(performance.now() - a.tLos);
-    werte.textContent += ` · Loslassen→Abspielen ${ms} ms`;
+    werte.textContent += T(` · Loslassen→Abspielen ${ms} ms`, ` · release→playback ${ms} ms`);
     console.info('[sticky] audio', JSON.stringify({ dauer: a.dauerMs, kbitS: a.kbitS, pakete: a.pakete, verlust, latenz: ms, spitze: a.spitze }));
   }, { once: true });
-  player.play().catch(() => werte.textContent += ' · (zum Abspielen ▶ tippen)');
+  player.play().catch(() => werte.textContent += T(' · (zum Abspielen ▶ tippen)', ' · (tap ▶ to play)'));
   try {
     const pfad = await speichern(name, a.wav);
-    if (pfad) eintrag(`Aufnahme gespeichert: ${pfad}`);
-  } catch (e) { eintrag(`Speichern fehlgeschlagen: ${e.message}`, true); }
+    if (pfad) eintrag(T(`Aufnahme gespeichert: ${pfad}`, `Recording saved: ${pfad}`));
+  } catch (e) { eintrag(T(`Speichern fehlgeschlagen: ${e.message}`, `Saving failed: ${e.message}`), true); }
 }
 
 // Der Sticky schlummert im Akkubetrieb nach 1 min ohne Bedienung (Firmware 0.8.0, ab 0.31.7 1 statt 2 min, schlaf.h) und meldet das vorher
@@ -280,42 +295,46 @@ zwilling.beobachte((art, d) => {
     const us = !!d.us;
     if (us !== letzteEinheitUs) { const vorher = letzteEinheitUs; letzteEinheitUs = us; setzeEinheitUs(us); if (vorher != null && zwilling.verbunden) abgleich().catch((e) => eintrag(e.message, true)); }
   }
+  if (art === 'zustand' && d.en != null && stickyEnSetzen(d.en) && zwilling.verbunden) {   // Sprache am Sticky geändert (FW 0.32.0): Seiten neu
+    eintrag(T('Sticky-Sprache geändert – Seiten werden neu gezeichnet', 'Sticky language changed – redrawing pages'));
+    alleSeitenNeu().catch((e) => eintrag(e.message, true));
+  }
   if (art === 'zustand') { zeigeZustand(d); if (d.modus) spiegelSetze({ modus: d.modus, w: d.w ?? '', lh: d.lh ?? (d.modus === 'home' || d.modus === 'notiz' ? 1 : 0), bb: d.bb ?? 0, zettel: d.zettel ?? 0, bat: d.bat, usb: !!d.usb, verbunden: true }); if (!spiegel.hatFoto()) fotoAnstossen(); }
-  else if (art === 'log') { if (!(stickySchlaeft && /^Verbinde mit/.test(d))) eintrag(d); }   // schlummert: Versuche nicht mitschreiben
+  else if (art === 'log') { if (!(stickySchlaeft && /^(Verbinde mit|Connecting to)/.test(d))) eintrag(d); }   // schlummert: Versuche nicht mitschreiben
   else if (art === 'getrennt') {
-    if (stickySchlaeft) eintrag('Sticky schlummert (spart Akku) – Taste weckt ihn, sonst meldet er sich zur vollen Stunde');
-    else eintrag(autoVerbinden ? 'Verbindung weg – versuche alle 15 s neu' : 'Verbindung getrennt', true);
+    if (stickySchlaeft) eintrag(T('Sticky schlummert (spart Akku) – Taste weckt ihn, sonst meldet er sich zur vollen Stunde', 'Sticky is napping (saves battery) – a key wakes it, otherwise it checks in on the hour'));
+    else eintrag(autoVerbinden ? T('Verbindung weg – versuche alle 15 s neu', 'Connection lost – retrying every 15 s') : T('Verbindung getrennt', 'Disconnected'), true);
     console.info('[sticky] getrennt');
     spiegelSetze({ verbunden: false, aufnahme: false });
     zeigeVerbindung();
     if (autoVerbinden && !wiederTimer) wiederTimer = setTimeout(wiederverbinden, 3000);
   }
   else if (art === 'ereignis') {
-    if (d.t === 'key' && d.a === 'down') eintrag(`Taste ${TASTEN[d.k] || d.k} gedrückt`);
+    if (d.t === 'key' && d.a === 'down') eintrag(T(`Taste ${TASTEN[d.k] || d.k} gedrückt`, `Key ${TASTEN[d.k] || d.k} pressed`));
     if (d.t === 'key' && d.a === 'up') fotoAnstossen();
-    else if (d.t === 'touch' && d.a === 'down' && stickyModus === 'app') { appSeite.tipp(d.x, d.y).catch((e) => eintrag(`Spiel: ${e.message}`, true)); }
-    else if (d.t === 'touch' && d.a === 'down') { eintrag(`Touch bei ${d.x}, ${d.y}`); touchMarke(d.x, d.y); fahrtTouch(d.x, d.y, d.ms); }
+    else if (d.t === 'touch' && d.a === 'down' && stickyModus === 'app') { appSeite.tipp(d.x, d.y).catch((e) => eintrag(T(`Spiel: ${e.message}`, `Game: ${e.message}`), true)); }
+    else if (d.t === 'touch' && d.a === 'down') { eintrag(T(`Touch bei ${d.x}, ${d.y}`, `Touch at ${d.x}, ${d.y}`)); touchMarke(d.x, d.y); fahrtTouch(d.x, d.y, d.ms); }
     else if (d.t === 'pong') eintrag('Pong');
     else if (d.t === 'suchen') handyKlingeln();
-    else if (d.t === 'suche') eintrag(d.a === 'gefunden' ? 'Sticky gefunden' : 'Sticky piept');
+    else if (d.t === 'suche') eintrag(d.a === 'gefunden' ? T('Sticky gefunden', 'Sticky found') : T('Sticky piept', 'Sticky is beeping'));
     else if (d.t === 'schlaf') stickySchlaeft = true;
-    else if (d.t === 'modus') { spiegelSetze({ modus: d.m, w: d.w ?? '', lh: d.lh ?? 0, ...(d.zettel != null ? { zettel: d.zettel } : {}), verbunden: true }); stickyModus = d.m; imBordbuch = d.m === 'bordbuch'; fotoAnstossen(); eintrag(`Modus: ${{ home: 'Home', notiz: 'Notiz', bordbuch: 'Bordbuch', kritzel: 'Kritzel', schrift: 'Schrift', app: 'Spiel', widget: 'Widget', bestell: `Zettel ${(d.zettel ?? 0) + 1}` }[d.m] ?? d.m}`); if (d.m === 'app') { if (d.hoch != null) appSeite.hoch = !!d.hoch; } duellPruefen(); if (d.m === 'app' && !imDuell()) appSeite.zeigen().catch((e) => eintrag(`Spiel: ${e.message}`, true)); }
-    else if (d.t === 'seite') { $('bbStatus').textContent = `Sticky zeigt Bordbuch-Seite ${d.n + 1} von ${d.von}`; spiegelSetze({ bb: d.n }); }
+    else if (d.t === 'modus') { spiegelSetze({ modus: d.m, w: d.w ?? '', lh: d.lh ?? 0, ...(d.zettel != null ? { zettel: d.zettel } : {}), verbunden: true }); stickyModus = d.m; imBordbuch = d.m === 'bordbuch'; fotoAnstossen(); eintrag(T('Modus: ', 'Mode: ') + ({ home: 'Home', notiz: T('Notiz', 'Note'), bordbuch: T('Bordbuch', 'Logbook'), kritzel: T('Kritzel', 'Doodle'), schrift: T('Schrift', 'Handwriting'), app: T('Spiel', 'Game'), widget: 'Widget', bestell: `${T('Zettel', 'List')} ${(d.zettel ?? 0) + 1}` }[d.m] ?? d.m)); if (d.m === 'app') { if (d.hoch != null) appSeite.hoch = !!d.hoch; } duellPruefen(); if (d.m === 'app' && !imDuell()) appSeite.zeigen().catch((e) => eintrag(T(`Spiel: ${e.message}`, `Game: ${e.message}`), true)); }
+    else if (d.t === 'seite') { $('bbStatus').textContent = T(`Sticky zeigt Bordbuch-Seite ${d.n + 1} von ${d.von}`, `Sticky shows logbook page ${d.n + 1} of ${d.von}`); spiegelSetze({ bb: d.n }); }
     else if (d.t === 'audio' && (d.a === 'start' || d.a === 'stop')) spiegelSetze({ aufnahme: d.a === 'start' });
-    else if (d.t === 'bordbuch') eintrag(`Bordbuch auf dem Sticky: ${d.seiten} Seiten, ${d.belegtKB} KB`);
-    else if (d.t === 'audio' && d.a === 'fehler') { eintrag(`Aufnahme nicht möglich: ${d.err}`, true); $('aufnahmeStatus').hidden = true; }
+    else if (d.t === 'bordbuch') eintrag(T(`Bordbuch auf dem Sticky: ${d.seiten} Seiten, ${d.belegtKB} KB`, `Logbook on the Sticky: ${d.seiten} pages, ${d.belegtKB} KB`));
+    else if (d.t === 'audio' && d.a === 'fehler') { eintrag(T(`Aufnahme nicht möglich: ${d.err}`, `Recording not possible: ${d.err}`), true); $('aufnahmeStatus').hidden = true; }
   }
 });
 
 function zeigeZustand(z) {
   const teile = [];
-  if (z.bat >= 0) teile.push(`Akku ${z.bat} %${z.chg ? ' ⚡' : ''}`);
+  if (z.bat >= 0) teile.push(`${T('Akku', 'Battery')} ${z.bat} %${z.chg ? ' ⚡' : ''}`);
   if (z.mtu) teile.push(`MTU ${z.mtu}`);
   if (z.phy) teile.push(z.phy === 2 ? '2M' : '1M');
   if (z.itvl) teile.push(`${(z.itvl * 1.25).toFixed(1)} ms`);
   if (z.fw) teile.push(`FW ${z.fw}`);
-  if (z.temp > -99) teile.push(`${z.temp.toFixed(1).replace('.', ',')} °C, ${Math.round(z.rf)} %${z.temp - z.taupunkt < 2 ? ' · beschlägt' : ''}`);
-  if (z.fahrt) teile.push('fährt');
+  if (z.temp > -99) teile.push(`${T(z.temp.toFixed(1).replace('.', ','), z.temp.toFixed(1))} °C, ${Math.round(z.rf)} %${z.temp - z.taupunkt < 2 ? T(' · beschlägt', ' · fogging up') : ''}`);
+  if (z.fahrt) teile.push(T('fährt', 'driving'));
   $('geraet').textContent = teile.join(' · ');
   pruefeAbgleich();
 }
@@ -323,9 +342,9 @@ function zeigeZustand(z) {
 function zeigeVerbindung() {
   geraeteZeigen();
   const an = zwilling.verbunden;
-  $('status').textContent = an ? verbindung.name : 'getrennt';
+  $('status').textContent = an ? verbindung.name : T('getrennt', 'disconnected');
   $('status').className = `pille ${an ? 'ein' : 'aus'}`;
-  $('verbinden').textContent = an ? 'Trennen' : wiederTimer ? 'Wiederverbinden stoppen' : 'Verbinden';
+  $('verbinden').textContent = an ? T('Trennen', 'Disconnect') : wiederTimer ? T('Wiederverbinden stoppen', 'Stop reconnecting') : T('Verbinden', 'Connect');
   $('verbinden').classList.toggle('haupt', !an);
   $('senden').disabled = !an;
   $('fahrtZeigen').disabled = !an;
@@ -368,7 +387,7 @@ const VERBINDEN_FRIST_MS = 25000;
 let letzterVersuch = 0;
 function mitFrist(p, ms, was) {
   let zeit;
-  return Promise.race([p, new Promise((_, nein) => { zeit = setTimeout(() => nein(new Error(`${was}: keine Antwort nach ${ms / 1000} s`)), ms); })])
+  return Promise.race([p, new Promise((_, nein) => { zeit = setTimeout(() => nein(new Error(T(`${was}: keine Antwort nach ${ms / 1000} s`, `${was}: no answer after ${ms / 1000} s`))), ms); })])
     .finally(() => clearTimeout(zeit));
 }
 
@@ -378,14 +397,14 @@ async function wiederverbinden() {
   verbindeGerade = true;
   letzterVersuch = Date.now();
   try {
-    await mitFrist(verbindung.verbinden({ nurGemerkt: true }), VERBINDEN_FRIST_MS, 'Verbinden').catch(async (e) => {
+    await mitFrist(verbindung.verbinden({ nurGemerkt: true }), VERBINDEN_FRIST_MS, T('Verbinden', 'Connect')).catch(async (e) => {
       await verbindung.abbrechen?.().catch(() => {});   // halbe Verbindung lösen, sonst blockiert sie den nächsten Versuch
       throw e;
     });
-    eintrag(`Wieder verbunden mit ${verbindung.name}`);
+    eintrag(T(`Wieder verbunden mit ${verbindung.name}`, `Reconnected to ${verbindung.name}`));
     console.info('[sticky] wieder verbunden');
     zeigeVerbindung();
-    abgleich().catch((e) => eintrag(`Abgleich: ${e.message}`, true));
+    abgleich().catch((e) => eintrag(T(`Abgleich: ${e.message}`, `Sync: ${e.message}`), true));
   } catch {
     clearTimeout(wiederTimer);
     wiederTimer = setTimeout(wiederverbinden, 5000);   // 12.11.2026: 15 s Pause ließ einen per Taste geweckten Sticky bis ~20 s warten
@@ -413,7 +432,7 @@ function geraeteZeigen() {
   const ul = $('geraeteListe');
   ul.textContent = '';
   const liste = geraete(), aktiv = aktivesGeraet();
-  if (!liste.length) { ul.innerHTML = '<li class="klein">Noch kein Sticky – auf dem Sticky-Tab „Verbinden“ tippen.</li>'; return; }
+  if (!liste.length) { ul.innerHTML = T('<li class="klein">Noch kein Sticky – auf dem Sticky-Tab „Verbinden“ tippen.</li>', '<li class="klein">No Sticky yet – tap “Connect” on the Sticky tab.</li>'); return; }
   for (const g of liste) {
     const istAktiv = g.id === aktiv?.id;
     const li = document.createElement('li');
@@ -430,14 +449,14 @@ function geraeteZeigen() {
       geraeteZeigen();
     };
     const profil = document.createElement('select');
-    profil.title = 'Profil';
-    profil.innerHTML = Object.entries(PROFILE).map(([k, t]) => `<option value="${k}">${t}</option>`).join('');
+    profil.title = T('Profil', 'Profile');
+    profil.innerHTML = Object.keys(PROFILE).map((k) => `<option value="${k}">${profilName(k)}</option>`).join('');
     profil.value = g.profil;
     profil.onchange = () => {
       geraetAendern(g.id, { profil: profil.value });
-      if (istAktiv) wechselnZu(null, `Profil „${PROFILE[profil.value]}“ für ${g.name}`);
+      if (istAktiv) wechselnZu(null, T(`Profil „${profilName(profil.value)}“ für ${g.name}`, `Profile “${profilName(profil.value)}” for ${g.name}`));
     };
-    const link = Object.assign(document.createElement('input'), { value: g.link ?? '', placeholder: 'Link für den QR-Code auf Home (leer = keiner)', title: 'QR-Code auf Home' });
+    const link = Object.assign(document.createElement('input'), { value: g.link ?? '', placeholder: T('Link für den QR-Code auf Home (leer = keiner)', 'Link for the QR code on Home (empty = none)'), title: T('QR-Code auf Home', 'QR code on Home') });
     link.onchange = () => {
       geraetAendern(g.id, { link: link.value.trim() || undefined });
       if (istAktiv && zwilling.verbunden) abgleich().catch((e) => eintrag(e.message, true));
@@ -445,28 +464,30 @@ function geraeteZeigen() {
     };
     const mac = Object.assign(document.createElement('span'), { className: 'klein', textContent: g.id });
     const hg = sitzungen.get(g.id);
-    if (hg) mac.textContent += hg.z.verbunden ? ` · im Hintergrund verbunden${hg.z.geraet.bat != null ? ` · Akku ${hg.z.geraet.bat} %` : ''}`
-      : hg.zuletzt ? ` · zuletzt ${uhrzeit(new Date(hg.zuletzt))}` : ' · wartet auf den Sticky';
-    else if (istAktiv && zwilling.verbunden && zwilling.geraet.bat != null) mac.textContent += ` · Akku ${zwilling.geraet.bat} %`;
-    const knopf = Object.assign(document.createElement('button'), { textContent: istAktiv ? (zwilling.verbunden ? '● verbunden' : '● aktiv') : 'Wechseln' });
+    if (hg) mac.textContent += hg.z.verbunden ? `${T(' · im Hintergrund verbunden', ' · connected in background')}${hg.z.geraet.bat != null ? ` · ${T('Akku', 'Battery')} ${hg.z.geraet.bat} %` : ''}`
+      : hg.zuletzt ? ` · ${T('zuletzt', 'last')} ${uhrzeit(new Date(hg.zuletzt))}` : T(' · wartet auf den Sticky', ' · waiting for the Sticky');
+    else if (istAktiv && zwilling.verbunden && zwilling.geraet.bat != null) mac.textContent += ` · ${T('Akku', 'Battery')} ${zwilling.geraet.bat} %`;
+    const knopf = Object.assign(document.createElement('button'), { textContent: istAktiv ? (zwilling.verbunden ? T('● verbunden', '● connected') : T('● aktiv', '● active')) : T('Wechseln', 'Switch') });
     knopf.disabled = istAktiv;
-    knopf.onclick = () => wechselnZu(g.id, `Gewechselt zu ${g.name}`);
-    const weg = Object.assign(document.createElement('button'), { textContent: 'Vergessen' });
+    knopf.onclick = () => wechselnZu(g.id, T(`Gewechselt zu ${g.name}`, `Switched to ${g.name}`));
+    const weg = Object.assign(document.createElement('button'), { textContent: T('Vergessen', 'Forget') });
     weg.onclick = async () => {
-      if (!confirm(`${g.name} vergessen? Sein Abgleich-Stand in der App wird gelöscht; das Profil bleibt.`)) return;
+      if (!confirm(T(`${g.name} vergessen? Sein Abgleich-Stand in der App wird gelöscht; das Profil bleibt.`, `Forget ${g.name}? Its sync state in the app is deleted; the profile stays.`))) return;
       // Vor der Weitergabe: auch auf dem Sticky alles Persönliche löschen (Karte /soll und /ist, interner Speicher)
       const z = istAktiv ? zwilling : sitzungen.get(g.id)?.z;
       const kannLeeren = z?.verbunden && baue(istAktiv ? null : sitzungen.get(g.id), () => fwAb('0.31.6'));
-      if (kannLeeren && confirm(`Auch ${g.name} selbst leeren? Notizen, Zettel, Bordbuch, Visitenkarte und alles auf der Karte werden dort gelöscht – zum Weitergeben. Danach startet er neu und ist leer.`)) {
+      if (kannLeeren && confirm(T(`Auch ${g.name} selbst leeren? Notizen, Zettel, Bordbuch, Visitenkarte und alles auf der Karte werden dort gelöscht – zum Weitergeben. Danach startet er neu und ist leer.`,
+        `Also wipe ${g.name} itself? Notes, lists, logbook, business card and everything on the card are deleted there – for passing it on. It then restarts empty.`))) {
         try {
           const r = await z.leeren();
-          eintrag(`${g.name} geleert (${r.dateien} Dateien auf der Karte${r.ok ? ', interner Speicher formatiert' : ', interner Speicher NICHT formatiert'})`, !r.ok);
-        } catch (e) { eintrag(`${g.name} leeren: ${e.message}`, true); return; }
-      } else if (!kannLeeren) eintrag(`${g.name}: zum Leeren muss er verbunden sein (Firmware ab 0.31.6) – sonst bleibt seine Karte, wie sie ist`);
+          eintrag(T(`${g.name} geleert (${r.dateien} Dateien auf der Karte${r.ok ? ', interner Speicher formatiert' : ', interner Speicher NICHT formatiert'})`,
+            `${g.name} wiped (${r.dateien} files on the card${r.ok ? ', internal storage formatted' : ', internal storage NOT formatted'})`), !r.ok);
+        } catch (e) { eintrag(T(`${g.name} leeren: ${e.message}`, `Wipe ${g.name}: ${e.message}`), true); return; }
+      } else if (!kannLeeren) eintrag(T(`${g.name}: zum Leeren muss er verbunden sein (Firmware ab 0.31.6) – sonst bleibt seine Karte, wie sie ist`, `${g.name}: to wipe it, it must be connected (firmware 0.31.6 or later) – otherwise its card stays as it is`));
       const s = sitzungen.get(g.id);
       if (s) { s.weg = true; clearTimeout(s.timer); await s.v.trennen().catch(() => {}); sitzungen.delete(g.id); }
       geraetVergessen(g.id);
-      if (istAktiv) wechselnZu(null, `${g.name} vergessen`); else geraeteZeigen();
+      if (istAktiv) wechselnZu(null, T(`${g.name} vergessen`, `${g.name} forgotten`)); else geraeteZeigen();
     };
     li.append(name, profil, link, mac, knopf, weg);
     ul.append(li);
@@ -475,7 +496,7 @@ function geraeteZeigen() {
 $('geraetNeu').onclick = async () => {
   const knopf = $('geraetNeu');
   knopf.disabled = true;
-  knopf.textContent = 'Suche neuen Sticky …';
+  knopf.textContent = T('Suche neuen Sticky …', 'Looking for a new Sticky …');
   try {
     autoVerbinden = false;
     clearTimeout(wiederTimer);
@@ -484,11 +505,11 @@ $('geraetNeu').onclick = async () => {
     zwilling.anbinden(verbindung);
     await verbindung.verbinden({ neu: true });   // bekannte Stickys werden übersprungen; der neue wird aktiv
     await verbindung.trennen().catch(() => {});
-    await wechselnZu(null, `${verbindung.name} hinzugefügt (Profil „EDC“, in der Liste änderbar)`);
+    await wechselnZu(null, T(`${verbindung.name} hinzugefügt (Profil „EDC“, in der Liste änderbar)`, `${verbindung.name} added (profile “EDC”, can be changed in the list)`));
   } catch (e) {
-    eintrag(`Sticky hinzufügen: ${e.message || e}`, true);
+    eintrag(T(`Sticky hinzufügen: ${e.message || e}`, `Add Sticky: ${e.message || e}`), true);
     knopf.disabled = false;
-    knopf.textContent = 'Sticky hinzufügen';
+    knopf.textContent = T('Sticky hinzufügen', 'Add Sticky');
   }
 };
 geraeteZeigen();
@@ -507,18 +528,18 @@ $('verbinden').onclick = async () => {
     return;
   }
   knopf.disabled = true;
-  knopf.textContent = 'Suche …';
+  knopf.textContent = T('Suche …', 'Searching …');
   try {
     verbindung = !nativ && $('sim').checked ? new SimVerbindung() : new BleVerbindung();
     zwilling.anbinden(verbindung);
     await verbindung.verbinden();
-    eintrag(`Verbunden mit ${verbindung.name} (MTU ${verbindung.mtu})`);
+    eintrag(T(`Verbunden mit ${verbindung.name} (MTU ${verbindung.mtu})`, `Connected to ${verbindung.name} (MTU ${verbindung.mtu})`));
     autoVerbinden = true;
-    Hintergrund.start({ text: 'Notizen und Diktate kommen an', adresse: stickyAdresse() }).catch((e) => eintrag(`Hintergrund-Dienst: ${e.message}`, true));
-    abgleich().catch((e) => eintrag(`Abgleich: ${e.message}`, true));
+    Hintergrund.start({ text: T('Notizen und Diktate kommen an', 'Notes and dictations arrive'), adresse: stickyAdresse() }).catch((e) => eintrag(T(`Hintergrund-Dienst: ${e.message}`, `Background service: ${e.message}`), true));
+    abgleich().catch((e) => eintrag(T(`Abgleich: ${e.message}`, `Sync: ${e.message}`), true));
     hintergrundStarten();
   } catch (e) {
-    eintrag(`Verbinden fehlgeschlagen: ${e.message || e}`, true);
+    eintrag(T(`Verbinden fehlgeschlagen: ${e.message || e}`, `Connecting failed: ${e.message || e}`), true);
   } finally {
     knopf.disabled = false;
     zeigeVerbindung();
@@ -528,21 +549,23 @@ $('verbinden').onclick = async () => {
 $('senden').onclick = async () => {
   const knopf = $('senden');
   knopf.disabled = true;
-  knopf.textContent = 'Sende …';
+  knopf.textContent = T('Sende …', 'Sending …');
   const balken = $('balken').firstElementChild;
   try {
     const m = await zwilling.sendeBild(bildBytes(), {
       schnell: $('schnell').checked,
       fortschritt: (f) => { balken.style.width = `${Math.round(f * 100)}%`; },
     });
-    const text = `Bild angekommen: Funk ${m.funk} ms (Anlauf ${m.anlauf} ms${m.warSchnell ? '' : ', nicht schnell'}), Anzeige ${m.anzeige} ms, gesamt ${m.gesamt} ms · ${m.rahmen}×${m.nutzlast} B, MTU ${m.mtu}, ${m.phy === 2 ? '2M' : '1M'}, DLE ${m.dle ?? '?'}`;
+    const text = T(`Bild angekommen: Funk ${m.funk} ms (Anlauf ${m.anlauf} ms${m.warSchnell ? '' : ', nicht schnell'}), Anzeige ${m.anzeige} ms, gesamt ${m.gesamt} ms`,
+      `Image arrived: radio ${m.funk} ms (start-up ${m.anlauf} ms${m.warSchnell ? '' : ', not fast'}), display ${m.anzeige} ms, total ${m.gesamt} ms`)
+      + ` · ${m.rahmen}×${m.nutzlast} B, MTU ${m.mtu}, ${m.phy === 2 ? '2M' : '1M'}, DLE ${m.dle ?? '?'}`;
     eintrag(text);
-    $('messung').textContent = `Letztes Bild: ${m.funk} ms Funk, ${m.gesamt} ms gesamt`;
+    $('messung').textContent = T(`Letztes Bild: ${m.funk} ms Funk, ${m.gesamt} ms gesamt`, `Last image: ${m.funk} ms radio, ${m.gesamt} ms total`);
     console.info('[sticky] messung', JSON.stringify(m));
   } catch (e) {
     eintrag(e.message || String(e), true);
   } finally {
-    knopf.textContent = 'Senden';
+    knopf.textContent = T('Senden', 'Send');
     knopf.disabled = !zwilling.verbunden;
     setTimeout(() => { balken.style.width = '0'; }, 800);
     pruefeAbgleich();
@@ -550,7 +573,7 @@ $('senden').onclick = async () => {
 };
 
 $('karte').onclick = async () => {
-  try { await zwilling.zeigeKarte(); eintrag('Visitenkarte angefordert'); } catch (e) { eintrag(e.message, true); }
+  try { await zwilling.zeigeKarte(); eintrag(T('Visitenkarte angefordert', 'Business card requested')); } catch (e) { eintrag(e.message, true); }
 };
 
 document.querySelectorAll('[data-taste]').forEach((b) => {
@@ -566,8 +589,8 @@ leinwand.addEventListener('click', (e) => {
 for (const m of MODELLE) $('modell').append(new Option(m.name, m.datei));
 try { $('modell').value = localStorage.getItem('sticky.modell') || MODELLE[0].datei; } catch { /* egal */ }
 const vorladen = () => Spracherkennung.vorladen({ modell: $('modell').value })
-  .then((r) => r?.ladeMs && eintrag(`Sprachmodell geladen (${r.ladeMs} ms)`))
-  .catch((e) => eintrag(`Sprachmodell fehlt: ${e.message}`, true));
+  .then((r) => r?.ladeMs && eintrag(T(`Sprachmodell geladen (${r.ladeMs} ms)`, `Speech model loaded (${r.ladeMs} ms)`)))
+  .catch((e) => eintrag(T(`Sprachmodell fehlt: ${e.message}`, `Speech model missing: ${e.message}`), true));
 $('modell').onchange = () => { try { localStorage.setItem('sticky.modell', $('modell').value); } catch { /* egal */ } vorladen(); };
 vorladen();
 
@@ -601,8 +624,8 @@ function duellPruefen() {
     appSeite.aktiv = 0; appSeiteHg.aktiv = 0;
     appSeiteHg.hoch = appSeite.hoch; appSeiteHg.sitzung = s;
     spiel.duell([kurz(aktivesGeraet()), kurz(s.g)]);
-    eintrag(`Burgduell: ${kurz(aktivesGeraet())} gegen ${kurz(s.g)}`);
-    appSeite.zeigen().catch((e) => eintrag(`Burgduell: ${e.message}`, true));
+    eintrag(T(`Burgduell: ${kurz(aktivesGeraet())} gegen ${kurz(s.g)}`, `Castle duel: ${kurz(aktivesGeraet())} vs ${kurz(s.g)}`));
+    appSeite.zeigen().catch((e) => eintrag(T(`Burgduell: ${e.message}`, `Castle duel: ${e.message}`), true));
   } else if (!an && spiel.zweiSticky) {
     spiel.solo();
     if (stickyModus === 'app') appSeite.zeigen().catch(() => {});
@@ -629,18 +652,18 @@ async function zeigeFahrtSeite() {
   fahrtCrc = crc32(bytes);
   pruefeAbgleich();
   const m = await zwilling.sendeBild(bytes, { schnell: false });
-  eintrag(`Fahrt-Seite gezeigt (${m.gesamt} ms)`);
+  eintrag(T(`Fahrt-Seite gezeigt (${m.gesamt} ms)`, `Trip page shown (${m.gesamt} ms)`));
   pruefeAbgleich();
 }
 $('fahrtZeigen').onclick = () => zwilling.modusSetzen(2).catch((e) => eintrag(e.message, true));
 $('homeZeigen').onclick = () => zwilling.modusSetzen(0).catch((e) => eintrag(e.message, true));
 // Gegenseitig suchen (FW ≥ 0.25.0): Knopf lässt den Sticky piepen; KI 3× am Sticky lässt das Handy klingeln
 $('stickySuchen').onclick = () => {
-  if (!fwAb('0.25.0')) { eintrag('Sticky suchen braucht Firmware 0.25.0', true); return; }
-  zwilling.suchen(30).then(() => eintrag('Sticky piept – Taste am Sticky drücken, wenn gefunden')).catch((e) => eintrag(e.message, true));
+  if (!fwAb('0.25.0')) { eintrag(T('Sticky suchen braucht Firmware 0.25.0', 'Find Sticky needs firmware 0.25.0'), true); return; }
+  zwilling.suchen(30).then(() => eintrag(T('Sticky piept – Taste am Sticky drücken, wenn gefunden', 'Sticky is beeping – press a key on the Sticky once found'))).catch((e) => eintrag(e.message, true));
 };
 function handyKlingeln() {
-  eintrag('Sticky sucht das Handy');
+  eintrag(T('Sticky sucht das Handy', 'Sticky is looking for the phone'));
   $('handyRuhe').hidden = false;
   Hintergrund.klingeln({ sekunden: 20 }).catch((e) => eintrag(e.message, true));
   setTimeout(() => { $('handyRuhe').hidden = true; }, 20000);
@@ -661,7 +684,7 @@ $('zettelText').value = zettelLaden();
 $('zettelText').onchange = () => {
   try { localStorage.setItem(schluessel('zettel'), $('zettelText').value); } catch { /* egal */ }
   const bloecke = ($('zettelText').value.match(/^## /gm) ?? []).length;
-  if (bloecke > 6) eintrag(`Zettel: ${bloecke} eingetragen, der Sticky zeigt nur die ersten 6`, true);
+  if (bloecke > 6) eintrag(T(`Zettel: ${bloecke} eingetragen, der Sticky zeigt nur die ersten 6`, `Lists: ${bloecke} entered, the Sticky only shows the first 6`), true);
   if (zwilling.verbunden) abgleich().catch((e) => eintrag(e.message, true));   // geänderte Zettel gleich aufspielen
 };
 $('zettelStandard').onclick = () => { $('zettelText').value = BESTELL_STANDARD; $('zettelText').onchange(); };
@@ -685,14 +708,14 @@ async function fahrtTouch(x, y, ms) {
 async function neueNotiz(teile, ortPromise, kurz, s = null) {
   const ort = await (ortPromise ?? null);
   let n;
-  try { n = await notizen.notiere(teile, ort); } catch (e) { eintrag(`Notiz nicht gespeichert: ${e.message}`, true); return; }
+  try { n = await notizen.notiere(teile, ort); } catch (e) { eintrag(T(`Notiz nicht gespeichert: ${e.message}`, `Note not saved: ${e.message}`), true); return; }
   zeigeNotiz(n, true);
   const modus = s ? s.modus : stickyModus;   // Hintergrund-Sticky: Bestätigung an IHN, nicht an den aktiven
   if (modus === 'notiz' || modus === 'home') {   // Rückmeldefeld gibt es auf beiden Seiten
     const zeit = uhrzeit(n.t);
     const r = rueckmeldung(`✓ ${kurz} ${zeit}`);
     if (!s) spiegel.meldung(`✓ ${kurz} ${zeit}`);
-    (s?.z ?? zwilling).sendeBild(r.bytes, { bereich: r.bereich }).catch((e) => eintrag(`Rückmeldung: ${e.message}`, true));
+    (s?.z ?? zwilling).sendeBild(r.bytes, { bereich: r.bereich }).catch((e) => eintrag(T(`Rückmeldung: ${e.message}`, `Confirmation: ${e.message}`), true));
   }
 }
 
@@ -701,28 +724,28 @@ function zeigeNotiz(n, neu = false) {
   li.className = `${n.art}${neu ? ' neu' : ''}`;
   const kopf = document.createElement('div');
   kopf.className = 'kopf';
-  const ort = n.lat != null ? `${n.lat.toFixed(5)}, ${n.lon.toFixed(5)} (±${n.gen} m)` : n.offline ? 'ohne Handy aufgenommen' : 'ohne GPS';
+  const ort = n.lat != null ? `${n.lat.toFixed(5)}, ${n.lon.toFixed(5)} (±${n.gen} m)` : n.offline ? T('ohne Handy aufgenommen', 'recorded without phone') : T('ohne GPS', 'no GPS');
   kopf.textContent = `${uhrzeit(n.t, true)} · ${ort}`;
   // Sorte als Schild; Antippen schaltet weiter (von Hand gilt dann)
   const schild = document.createElement('span');
   schild.className = `sorte ${n.sorte ?? 'eingang'}`;
-  const schildText = () => { schild.textContent = SORTEN[n.sorte ?? 'eingang'].name; schild.title = `${SORTEN[n.sorte ?? 'eingang'].ziel}${n.sorteGrund ? ` · ${n.sorteGrund}` : ''}`; };
+  const schildText = () => { schild.textContent = SORTEN[n.sorte ?? 'eingang'].name; schild.title = `${SORTEN[n.sorte ?? 'eingang'].ziel}${n.sorteGrund ? ` · ${grundText(n.sorteGrund)}` : ''}`; };
   schildText();
   schild.onclick = async (e) => {
     e.stopPropagation();
     const neu = naechsteSorte(n.sorte ?? 'eingang');
-    try { await notizen.setzen(n.t, (x) => { x.sorte = neu; x.sorteGrund = 'von Hand'; }); } catch (err) { eintrag(`Sorte nicht gespeichert: ${err.message}`, true); return; }
+    try { await notizen.setzen(n.t, (x) => { x.sorte = neu; x.sorteGrund = 'von Hand'; }); } catch (err) { eintrag(T(`Sorte nicht gespeichert: ${err.message}`, `Category not saved: ${err.message}`), true); return; }
     n.sorte = neu; n.sorteGrund = 'von Hand';
     schildText();
   };
   kopf.append(' ', schild);
   const was = document.createElement('div');
   was.className = 'was';
-  was.textContent = n.art === 'diktat' ? `🎙 ${n.text || '(nichts erkannt)'}` : n.art === 'kritzel' ? '✎ Kritzel' : n.art === 'schrift' ? `✍ ${n.text}` : n.knopf;
+  was.textContent = n.art === 'diktat' ? `🎙 ${notizText(n.text) || T('(nichts erkannt)', '(nothing recognised)')}` : n.art === 'kritzel' ? T('✎ Kritzel', '✎ Doodle') : n.art === 'schrift' ? `✍ ${n.text}` : n.knopf;
   if (n.art === 'kritzel' && n.bild) {
     const img = document.createElement('img');
     img.className = 'kritzel';
-    img.alt = 'Kritzel vom Sticky';
+    img.alt = T('Kritzel vom Sticky', 'Doodle from the Sticky');
     const name = n.bild.split('/').pop();
     (nativ ? Filesystem.readFile({ path: n.bild, directory: Directory.Data }).then((r) => r.data) : Promise.resolve(kritzelSim[name]))
       .then((b64) => { if (b64) img.src = `data:image/png;base64,${b64}`; }).catch(() => {});
@@ -730,13 +753,13 @@ function zeigeNotiz(n, neu = false) {
   }
   if (n.art === 'diktat' && n.text) {
     // Korrigieren direkt in der Liste (13.11.2026: der Android-Dialog von window.prompt verschwand und speicherte leer)
-    was.title = 'Antippen zum Korrigieren';
+    was.title = T('Antippen zum Korrigieren', 'Tap to correct');
     was.onclick = () => {
       if (li.querySelector('textarea')) return;
       const feld = Object.assign(document.createElement('textarea'), { value: n.text, rows: 3 });
       feld.style.width = '100%';
-      const ok = Object.assign(document.createElement('button'), { textContent: 'Speichern', className: 'haupt' });
-      const weg = Object.assign(document.createElement('button'), { textContent: 'Abbrechen' });
+      const ok = Object.assign(document.createElement('button'), { textContent: T('Speichern', 'Save'), className: 'haupt' });
+      const weg = Object.assign(document.createElement('button'), { textContent: T('Abbrechen', 'Cancel') });
       const leiste = document.createElement('div');
       leiste.className = 'leiste';
       leiste.append(ok, weg);
@@ -749,14 +772,14 @@ function zeigeNotiz(n, neu = false) {
         const neu = feld.value.replace(/\s*\n\s*/g, ' ').trim();   // Enter im Feld ist kein Absatz
         if (!neu || neu === n.text) { schliessen(); return; }   // leer zählt als Abbrechen
         const gelernt = lernen(n.text, neu, woerter().split(','));
-        try { await notizen.aendern(n.t, neu); } catch (e) { eintrag(`Ändern fehlgeschlagen: ${e.message}`, true); return; }
+        try { await notizen.aendern(n.t, neu); } catch (e) { eintrag(T(`Ändern fehlgeschlagen: ${e.message}`, `Change failed: ${e.message}`), true); return; }
         n.text = neu;
         was.textContent = `🎙 ${n.text}`;
         schliessen();
         if (gelernt.length) {
           $('woerterbuch').value = paareText(einpflegen(woerterbuch(), gelernt));
           $('woerterbuch').onchange();
-          eintrag(`Gelernt: ${gelernt.map((p) => `${p.falsch} → ${p.richtig}`).join(', ')}`);
+          eintrag(`${T('Gelernt', 'Learned')}: ${gelernt.map((p) => `${p.falsch} → ${p.richtig}`).join(', ')}`);
         }
       };
     };
@@ -770,7 +793,17 @@ function zeigeNotiz(n, neu = false) {
 let vordergrundGleichtAb = false;   // der Hintergrund lässt dem aktiven Sticky den Vortritt (Funk teilen)
 async function abgleich() {
   vordergrundGleichtAb = true;
-  try { await abgleichKern(); } finally { vordergrundGleichtAb = false; }
+  try { await fuerSticky(abgleichKern); } finally { vordergrundGleichtAb = false; }
+}
+/** Sprache am Sticky (oder in der App) gewechselt: alles neu zeichnen und abgleichen; läuft schon einer, danach noch einmal */
+let seitenNeuNochmal = false;
+async function alleSeitenNeu() {
+  if (vordergrundGleichtAb) { seitenNeuNochmal = true; return; }
+  do {
+    seitenNeuNochmal = false;
+    await abgleich();
+    if (stickyModus === 'app') await fuerSticky(() => appSeite.zeigen());
+  } while (seitenNeuNochmal);
 }
 async function abgleichKern() {
   if (!zwilling.geraet.fw || zwilling.geraet.fw === 'sim' || zwilling.geraet.fahrtv == null) return;   // braucht Firmware 0.5
@@ -797,7 +830,7 @@ async function abgleichKern() {
     const dateien = alle.map((b, i) => ({ n: `${i}.bin`, daten: b }))
       .concat([{ n: 'status-quer.bin', daten: st.quer }, { n: 'status-hoch.bin', daten: st.hoch }, { n: 'version.txt', daten: new TextEncoder().encode(homeV) }]);
     const n = await zwilling.sollAbgleich('home', dateien);
-    eintrag(`Home: ${n} Dateien aufgespielt`);
+    eintrag(T(`Home: ${n} Dateien aufgespielt`, `Home: ${n} files uploaded`));
   } else if (zwilling.geraet.homev !== homeV) {
     // Nur geänderte Bilder senden (das Wetter ändert meist nur die Karte); unbekannt → alle
     let alt = null;
@@ -807,55 +840,68 @@ async function abgleichKern() {
     for (let i = 0; i < alle.length; i++) if (vollstaendig || alt.crcs[i] !== crcs[i]) await zwilling.sendeBild(alle[i], { home: i });
     await zwilling.homeVersion(homeV);
     try { localStorage.setItem(schluessel('homecrcs'), JSON.stringify({ version: homeV, crcs })); } catch { /* egal */ }
-    eintrag(`Home-Karte, Notiz-Seite, Uhr und ${zettelBilder.length} Zettel/Karten aufgespielt`);
+    eintrag(T(`Home-Karte, Notiz-Seite, Uhr und ${zettelBilder.length} Zettel/Karten aufgespielt`, `Home card, note page, clock and ${zettelBilder.length} lists/cards uploaded`));
   }
   zeichneHome(g, karteFuer(aktivesGeraet(), KARTE), uhrzeit(new Date()), wetter);
   pruefeAbgleich();
   if (zwilling.geraet.modus) stickyModus = zwilling.geraet.modus;
-  if (zwilling.geraet.fahrtv !== version && fwAb('0.11.0')) {
+  // Sprache der Rückmeldungen merken: fahrtv hängt nur am Layout, ein Sprachwechsel soll sie trotzdem neu zeichnen
+  const notizSpr = T('de', 'en'), sprAnders = (() => { try { return (localStorage.getItem(schluessel('notizEn')) ?? 'de') !== notizSpr; } catch { return false; } })();
+  const sprMerken = () => { try { localStorage.setItem(schluessel('notizEn'), notizSpr); } catch { /* egal */ } };
+  if ((zwilling.geraet.fahrtv !== version || sprAnders) && fwAb('0.11.0')) {
     const k = knoepfe();
-    const texte = [0, 1, 2, 3, 4].map((i) => (k[i] ? `✓ ${k[i]}` : null)).concat(['✓ Diktat gespeichert', '● Aufnahme']);
+    const texte = [0, 1, 2, 3, 4].map((i) => (k[i] ? `✓ ${k[i]}` : null)).concat([T('✓ Diktat gespeichert', '✓ Dictation saved'), T('● Aufnahme', '● Recording')]);
     const dateien = texte.map((t, i) => (t ? { n: `r${String(i).padStart(2, '0')}.bin`, daten: (({ bytes, bereich }) => rueckDatei(bytes, bereich))(rueckmeldung(t)) } : null)).filter(Boolean);
     dateien.push({ n: 'layout.txt', daten: new TextEncoder().encode(text) });
     await zwilling.sollAbgleich('notiz', dateien);
-    eintrag('Sticky kann jetzt auch ohne Handy Notizen sammeln');
-  } else if (zwilling.geraet.fahrtv !== version) {
+    sprMerken();
+    eintrag(T('Sticky kann jetzt auch ohne Handy Notizen sammeln', 'Sticky can now collect notes without the phone'));
+  } else if (zwilling.geraet.fahrtv !== version || sprAnders) {
     await zwilling.fahrtLayout(text);
     const k = knoepfe();
-    const texte = [0, 1, 2, 3, 4].map((i) => (k[i] ? `✓ ${k[i]}` : null)).concat(['✓ Diktat gespeichert', '● Aufnahme']);
+    const texte = [0, 1, 2, 3, 4].map((i) => (k[i] ? `✓ ${k[i]}` : null)).concat([T('✓ Diktat gespeichert', '✓ Dictation saved'), T('● Aufnahme', '● Recording')]);
     for (let i = 0; i < texte.length; i++) {
       if (!texte[i]) continue;
       const r = rueckmeldung(texte[i]);
       await zwilling.sendeBild(r.bytes, { bereich: r.bereich, rueck: i });
     }
-    eintrag('Sticky kann jetzt auch ohne Handy Notizen sammeln');
+    sprMerken();
+    eintrag(T('Sticky kann jetzt auch ohne Handy Notizen sammeln', 'Sticky can now collect notes without the phone'));
   }
   await pufferAbholen();
-  if (fwAb('0.13.0')) await karussellAufspielen().catch((e) => eintrag(`Karussell: ${e.message}`, true));
-  if (fwAb('0.15.0')) await hilfeAufspielen().catch((e) => eintrag(`Hilfe: ${e.message}`, true));
+  if (fwAb('0.13.0')) await karussellAufspielen().catch((e) => eintrag(T(`Karussell: ${e.message}`, `Carousel: ${e.message}`), true));
+  if (fwAb('0.15.0')) await hilfeAufspielen().catch((e) => eintrag(T(`Hilfe: ${e.message}`, `Help: ${e.message}`), true));
   if (fwAb('0.27.0')) {   // Strichschrift: Alphabet, Glyphen und Hintergrund (Vorlagen in strichschrift.js)
     const n = await zwilling.sollAbgleich('schrift', [{ n: 'zeichen.bin', daten: glyphenBlatt() }, { n: 'bild.bin', daten: schriftHintergrund() },
-      { n: 'alphabet.txt', daten: alphabetDatei() }]).catch((e) => { eintrag(`Schrift: ${e.message}`, true); return 0; });
-    if (n) eintrag('Strichschrift aufgespielt');
+      { n: 'alphabet.txt', daten: alphabetDatei() }]).catch((e) => { eintrag(T(`Schrift: ${e.message}`, `Handwriting: ${e.message}`), true); return 0; });
+    if (n) eintrag(T('Strichschrift aufgespielt', 'Stroke alphabet uploaded'));
   }
   if (fwAb('0.18.0')) {   // Widget-Maschine: nur Geändertes geht rüber (Bestandsliste je Widget)
     appSeite.hoch = hochkant('app');
     for (const [name, bauen] of Object.entries(widgetBauer())) {   // in ihrer Lage; Menü-Kacheln = Karussell
       const n = await zwilling.sollAbgleich(`widgets/${name}`, bauen()).catch((e) => { eintrag(`Widget ${name}: ${e.message}`, true); return 0; });
-      if (n) eintrag(`Widget „${name}“ aufgespielt`);
+      if (n) eintrag(T(`Widget „${name}“ aufgespielt`, `Widget “${name}” uploaded`));
     }
-    if (fwAb('0.21.0')) await einstellungenAufspielen().catch((e) => eintrag(`Lage: ${e.message}`, true));
+    if (fwAb('0.21.0')) await einstellungenAufspielen().catch((e) => eintrag(T(`Lage: ${e.message}`, `Orientation: ${e.message}`), true));
   }
-  if (fwAb('0.10.0')) await fahrtenschreiberAbholen().catch((e) => eintrag(`Fahrtenschreiber: ${e.message}`, true));
+  if (fwAb('0.10.0')) await fahrtenschreiberAbholen().catch((e) => eintrag(T(`Fahrtenschreiber: ${e.message}`, `Trip recorder: ${e.message}`), true));
 }
 
 // ---- Karussell (SPEC „Bedienung und Oberfläche“): Reihe, durch die ▲/▼ am Sticky blättern -------------------------
-const KARUSSELL_STANDARD = 'Home, Timer, Wecker, Weltzeit, Waage, Lineal, Notiz, Kritzel, Schrift, Rechner, Umrechner, Bordbuch, Zettel, Spiel, Einstellungen';
-const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'bordbuch', zettel: 'zettel', bestellzettel: 'zettel', kritzel: 'kritzel', kritzelblock: 'kritzel', schrift: 'schrift', strichschrift: 'schrift', app: 'app', spiel: 'app', burgduell: 'app', rechner: 'app', umrechner: 'app', timer: 'widget timer', waage: 'widget waage', wasserwaage: 'widget waage', lineal: 'widget lineal', wecker: 'widget wecker', weltzeit: 'widget weltzeit', einstellungen: 'widget einstellungen' };
+const KARUSSELL_STANDARD_DE = 'Home, Timer, Wecker, Weltzeit, Waage, Lineal, Notiz, Kritzel, Schrift, Rechner, Umrechner, Bordbuch, Zettel, Spiel, Einstellungen';
+const KARUSSELL_STANDARD_EN = 'Home, Timer, Alarm, World clock, Spirit level, Ruler, Note, Doodle, Handwriting, Calculator, Converter, Logbook, List, Game, Settings';
+/** Standard der App-Sprache (beide Fassungen lösen über KARUSSELL_WOERTER gleich auf) */
+const karussellStandard = () => (appIstEn() ? KARUSSELL_STANDARD_EN : KARUSSELL_STANDARD_DE);
+const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'bordbuch', zettel: 'zettel', bestellzettel: 'zettel', kritzel: 'kritzel', kritzelblock: 'kritzel', schrift: 'schrift', strichschrift: 'schrift', app: 'app', spiel: 'app', burgduell: 'app', rechner: 'app', umrechner: 'app', timer: 'widget timer', waage: 'widget waage', wasserwaage: 'widget waage', lineal: 'widget lineal', wecker: 'widget wecker', weltzeit: 'widget weltzeit', einstellungen: 'widget einstellungen',
+  // englische Eingaben (Anzeige Englisch), intern dieselben deutschen Wörter
+  alarm: 'widget wecker', 'world clock': 'widget weltzeit', worldclock: 'widget weltzeit', level: 'widget waage', ruler: 'widget lineal', note: 'notiz', notes: 'notiz', scribble: 'kritzel', doodle: 'kritzel', 'spirit level': 'widget waage', handwriting: 'schrift',
+  calculator: 'app', converter: 'app', logbook: 'bordbuch', list: 'zettel', lists: 'zettel', game: 'app', settings: 'widget einstellungen' };
+/** englische Wörter, die ab FW 0.28.0 zu eigenen Widgets werden (wie rechner/umrechner) */
+const KARUSSELL_LOKAL = { rechner: 'rechner', umrechner: 'umrechner', calculator: 'rechner', converter: 'umrechner' };
 function karussellText() {
   // Rechner/Umrechner rechnen ab FW 0.28.0 im Sticky (Widgets); vorher über die App-Seite
-  const lokal = fwAb('0.28.0'), wort = (w) => (lokal && (w === 'rechner' || w === 'umrechner') ? `widget ${w}` : KARUSSELL_WOERTER[w]);
-  const roh = (localStorage.getItem(schluessel('karussell')) || KARUSSELL_STANDARD).split(/[,;\n]/).map((w) => wort(w.trim().toLowerCase())).filter(Boolean);
+  const lokal = fwAb('0.28.0'), wort = (w) => (lokal && KARUSSELL_LOKAL[w] ? `widget ${KARUSSELL_LOKAL[w]}` : KARUSSELL_WOERTER[w]);
+  const roh = (localStorage.getItem(schluessel('karussell')) || karussellStandard()).split(/[,;\n]/).map((w) => wort(w.trim().toLowerCase())).filter(Boolean);
   return [...new Set(roh)].join('\n') + '\n';
 }
 /** Tastenhilfe je Modus (▲+▼ am Sticky): auf eigener Leinwand rendern, damit die Vorschau bleibt, wie sie ist */
@@ -863,14 +909,14 @@ function hilfeDateien() {
   const c = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(BREITE, HOEHE) : Object.assign(document.createElement('canvas'), { width: BREITE, height: HOEHE });
   const h = c.getContext('2d', { willReadFrequently: true });
   return Object.entries(HILFE).map(([modus, seite]) => {
-    bb.zeichneTextseite(h, seite, '▲+▼ = Hilfe');
+    bb.zeichneTextseite(h, seite, T('▲+▼ = Hilfe', '▲+▼ = Help'));
     return { n: `${modus}.bin`, daten: rgbaZu1bpp(h.getImageData(0, 0, BREITE, HOEHE).data) };
   }).concat(fwAb('0.27.0') ? [{ n: 'schrift.bin', daten: schriftHilfe() }] : []);   // Alphabet als Spickzettel
 }
 async function hilfeAufspielen(s = null) {
   const dateien = baue(s, hilfeDateien);
   const n = await (s?.z ?? zwilling).sollAbgleich('hilfe', dateien);
-  if (n) eintrag(`${s ? `${s.g.name}: ` : ''}Tastenhilfe aufgespielt (${n} Seiten)`);
+  if (n) eintrag(`${s ? `${s.g.name}: ` : ''}${T(`Tastenhilfe aufgespielt (${n} Seiten)`, `Key help uploaded (${n} pages)`)}`);
 }
 
 /**
@@ -888,7 +934,7 @@ function einstellungenAufspielen(s = null) {
 
 async function karussellAufspielen() {
   const n = await einstellungenAufspielen();
-  if (n) eintrag(`Karussell: ${karussellText().trim().split('\n').join(' → ')}`);
+  if (n) eintrag(`${T('Karussell', 'Carousel')}: ${karussellText().trim().split('\n').join(' → ')}`);
   // Menü-Kacheln folgen dem Karussell (FW ≥ 0.19.0)
   if (n && fwAb('0.19.0')) for (const [name, bauen] of Object.entries(widgetBauer())) if (name.startsWith('menue')) await zwilling.sollAbgleich(`widgets/${name}`, bauen());
 }
@@ -925,20 +971,21 @@ async function lageAufspielen() {
   if (!zwilling.verbunden || !fwAb('0.21.0')) return;
   for (const [name, bauen] of Object.entries(widgetBauer())) await zwilling.sollAbgleich(`widgets/${name}`, bauen());
   const n = await einstellungenAufspielen();
-  if (n) eintrag(`Lage: ${Object.entries(lagen()).map(([s, l]) => `${LAGE_NAMEN[s]} ${{ hoch: 'hochkant', quer: 'quer', auto: 'automatisch' }[l]}`).join(', ')}`);
+  if (n) eintrag(`${T('Lage', 'Orientation')}: ${Object.entries(lagen()).map(([s, l]) => `${LAGE_NAMEN[s]} ${{ hoch: T('hochkant', 'portrait'), quer: T('quer', 'landscape'), auto: T('automatisch', 'automatic') }[l]}`).join(', ')}`);
   if (stickyModus === 'app') await appSeite.zeigen();
 }
 for (const [seite, name] of Object.entries(LAGE_NAMEN)) {
   const zeile = document.createElement('label');
   zeile.className = 'lage';
   const wahl = document.createElement('select');
-  wahl.innerHTML = '<option value="hoch">hochkant</option><option value="quer">quer</option><option value="auto">automatisch (Sensor)</option>';
+  wahl.innerHTML = T('<option value="hoch">hochkant</option><option value="quer">quer</option><option value="auto">automatisch (Sensor)</option>',
+    '<option value="hoch">portrait</option><option value="quer">landscape</option><option value="auto">automatic (sensor)</option>');
   wahl.value = lagen()[seite];
   wahl.onchange = () => {
     const l = lagen();
     l[seite] = wahl.value;
     try { localStorage.setItem(schluessel('lagen'), JSON.stringify(l)); } catch { /* egal */ }
-    lageAufspielen().catch((e) => eintrag(`Lage: ${e.message}`, true));
+    lageAufspielen().catch((e) => eintrag(T(`Lage: ${e.message}`, `Orientation: ${e.message}`), true));
   };
   zeile.append(`${name} `, wahl);
   $('lagen').append(zeile);
@@ -948,24 +995,32 @@ for (const [seite, name] of Object.entries(LAGE_NAMEN)) {
 try { $('lineal80').value = localStorage.getItem(schluessel('lineal80')) || '80'; } catch { $('lineal80').value = '80'; }
 $('lineal80').onchange = () => {
   const v = parseFloat(String($('lineal80').value).replace(',', '.'));
-  if (!(v > 60 && v < 100)) { eintrag('Lineal: bitte einen Wert um 80 mm eintragen', true); return; }
+  if (!(v > 60 && v < 100)) { eintrag(T('Lineal: bitte einen Wert um 80 mm eintragen', 'Ruler: please enter a value around 80 mm'), true); return; }
   try { localStorage.setItem(schluessel('lineal80'), String(v)); } catch { /* egal */ }
-  if (zwilling.verbunden && fwAb('0.18.0')) zwilling.sollAbgleich('widgets/lineal', WIDGETS.lineal()).then((n) => n && eintrag(`Lineal neu kalibriert (80 mm = ${v} mm)`)).catch((e) => eintrag(e.message, true));
+  if (zwilling.verbunden && fwAb('0.18.0')) zwilling.sollAbgleich('widgets/lineal', WIDGETS.lineal()).then((n) => n && eintrag(T(`Lineal neu kalibriert (80 mm = ${v} mm)`, `Ruler recalibrated (80 mm = ${v} mm)`))).catch((e) => eintrag(e.message, true));
 };
 
+// ---- Sprache (SPEC „Zweisprachig Deutsch/Englisch“): Wahl der App, zugleich Standard für den Sticky ---------------
+$('sprachWahl').value = sprachWahl();
+$('sprachWahl').onchange = async () => {
+  sprachWahlSetzen($('sprachWahl').value);
+  // erst den Standard an den Sticky (zeit.txt „sprache“), dann neu laden: die ganze Oberfläche in der neuen Sprache
+  if (zwilling.verbunden && fwAb('0.32.0')) await einstellungenAufspielen().catch(() => {});
+  location.reload();
+};
 $('dreh180').checked = dreh180();
 $('dreh180').onchange = () => {
   try { localStorage.setItem(schluessel('dreh180'), $('dreh180').checked ? '1' : '0'); } catch { /* egal */ }
-  if (zwilling.verbunden && fwAb('0.21.0')) einstellungenAufspielen().then((n) => n && eintrag(`Sticky ${$('dreh180').checked ? 'auf dem Kopf' : 'normal'}`)).catch((e) => eintrag(`Lage: ${e.message}`, true));
+  if (zwilling.verbunden && fwAb('0.21.0')) einstellungenAufspielen().then((n) => n && eintrag($('dreh180').checked ? T('Sticky auf dem Kopf', 'Sticky upside down') : T('Sticky normal', 'Sticky upright'))).catch((e) => eintrag(T(`Lage: ${e.message}`, `Orientation: ${e.message}`), true));
 };
 
 $('pttAblage').checked = pttAblage();
 $('pttAblage').onchange = () => { try { localStorage.setItem('sticky.pttAblage', $('pttAblage').checked ? '1' : '0'); } catch { /* egal */ } };
 
-$('karussell').value = localStorage.getItem(schluessel('karussell')) || KARUSSELL_STANDARD;
+$('karussell').value = localStorage.getItem(schluessel('karussell')) || karussellStandard();
 $('karussell').onchange = () => {
   localStorage.setItem(schluessel('karussell'), $('karussell').value);
-  if (zwilling.verbunden && fwAb('0.13.0')) karussellAufspielen().catch((e) => eintrag(`Karussell: ${e.message}`, true));
+  if (zwilling.verbunden && fwAb('0.13.0')) karussellAufspielen().catch((e) => eintrag(T(`Karussell: ${e.message}`, `Carousel: ${e.message}`), true));
 };
 
 // ---- Fahrtenschreiber (SPEC „Zwilling 2.0“): /ist/log/JJJJ-MM-TT.txt auf der Karte des Sticky ----------------------
@@ -997,10 +1052,10 @@ document.querySelector('#tabs [data-ziel="sticky"]')?.addEventListener('click', 
 let bauZ = null;
 /** fn synchron für Sitzung s bauen (Profil, Firmware-Stand); ohne s für den aktiven Sticky */
 function baue(s, fn) {
-  if (!s) return fn();
+  if (!s) return fuerSticky(fn);
   const alt = bauZ;
   bauZ = s.z;
-  try { return mitGeraet(s.g, fn); } finally { bauZ = alt; }
+  try { return fuerSticky(() => mitGeraet(s.g, fn), s.z?.geraet?.en); } finally { bauZ = alt; }
 }
 const fwAb = (v) => { const f = (bauZ ?? zwilling).geraet.fw; if (f === 'sim') return true; const a = String(f ?? '0').split('.').map(Number), b = v.split('.').map(Number);
   for (let i = 0; i < 3; i++) if ((a[i] || 0) !== b[i]) return (a[i] || 0) > b[i]; return true; };
@@ -1092,7 +1147,7 @@ async function kritzelAbholen(s = null) {
     zeigeNotiz(await notizen.notiere({ t, art: 'kritzel', bild: `kritzel/${name}`, ...wer }), true);
     await z.loeschen(`/ist/kritzel/${d.n}`);
   }
-  if (liste.length) eintrag(`${liste.length} ${liste.length === 1 ? 'Kritzel' : 'Kritzel'} vom Sticky abgeholt`);
+  if (liste.length) eintrag(T(`${liste.length} Kritzel vom Sticky abgeholt`, `${liste.length} ${liste.length === 1 ? 'doodle' : 'doodles'} fetched from the Sticky`));
 }
 
 /** Strichschrift (FW ≥ 0.27.0): Texte aus /ist/schrift holen, als Notiz eintragen, quittieren */
@@ -1106,18 +1161,18 @@ async function schriftAbholen(s = null) {
     if (text) zeigeNotiz(await notizen.notiere({ t, art: 'schrift', text, ...wer }), true);
     await z.loeschen(`/ist/schrift/${d.n}`);
   }
-  if (liste.length) eintrag(`${liste.length} geschriebene ${liste.length === 1 ? 'Notiz' : 'Notizen'} vom Sticky abgeholt`);
+  if (liste.length) eintrag(T(`${liste.length} geschriebene ${liste.length === 1 ? 'Notiz' : 'Notizen'} vom Sticky abgeholt`, `${liste.length} handwritten ${liste.length === 1 ? 'note' : 'notes'} fetched from the Sticky`));
 }
 
 async function fahrtenschreiberAbholen(s = null) {
   const zeilen = await istAbholen('log', LOG_ORDNER, s);
-  if (zeilen) eintrag(`${s ? `${s.g.name}: ` : ''}Fahrtenschreiber: ${zeilen} neue ${zeilen === 1 ? 'Zeile' : 'Zeilen'}`);
+  if (zeilen) eintrag(`${s ? `${s.g.name}: ` : ''}${T(`Fahrtenschreiber: ${zeilen} neue ${zeilen === 1 ? 'Zeile' : 'Zeilen'}`, `Trip recorder: ${zeilen} new ${zeilen === 1 ? 'line' : 'lines'}`)}`);
   if (!s) await zeigeFahrtenschreiber();
-  if (fwAbZ(s, '0.16.0')) await kritzelAbholen(s).catch((e) => eintrag(`Kritzel: ${e.message}`, true));
-  if (fwAbZ(s, '0.27.0')) await schriftAbholen(s).catch((e) => eintrag(`Schrift: ${e.message}`, true));
+  if (fwAbZ(s, '0.16.0')) await kritzelAbholen(s).catch((e) => eintrag(T(`Kritzel: ${e.message}`, `Doodle: ${e.message}`), true));
+  if (fwAbZ(s, '0.27.0')) await schriftAbholen(s).catch((e) => eintrag(T(`Schrift: ${e.message}`, `Handwriting: ${e.message}`), true));
   if (fwAbZ(s, '0.12.0')) {
     const mess = await istAbholen('mess', 'messreihen', s);
-    if (mess) eintrag(`${s ? `${s.g.name}: ` : ''}Messreihen: ${mess} neue Werte`);
+    if (mess) eintrag(`${s ? `${s.g.name}: ` : ''}${T(`Messreihen: ${mess} neue Werte`, `Measurements: ${mess} new values`)}`);
   }
 }
 
@@ -1128,10 +1183,10 @@ async function zeigeFahrtenschreiber(tag = $('logTag').value) {
   wahl.replaceChildren(...tage.map((t) => new Option(t.replace('.txt', ''), t)));
   if (vorher && tage.includes(vorher)) wahl.value = vorher;
   const text = wahl.value ? await logLesen(wahl.value) : '';
-  $('logText').textContent = text ? text.replace(/\r/g, '').split('\n').reverse().join('\n').trim() : 'noch nichts abgeholt';
+  $('logText').textContent = text ? text.replace(/\r/g, '').split('\n').reverse().join('\n').trim() : T('noch nichts abgeholt', 'nothing fetched yet');
 }
 $('logTag').onchange = () => zeigeFahrtenschreiber();
-$('logHolen').onclick = () => fahrtenschreiberAbholen().catch((e) => eintrag(`Fahrtenschreiber: ${e.message}`, true));
+$('logHolen').onclick = () => fahrtenschreiberAbholen().catch((e) => eintrag(T(`Fahrtenschreiber: ${e.message}`, `Trip recorder: ${e.message}`), true));
 zeigeFahrtenschreiber();
 
 // Ab FW 0.11.0 liegt der Puffer unter /ist/puffer und geht über den allgemeinen Datei-Abgleich
@@ -1145,7 +1200,7 @@ async function pufferAbholen(s = null) {
   const wer = s ? { geraet: kurz(s.g) } : {}, vor = s ? `${s.g.name}: ` : '';
   const liste = (await puffer.liste(s)).filter((d) => !d.ordner);
   if (!liste.length) return;
-  eintrag(`${vor}Hole Notizen vom Sticky (${liste.length} Dateien) …`);
+  eintrag(vor + T(`Hole Notizen vom Sticky (${liste.length} Dateien) …`, `Fetching notes from the Sticky (${liste.length} files) …`));
   const groesse = Object.fromEntries(liste.map((d) => [d.n, d.b]));
   const roh = groesse['notizen.jsonl'] ? new TextDecoder().decode(await puffer.holen('notizen.jsonl', groesse['notizen.jsonl'], s)) : '';
   const zeilen = roh.split('\n').map((z) => { try { return JSON.parse(z); } catch { return null; } }).filter(Boolean);
@@ -1160,7 +1215,7 @@ async function pufferAbholen(s = null) {
     if (z.art === 'diktat' && z.audio) {
       let text = '', pfad = null, dauerMs = z.dauerMs;
       try {
-        if (groesse[z.audio] == null) throw new Error('Audiodatei fehlt auf dem Sticky');
+        if (groesse[z.audio] == null) throw new Error(T('Audiodatei fehlt auf dem Sticky', 'Audio file missing on the Sticky'));
         const t0 = performance.now();
         const daten = await puffer.holen(z.audio, groesse[z.audio], s);
         console.info('[sticky] abgeholt', z.audio, daten.length, Math.round(performance.now() - t0));
@@ -1171,7 +1226,7 @@ async function pufferAbholen(s = null) {
         pfad = await speichern(`sticky-${dateiZeit(t)}-offline.wav`, wav(e.pcm));
         text = (await erkenne(e.pcm)).text || '';
         await puffer.loeschen(z.audio, s);
-      } catch (e) { eintrag(`Diktat ${z.audio}: ${e.message}`, true); }
+      } catch (e) { eintrag(`${T('Diktat', 'Dictation')} ${z.audio}: ${e.message}`, true); }
       n = await notizen.notiere({ t, art: 'diktat', text, audio: pfad ?? z.audio, dauerMs, offline: true, ...wer });
     } else {
       n = await notizen.notiere({ t, art: 'knopf', knopf: z.knopf, offline: true, ...wer });
@@ -1180,14 +1235,14 @@ async function pufferAbholen(s = null) {
     anzahl++;
   }
   if (groesse['notizen.jsonl']) await puffer.loeschen('notizen.jsonl', s);
-  eintrag(`${vor}${anzahl} Notizen vom Sticky abgeholt`);
+  eintrag(vor + T(`${anzahl} Notizen vom Sticky abgeholt`, `${anzahl} ${anzahl === 1 ? 'note' : 'notes'} fetched from the Sticky`));
 }
 
 $('notizenTeilen').onclick = async () => {
   try {
     const r = await notizen.teilen();
-    if (r === 'leer') eintrag('Heute noch keine Notizen');
-  } catch (e) { eintrag(`Teilen fehlgeschlagen: ${e.message}`, true); }
+    if (r === 'leer') eintrag(T('Heute noch keine Notizen', 'No notes today yet'));
+  } catch (e) { eintrag(T(`Teilen fehlgeschlagen: ${e.message}`, `Sharing failed: ${e.message}`), true); }
 };
 notizen.heute().then((l) => l.reverse().forEach((n) => zeigeNotiz(n)));
 
@@ -1205,7 +1260,7 @@ const spickSeiten = () => [...bb.spickzettelSeiten($('spickzettel').value), ...b
 
 async function ladePdf(bytes, name) {
   pdf = await bb.oeffnePdf(bytes);
-  $('pdfName').textContent = `${name} · ${pdf.numPages} Seiten`;
+  $('pdfName').textContent = `${name} · ${pdf.numPages} ${T('Seiten', 'pages')}`;
   zeigeVerbindung();
 }
 $('pdfDatei').onchange = async (e) => {
@@ -1234,11 +1289,11 @@ async function bordbuchBauen(status) {
   const ersteVon = {};  // PDF-Seite → Bildschirm-Index (relativ)
   if (pdf) {
     for (let p = 1; p <= pdf.numPages; p++) {
-      status(`Handbuch rendern: Seite ${p} von ${pdf.numPages}`);
+      status(T(`Handbuch rendern: Seite ${p} von ${pdf.numPages}`, `Rendering manual: page ${p} of ${pdf.numPages}`));
       const teile = await bb.pdfAusschnitte(pdf, p);
       teile.forEach((t, i) => {
         ersteVon[p] ??= hb.length;
-        hb.push({ bytes: bb.dithern(bb.marke(t.daten, `S. ${p} · ${i + 1}/${teile.length}`).data), pdfSeite: p, teil: i, von: teile.length });
+        hb.push({ bytes: bb.dithern(bb.marke(t.daten, `${T('S.', 'p.')} ${p} · ${i + 1}/${teile.length}`).data), pdfSeite: p, teil: i, von: teile.length });
       });
     }
   }
@@ -1251,7 +1306,7 @@ async function bordbuchBauen(status) {
   const seiten = [];
   const felder = bb.zeichneInhalt(g, links, rechts);
   seiten.push(bildBytes());
-  spick.forEach((s, i) => { bb.zeichneTextseite(g, s, `Spickzettel ${i + 1}/${nSpick} · ${2 + i}/${gesamt}`); seiten.push(bildBytes()); });
+  spick.forEach((s, i) => { bb.zeichneTextseite(g, s, `${T('Spickzettel', 'Cheat sheet')} ${i + 1}/${nSpick} · ${2 + i}/${gesamt}`); seiten.push(bildBytes()); });
   for (const h of hb) seiten.push(h.bytes);
   const index = [`seiten=${seiten.length}`, 'toc=0', ...felder.map((f) => `e ${f.x0} ${f.y0} ${f.x1} ${f.y1} ${f.seite}`)].join('\n') + '\n';
   // Plan für die Vorschau merken: welche Seite ist was (die Bilder rendert der Spiegel bei Bedarf neu)
@@ -1268,28 +1323,28 @@ $('bbAufspielen').onclick = async () => {
   const status = (t) => { $('bbStatus').textContent = t; };
   const t0 = performance.now();
   try {
-    const { seiten, index } = await bordbuchBauen(status);
-    if (seiten.length > 255) throw new Error(`Zu viele Seiten (${seiten.length}, höchstens 255)`);
+    const { seiten, index } = await fuerSticky(() => bordbuchBauen(status));   // Rahmentexte in der Sprache des Sticky
+    if (seiten.length > 255) throw new Error(T(`Zu viele Seiten (${seiten.length}, höchstens 255)`, `Too many pages (${seiten.length}, at most 255)`));
     if (fwAb('0.11.0')) {
       // Auf die Karte: nur geänderte Seiten, der Index zuletzt (er lässt den Sticky neu einlesen)
       const dateien = seiten.map((b, i) => ({ n: `${String(i).padStart(2, '0')}.bin`, daten: b }));
       dateien.push({ n: 'index.txt', daten: new TextEncoder().encode(index) });
-      const n = await zwilling.sollAbgleich('bordbuch', dateien, (i, von, name) => status(`Aufspielen: ${name} (${i} von ${von} geänderten) …`));
-      eintrag(`Bordbuch: ${n} von ${dateien.length} Dateien neu`);
+      const n = await zwilling.sollAbgleich('bordbuch', dateien, (i, von, name) => status(T(`Aufspielen: ${name} (${i} von ${von} geänderten) …`, `Uploading: ${name} (${i} of ${von} changed) …`)));
+      eintrag(T(`Bordbuch: ${n} von ${dateien.length} Dateien neu`, `Logbook: ${n} of ${dateien.length} files new`));
     } else {
       for (let i = 0; i < seiten.length; i++) {
-        status(`Aufspielen: Seite ${i + 1} von ${seiten.length} …`);
+        status(T(`Aufspielen: Seite ${i + 1} von ${seiten.length} …`, `Uploading: page ${i + 1} of ${seiten.length} …`));
         await zwilling.sendeBild(seiten[i], { speichern: i });
       }
       await zwilling.bordbuchIndex(index);
     }
     const s = Math.round((performance.now() - t0) / 1000);
-    status(`Bordbuch aufgespielt: ${seiten.length} Seiten in ${s} s`);
-    eintrag(`Bordbuch aufgespielt (${seiten.length} Seiten, ${s} s)`);
+    status(T(`Bordbuch aufgespielt: ${seiten.length} Seiten in ${s} s`, `Logbook uploaded: ${seiten.length} pages in ${s} s`));
+    eintrag(T(`Bordbuch aufgespielt (${seiten.length} Seiten, ${s} s)`, `Logbook uploaded (${seiten.length} pages, ${s} s)`));
     console.info('[sticky] bordbuch', JSON.stringify({ seiten: seiten.length, sekunden: s }));
   } catch (e) {
-    status(`Fehler: ${e.message}`);
-    eintrag(`Bordbuch: ${e.message}`, true);
+    status(T(`Fehler: ${e.message}`, `Error: ${e.message}`));
+    eintrag(T(`Bordbuch: ${e.message}`, `Logbook: ${e.message}`), true);
   } finally {
     knopf.disabled = !zwilling.verbunden;
   }
@@ -1314,13 +1369,13 @@ async function bordbuchSeite(n) {
   c.width = BREITE; c.height = HOEHE;
   const h = c.getContext('2d', { willReadFrequently: true });
   let bild = null;
-  if (e.a === 'inhalt') { bb.zeichneInhalt(h, plan.links, plan.rechts); bild = h.getImageData(0, 0, BREITE, HOEHE); }
+  if (e.a === 'inhalt') { fuerSticky(() => bb.zeichneInhalt(h, plan.links, plan.rechts)); bild = h.getImageData(0, 0, BREITE, HOEHE); }
   else if (e.a === 'spick') {
     const s = spickSeiten()[e.i];
-    if (s) { bb.zeichneTextseite(h, s, `Spickzettel ${e.i + 1}/${e.n} · ${n + 1}/${e.von}`); bild = h.getImageData(0, 0, BREITE, HOEHE); }
+    if (s) { fuerSticky(() => bb.zeichneTextseite(h, s, `${T('Spickzettel', 'Cheat sheet')} ${e.i + 1}/${e.n} · ${n + 1}/${e.von}`)); bild = h.getImageData(0, 0, BREITE, HOEHE); }
   } else if (e.a === 'pdf' && pdf) {
     const teile = await bb.pdfAusschnitte(pdf, e.p);
-    if (teile[e.t]) bild = bb.marke(teile[e.t].daten, `S. ${e.p} · ${e.t + 1}/${teile.length}`);
+    if (teile[e.t]) bild = fuerSticky(() => bb.marke(teile[e.t].daten, `${T('S.', 'p.')} ${e.p} · ${e.t + 1}/${teile.length}`));
   }
   if (bild) { bbCache.set(n, bild); if (bbCache.size > 12) bbCache.delete(bbCache.keys().next().value); }
   return bild;
@@ -1373,7 +1428,7 @@ setInterval(async () => {
     }
     letzterOrt = { ...o, zeit: Date.now() };
     if (v != null && v > 2 && o.gen < 100) {
-      if (Date.now() >= fahrtBis) eintrag('Fahrt erkannt – Sticky bleibt wach');
+      if (Date.now() >= fahrtBis) eintrag(T('Fahrt erkannt – Sticky bleibt wach', 'Driving detected – Sticky stays awake'));
       fahrtBis = Date.now() + 10 * 60 * 1000;
     }
   }
@@ -1442,12 +1497,12 @@ async function hgVerbinden(s) {
   if (s.weg || s.verbindet || s.z.verbunden || !autoVerbinden) return;
   s.verbindet = true;
   try {
-    await mitFrist(s.v.verbinden({ geraet: s.g, nurGemerkt: true }), VERBINDEN_FRIST_MS, 'Verbinden').catch(async (e) => {
+    await mitFrist(s.v.verbinden({ geraet: s.g, nurGemerkt: true }), VERBINDEN_FRIST_MS, T('Verbinden', 'Connect')).catch(async (e) => {
       await s.v.abbrechen?.().catch(() => {});
       throw e;
     });
     s.zuletzt = Date.now();
-    eintrag(`Im Hintergrund verbunden: ${s.g.name}`);
+    eintrag(T(`Im Hintergrund verbunden: ${s.g.name}`, `Connected in background: ${s.g.name}`));
     geraeteZeigen();
     hintergrundAbgleich(s).catch((e) => eintrag(`${s.g.name}: ${e.message}`, true));
   } catch {
@@ -1503,7 +1558,7 @@ async function hgAbgleichKern(s) {
   if (z.geraet.fw) await z.zeitSetzen().catch(() => {});
   for (let i = 0; i < 120 && vordergrundGleichtAb && z.verbunden; i++) await new Promise((r) => setTimeout(r, 500));   // höchstens 60 s
   if (!z.geraet.fw) return;
-  if (!fwAbZ(s, '0.31.0')) { eintrag(`${s.g.name}: Firmware ${z.geraet.fw ?? '?'} ist zu alt für den Hintergrund (ab 0.31)`, true); return; }
+  if (!fwAbZ(s, '0.31.0')) { eintrag(T(`${s.g.name}: Firmware ${z.geraet.fw ?? '?'} ist zu alt für den Hintergrund (ab 0.31)`, `${s.g.name}: firmware ${z.geraet.fw ?? '?'} is too old for background mode (needs 0.31)`), true); return; }
   {
     await z.zeitSetzen();
     const wetter = (await holeWetter(await notizen.standort())) ?? letztesWetter();
@@ -1522,26 +1577,27 @@ async function hgAbgleichKern(s) {
       const k = knoepfe();
       const text = layoutText(k);
       const version = crc32(new TextEncoder().encode(text)).toString(16).padStart(8, '0');
-      const texte = [0, 1, 2, 3, 4].map((i) => (k[i] ? `✓ ${k[i]}` : null)).concat(['✓ Diktat gespeichert', '● Aufnahme']);
+      const texte = [0, 1, 2, 3, 4].map((i) => (k[i] ? `✓ ${k[i]}` : null)).concat([T('✓ Diktat gespeichert', '✓ Dictation saved'), T('● Aufnahme', '● Recording')]);
       const notizDateien = texte.map((t, i) => (t ? { n: `r${String(i).padStart(2, '0')}.bin`, daten: (({ bytes, bereich }) => rueckDatei(bytes, bereich))(rueckmeldung(t)) } : null))
         .filter(Boolean).concat([{ n: 'layout.txt', daten: new TextEncoder().encode(text) }]);
       const schrift = [{ n: 'zeichen.bin', daten: glyphenBlatt() }, { n: 'bild.bin', daten: schriftHintergrund() }, { n: 'alphabet.txt', daten: alphabetDatei() }];
       const widgets = Object.entries(widgetBauer()).map(([name, bauen]) => [name, bauen()]);
-      return { homeV, homeDateien, version, notizDateien, schrift, widgets };
+      return { homeV, homeDateien, version, notizDateien, schrift, widgets, spr: T('de', 'en') };
     });
-    if (z.geraet.homev !== teile.homeV) { const n = await z.sollAbgleich('home', teile.homeDateien); if (n) eintrag(`${s.g.name}: Home (${n} Dateien)`); }
-    if (z.geraet.fahrtv !== teile.version) await z.sollAbgleich('notiz', teile.notizDateien);
+    if (z.geraet.homev !== teile.homeV) { const n = await z.sollAbgleich('home', teile.homeDateien); if (n) eintrag(`${s.g.name}: Home (${n} ${T('Dateien', 'files')})`); }
+    const sprSchl = schluesselFuer(s.g, 'notizEn'), sprAnders = (() => { try { return (localStorage.getItem(sprSchl) ?? 'de') !== teile.spr; } catch { return false; } })();
+    if (z.geraet.fahrtv !== teile.version || sprAnders) { await z.sollAbgleich('notiz', teile.notizDateien); try { localStorage.setItem(sprSchl, teile.spr); } catch { /* egal */ } }
     await pufferAbholen(s);
-    const nE = await einstellungenAufspielen(s).catch((e) => { eintrag(`${s.g.name}: Karussell: ${e.message}`, true); return 0; });
-    if (nE) eintrag(`${s.g.name}: Karussell und Lage aufgespielt`);
-    await hilfeAufspielen(s).catch((e) => eintrag(`${s.g.name}: Hilfe: ${e.message}`, true));
-    const nS = await z.sollAbgleich('schrift', teile.schrift).catch((e) => { eintrag(`${s.g.name}: Schrift: ${e.message}`, true); return 0; });
-    if (nS) eintrag(`${s.g.name}: Strichschrift aufgespielt`);
+    const nE = await einstellungenAufspielen(s).catch((e) => { eintrag(`${s.g.name}: ${T('Karussell', 'Carousel')}: ${e.message}`, true); return 0; });
+    if (nE) eintrag(`${s.g.name}: ${T('Karussell und Lage aufgespielt', 'carousel and orientation uploaded')}`);
+    await hilfeAufspielen(s).catch((e) => eintrag(`${s.g.name}: ${T('Hilfe', 'Help')}: ${e.message}`, true));
+    const nS = await z.sollAbgleich('schrift', teile.schrift).catch((e) => { eintrag(`${s.g.name}: ${T('Schrift', 'Handwriting')}: ${e.message}`, true); return 0; });
+    if (nS) eintrag(`${s.g.name}: ${T('Strichschrift aufgespielt', 'stroke alphabet uploaded')}`);
     for (const [name, dateien] of teile.widgets) {
       const n = await z.sollAbgleich(`widgets/${name}`, dateien).catch((e) => { eintrag(`${s.g.name}: Widget ${name}: ${e.message}`, true); return 0; });
-      if (n) eintrag(`${s.g.name}: Widget „${name}“ aufgespielt`);
+      if (n) eintrag(`${s.g.name}: ${T(`Widget „${name}“ aufgespielt`, `widget “${name}” uploaded`)}`);
     }
-    await fahrtenschreiberAbholen(s).catch((e) => eintrag(`${s.g.name}: Fahrtenschreiber: ${e.message}`, true));
+    await fahrtenschreiberAbholen(s).catch((e) => eintrag(`${s.g.name}: ${T('Fahrtenschreiber', 'Trip recorder')}: ${e.message}`, true));
   }
 }
 
@@ -1553,8 +1609,8 @@ setInterval(() => { if (Date.now() < fahrtBis) for (const s of sitzungen.values(
 // Der Melder (Android, Positivliste) reicht Titel und Text weiter; am Sticky erscheinen sie kurz im Rückmeldefeld
 // (Home und Notiz-Seite), beim aktiven wie bei Hintergrund-Stickys. Nichts wird gespeichert.
 async function meldeStatusZeigen() {
-  try { const { da } = await Hintergrund.meldeZugriff(); $('meldeStatus').textContent = da ? 'Zugriff: freigegeben ✓' : 'Zugriff: noch nicht freigegeben'; }
-  catch { $('meldeStatus').textContent = 'Zugriff: nur in der App auf dem Handy'; }
+  try { const { da } = await Hintergrund.meldeZugriff(); $('meldeStatus').textContent = da ? T('Zugriff: freigegeben ✓', 'Access: granted ✓') : T('Zugriff: noch nicht freigegeben', 'Access: not granted yet'); }
+  catch { $('meldeStatus').textContent = T('Zugriff: nur in der App auf dem Handy', 'Access: only in the app on the phone'); }
 }
 $('meldeZugriff').onclick = () => Hintergrund.meldeZugriffOeffnen().catch((e) => eintrag(e.message, true));
 $('meldeTest').onclick = () => Hintergrund.testMeldung({ titel: 'Sticky', text: `Test ${uhrzeit(new Date())}` }).catch((e) => eintrag(e.message, true));
@@ -1563,12 +1619,12 @@ meldeStatusZeigen();
 Promise.resolve().then(() => Hintergrund.addListener('benachrichtigung', (e) => {
   const zeile = [e.titel, e.text].filter(Boolean).join(': ').replace(/\s+/g, ' ').trim();
   const kurzText = zeile.length > 30 ? zeile.slice(0, 29) + '…' : zeile;
-  eintrag(`Meldung: ${zeile}`);
+  eintrag(`${T('Meldung', 'Notification')}: ${zeile}`);
   meldeStatusZeigen();   // kommt eine an, ist der Zugriff offensichtlich frei
   const r = rueckmeldung(kurzText);
   if (zwilling.verbunden && (stickyModus === 'home' || stickyModus === 'notiz')) {
     spiegel.meldung(kurzText);
-    zwilling.sendeBild(r.bytes, { bereich: r.bereich }).catch((x) => eintrag(`Meldung: ${x.message}`, true));
+    zwilling.sendeBild(r.bytes, { bereich: r.bereich }).catch((x) => eintrag(`${T('Meldung', 'Notification')}: ${x.message}`, true));
   }
   for (const s of sitzungen.values()) {
     if (s.z.verbunden && (s.modus === 'home' || s.modus === 'notiz')) s.z.sendeBild(r.bytes, { bereich: r.bereich }).catch(() => {});
@@ -1633,7 +1689,7 @@ window.__sticky.maschinenDuell = async () => {
   eintrag(spiel.text);
   const zeigen = async () => {   // kurze Abrisse überstehen: auf die Verbindung warten, Fehler nicht durchreichen
     for (let i = 0; i < 60 && !(zwilling.verbunden && duellSitzung()); i++) await warte(1000);
-    await appSeite.zeigen().catch((e) => eintrag(`Burgduell: ${e.message}`, true));
+    await appSeite.zeigen().catch((e) => eintrag(T(`Burgduell: ${e.message}`, `Castle duel: ${e.message}`), true));
   };
   await zeigen();
   while (!spiel.vorbei && spiel.cpuBeide) {
@@ -1642,7 +1698,7 @@ window.__sticky.maschinenDuell = async () => {
     spiel.nachzug();
     await zeigen();
   }
-  eintrag(`Burgduell: ${spiel.text}`);
+  eintrag(`${T('Burgduell', 'Castle duel')}: ${spiel.text}`);
   return spiel.text;
 };   // zum Prüfen per WebView-Fernsteuerung (adb)
 window.__sticky.grundZip = () => zipBauen(grundausstattung());
@@ -1658,7 +1714,7 @@ try {
     verbindung = new BleVerbindung();
     zwilling.anbinden(verbindung);
     autoVerbinden = true;
-    Hintergrund.start({ text: 'Notizen und Diktate kommen an', adresse: stickyAdresse() }).catch(() => {});
+    Hintergrund.start({ text: T('Notizen und Diktate kommen an', 'Notes and dictations arrive'), adresse: stickyAdresse() }).catch(() => {});
     wiederverbinden();
     hintergrundStarten();
   }

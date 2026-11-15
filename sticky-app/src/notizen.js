@@ -7,6 +7,7 @@ import { Hintergrund as HintergrundOrt } from './hintergrund.js';
 import { Share } from '@capacitor/share';
 import { sortiere } from './sorte.js';
 import { aktivesGeraet, kurz } from './geraete.js';
+import { T } from './uebersetzen.js';
 
 const NATIV = Capacitor.isNativePlatform();
 const ORDNER = 'notizen';
@@ -53,7 +54,7 @@ export async function notiere(teile, ort = null) {
 
 /** Text einer Notiz von heute ändern (Zeit t ist der Schlüssel); die erste erkannte Fassung bleibt als „roh“ erhalten */
 export async function aendern(t, text) {
-  if (!String(text ?? '').trim()) throw new Error('leerer Text');
+  if (!String(text ?? '').trim()) throw new Error(T('leerer Text', 'empty text'));
   return setzen(t, (n) => { if (n.roh == null) n.roh = n.text; n.text = text; n.korrigiert = true; });
 }
 

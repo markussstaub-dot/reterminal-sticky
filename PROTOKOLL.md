@@ -60,7 +60,7 @@ was sich unterscheidet, und `stand.txt` zuletzt. Auslöser fürs Neuladen: `home
 Die alten Spezialbefehle (BILD_ENDE 3/5, BB_INDEX, FAHRT_LAYOUT, HOME_VERSION, PUFFER_*) gehen weiter.
 
 ## Zustand (JSON)
-`{"fw","modus","bb":Bordbuch-Seite,"zettel":Bestellzettel,"usb","seite":"karte|bild","bat":%,"mv","ma","chg","mtu","phy","itvl":×1,25 ms,"tp":"BxH","fahrtv":CRC des Layouts,"offen":Notizen im Puffer,"uhr":bool, …, "w", "lh"}` (w und lh wie beim Ereignis modus, ab FW 0.31.2) – bei Verbindung,
+`{"fw","modus","bb":Bordbuch-Seite,"zettel":Bestellzettel,"usb","seite":"karte|bild","bat":%,"mv","ma","chg","mtu","phy","itvl":×1,25 ms,"tp":"BxH","fahrtv":CRC des Layouts,"offen":Notizen im Puffer,"uhr":bool, …, "us":0|1, "en":0|1, "w", "lh"}` (w und lh wie beim Ereignis modus, ab FW 0.31.2; `us` = US-Einheiten, `en` = wirksame Sprache Englisch, ab FW 0.32.0) – bei Verbindung,
 nach jedem Bild und alle 30 s.
 
 ## Funkverhalten (rücksichtsvoll)

@@ -5,6 +5,7 @@ import { uhrzeit } from './zeit.js';
 import { BREITE, HOEHE } from './protokoll.js';
 import { homeHochkant, KARTE } from './homeseite.js';
 import { fahrtHochkant, vonHochkant, PB, PH, RUECK_HOCH } from './fahrtseite.js';
+import { T, fuerSticky } from './uebersetzen.js';
 
 /** Akkusymbol wie am Sticky (firmware-ble/modus.h, gleiche Hochkant-Maße) */
 function akkuSymbol(g, stufe, usb) {
@@ -17,10 +18,11 @@ function akkuSymbol(g, stufe, usb) {
   if (usb) { r(423, 13, 14, 22, false); r(429, 14, 5, 9, true); r(426, 21, 8, 3, true); r(426, 23, 5, 10, true); }
 }
 
-/** Namen der Widgets für den Hinweis unter der Vorschau */
-const WIDGET_NAMEN = { menue: 'Menü', timer: 'Timer', wecker: 'Wecker', weltzeit: 'Weltzeit', waage: 'Wasserwaage', lineal: 'Lineal',
-  'lineal-us': 'Lineal (Zoll)', rechner: 'Rechner', umrechner: 'Umrechner', einstellungen: 'Einstellungen' };
-const SEITEN_NAMEN = { home: 'Home', notiz: 'Notiz', kritzel: 'Kritzel', schrift: 'Schrift', app: 'Spiel' };
+/** Namen der Widgets und Seiten für den Hinweis unter der Vorschau (in der Sprache, die gerade gilt) */
+const widgetName = (w) => ({ menue: T('Menü', 'Menu'), timer: 'Timer', wecker: T('Wecker', 'Alarm'), weltzeit: T('Weltzeit', 'World clock'),
+  waage: T('Wasserwaage', 'Spirit level'), lineal: T('Lineal', 'Ruler'), 'lineal-us': T('Lineal (Zoll)', 'Ruler (inches)'),
+  rechner: T('Rechner', 'Calculator'), umrechner: T('Umrechner', 'Converter'), einstellungen: T('Einstellungen', 'Settings') }[w]);
+const seitenName = (m) => ({ home: 'Home', notiz: T('Notiz', 'Note'), kritzel: T('Kritzel', 'Doodle'), schrift: T('Schrift', 'Writing'), app: T('Spiel', 'Game') }[m]);
 
 /** Display-Bild (800 × 480, 1 bpp, Bit 1 = schwarz) in die Vorschau; hochkant zurückdrehen: Display (dx, dy) = logisch (479 − dy, dx) */
 function zeichne1bpp(g, daten, hoch) {
@@ -65,15 +67,18 @@ export function spiegelEinrichten({ canvas, hinweisEl, quelle, befehl, notizTipp
         g.fillStyle = '#000';
         g.font = 'bold 30px system-ui, sans-serif';
         g.textAlign = 'center';
-        g.fillText('Bild kommt …', g.canvas.width / 2, g.canvas.height / 2);
+        g.fillText(T('Bild kommt …', 'Image on its way …'),g.canvas.width / 2, g.canvas.height / 2);
       }
     } else if (m === 'home' || m === 'notiz') {
       const g = ziel(PB, PH);
-      const jetzt = uhrzeit(new Date());
-      g.drawImage(m === 'home' ? homeHochkant(quelle.karte?.() ?? KARTE, jetzt, quelle.wetter?.()) : fahrtHochkant(quelle.knoepfe()), 0, 0);
+      // was der Sticky selbst zeigt, in seiner Sprache; Hinweise der Vorschau in der der App
+      fuerSticky(() => {
+        const jetzt = uhrzeit(new Date());
+        g.drawImage(m === 'home' ? homeHochkant(quelle.karte?.() ?? KARTE, jetzt, quelle.wetter?.()) : fahrtHochkant(quelle.knoepfe()), 0, 0);
+      });
       if (m === 'home' && z.bat >= 0) akkuSymbol(g, Math.floor((z.bat + 12) / 25), z.usb);
       // Überlagerungen unten im Rückmeldefeld, wie am Sticky
-      const text = z.aufnahme ? '● Aufnahme' : z.meldung;
+      const text = z.aufnahme ? fuerSticky(() => T('● Aufnahme', '● Recording')) : z.meldung;
       if (text) {
         const { x, y, w, h } = RUECK_HOCH;
         g.fillStyle = '#000';
@@ -88,8 +93,7 @@ export function spiegelEinrichten({ canvas, hinweisEl, quelle, befehl, notizTipp
       }
     } else if (m === 'bestell') {
       const g = ziel(BREITE, HOEHE);
-      const liste = quelle.alleZettel();
-      (liste[z.zettel] ?? liste[0])?.zeichne(g);
+      fuerSticky(() => { const liste = quelle.alleZettel(); (liste[z.zettel] ?? liste[0])?.zeichne(g); });
     } else if (m === 'bordbuch') {
       const g = ziel(BREITE, HOEHE);
       const bild = await quelle.bordbuchSeite(z.bb);   // ImageData oder null
@@ -101,15 +105,15 @@ export function spiegelEinrichten({ canvas, hinweisEl, quelle, befehl, notizTipp
         g.fillStyle = '#000';
         g.font = 'bold 34px system-ui, sans-serif';
         g.textAlign = 'center';
-        g.fillText(`Bordbuch · Seite ${z.bb + 1}`, BREITE / 2, HOEHE / 2 - 10);
+        g.fillText(T(`Bordbuch · Seite ${z.bb + 1}`, `Logbook · page ${z.bb + 1}`), BREITE / 2, HOEHE / 2 - 10);
         g.font = '22px system-ui, sans-serif';
-        g.fillText('(Vorschau entsteht beim nächsten „Bordbuch aufspielen“)', BREITE / 2, HOEHE / 2 + 30);
+        g.fillText(T('(Vorschau entsteht beim nächsten „Bordbuch aufspielen“)', '(preview appears with the next logbook upload)'),BREITE / 2, HOEHE / 2 + 30);
       }
     } else {
       // Widgets (Menü, Timer, …), Strichschrift, Kritzelblock, App-Seite: in der gemeldeten Lage (FW ≥ 0.31.2)
       const hoch = !!z.lh;
       const g = ziel(hoch ? HOEHE : BREITE, hoch ? BREITE : HOEHE);
-      const daten = m === 'widget' && z.w ? quelle.widgetBild?.(z.w, hoch) : m === 'schrift' ? quelle.schriftBild?.() : null;
+      const daten = fuerSticky(() => (m === 'widget' && z.w ? quelle.widgetBild?.(z.w, hoch) : m === 'schrift' ? quelle.schriftBild?.() : null));
       if (daten) zeichne1bpp(g, daten, hoch && m === 'widget');
       else {
         g.fillStyle = '#fff';
@@ -117,11 +121,13 @@ export function spiegelEinrichten({ canvas, hinweisEl, quelle, befehl, notizTipp
         g.fillStyle = '#000';
         g.font = 'bold 36px system-ui, sans-serif';
         g.textAlign = 'center';
-        g.fillText(m ? (m === 'widget' ? WIDGET_NAMEN[z.w] ?? 'Widget' : SEITEN_NAMEN[m] ?? m) : 'Sticky noch nicht verbunden', g.canvas.width / 2, g.canvas.height / 2);
+        g.fillText(m ? (m === 'widget' ? widgetName(z.w) ?? 'Widget' : seitenName(m) ?? m) : T('Sticky noch nicht verbunden', 'Sticky not connected yet'),g.canvas.width / 2, g.canvas.height / 2);
       }
     }
-    const was = { bordbuch: `Bordbuch, Seite ${z.bb + 1}`, bestell: `Zettel ${z.zettel + 1}`, widget: WIDGET_NAMEN[z.w] ?? (z.w || 'Widget') }[m] ?? SEITEN_NAMEN[m] ?? '–';
-    hinweisEl.textContent = z.verbunden ? `Sticky zeigt: ${was}${z.foto && !z.fotoAlt ? '' : z.fotoAlt ? ' (Bild kommt)' : m === 'widget' || m === 'schrift' ? ' (Grundbild)' : ''}` : 'nicht verbunden (letzter Stand)';
+    const was = { bordbuch: T(`Bordbuch, Seite ${z.bb + 1}`, `Logbook, page ${z.bb + 1}`), bestell: T(`Zettel ${z.zettel + 1}`, `Card ${z.zettel + 1}`),
+      widget: widgetName(z.w) ?? (z.w || 'Widget') }[m] ?? seitenName(m) ?? '–';
+    const zusatz = z.foto && !z.fotoAlt ? '' : z.fotoAlt ? T(' (Bild kommt)', ' (image on its way)') : m === 'widget' || m === 'schrift' ? T(' (Grundbild)', ' (background)') : '';
+    hinweisEl.textContent = z.verbunden ? `${T('Sticky zeigt', 'Sticky shows')}: ${was}${zusatz}` : T('nicht verbunden (letzter Stand)', 'not connected (last state)');
     hinweisEl.classList.toggle('gleich', z.verbunden);
   }
 

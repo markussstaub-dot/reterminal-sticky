@@ -1,28 +1,30 @@
 // Wetter für die Home-Karte (Markus, 12.11.2026: „Wetter ist immer sinnvoll“). Quelle: Open-Meteo (frei, ohne Konto).
 // Standort vom Handy, auf ~1 km gerundet; ohne GPS der zuletzt bekannte Ort. Ergebnis wird gemerkt, damit die
 // Karte auch nach einem App-Neustart ohne Netz die letzte Vorhersage zeigt (mit „Stand hh:mm“).
+import { T } from './uebersetzen.js';
+
 const SCHLUESSEL = 'sticky.wetter';
 const ORT = 'sticky.wetterOrt';
 
-// WMO-Wettercodes → kurzes deutsches Wort (Symbole wären Farb-Emojis, die auf dem E-Paper nur grau werden)
+// WMO-Wettercodes → kurzes Wort (Symbole wären Farb-Emojis, die auf dem E-Paper nur grau werden); Sprache zur Zeichenzeit
 export function wetterWort(code) {
-  if (code === 0) return 'klar';
-  if (code <= 2) return 'heiter';
-  if (code === 3) return 'bewölkt';
-  if (code <= 48) return 'Nebel';
-  if (code <= 57) return 'Niesel';
-  if (code <= 67) return 'Regen';
-  if (code <= 77) return 'Schnee';
-  if (code <= 82) return 'Schauer';
-  if (code <= 86) return 'Schneeschauer';
-  return 'Gewitter';
+  if (code === 0) return T('klar', 'clear');
+  if (code <= 2) return T('heiter', 'fair');
+  if (code === 3) return T('bewölkt', 'cloudy');
+  if (code <= 48) return T('Nebel', 'fog');
+  if (code <= 57) return T('Niesel', 'drizzle');
+  if (code <= 67) return T('Regen', 'rain');
+  if (code <= 77) return T('Schnee', 'snow');
+  if (code <= 82) return T('Schauer', 'showers');
+  if (code <= 86) return T('Schneeschauer', 'snow showers');
+  return T('Gewitter', 'thunderstorm');
 }
 
 /** Eine Zeile für die Karte, z. B. „bewölkt 12° · 4–14° · Regen 20 %“; us = °F (Einstellung am Sticky bzw. Handy) */
 export function wetterZeile(w, us = false) {
   if (!w) return null;
   const r = (v) => Math.round(us ? v * 9 / 5 + 32 : v), e = us ? '°F' : '°';
-  return `${wetterWort(w.code)} ${r(w.temp)}${e} · ${r(w.min)}–${r(w.max)}${e} · Regen ${Math.round(w.regen)} %`;
+  return `${wetterWort(w.code)} ${r(w.temp)}${e} · ${r(w.min)}–${r(w.max)}${e} · ${T('Regen', 'rain')} ${Math.round(w.regen)} %`;
 }
 
 export function letztesWetter() {

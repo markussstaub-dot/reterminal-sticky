@@ -255,7 +255,7 @@ static void audioLoop() {
         display.setTextColor(TFT_WHITE);
         display.setTextDatum(ML_DATUM);
         display.setFreeFont(&FreeSans12pt7b);
-        display.drawString("Aufnahme", IX + 52, IY + IH / 2);
+        display.drawString(T("Aufnahme", "Recording"), IX + 52, IY + IH / 2);
         display.setFreeFont(nullptr);
         malenGedreht(false);
         teilZeigen(IX - 4, IY - 4, IW + 8, IH + 8);

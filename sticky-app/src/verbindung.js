@@ -5,6 +5,7 @@ import { Capacitor } from '@capacitor/core';
 import { UUID, BILD_BYTES, BREITE, HOEHE, crc32, lies } from './protokoll.js';
 import { kodiere, SAMPLES_JE_PAKET, RATE } from './audio.js';
 import { aktivesGeraet, geraetMerken, geraete } from './geraete.js';
+import { T } from './uebersetzen.js';
 
 const dv = (u8) => new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
 const text = (view) => new TextDecoder().decode(new Uint8Array(view.buffer, view.byteOffset, view.byteLength));
@@ -54,7 +55,7 @@ export class BleVerbindung extends Basis {
         await BleClient.stopLEScan().catch(() => {});
         err ? fehler(err) : ok(wert);
       };
-      const zeit = setTimeout(() => ende(null, new Error('Kein Sticky gefunden (10 s gesucht). Ist er wach? Eine Taste drücken.')), 10000);
+      const zeit = setTimeout(() => ende(null, new Error(T('Kein Sticky gefunden (10 s gesucht). Ist er wach? Eine Taste drücken.', 'No Sticky found (searched 10 s). Is it awake? Press a key.'))), 10000);
       BleClient.requestLEScan({ services: [UUID.dienst], scanMode: ScanMode.SCAN_MODE_LOW_LATENCY }, (r) => {
         if (bekannt.has(r.device.deviceId) || (nurId && r.device.deviceId !== nurId)) return;   // nicht den falschen Sticky nehmen
         ende({ id: r.device.deviceId, name: r.device.name || r.localName || 'Sticky' });
@@ -73,7 +74,7 @@ export class BleVerbindung extends Basis {
         return;
       } catch (e) {
         if (nurGemerkt) throw e;
-        this.onLog(`Gemerkter Sticky nicht erreichbar (${e.message}), suche neu …`);
+        this.onLog(T(`Gemerkter Sticky nicht erreichbar (${e.message}), suche neu …`, `Saved Sticky not reachable (${e.message}), searching again …`));
       }
     }
     geraet = await this.suchen({ nurNeue: neu, nurId: gemerkt && this.nativ ? gemerkt.id : null });
@@ -90,7 +91,7 @@ export class BleVerbindung extends Basis {
 
   async #verbindeMit(g) {
     this.versuchId = g.id;
-    this.onLog(`Verbinde mit ${g.name} …`);
+    this.onLog(T(`Verbinde mit ${g.name} …`, `Connecting to ${g.name} …`));
     await BleClient.connect(g.id, () => { this.id = null; this.onGetrennt(); }, { timeout: 8000 });
     this.id = g.id;
     this.name = g.name;
@@ -102,9 +103,9 @@ export class BleVerbindung extends Basis {
     await BleClient.startNotifications(g.id, UUID.dienst, UUID.ereignis, (v) => this.#json(v, this.onEreignis));
     await BleClient.startNotifications(g.id, UUID.dienst, UUID.zustand, (v) => this.#json(v, this.onZustand));
     await BleClient.startNotifications(g.id, UUID.dienst, UUID.audio, (v) => this.onAudio(new Uint8Array(v.buffer, v.byteOffset, v.byteLength)))
-      .catch((e) => this.onLog(`Audio nicht verfügbar (alte Firmware?): ${e.message}`));
+      .catch((e) => this.onLog(T(`Audio nicht verfügbar (alte Firmware?): ${e.message}`, `Audio not available (old firmware?): ${e.message}`)));
     await BleClient.startNotifications(g.id, UUID.dienst, UUID.datei, (v) => this.onDatei(new Uint8Array(v.buffer, v.byteOffset, v.byteLength)))
-      .catch(() => this.onLog('Puffer-Abholung braucht Firmware 0.5'));
+      .catch(() => this.onLog(T('Puffer-Abholung braucht Firmware 0.5', 'Fetching the buffer needs firmware 0.5')));
     const z = await BleClient.read(g.id, UUID.dienst, UUID.zustand);
     this.#json(z, this.onZustand);
   }
@@ -112,7 +113,7 @@ export class BleVerbindung extends Basis {
   #json(view, ziel) {
     let t = text(view);
     if (t.startsWith('\0"')) t = '{' + t.slice(1);   // erstes Byte beim Aufwachen schon mal verloren (12.11.2026)
-    try { ziel(JSON.parse(t)); } catch { this.onLog(`Unlesbar: ${t}`); }
+    try { ziel(JSON.parse(t)); } catch { this.onLog(T(`Unlesbar: ${t}`, `Unreadable: ${t}`)); }
   }
 
   get verbunden() { return !!this.id; }

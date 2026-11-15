@@ -3,6 +3,7 @@ import { rahmenStart, rahmenDaten, rahmenEnde, rahmenKarte, rahmenPing, rahmenWa
   rahmenRueck, rahmenHome, rahmenHomeVersion, rahmenModus, rahmenZeit, rahmenFahrtLayout, rahmenPufferListe, rahmenPufferHolen, rahmenPufferLoeschen,
   rahmenListe, rahmenHolen, rahmenLoeschen, rahmenLeeren, rahmenSchreibStart, rahmenSchreibDaten, rahmenSchreibEnde } from './protokoll.js';
 import { Aufnahme, wav } from './audio.js';
+import { T } from './uebersetzen.js';
 
 /** PackBits entpacken: Kopf k < 128 → k + 1 Bytes wörtlich, k > 128 → nächstes Byte 257 − k mal */
 export function entpacken(p, n) {
@@ -13,7 +14,7 @@ export function entpacken(p, n) {
     if (k < 128) { o.set(p.subarray(i, i + k + 1).subarray(0, n - j), j); i += k + 1; j += k + 1; }
     else if (k > 128) { o.fill(p[i++], j, Math.min(n, j + 257 - k)); j += 257 - k; }
   }
-  if (j < n) throw new Error(`Bildschirm: unvollständig (${j}/${n} Byte)`);
+  if (j < n) throw new Error(T(`Bildschirm: unvollständig (${j}/${n} Byte)`, `Screen: incomplete (${j}/${n} bytes)`));
   return o;
 }
 
@@ -98,12 +99,12 @@ export class Zwilling {
     }
     const tFunk = performance.now() - tStart;
     const antwort = new Promise((ok, fehler) => {
-      const zeit = setTimeout(() => { this.warteBild = null; fehler(new Error('Sticky hat das Bild nicht bestätigt (20 s).')); }, 20000);
+      const zeit = setTimeout(() => { this.warteBild = null; fehler(new Error(T('Sticky hat das Bild nicht bestätigt (20 s).', 'Sticky did not confirm the image (20 s).'))); }, 20000);
       this.warteBild = (e) => { clearTimeout(zeit); ok(e); };
     });
     await v.schreiben(speichern != null ? rahmenSpeichern(speichern) : rueck != null ? rahmenRueck(rueck) : home != null ? rahmenHome(home) : rahmenEnde(schnell));
     const e = await antwort;
-    if (!e.ok) throw new Error(`Sticky meldet Fehler: ${e.err}${e.got != null ? ` (${e.got} Byte angekommen)` : ''}`);
+    if (!e.ok) throw new Error(T(`Sticky meldet Fehler: ${e.err}${e.got != null ? ` (${e.got} Byte angekommen)` : ''}`, `Sticky reports error: ${e.err}${e.got != null ? ` (${e.got} bytes arrived)` : ''}`));
     if (!bereich && speichern == null && rueck == null && home == null) this.gesendetCrc = crc32(bild);
     return {
       gesamt: Math.round(performance.now() - t0),
@@ -133,7 +134,7 @@ export class Zwilling {
   /** Liste der gepufferten Dateien auf dem Sticky: [{ n, b }] */
   async pufferListe() {
     const e = await new Promise((ok, fehler) => {
-      const zeit = setTimeout(() => { this.wartePuffer = null; fehler(new Error('Sticky antwortet nicht auf die Puffer-Liste')); }, 5000);
+      const zeit = setTimeout(() => { this.wartePuffer = null; fehler(new Error(T('Sticky antwortet nicht auf die Puffer-Liste', 'Sticky does not answer the buffer list request'))); }, 5000);
       this.wartePuffer = (x) => { clearTimeout(zeit); ok(x); };
       this.verbindung.schreiben(rahmenPufferListe()).catch(fehler);
     });
@@ -148,8 +149,8 @@ export class Zwilling {
     const alle = [];
     for (let seite = 0; seite < 100; seite++) {
       // Passt nicht alles in ein Paket, blättert „pfad|ab“ weiter (FW ≥ 0.11.0)
-      const e = await this.#abgleich(rahmenListe(alle.length ? `${pfad}|${alle.length}` : pfad), `Liste ${pfad}`);
-      if (e.t !== 'liste') throw new Error(`${pfad}: ${e.err ?? 'abgelehnt'}`);
+      const e = await this.#abgleich(rahmenListe(alle.length ? `${pfad}|${alle.length}` : pfad), `${T('Liste', 'List')} ${pfad}`);
+      if (e.t !== 'liste') throw new Error(`${pfad}: ${e.err ?? T('abgelehnt', 'rejected')}`);
       alle.push(...(e.d ?? []));
       if (!e.mehr || !e.d?.length) break;
     }
@@ -167,7 +168,7 @@ export class Zwilling {
   /** Sticky für die Weitergabe leeren (FW ≥ 0.31.6): wartet auf {"t":"geleert"} oder höchstens 30 s */
   leeren() {
     return new Promise((ok, fehler) => {
-      const zeit = setTimeout(() => { this.beobachter.delete(hoer); fehler(new Error('Sticky hat das Leeren nicht bestätigt')); }, 30000);
+      const zeit = setTimeout(() => { this.beobachter.delete(hoer); fehler(new Error(T('Sticky hat das Leeren nicht bestätigt', 'Sticky did not confirm the wipe'))); }, 30000);
       const hoer = (art, d) => { if (art === 'ereignis' && d.t === 'geleert') { clearTimeout(zeit); this.beobachter.delete(hoer); ok(d); } };
       this.beobachte(hoer);
       this.verbindung.schreiben(rahmenLeeren()).catch((e) => { clearTimeout(zeit); this.beobachter.delete(hoer); fehler(e); });
@@ -175,7 +176,7 @@ export class Zwilling {
   }
 
   async loeschen(pfad) {
-    const e = await this.#abgleich(rahmenLoeschen(pfad), `Löschen ${pfad}`);
+    const e = await this.#abgleich(rahmenLoeschen(pfad), `${T('Löschen', 'Delete')} ${pfad}`);
     return e.ok === true;
   }
   /** Datei unter /soll schreiben (bis 1 MB). Läuft in derselben Schlange wie die Bilder. */
@@ -195,7 +196,7 @@ export class Zwilling {
     // Antwort schon vor dem Start erwarten: einen falschen Pfad oder zu große Datei lehnt der Sticky sofort ab
     let frueh = null;
     const antwort = new Promise((ok, fehler) => {
-      const zeit = setTimeout(() => { this.warteGeschrieben = null; fehler(new Error(`${pfad}: keine Bestätigung (20 s)`)); }, 20000);
+      const zeit = setTimeout(() => { this.warteGeschrieben = null; fehler(new Error(T(`${pfad}: keine Bestätigung (20 s)`, `${pfad}: no confirmation (20 s)`))); }, 20000);
       this.warteGeschrieben = (e) => { clearTimeout(zeit); frueh = e; ok(e); };
     });
     await v.schreiben(rahmenSchreibStart(daten, pfad));
@@ -246,7 +247,7 @@ export class Zwilling {
 
   #abgleich(rahmen, was) {
     return this.#nacheinander(() => new Promise((ok, fehler) => {
-      const zeit = setTimeout(() => { this.warteAbgleich = null; fehler(new Error(`Sticky antwortet nicht (${was})`)); }, 5000);
+      const zeit = setTimeout(() => { this.warteAbgleich = null; fehler(new Error(T(`Sticky antwortet nicht (${was})`, `Sticky does not answer (${was})`))); }, 5000);
       this.warteAbgleich = (x) => { clearTimeout(zeit); ok(x); };
       this.verbindung.schreiben(rahmen).catch(fehler);
     }));
@@ -266,13 +267,13 @@ export class Zwilling {
           this.verbindung.schreiben(anfrage(off)).catch(() => ok(null));
         });
       }
-      if (!stueck) throw new Error(`${name}: bei Byte ${off} keine Antwort`);
+      if (!stueck) throw new Error(T(`${name}: bei Byte ${off} keine Antwort`, `${name}: no answer at byte ${off}`));
       if (!stueck.length) break;   // Ende der Datei
       daten.set(stueck.subarray(0, Math.min(stueck.length, groesse - off)), off - ab);
       off += stueck.length;
     }
     if (bisEnde) return daten.subarray(0, off - ab);   // Länge vorher unbekannt: bis zum leeren Stück
-    if (off < groesse) throw new Error(`${name}: unvollständig (${off}/${groesse} Byte)`);
+    if (off < groesse) throw new Error(T(`${name}: unvollständig (${off}/${groesse} Byte)`, `${name}: incomplete (${off}/${groesse} bytes)`));
     return daten;
   }
 

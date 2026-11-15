@@ -9,6 +9,12 @@ import { TASTEN as R_TASTEN, ROLLE as R_ROLLE } from './rechner.js';
 import { PAARE } from './umrechner.js';
 import { HANDY_12H, HANDY_US } from './zeit.js';
 import { schluessel } from './geraete.js';
+import { T, appIstEn } from './uebersetzen.js';
+// Zweisprachig (SPEC „Zweisprachig Deutsch/Englisch“): Texte im Bild per T() beim Bauen (main.js baut im Sticky-Kontext).
+// felder.txt bleibt deutsch/Protokoll; Glyphenblätter enthalten die Zeichen beider Sprachen, denn der Sticky kann die
+// Sprache ohne Handy umschalten und setzt dann sofort „on/off“, „EN“, Punkt statt Komma und „Error“.
+/** Beschriftung einer Taste: die Kommataste zeigt auf Englisch „.“ (Aktion in felder.txt bleibt „,“) */
+const tastenText = (t) => (t === ',' ? T(',', '.') : t);
 
 const FONT = BRAUN_FONT;
 const leinwand = (b, h) => (typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(b, h) : Object.assign(document.createElement('canvas'), { width: b, height: h }));
@@ -77,14 +83,15 @@ function seite(hoch, titel, hinweis) {
 
 /** Timer (Countdown): große Knöpfe zum Tippen (±1 min, Start/Stopp, Vorlagen), ▲/▼ blättern wie überall. → [{ n, daten }] mit felder.txt zuletzt */
 export function timerWidget(hoch = false) {
-  const p = seite(hoch, 'Timer', 'Tippen zum Bedienen · ▲▼ = blättern · KI = Home');
+  const p = seite(hoch, 'Timer', T('Tippen zum Bedienen · ▲▼ = blättern · KI = Home', 'tap to operate · ▲▼ = scroll · AI = Home'));
+  const startStopp = T('Start / Stopp', 'Start / Stop');
   // 5 Zellen „MM:SS“; hochkant: Zellenhöhe und y-Position Vielfache von 8 (werden auf dem Display zu Breite und x)
   const Z = hoch ? { w: 88, h: 136, x: 20, y: 80 } : { w: 96, h: 144, x: 160, y: 60 };
   const z = p.ziffernPos(Z.x, Z.y, Z.w);
   p.felder.push('typ countdown', 'dauer 300', hoch ? `ziffern ${Z.h} ${Z.w}` : `ziffern ${Z.w} ${Z.h}`, ...(hoch ? [`schritt 0 ${-Z.w}`] : []), `zeit ${z.x} ${z.y}`);
   const vorlagen = [[1, '1 min'], [3, '3'], [5, '5'], [10, '10'], [25, '25']];
   if (hoch) {
-    p.k(16, 236, 464, 360, 'Start / Stopp', 'start_stopp', 'haupt', 40);
+    p.k(16, 236, 464, 360, startStopp, 'start_stopp', 'haupt', 40);
     p.k(16, 372, 240, 480, '− 1 min', 'minus 60', 'werkzeug', 30);
     p.k(240, 372, 464, 480, '+ 1 min', 'plus 60', 'werkzeug', 30);
     vorlagen.forEach(([m, t], i) => {
@@ -94,7 +101,7 @@ export function timerWidget(hoch = false) {
     p.k(314, 632, 464, 768, 'Reset', 'reset', 'werkzeug', 28);
   } else {
     p.k(16, 222, 208, 330, '− 1 min', 'minus 60', 'werkzeug', 30);
-    p.k(224, 222, 576, 330, 'Start / Stopp', 'start_stopp', 'haupt', 36);
+    p.k(224, 222, 576, 330, startStopp, 'start_stopp', 'haupt', 36);
     p.k(592, 222, 784, 330, '+ 1 min', 'plus 60', 'werkzeug', 30);
     vorlagen.forEach(([m, t], i) => p.k(16 + i * 128, 346, 144 + i * 128, 464, t, `setze ${m * 60}`, 'wahl', 34));
     p.k(656, 346, 784, 464, 'Reset', 'reset', 'werkzeug', 28);
@@ -118,20 +125,28 @@ function handyZeichen(g, x, y) {
   g.beginPath(); g.arc(x + 9, y + 24.5, 1.6, 0, Math.PI * 2); g.fill();
   g.restore();
 }
-const NAMEN = { home: 'Home', notiz: 'Notiz', bordbuch: 'Bordbuch', zettel: 'Zettel', kritzel: 'Kritzel', schrift: 'Schrift', app: 'Spiel' };
+/** Kachelname je Karussell-Eintrag; Deutsch wie bisher (Widget-Name groß geschrieben), Englisch übersetzt */
+const NAMEN = { home: ['Home', 'Home'], notiz: ['Notiz', 'Note'], bordbuch: ['Bordbuch', 'Logbook'], zettel: ['Zettel', 'Cards'],
+  kritzel: ['Kritzel', 'Doodle'], schrift: ['Schrift', 'Writing'], app: ['Spiel', 'Game'] };
+const WIDGET_EN = { timer: 'Timer', wecker: 'Alarm', weltzeit: 'World clock', waage: 'Level', lineal: 'Ruler', rechner: 'Calculator',
+  umrechner: 'Converter', einstellungen: 'Settings' };
+function kachelName(e) {
+  if (e.startsWith('widget ')) { const w = e.slice(7); return T(w.replace(/^./, (b) => b.toUpperCase()), WIDGET_EN[w] ?? w.replace(/^./, (b) => b.toUpperCase())); }
+  return NAMEN[e] ? T(...NAMEN[e]) : e;
+}
 
 /**
  * Menü (KI kurz auf Home): eine Kachel je Karussell-Eintrag, Tippen springt direkt hin (Aktion „gehe <i>“).
  * eintraege: Zeilen wie in karussell.txt („home“, „widget timer“, …), Reihenfolge = Index im Karussell.
  */
 export function menueWidget(eintraege, hoch = false) {
-  const p = seite(hoch, 'Menü', 'Tippen = hin · KI = Home · ▲▼ = blättern');
+  const p = seite(hoch, T('Menü', 'Menu'), T('Tippen = hin · KI = Home · ▲▼ = blättern', 'tap = go · AI = Home · ▲▼ = scroll'));
   p.felder.push('typ menue');
   const spalten = hoch ? (eintraege.length > 12 ? 3 : 2) : eintraege.length > 12 ? 4 : eintraege.length > 6 ? 3 : 2;
   const zeilen = Math.ceil(eintraege.length / spalten);
   const x0 = 16, y0 = hoch ? 48 : 44, w = (p.W - 32) / spalten, h = Math.min(hoch ? 180 : 140, (p.H - y0 - 12) / zeilen);
   eintraege.forEach((e, i) => {
-    const name = e.startsWith('widget ') ? e.slice(7).replace(/^./, (b) => b.toUpperCase()) : NAMEN[e] ?? e;
+    const name = kachelName(e);
     const x = Math.round(x0 + (i % spalten) * w), y = Math.round(y0 + Math.floor(i / spalten) * h);
     p.k(x, y, Math.round(x + w), Math.round(y + h), name, `gehe ${i}`, e === 'home' ? 'wahl' : 'neben', 34);
     if (NUR_MIT_HANDY.has(e)) handyZeichen(p.g, Math.round(x + w) - 40, Math.round(y + h / 2) - 14);   // rechts innen, mittig (Pillenform: Ecke liegt außerhalb)
@@ -144,7 +159,7 @@ export function menueWidget(eintraege, hoch = false) {
 
 /** Wasserwaage: Blase im Kreis (1° = r/15 px, Ringe bei 1°, 5°, 10°), Grad für beide Achsen, Null setzen, Halten */
 export function waageWidget(hoch = false) {
-  const p = seite(hoch, 'Wasserwaage', 'flach hinlegen · ▲▼ = blättern · KI = Home');
+  const p = seite(hoch, T('Wasserwaage', 'Spirit level'), T('flach hinlegen · ▲▼ = blättern · KI = Home', 'lay it flat · ▲▼ = scroll · AI = Home'));
   const { g } = p;
   const K = hoch ? { x: 240, y: 290, r: 190 } : { x: 232, y: 272, r: 190 };
   const Z = { w: 48, h: 72 };
@@ -165,12 +180,13 @@ export function waageWidget(hoch = false) {
   g.font = `bold 40px ${FONT}`;
   g.fillText(hoch ? '↕' : '↔', W1.x - 48, W1.y + 36);
   g.fillText(hoch ? '↔' : '↕', W2.x - 48, W2.y + 36);
+  const nullSetzen = T('Null setzen', 'Set zero'), halten = T('Halten', 'Hold');
   if (hoch) {
-    p.k(16, 700, 240, 790, 'Null setzen', 'null', 'haupt', 30);
-    p.k(240, 700, 464, 790, 'Halten', 'halten', 'neben', 30);
+    p.k(16, 700, 240, 790, nullSetzen, 'null', 'haupt', 30);
+    p.k(240, 700, 464, 790, halten, 'halten', 'neben', 30);
   } else {
-    p.k(448, 296, 784, 380, 'Null setzen', 'null', 'haupt', 30);
-    p.k(448, 386, 784, 470, 'Halten', 'halten', 'neben', 30);
+    p.k(448, 296, 784, 380, nullSetzen, 'null', 'haupt', 30);
+    p.k(448, 386, 784, 470, halten, 'halten', 'neben', 30);
   }
   return [
     { n: 'ziffern.bin', daten: ziffernBlatt(Z.w, Z.h, '0123456789:-.°', hoch) },
@@ -186,7 +202,7 @@ export const PX_PRO_MM = 9.25;
 export function linealWidget(echtBei80 = 80, zoll = false) {
   const pxmm = PX_PRO_MM * 80 / (echtBei80 || 80);
   if (zoll) return linealZoll(pxmm);
-  const p = seite(false, 'Lineal', '0 = Ecke links unten · mm');
+  const p = seite(false, T('Lineal', 'Ruler'), T('0 = Ecke links unten · mm', '0 = bottom left corner · mm'));
   const { g } = p;
   p.felder.push('typ menue');
   const x0 = 8, y0 = HOEHE - 8;   // Nullpunkt: 8 px vom linken und unteren Rand
@@ -257,7 +273,7 @@ function fenster(g, x, y, w, h) {
 
 /** Taschenrechner: 5er-Raster wie der Braun BNE001, Anzeige rechtsbündig mit „M“ links, wenn der Speicher belegt ist */
 export function rechnerWidget(hoch = false) {
-  const p = seite(hoch, 'Rechner', 'rechnet im Sticky · ▲▼ = blättern · KI = Home');
+  const p = seite(hoch, T('Rechner', 'Calculator'), T('rechnet im Sticky · ▲▼ = blättern · KI = Home', 'runs on the Sticky · ▲▼ = scroll · AI = Home'));
   const { g } = p;
   const A = hoch ? { x: 16, y: 48, w: 448, h: 112 } : { x: 16, y: 44, w: 768, h: 84 };
   const Z = hoch ? { w: 32, h: 72 } : { w: 40, h: 64 };                   // logische Zelle
@@ -269,11 +285,12 @@ export function rechnerWidget(hoch = false) {
   const liste = R_TASTEN.flat();
   R_TASTEN.forEach((zeile, ze) => zeile.forEach((t, sp) => {
     const x = F.x + sp * tw, y = F.y + ze * th;
-    braunKnopf(g, x, y, tw, th, t, R_ROLLE(t), { rund: true });
+    braunKnopf(g, x, y, tw, th, tastenText(t), R_ROLLE(t), { rund: true });
     const d = zuDisplay({ x: Math.round(x), y: Math.round(y), w: Math.round(tw), h: Math.round(th) }, hoch);
     p.felder.push(`knopf ${d.x} ${d.y} ${d.x + d.w} ${d.y + d.h} taste ${liste.indexOf(t)}`);
   }));
-  const glyphen = [...'0123456789,-+eFhlrM', ' '];
+  // „.“, „E“, „o“ (mit „r“): Englisch zeigt die Firmware Punkt statt Komma und „Error“ statt „Fehler“ (FW 0.32.0)
+  const glyphen = [...'0123456789,-+eFhlrM.Eo', ' '];
   const z = p.ziffernPos(tx, ty, Z.w);
   p.felder.unshift('typ rechner', hoch ? `ziffern ${Z.h} ${Z.w}` : `ziffern ${Z.w} ${Z.h}`, ...(hoch ? [`schritt 0 ${-Z.w}`] : []),
     `glyphen ${glyphen.map((x) => (x === ' ' ? '_' : x)).join(' ')}`, `text ${z.x} ${z.y} ${n}`, `tasten ${liste.join(' ')}`);
@@ -286,7 +303,7 @@ export function rechnerWidget(hoch = false) {
 
 /** Umrechner: Einheitenpaare (gewähltes invertiert), Ziffernblock, Anzeige „12,5 km = 7,77 mi“ */
 export function umrechnerWidget(hoch = false) {
-  const p = seite(hoch, 'Umrechner', 'rechnet im Sticky · ▲▼ = blättern · KI = Home');
+  const p = seite(hoch, T('Umrechner', 'Converter'), T('rechnet im Sticky · ▲▼ = blättern · KI = Home', 'runs on the Sticky · ▲▼ = scroll · AI = Home'));
   const { g } = p;
   const A = hoch ? { x: 16, y: 48, w: 448, h: 96 } : { x: 16, y: 44, w: 768, h: 72 };
   const Z = hoch ? { w: 18, h: 48 } : { w: 24, h: 48 };
@@ -294,7 +311,7 @@ export function umrechnerWidget(hoch = false) {
   const tx = (A.x + A.w - 8 - n * Z.w) & ~7, ty = hoch ? 72 : A.y + 12;
   fenster(g, A.x, A.y, A.w, A.h);
   const L = hoch ? { x: 16, y: 152, w: 448, h: 256 } : { x: 16, y: 124, w: 280, h: 352 };
-  const T = hoch ? { x: 16, y: 416, w: 448, h: 368 } : { x: 304, y: 124, w: 480, h: 352 };
+  const TF = hoch ? { x: 16, y: 416, w: 448, h: 368 } : { x: 304, y: 124, w: 480, h: 352 };   // Tastenfeld (T ist die Übersetzung)
   const zeilen = Math.ceil(PAARE.length / 2), lw = L.w / 2, lh = L.h / zeilen;
   PAARE.forEach((pa, i) => {
     const x = L.x + (i % 2) * lw, y = L.y + Math.floor(i / 2) * lh;
@@ -304,17 +321,17 @@ export function umrechnerWidget(hoch = false) {
   });
   const U = [['7', '8', '9', '⌫'], ['4', '5', '6', 'C'], ['1', '2', '3', '⇄'], ['±', '0', ',', '']];
   const liste = U.flat().filter(Boolean);
-  const tw = T.w / 4, th = T.h / U.length;
+  const tw = TF.w / 4, th = TF.h / U.length;
   U.forEach((zeile, ze) => zeile.forEach((t, sp) => {
     if (!t) return;
-    const x = T.x + sp * tw, y = T.y + ze * th;
-    braunKnopf(g, x, y, tw, th, t, t === '⇄' ? 'haupt' : /^[\d,]$/.test(t) ? 'wahl' : 'werkzeug', { rund: true });
+    const x = TF.x + sp * tw, y = TF.y + ze * th;
+    braunKnopf(g, x, y, tw, th, tastenText(t), t === '⇄' ? 'haupt' : /^[\d,]$/.test(t) ? 'wahl' : 'werkzeug', { rund: true });
     const d = zuDisplay({ x: Math.round(x), y: Math.round(y), w: Math.round(tw), h: Math.round(th) }, hoch);
     p.felder.push(`knopf ${d.x} ${d.y} ${d.x + d.w} ${d.y + d.h} taste ${liste.indexOf(t)}`);
   }));
   // Glyphen: Ziffern, Zeichen und alle Buchstaben der Einheiten (°, /)
   const einheiten = new Set(PAARE.flatMap((pa) => [...pa.a, ...pa.b]));
-  const glyphen = [...new Set([...'0123456789,-=', ...einheiten, ...'Fehlr', ' '])];
+  const glyphen = [...new Set([...'0123456789,-=', ...einheiten, ...'Fehlr', ...'.Eo', ' '])];   // .Eo(r): Englisch, s. Rechner
   // Paare für die Firmware: y = a·x + b, aus hin(0) und hin(1) bestimmt
   const paare = PAARE.map((pa) => { const b = pa.hin(0), a = pa.hin(1) - b; return `paar ${pa.a} ${pa.b} ${+a.toPrecision(9)} ${+b.toPrecision(9)}`; });
   const z = p.ziffernPos(tx, ty, Z.w);
@@ -337,16 +354,18 @@ export function versatzMin(zone, wann = new Date()) {
   return Math.round((dort - Math.floor(wann.getTime() / 60000) * 60000) / 60000);
 }
 /** Standard-Städte: Lebensstationen (Kürzel wie auf dem Weltzeitring) */
+const stadt = (kurzDe, kurzEn, nameDe, nameEn, zone) => ({ get kurz() { return T(kurzDe, kurzEn); }, get name() { return T(nameDe, nameEn); }, zone });
 export const STAEDTE = [
-  { kurz: 'HIER', name: 'Zuhause', zone: 'Europe/Berlin' },
-  { kurz: 'TYO', name: 'Tokio', zone: 'Asia/Tokyo' },
-  { kurz: 'NYC', name: 'New York', zone: 'America/New_York' },
-  { kurz: 'LAX', name: 'Los Angeles', zone: 'America/Los_Angeles' },
+  stadt('HIER', 'HOME', 'Zuhause', 'Home', 'Europe/Berlin'),
+  stadt('TYO', 'TYO', 'Tokio', 'Tokyo', 'Asia/Tokyo'),
+  stadt('NYC', 'NYC', 'New York', 'New York', 'America/New_York'),
+  stadt('LAX', 'LAX', 'Los Angeles', 'Los Angeles', 'America/Los_Angeles'),
 ];
 
 /** Weltzeit: je Stadt Kürzel und Name links, Uhrzeit mit ☀/☾ rechts (der Sticky zählt jede Minute selbst weiter) */
 export function weltzeitWidget(hoch = false, staedte = STAEDTE) {
-  const p = seite(hoch, 'Weltzeit', 'Zeiten zählt der Sticky selbst · ▲▼ = blättern · KI = Home');
+  const p = seite(hoch, T('Weltzeit', 'World clock'), T('zählt selbst weiter · ▲▼ = blättern · KI = Home', 'runs on the Sticky · ▲▼ = scroll · AI = Home'));
+  // Hinweis gekürzt: vorher bis x 532, lief unter die Statuszeile (ab x 512)
   const { g } = p;
   const Z = { w: 40, h: 64 }, n = 8;                   // „23:52 ☾“ bzw. 12 h „11:52p ☾“
   const glyphen = [...'0123456789:ap', ' ', '☀', '☾'];
@@ -372,10 +391,10 @@ export function weltzeitWidget(hoch = false, staedte = STAEDTE) {
 
 /** Wecker: Weckzeit groß, darunter an/aus, Knöpfe ±1 h, ±10 min, ±1 min und An/Aus (der Sticky merkt sich die Zeit) */
 export function weckerWidget(hoch = false) {
-  const p = seite(hoch, 'Wecker', 'klingelt auch im Schlummer · jede Taste stellt ab');
+  const p = seite(hoch, T('Wecker', 'Alarm'), T('klingelt auch im Schlummer · jede Taste stellt ab', 'rings even when asleep · any key stops it'));
   const { g } = p;
-  const Z = { w: 64, h: 96 }, Zk = Z;   // ein Glyphenblatt je Widget: „an/aus“ in derselben Zellgröße
-  const glyphen = [...'0123456789:ansup', ' '];
+  const Z = { w: 64, h: 96 }, Zk = Z;   // ein Glyphenblatt je Widget: „an/aus“ bzw. „on/off“ in derselben Zellgröße
+  const glyphen = [...'0123456789:ansupof', ' '];   // o, f: Englisch „on“/„off“ (FW 0.32.0)
   const tx = ((p.W - 6 * Z.w) / 2) & ~7, ty = hoch ? 64 : 56;   // 6 Zellen: 12 h „12:30p“
   const kx = ((p.W - 3 * Zk.w) / 2) & ~7, ky = hoch ? 168 : 160;
   const z = p.ziffernPos(tx, ty, Z.w), zk = p.ziffernPos(kx, ky, Zk.w);
@@ -385,7 +404,8 @@ export function weckerWidget(hoch = false) {
     : [[16, 264, 144, 368, '− 1 h', 2], [144, 264, 272, 368, '+ 1 h', 1], [272, 264, 400, 368, '− 10', 4], [400, 264, 528, 368, '+ 10', 3],
       [528, 264, 656, 368, '− 1', 6], [656, 264, 784, 368, '+ 1', 5]];
   knoepfe.forEach(([x0, y0, x1, y1, t, c]) => p.k(x0, y0, x1, y1, t, `weck ${c}`, 'werkzeug', 30));
-  if (hoch) p.k(16, 684, 464, 790, 'An / Aus', 'weck 9', 'haupt', 36); else p.k(16, 372, 784, 472, 'An / Aus', 'weck 9', 'haupt', 36);
+  const anAus = T('An / Aus', 'On / Off');
+  if (hoch) p.k(16, 684, 464, 790, anAus, 'weck 9', 'haupt', 36); else p.k(16, 372, 784, 472, anAus, 'weck 9', 'haupt', 36);
   p.felder.unshift('typ wecker', hoch ? `ziffern ${Z.h} ${Z.w}` : `ziffern ${Z.w} ${Z.h}`, ...(hoch ? [`schritt 0 ${-Z.w}`] : []),
     `glyphen ${glyphen.map((x) => (x === ' ' ? '_' : x)).join(' ')}`, `text ${z.x} ${z.y} 6`, `text ${zk.x} ${zk.y} 3`);
   return [
@@ -397,36 +417,64 @@ export function weckerWidget(hoch = false) {
 
 /**
  * Einstellungen am Sticky (FW ≥ 0.31.0): umschaltbar ohne Handy; „auto“ = wie das Handy.
- * Zeile 1 Uhrzeit-Format (set 1), Zeile 2 Einheiten (set 2), darunter Uhr stellen für den Notfall (set 11–26).
- * Textfelder in dieser Reihenfolge: Format, Datum/Uhrzeit, Einheiten (so liest sie firmware-ble/widget.h).
+ * Zeile 1 Uhrzeit-Format (set 1), Zeile 2 Einheiten (set 2), Zeile 3 Sprache (set 3: auto → DE → EN, FW ≥ 0.32.0),
+ * darunter Uhr stellen für den Notfall (set 11–26).
+ * Textfelder in dieser Reihenfolge: 0 Format, 1 Datum/Uhrzeit, 2 Einheiten, 3 Sprache (so liest sie firmware-ble/widget.h;
+ * die Firmware setzt „auto“, „12 h“, „metr“, „US“, „DE“, „EN“, „TT.MM.JJ hh:mm“ selbst aus dem Glyphenblatt).
+ * Hochkant (Lage „auto“ → widgets/einstellungen-h): kleinere Zellen, damit die 14 Zellen der Uhrzeit in 448 px passen.
  */
 export function einstellungenWidget(hoch = false, handy12 = false, handyUs = false) {
-  const p = seite(false, 'Einstellungen', 'gelten sofort, auch ohne Handy · ▲+▼ = Hilfe');
+  const p = seite(hoch, T('Einstellungen', 'Settings'), T('gelten sofort, auch ohne Handy · ▲+▼ = Hilfe', 'apply at once, even without phone · ▲+▼ = Help'));
   const { g } = p;
-  const Z = { w: 40, h: 56 }, glyphen = [...'0123456789:.-autohmeUS', ' '];
-  const zeile = (y, titel, unter) => {
+  const Z = hoch ? { w: 30, h: 48 } : { w: 40, h: 56 };   // hochkant: Zellhöhe Vielfaches von 8 (wird Display-Breite)
+  // alles, was die Firmware hier in beiden Sprachen schreibt: auto, 12 h/24 h, metr, US, DE, EN, an/aus, on/off, Datum
+  const glyphen = [...'0123456789:.-autohmerUSDENnsf', ' '];
+  const zeilen = [
+    { titel: T('Uhrzeit', 'Time'), unter: T(`auto = wie das Handy (${handy12 ? '12 h' : '24 h'})`, `auto = like the phone (${handy12 ? '12 h' : '24 h'})`), set: 1 },
+    { titel: T('Einheiten', 'Units'), unter: T(`°C/°F, Lineal · auto = ${handyUs ? 'US' : 'metrisch'}`, `°C/°F, ruler · auto = ${handyUs ? 'US' : 'metric'}`), set: 2 },
+    { titel: T('Sprache', 'Language'), unter: T(`auto = wie die App (${appIstEn() ? 'Englisch' : 'Deutsch'})`, `auto = like the app (${appIstEn() ? 'English' : 'German'})`), set: 3 },
+  ];
+  const kasten = (x, y, n) => { g.lineWidth = 3; g.strokeStyle = '#000'; g.strokeRect(x - 8, y - 2, n * Z.w + 16, Z.h + 4); };
+  const aendern = T('ändern', 'change');
+  // L: Lage der drei Zeilen (y0 je Zeile, Titel/Unterzeile relativ, Kasten und Knopf), Uhr stellen und Tastenraster
+  const L = hoch
+    ? { y0: [44, 164, 284], unterY: 34, kx: 32, ky: 60, knopf: [232, 52, 464, 116], linie: 412, uhrY: 420, dx: 30, dy: 448,
+      tasten: { x: 16, y: 504, sp: 3, w: 448 / 3, h: 73 } }
+    : { y0: [40, 108, 176], unterY: 36, kx: 336, ky: 4, knopf: [560, 0, 784, 64], linie: 246, uhrY: 256, dx: 208, dy: 254,
+      tasten: { x: 16, y: 322, sp: 6, w: 128, h: 78 } };
+  const pos = [];   // Textfelder in der Reihenfolge der Zeilen (Format, Einheiten, Sprache)
+  zeilen.forEach((z, i) => {
+    const y0 = L.y0[i];
     g.fillStyle = '#000'; g.textAlign = 'left'; g.textBaseline = 'top';
-    g.font = `500 30px ${FONT}`; g.fillText(titel, 24, y + 6);
-    g.font = `400 16px ${FONT}`; g.fillText(unter, 24, y + 42);
-  };
-  const kasten = (x, y, n) => { g.lineWidth = 3; g.strokeStyle = '#000'; g.strokeRect(x - 8, y - 4, n * Z.w + 16, Z.h + 8); };
-  zeile(44, 'Uhrzeit', `auto = wie das Handy (${handy12 ? '12 h' : '24 h'})`);
-  kasten(336, 52, 4);
-  p.k(560, 44, 784, 112, 'ändern', 'set 1', 'werkzeug', 26);
-  zeile(116, 'Einheiten', `°C/°F, Lineal · auto = ${handyUs ? 'US' : 'metrisch'}`);
-  kasten(336, 124, 4);
-  p.k(560, 116, 784, 184, 'ändern', 'set 2', 'werkzeug', 26);
-  g.fillRect(16, 192, BREITE - 32, 1);
+    g.font = `500 26px ${FONT}`; g.fillText(z.titel, 24, y0 + 4);
+    g.font = `400 15px ${FONT}`; g.fillText(z.unter, 24, y0 + L.unterY);
+    const ky = y0 + L.ky;   // hochkant: logisch y wird Display-x, darum Vielfache von 8 (104, 224, 344)
+    kasten(L.kx, ky, 4);
+    pos.push(p.ziffernPos(L.kx, ky, Z.w));
+    p.k(L.knopf[0], y0 + L.knopf[1], L.knopf[2], y0 + L.knopf[3], aendern, `set ${z.set}`, 'werkzeug', 26);
+  });
+  g.fillRect(16, L.linie, p.W - 32, 1);
   g.font = `500 22px ${FONT}`; g.textAlign = 'left'; g.textBaseline = 'top'; g.fillStyle = '#000';
-  g.fillText('Uhr', 24, 204); g.font = `400 16px ${FONT}`; g.fillText('stellen', 24, 232);
-  const reihe1 = [['− 1 h', 12], ['+ 1 h', 11], ['− 10', 14], ['+ 10', 13], ['− 1', 16], ['+ 1', 15]];
-  const reihe2 = [['− Tag', 22], ['+ Tag', 21], ['− Mon', 24], ['+ Mon', 23], ['− Jahr', 26], ['+ Jahr', 25]];
-  [reihe1, reihe2].forEach((r, ze) => r.forEach(([t, c], i) => p.k(16 + i * 128, 264 + ze * 104, 144 + i * 128, 364 + ze * 104, t, `set ${c}`, 'neben', 22)));
-  // Textfelder: 0 = Format (x 336, y 52), 1 = Datum/Uhrzeit (x 208, y 200), 2 = Einheiten (x 336, y 124)
-  p.felder.unshift('typ einstellungen', `ziffern ${Z.w} ${Z.h}`, `glyphen ${glyphen.map((x) => (x === ' ' ? '_' : x)).join(' ')}`,
-    'text 336 52 4', 'text 208 200 14', 'text 336 124 4');
+  if (hoch) g.fillText(T('Uhr stellen', 'Set clock'), 24, L.uhrY);
+  else { g.fillText(T('Uhr', 'Set'), 24, L.uhrY); g.font = `400 16px ${FONT}`; g.fillText(T('stellen', 'clock'), 24, L.uhrY + 28); }
+  const datum = p.ziffernPos(L.dx, L.dy, Z.w);
+  // Tasten: quer zwei Reihen à 6 (wie bisher), hochkant vier Reihen à 3 (Spalten h | 10 min | 1 min bzw. Tag | Monat | Jahr)
+  const tasten = hoch
+    ? [['− 1 h', 12], ['− 10', 14], ['− 1', 16], ['+ 1 h', 11], ['+ 10', 13], ['+ 1', 15],
+      [T('− Tag', '− Day'), 22], ['− Mon', 24], [T('− Jahr', '− Year'), 26], [T('+ Tag', '+ Day'), 21], ['+ Mon', 23], [T('+ Jahr', '+ Year'), 25]]
+    : [['− 1 h', 12], ['+ 1 h', 11], ['− 10', 14], ['+ 10', 13], ['− 1', 16], ['+ 1', 15],
+      [T('− Tag', '− Day'), 22], [T('+ Tag', '+ Day'), 21], ['− Mon', 24], ['+ Mon', 23], [T('− Jahr', '− Year'), 26], [T('+ Jahr', '+ Year'), 25]];
+  const R = L.tasten;
+  tasten.forEach(([t, c], i) => {
+    const x = Math.round(R.x + (i % R.sp) * R.w), y = R.y + Math.floor(i / R.sp) * R.h;
+    p.k(x, y, Math.round(x + R.w), y + R.h, t, `set ${c}`, 'neben', 22);
+  });
+  // Textfelder: 0 = Format, 1 = Datum/Uhrzeit (14 Zellen), 2 = Einheiten, 3 = Sprache (neu in FW 0.32.0, hinten angehängt)
+  p.felder.unshift('typ einstellungen', hoch ? `ziffern ${Z.h} ${Z.w}` : `ziffern ${Z.w} ${Z.h}`, ...(hoch ? [`schritt 0 ${-Z.w}`] : []),
+    `glyphen ${glyphen.map((x) => (x === ' ' ? '_' : x)).join(' ')}`,
+    `text ${pos[0].x} ${pos[0].y} 4`, `text ${datum.x} ${datum.y} 14`, `text ${pos[1].x} ${pos[1].y} 4`, `text ${pos[2].x} ${pos[2].y} 4`);
   return [
-    { n: 'ziffern.bin', daten: textBlatt(Z.w, Z.h, glyphen, false) },
+    { n: 'ziffern.bin', daten: textBlatt(Z.w, Z.h, glyphen, hoch) },
     { n: 'bild.bin', daten: p.bild() },
     { n: 'felder.txt', daten: text(p.felder) },
   ];
@@ -435,7 +483,7 @@ export function einstellungenWidget(hoch = false, handy12 = false, handyUs = fal
 /** Zoll-Fassung (Einheiten US am Sticky): Striche alle 1/16″, Zahl je Zoll; der Sticky nimmt widgets/lineal-us/ */
 function linealZoll(pxmm) {
   const pxz = pxmm * 25.4;
-  const p = seite(false, 'Lineal', '0 = Ecke links unten · Zoll');
+  const p = seite(false, T('Lineal', 'Ruler'), T('0 = Ecke links unten · Zoll', '0 = bottom left corner · inches'));
   const { g } = p;
   p.felder.push('typ menue');
   const x0 = 8, y0 = HOEHE - 8;
@@ -464,7 +512,7 @@ function linealZoll(pxmm) {
 }
 
 export const WIDGETS = { timer: timerWidget, waage: waageWidget, lineal: () => linealWidget(linealEcht()), rechner: rechnerWidget, umrechner: umrechnerWidget,
-  weltzeit: weltzeitWidget, wecker: weckerWidget, einstellungen: () => einstellungenWidget(false, HANDY_12H, HANDY_US),
+  weltzeit: weltzeitWidget, wecker: weckerWidget, einstellungen: (h = false) => einstellungenWidget(h, HANDY_12H, HANDY_US),
   'lineal-us': () => linealWidget(linealEcht(), true) };
 /** Kalibrierung aus der App (Mehr → Lineal): so viele echte mm misst die 80-mm-Marke */
 function linealEcht() { try { return parseFloat(localStorage.getItem(schluessel('lineal80'))) || 80; } catch { return 80; } }

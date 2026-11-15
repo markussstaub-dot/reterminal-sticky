@@ -2,7 +2,14 @@
 // hochkant 480 × 800) und für das Display gedreht. Hochkant: logisch (lx, ly) ↔ Display (ly, 479 − lx), wie bei Home.
 
 export const LAGE_STANDARD = { menue: 'quer', timer: 'quer', wecker: 'quer', weltzeit: 'quer', waage: 'quer', rechner: 'hoch', umrechner: 'hoch', app: 'hoch', kritzel: 'quer' };
-export const LAGE_NAMEN = { menue: 'Menü', timer: 'Timer', wecker: 'Wecker', weltzeit: 'Weltzeit', waage: 'Wasserwaage', rechner: 'Rechner', umrechner: 'Umrechner', app: 'Spiel', kritzel: 'Kritzel' };
+import { T } from './uebersetzen.js';
+
+const NAMEN = { menue: ['Menü', 'Menu'], timer: ['Timer', 'Timer'], wecker: ['Wecker', 'Alarm'], weltzeit: ['Weltzeit', 'World clock'],
+  waage: ['Wasserwaage', 'Spirit level'], rechner: ['Rechner', 'Calculator'], umrechner: ['Umrechner', 'Converter'], app: ['Spiel', 'Game'],
+  kritzel: ['Kritzel', 'Doodle'] };
+/** Anzeigenamen der Seiten; Getter: jeder Zugriff in der wirksamen Sprache (Schlüssel und Reihenfolge fest) */
+export const LAGE_NAMEN = {};
+for (const [s, [de, en]] of Object.entries(NAMEN)) Object.defineProperty(LAGE_NAMEN, s, { enumerable: true, get: () => T(de, en) });
 
 /** logische Größe */
 export const groesse = (hoch) => (hoch ? { w: 480, h: 800 } : { w: 800, h: 480 });

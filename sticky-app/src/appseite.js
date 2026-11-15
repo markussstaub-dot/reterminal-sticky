@@ -7,20 +7,22 @@ import { braunKnopf, BRAUN_FONT } from './braun.js';
 import { Umrechner, PAARE } from './umrechner.js';
 import { groesse, vonDisplay, aufsDisplay, ausschnittAufsDisplay } from './lage.js';
 import { burgduellWidget } from './burgduell.js';
+import { T, fuerSticky, zahlText } from './uebersetzen.js';
 
 const FONT = BRAUN_FONT;
+const reiter = (x0, x1) => ({ x0, x1, get text() { return T('Burgduell', 'Castle Duel'); } });   // Text erst beim Zeichnen
 // Maße je Lage (logisch). Teil-Refresh: auf dem Display x und w Vielfache von 8 (hochkant: logisch y und h).
 // Quer: Reiter oben links, rechts ab x 512 die Statuszeile. Hochkant: Statuszeile oben rechts (x 192–480, y 0–32),
 // darunter die Reiter über die ganze Breite.
 const LAGEN = {
   quer: {
-    REITER: [{ x0: 16, x1: 176, text: 'Burgduell' }], REITER_Y: 0, REITER_H: 58,
+    REITER: [reiter(16, 176)], REITER_Y: 0, REITER_H: 58,
     ANZEIGE: { x: 16, y: 66, w: 768, h: 80 }, UNTEN: { x: 0, y: 64, w: 800, h: 416 },
     R_FELD: { x: 16, y: 154, w: 768, h: 320 },
     U_LISTE: { x: 16, y: 154, w: 248, h: 320 }, U_FELD: { x: 272, y: 154, w: 512, h: 320 },
   },
   hoch: {
-    REITER: [{ x0: 16, x1: 164, text: 'Burgduell' }], REITER_Y: 38, REITER_H: 58,
+    REITER: [reiter(16, 164)], REITER_Y: 38, REITER_H: 58,
     ANZEIGE: { x: 16, y: 104, w: 448, h: 96 }, UNTEN: { x: 0, y: 104, w: 480, h: 696 },
     R_FELD: { x: 16, y: 208, w: 448, h: 576 },
     U_LISTE: { x: 16, y: 208, w: 448, h: 232 }, U_FELD: { x: 16, y: 448, w: 448, h: 336 },
@@ -59,16 +61,18 @@ function anzeigeRahmen(g, oben, gross) {
 // Reiter groß genug für Finger (13.11.2026: vorher 30 px hoch)
 
 // ---- Taschenrechner ---------------------------------------------------------------------------
+// Logik intern deutsch (Komma, „Fehler“); auf Englisch zeigt die Anzeige Punkt und „Error“, die Kommataste „.“
+const tastenText = (t) => (t === ',' ? T(',', '.') : t);
 export const rechnerWidget = {
-  name: 'Rechner',
+  get name() { return T('Rechner', 'Calculator'); },
   neu() { return new Rechner(); },
-  anzeige(g, r) { anzeigeRahmen(g, `${r.mem ? 'M   ' : ''}${r.zeile}`, r.anzeige); },
+  anzeige(g, r) { anzeigeRahmen(g, `${r.mem ? 'M   ' : ''}${zahlText(r.zeile)}`, zahlText(r.anzeige)); },
   seite(g, r) {
     kopf(g, 1);
     this.anzeige(g, r);
     const { R_FELD } = L;
     const tw = R_FELD.w / TASTEN[0].length, th = R_FELD.h / TASTEN.length;
-    TASTEN.forEach((zeile, ze) => zeile.forEach((t, sp) => braunKnopf(g, R_FELD.x + sp * tw, R_FELD.y + ze * th, tw, th, t, ROLLE(t), { rund: true })));
+    TASTEN.forEach((zeile, ze) => zeile.forEach((t, sp) => braunKnopf(g, R_FELD.x + sp * tw, R_FELD.y + ze * th, tw, th, tastenText(t), ROLLE(t), { rund: true })));
   },
   /** → 'anzeige' | 'seite' | null */
   tipp(r, x, y) {
@@ -85,9 +89,9 @@ export const rechnerWidget = {
 // Einheitenpaare in zwei Spalten, daneben (quer) bzw. darunter (hochkant) die Tasten
 const U_TASTEN = [['7', '8', '9', '⌫'], ['4', '5', '6', 'C'], ['1', '2', '3', '⇄'], ['±', '0', ',', '']];
 export const umrechnerWidget = {
-  name: 'Umrechner',
+  get name() { return T('Umrechner', 'Converter'); },
   neu() { return new Umrechner(); },
-  anzeige(g, u) { anzeigeRahmen(g, `${u.von} → ${u.nach}`, `${u.eingabe} ${u.von} = ${u.ergebnis} ${u.nach}`); },
+  anzeige(g, u) { anzeigeRahmen(g, `${u.von} → ${u.nach}`, zahlText(`${u.eingabe} ${u.von} = ${u.ergebnis} ${u.nach}`)); },
   seite(g, u) {
     kopf(g, 2);
     this.anzeige(g, u);
@@ -95,7 +99,7 @@ export const umrechnerWidget = {
     const lw = U_LISTE.w / 2, lh = U_LISTE.h / Math.ceil(PAARE.length / 2);
     PAARE.forEach((p, i) => braunKnopf(g, U_LISTE.x + (i % 2) * lw, U_LISTE.y + Math.floor(i / 2) * lh, lw, lh, `${p.a}↔${p.b}`, i === u.paar ? 'wahl' : 'neben', { rand: 4, gr: 22 }));
     const tw = U_FELD.w / 4, th = U_FELD.h / U_TASTEN.length;
-    U_TASTEN.forEach((zeile, ze) => zeile.forEach((t, sp) => { if (t) braunKnopf(g, U_FELD.x + sp * tw, U_FELD.y + ze * th, tw, th, t, t === '⇄' ? 'haupt' : /^[\d,]$/.test(t) ? 'wahl' : 'werkzeug', { rund: true }); }));
+    U_TASTEN.forEach((zeile, ze) => zeile.forEach((t, sp) => { if (t) braunKnopf(g, U_FELD.x + sp * tw, U_FELD.y + ze * th, tw, th, tastenText(t), t === '⇄' ? 'haupt' : /^[\d,]$/.test(t) ? 'wahl' : 'werkzeug', { rund: true }); }));
   },
   tipp(u, x, y) {
     const { U_LISTE, U_FELD } = L;
@@ -127,6 +131,9 @@ export class AppSeite {
 
   #lage() { L = this.hoch ? LAGEN.hoch : LAGEN.quer; return groesse(this.hoch); }
 
+  /** Zeichnen in der Sprache des Ziel-Sticky (Hintergrund-Sticky: seine gemeldete, sonst die des verbundenen) */
+  #sprache(fn) { return fuerSticky(fn, this.sitzung?.z?.geraet?.en ?? null); }
+
   get w() { return this.widgets[this.aktiv]; }
   get z() { return this.zustand[this.aktiv]; }
 
@@ -136,7 +143,7 @@ export class AppSeite {
     const b = L[welcher];
     const c = leinwand(lw, lh);
     const g = c.getContext('2d', { willReadFrequently: true });
-    if (welcher === 'ANZEIGE') this.w.anzeige(g, this.z); else this.w.seite(g, this.z, this.hoch);
+    this.#sprache(() => { if (welcher === 'ANZEIGE') this.w.anzeige(g, this.z); else this.w.seite(g, this.z, this.hoch); });
     const { canvas: d, bereich } = ausschnittAufsDisplay(c, b, this.hoch);
     return { bytes: rgbaZu1bpp(d.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, bereich.w, bereich.h).data, bereich.w, bereich.h), bereich };
   }
@@ -146,7 +153,7 @@ export class AppSeite {
     const { w, h } = this.#lage();
     const c = leinwand(w, h);
     const g = c.getContext('2d', { willReadFrequently: true });
-    this.w.seite(g, this.z, this.hoch);
+    this.#sprache(() => this.w.seite(g, this.z, this.hoch));
     const d = aufsDisplay(c, this.hoch);
     return { bytes: rgbaZu1bpp(d.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, BREITE, HOEHE).data), canvas: d };
   }

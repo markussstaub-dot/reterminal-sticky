@@ -3,15 +3,20 @@
 // Vorlage, die mehrere Geräte teilen dürfen. Persönliches (Zettel, Spickzettel, Wörterbuch …) hängt am Profil, der
 // Abgleich-Stand am Gerät. Unpersönliches (Widgets, Schrift, Hilfe) baut die App für alle gleich.
 
+import { T } from './uebersetzen.js';
+
 const LISTE = 'sticky.geraete', AKTIV = 'sticky.aktiv', ALT = 'sticky.geraet';
 
 export const PROFILE = { edc: 'EDC', wand: 'Wand / Test', einfach: 'Einfach' };
+const PROFILE_EN = { edc: 'EDC', wand: 'Wall / test', einfach: 'Simple' };
+/** Anzeigename eines Profils in der App-Sprache */
+export const profilName = (k) => T(PROFILE[k] ?? k, PROFILE_EN[k] ?? PROFILE[k] ?? k);
 
 /** Einstellungen, die zum Profil gehören (Vorlage) */
 export const PROFIL_SCHLUESSEL = ['karussell', 'lagen', 'zettel', 'bestellung', 'karten', 'spickzettel', 'handgriffe',
   'woerter', 'woerterbuch', 'knoepfe'];
 /** Zustand eines einzelnen Geräts (was auf seiner Karte liegt, seine Kalibrierung) */
-export const GERAET_SCHLUESSEL = ['homecrcs', 'spiegel', 'logStand', 'lineal80', 'bbplan', 'dreh180'];   // dreh180: wie das Gerät gehalten wird
+export const GERAET_SCHLUESSEL = ['homecrcs', 'spiegel', 'logStand', 'lineal80', 'bbplan', 'dreh180', 'notizEn'];   // dreh180: wie das Gerät gehalten wird; notizEn: Sprache der Notiz-Rückmeldungen
 
 const lesen = (k, sonst) => { try { return JSON.parse(localStorage.getItem(k) ?? 'null') ?? sonst; } catch { return sonst; } };
 const schreiben = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* egal */ } };

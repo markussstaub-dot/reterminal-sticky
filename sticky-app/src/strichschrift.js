@@ -5,6 +5,7 @@
 // Dasselbe Verfahren läuft in der Firmware (schrift.h); die Vorlagen kommen von hier als Datei auf die Karte.
 import { BREITE, HOEHE, rgbaZu1bpp } from './protokoll.js';
 import { BRAUN_FONT } from './braun.js';
+import { T } from './uebersetzen.js';
 
 /** Vorlagen in einem Einheitsquadrat (x nach rechts, y nach unten); Buchstaben links, Ziffern rechts im Schreibfeld */
 export const BUCHSTABEN = {
@@ -178,7 +179,8 @@ export function schriftHintergrund() {
   g.textAlign = 'left'; g.fillText('ABC', 16, 146);
   g.textAlign = 'right'; g.fillText('123', BREITE - 16, 146);
   g.font = `400 16px ${BRAUN_FONT}`; g.textAlign = 'center'; g.textBaseline = 'bottom';
-  g.fillText('ein Strich je Zeichen · → Leerzeichen · ← löschen · Tipp = Umlaut / Punkt · ▲+▼ Alphabet', BREITE / 2, HOEHE - 6);
+  g.fillText(T('ein Strich je Zeichen · → Leerzeichen · ← löschen · Tipp = Umlaut / Punkt · ▲+▼ Alphabet',
+    'one stroke per letter · → space · ← delete · tap = umlaut / dot · ▲+▼ alphabet'), BREITE / 2, HOEHE - 6);
   return rgbaZu1bpp(g.getImageData(0, 0, BREITE, HOEHE).data);
 }
 
@@ -189,11 +191,11 @@ export function schriftHilfe() {
   g.fillStyle = '#fff'; g.fillRect(0, 0, BREITE, HOEHE);
   g.fillStyle = '#000'; g.strokeStyle = '#000';
   g.font = `500 24px ${BRAUN_FONT}`; g.textBaseline = 'middle'; g.textAlign = 'left';
-  g.fillText('Hilfe · Strichschrift', 16, 20);
+  g.fillText(T('Hilfe · Strichschrift', 'Help · Writing'), 16, 20);   // englisch kurz: ab x 230 folgt die Zeile rechts
   g.font = `400 15px ${BRAUN_FONT}`;
-  g.fillText('Punkt = Anfang, Pfeil = Richtung · ² = geht auch · beliebige Taste schließt', 230, 21);
+  g.fillText(T('Punkt = Anfang, Pfeil = Richtung · ² = geht auch · beliebige Taste schließt', 'dot = start, arrow = direction · ² = also works · any key closes'), 230, 21);
   const alle = [...Object.entries(BUCHSTABEN), ...Object.entries(ZWEITFORMEN).map(([z, p]) => [`${z}²`, p]), ...Object.entries(ZIFFERN),
-    ['→ Leer', GESTEN[' ']], ['← weg', GESTEN['⌫']]];
+    [T('→ Leer', '→ space'), GESTEN[' ']], [T('← weg', '← del'), GESTEN['⌫']]];
   const sp = 10, zw = (BREITE - 16) / sp, zh = (HOEHE - 44) / Math.ceil(alle.length / sp);
   alle.forEach(([z, p], i) => {
     const x = 8 + (i % sp) * zw, y = 40 + Math.floor(i / sp) * zh;

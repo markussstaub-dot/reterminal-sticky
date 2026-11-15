@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { zettelListe, wlanQr, zettelUmzug, MAX_ZETTEL } from '../src/zettel.js';
+import { fuerSticky } from '../src/uebersetzen.js';
 
 test('Bestellzettel und QR-Karten gemischt, Reihenfolge wie im Text', () => {
   const l = zettelListe('## Bäcker\n2 Brötchen\n\n## Karte\nqr: ABC-123\nNr. 123\n\n## Café\n1 Cappuccino\n');
@@ -11,7 +12,7 @@ test('Bestellzettel und QR-Karten gemischt, Reihenfolge wie im Text', () => {
 });
 
 test('WLAN-Kurzform', () => {
-  const [z] = zettelListe('## Gäste\nwlan: Hütte | ge;heim\n');
+  const [z] = fuerSticky(() => zettelListe('## Gäste\nwlan: Hütte | ge;heim\n'), false);   // Deutsch, egal wie der Rechner steht
   assert.equal(z.qr, 'WIFI:T:WPA;S:Hütte;P:ge\\;heim;;');
   assert.deepEqual(z.zeilen, ['WLAN: Hütte', 'Passwort: ge;heim']);
   assert.equal(wlanQr('Offen', ''), 'WIFI:T:nopass;S:Offen;;');

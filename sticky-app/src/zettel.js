@@ -4,6 +4,8 @@
 //   qr: Inhalt               wörtlich (z. B. Kundenkarte; echte Nummern nur in der App, nie im Repo)
 //   wlan: Name | Passwort    Gast-WLAN zum Scannen (WPA), Name und Passwort stehen zusätzlich als Text daneben
 //   link: https://…          Link
+import { T } from './uebersetzen.js';
+
 export const MAX_ZETTEL = 6;
 
 /** WLAN-QR nach dem üblichen Format WIFI:T:WPA;S:…;P:…;; (\ ; , : " werden maskiert) */
@@ -25,8 +27,8 @@ export function zettelListe(text) {
       else if (wlan && !qr) {
         const [name, pw = ''] = wlan[1].split('|').map((t) => t.trim());
         qr = wlanQr(name, pw);
-        zeilen.push(`WLAN: ${name}`);
-        if (pw) zeilen.push(`Passwort: ${pw}`);
+        zeilen.push(T(`WLAN: ${name}`, `Wi-Fi: ${name}`));   // Sprache beim Bau der Zettel (main.js: im Sticky-Kontext)
+        if (pw) zeilen.push(T(`Passwort: ${pw}`, `Password: ${pw}`));
       } else if (link && !qr) {
         qr = link[1].trim();
         zeilen.push(qr.replace(/^https?:\/\//, ''));
