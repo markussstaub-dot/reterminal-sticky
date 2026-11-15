@@ -145,8 +145,6 @@ export const rahmenHolen = (pfad, offset = 0) => {
   return r;
 };
 export const rahmenLoeschen = (pfad) => textRahmen(OP.LOESCHEN, pfad);
-export const rahmenBbModus = (an, seite = null) => (seite == null ? Uint8Array.of(OP.BB_MODUS, an ? 1 : 0) : Uint8Array.of(OP.BB_MODUS, an ? 1 : 0, seite));
-export const rahmenPing = () => Uint8Array.of(OP.PING);
 /** „Bleib wach“: zählt am Sticky als Bedienung, er schlummert nicht ein (während der Fahrt, Firmware ≥ 0.8.0) */
 export const rahmenWach = () => Uint8Array.of(OP.WACH);
 export const rahmenKarte = () => Uint8Array.of(OP.KARTE);

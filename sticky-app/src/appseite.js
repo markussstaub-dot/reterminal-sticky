@@ -2,15 +2,12 @@
 // meldet Tipper. Seit 15.11.2026 nur noch das Burgduell (Rechner/Umrechner sind eigene Widgets). Quer 800 × 480, rechts oben bleibt die
 // Statuszeile (288 × 32) frei. Nach einem Tipp geht nur das Nötige als Teilbild rüber.
 import { BREITE, HOEHE, rgbaZu1bpp } from './protokoll.js';
-import { Rechner, TASTEN, ROLLE } from './rechner.js';
-import { braunKnopf, BRAUN_FONT } from './braun.js';
-import { Umrechner, PAARE } from './umrechner.js';
+import { braunKnopf } from './braun.js';
 import { groesse, vonDisplay, aufsDisplay, ausschnittAufsDisplay } from './lage.js';
 import { burgduellWidget } from './burgduell.js';
 import { frageZeichnen, frageTreffer } from './rueckfrage.js';
-import { T, fuerSticky, zahlText } from './uebersetzen.js';
+import { T, fuerSticky } from './uebersetzen.js';
 
-const FONT = BRAUN_FONT;
 const reiter = (x0, x1) => ({ x0, x1, get text() { return T('Burgduell', 'Castle Duel'); } });   // Text erst beim Zeichnen
 // Maße je Lage (logisch). Teil-Refresh: auf dem Display x und w Vielfache von 8 (hochkant: logisch y und h).
 // Quer: Reiter oben links, rechts ab x 512 die Statuszeile. Hochkant: Statuszeile oben rechts (x 192–480, y 0–32),
@@ -19,18 +16,13 @@ const LAGEN = {
   quer: {
     REITER: [reiter(16, 176)], REITER_Y: 0, REITER_H: 58,
     ANZEIGE: { x: 16, y: 66, w: 768, h: 80 }, UNTEN: { x: 0, y: 64, w: 800, h: 416 },
-    R_FELD: { x: 16, y: 154, w: 768, h: 320 },
-    U_LISTE: { x: 16, y: 154, w: 248, h: 320 }, U_FELD: { x: 272, y: 154, w: 512, h: 320 },
   },
   hoch: {
     REITER: [reiter(16, 164)], REITER_Y: 38, REITER_H: 58,
     ANZEIGE: { x: 16, y: 104, w: 448, h: 96 }, UNTEN: { x: 0, y: 104, w: 480, h: 696 },
-    R_FELD: { x: 16, y: 208, w: 448, h: 576 },
-    U_LISTE: { x: 16, y: 208, w: 448, h: 232 }, U_FELD: { x: 16, y: 448, w: 448, h: 336 },
   },
 };
 let L = LAGEN.quer;
-export const ANZEIGE = LAGEN.quer.ANZEIGE;
 const leinwand = (b, h) => (typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(b, h) : Object.assign(document.createElement('canvas'), { width: b, height: h }));
 
 /** Kopf mit Reitern zum Antippen (▲/▼ blättern im Karussell wie überall); aktiver Reiter schwarz, sonst dünner Ring */
@@ -41,88 +33,14 @@ function kopf(g, aktiv) {
   REITER.forEach((r, i) => braunKnopf(g, r.x0, REITER_Y, r.x1 - r.x0, REITER_H, r.text, i === aktiv ? 'wahl' : 'neben', { rand: 3, gr: 24 }));
 }
 
-function anzeigeRahmen(g, oben, gross) {
-  const { x, y, w, h } = L.ANZEIGE;
-  g.fillStyle = '#fff';
-  g.fillRect(x, y, w, h);
-  g.strokeStyle = '#000';
-  g.lineWidth = 4;
-  g.strokeRect(x + 2, y + 2, w - 4, h - 4);
-  g.fillStyle = '#000';
-  g.textBaseline = 'middle';
-  g.textAlign = 'left';
-  g.font = `20px ${FONT}`;
-  g.fillText(oben, x + 14, y + 20);
-  g.textAlign = 'right';
-  let gr = 56;
-  do { g.font = `500 ${gr}px ${FONT}`; gr -= 4; } while (g.measureText(gross).width > w - 40 && gr > 24);
-  g.fillText(gross, x + w - 18, y + h / 2 + 10);
-}
-
 // Reiter groß genug für Finger (13.11.2026: vorher 30 px hoch)
-
-// ---- Taschenrechner ---------------------------------------------------------------------------
-// Logik intern deutsch (Komma, „Fehler“); auf Englisch zeigt die Anzeige Punkt und „Error“, die Kommataste „.“
-const tastenText = (t) => (t === ',' ? T(',', '.') : t);
-export const rechnerWidget = {
-  get name() { return T('Rechner', 'Calculator'); },
-  neu() { return new Rechner(); },
-  anzeige(g, r) { anzeigeRahmen(g, `${r.mem ? 'M   ' : ''}${zahlText(r.zeile)}`, zahlText(r.anzeige)); },
-  seite(g, r) {
-    kopf(g, 1);
-    this.anzeige(g, r);
-    const { R_FELD } = L;
-    const tw = R_FELD.w / TASTEN[0].length, th = R_FELD.h / TASTEN.length;
-    TASTEN.forEach((zeile, ze) => zeile.forEach((t, sp) => braunKnopf(g, R_FELD.x + sp * tw, R_FELD.y + ze * th, tw, th, tastenText(t), ROLLE(t), { rund: true })));
-  },
-  /** → 'anzeige' | 'seite' | null */
-  tipp(r, x, y) {
-    const { R_FELD } = L;
-    if (x < R_FELD.x || x >= R_FELD.x + R_FELD.w || y < R_FELD.y || y >= R_FELD.y + R_FELD.h) return null;
-    const t = TASTEN[Math.floor((y - R_FELD.y) / (R_FELD.h / TASTEN.length))]?.[Math.floor((x - R_FELD.x) / (R_FELD.w / TASTEN[0].length))];
-    if (!t) return null;
-    r.taste(t);
-    return 'anzeige';
-  },
-};
-
-// ---- Umrechner --------------------------------------------------------------------------------
-// Einheitenpaare in zwei Spalten, daneben (quer) bzw. darunter (hochkant) die Tasten
-const U_TASTEN = [['7', '8', '9', 'C'], ['4', '5', '6', '⌫'], ['1', '2', '3', '⇄'], ['±', '0', ',', '']];   // wie das gemeinsame Ziffernfeld
-export const umrechnerWidget = {
-  get name() { return T('Umrechner', 'Converter'); },
-  neu() { return new Umrechner(); },
-  anzeige(g, u) { anzeigeRahmen(g, `${u.von} → ${u.nach}`, zahlText(`${u.eingabe} ${u.von} = ${u.ergebnis} ${u.nach}`)); },
-  seite(g, u) {
-    kopf(g, 2);
-    this.anzeige(g, u);
-    const { U_LISTE, U_FELD } = L;
-    const lw = U_LISTE.w / 2, lh = U_LISTE.h / Math.ceil(PAARE.length / 2);
-    PAARE.forEach((p, i) => braunKnopf(g, U_LISTE.x + (i % 2) * lw, U_LISTE.y + Math.floor(i / 2) * lh, lw, lh, `${p.a}↔${p.b}`, i === u.paar ? 'wahl' : 'neben', { rand: 4, gr: 22 }));
-    const tw = U_FELD.w / 4, th = U_FELD.h / U_TASTEN.length;
-    U_TASTEN.forEach((zeile, ze) => zeile.forEach((t, sp) => { if (t) braunKnopf(g, U_FELD.x + sp * tw, U_FELD.y + ze * th, tw, th, tastenText(t), t === '⇄' ? 'haupt' : /^[\d,]$/.test(t) ? 'wahl' : 'werkzeug', { rund: true }); }));
-  },
-  tipp(u, x, y) {
-    const { U_LISTE, U_FELD } = L;
-    if (x >= U_LISTE.x && x < U_LISTE.x + U_LISTE.w && y >= U_LISTE.y && y < U_LISTE.y + U_LISTE.h) {
-      const sp = Math.floor((x - U_LISTE.x) / (U_LISTE.w / 2)), ze = Math.floor((y - U_LISTE.y) / (U_LISTE.h / Math.ceil(PAARE.length / 2)));
-      u.waehle(ze * 2 + sp);
-      return 'seite';
-    }
-    if (x < U_FELD.x || x >= U_FELD.x + U_FELD.w || y < U_FELD.y || y >= U_FELD.y + U_FELD.h) return null;
-    const t = U_TASTEN[Math.floor((y - U_FELD.y) / (U_FELD.h / U_TASTEN.length))]?.[Math.floor((x - U_FELD.x) / (U_FELD.w / 4))];
-    if (!t) return null;
-    u.taste(t);
-    return 'anzeige';
-  },
-};
 
 export class AppSeite {
   /** senden(bytes, bereich|null): ganzes Bild oder Teilbild an den Sticky */
   constructor(senden) {
     this.senden = senden;
     // Nur noch Burgduell (15.11.2026, SPEC „Blick von außen“): Rechner und Umrechner sind eigene Widgets, die ohne
-    // Handy laufen – doppelt auf der Spielseite verwirrte nur. rechnerWidget/umrechnerWidget bleiben für alte FW (< 0.28)
+    // Handy laufen – doppelt auf der Spielseite verwirrte nur.
     this.widgets = [burgduellWidget((g) => kopf(g, 0))];
     this.zustand = this.widgets.map((w) => w.neu());
     this.aktiv = 0;

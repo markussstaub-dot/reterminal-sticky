@@ -13,6 +13,22 @@ Blick von außen (neuer Nutzer + Reviewer) nach den Umbauten vom 15.11. (Gruppen
 - Gute Nachricht vorweg: Kein App-Modul ist verwaist, alle Tests grün (67/67), `test/` und
   `bibliothek-patch/` werden gebraucht, keine NVS-Reste. Tot ist nur Code *innerhalb* von Modulen.
 
+## Erledigt (15.11.2026, Runde 1)
+
+- **Top 3** README nach den fünf Gruppen, zwei Stickys, `visitenkarte/` aus der Ordnertabelle
+- **Top 4** SPEC „Umschalten und Betrieb“ und „Home, Modi und Bestellzettel“ als **abgelöst** markiert
+- **Top 5** Lizenz MIT in SPEC (Fremd-Apps und Playground)
+- **Top 6 (Teil)** Ordner `visitenkarte/` gelöscht (bleibt in der Git-Geschichte)
+- **Top 8** PROTOKOLL: Titel, fünf Kennlinien, KARTE = Home, 1B WACH, 26 LEEREN, Zettel 3–8, Diktat offline;
+  SPEC: Kartendateien-Nachträge bis FW 0.37, `14` nicht mehr Altlast
+- **Top 10 (App-Teil, freie Dateien)** `appseite.js` Rechner/Umrechner, `zwilling.ping`/`bordbuchModus`,
+  `rahmenPing`/`rahmenBbModus`, `aktivesProfil`
+- Doku: Legende ergänzt, Sensor-Tabelle, „Wie autark“ auf FW 0.37, zweites Gerät nicht mehr „in Folie“
+
+**Zurückgestellt**, weil die Dokumente-Session gerade dort arbeitet: Top 1, 2, 6 (Knopf), 7, 9 und
+`zeigeFahrtSeite`/`eintraegeAus`/IDs – in `main.js`, `index.html`, `hilfe.js`, `kontext.js`, `widgets.js`,
+`karussellListe.js`. Firmware-Punkte ebenso.
+
 ## Top 10
 
 | # | Was | Wo | Warum Altlast | Vorschlag | W | A |

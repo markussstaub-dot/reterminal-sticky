@@ -27,7 +27,6 @@ export function aktivesGeraet() {
   const id = lesen(AKTIV, null);
   return liste.find((g) => g.id === id) ?? liste[0] ?? null;
 }
-export function aktivesProfil() { return aktivesGeraet()?.profil ?? 'edc'; }
 
 /** Name im Speicher für eine Einstellung eines bestimmten Geräts: je Profil, je Gerät oder für die ganze App */
 export function schluesselFuer(g, k) {

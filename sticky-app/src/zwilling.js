@@ -1,5 +1,5 @@
 // Der Zwilling: Soll-Zustand des Sticky in der App (Quelle der Wahrheit) plus Übertragung.
-import { rahmenStart, rahmenDaten, rahmenEnde, rahmenKarte, rahmenPing, rahmenWach, nutzlastFuer, crc32, rahmenSpeichern, rahmenBbIndex, rahmenBbModus,
+import { rahmenStart, rahmenDaten, rahmenEnde, rahmenKarte, rahmenWach, nutzlastFuer, crc32, rahmenSpeichern, rahmenBbIndex,
   rahmenRueck, rahmenHome, rahmenHomeVersion, rahmenTippen, rahmenModus, rahmenZeit, rahmenFahrtLayout, rahmenPufferListe, rahmenPufferHolen, rahmenPufferLoeschen,
   rahmenListe, rahmenHolen, rahmenLoeschen, rahmenLeeren, rahmenSchreibStart, rahmenSchreibDaten, rahmenSchreibEnde } from './protokoll.js';
 import { Aufnahme, wav } from './audio.js';
@@ -139,7 +139,6 @@ export class Zwilling {
   }
 
   async zeigeKarte() { await this.verbindung.schreiben(rahmenKarte()); this.gesendetCrc = null; }
-  async ping() { await this.verbindung.schreiben(rahmenPing()); }
   /** Sticky piept, bis eine Taste kommt (FW ≥ 0.25.0) */
   async suchen(sekunden = 30) { await this.verbindung.schreiben(new Uint8Array([0x30, sekunden])); }
   async wach() { await this.verbindung.schreiben(rahmenWach()); }
@@ -298,5 +297,4 @@ export class Zwilling {
 
   async pufferLoeschen(name) { await this.verbindung.schreiben(rahmenPufferLoeschen(name)); }
   async bordbuchIndex(text) { await this.verbindung.schreiben(rahmenBbIndex(text)); }
-  async bordbuchModus(an, seite = null) { await this.verbindung.schreiben(rahmenBbModus(an, seite)); }
 }

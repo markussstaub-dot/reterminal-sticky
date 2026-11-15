@@ -1,6 +1,6 @@
-# Sticky-BLE v1 (Durchstich, 11.11.2026)
+# Sticky-BLE v1 (seit 11.11.2026, Stand FW 0.37)
 
-Ein GATT-Dienst, drei Kennlinien. Gerät = dünnes Terminal (Peripheral), App = Zwilling (Central).
+Ein GATT-Dienst, fünf Kennlinien. Gerät = dünnes Terminal (Peripheral), App = Zwilling (Central).
 Gedacht auch für den Microlino-Knopf: gleiche Rahmen, nur andere Bildgröße im START-Rahmen.
 
 | Kennlinie | UUID | Richtung | Inhalt |
@@ -17,9 +17,9 @@ Gedacht auch für den Microlino-Knopf: gleiche Rahmen, nur andere Bildgröße im
 |---|---|---|
 | `01` | BILD_START | `01 fmt w:u16 h:u16 len:u32 crc32:u32 [x:u16 y:u16]` – fmt 0 = 1 bpp; 800×480 → len 48000. Mit x/y ein **Teilbild** (x, w Vielfache von 8, Teil-Refresh; unter 4 KB ohne Umschalten auf schnell) |
 | `02` | BILD_DATEN | `02 offset:u32 daten…` – Nutzlast = min(MTU−3, 512) − 5, write-no-response |
-| `03` | BILD_ENDE | `03 modus [seite]` – 0 = Vollbild-Refresh, 1 = schnell, **3 = nicht zeigen, als Bordbuch-Seite `seite` speichern**, **4 = Teilbild als Offline-Rückmeldung `seite` (0–4 Knöpfe, 5 Diktat, 6 Aufnahme) speichern**, **5 = Home-Bild `seite` speichern (0 Karte, 1 Notiz-Seite, 2 Ziffernblatt, 3–5 Bestellzettel)** |
+| `03` | BILD_ENDE | `03 modus [seite]` – 0 = Vollbild-Refresh, 1 = schnell, **3 = nicht zeigen, als Bordbuch-Seite `seite` speichern**, **4 = Teilbild als Offline-Rückmeldung `seite` (0–4 Knöpfe, 5 Diktat, 6 Aufnahme) speichern**, **5 = Home-Bild `seite` speichern (0 Karte, 1 Notiz-Seite, 2 Ziffernblatt, 3–8 Zettel, höchstens 6)** |
 | `10` | PING | Gerät antwortet `{"t":"pong"}` und schickt den Zustand |
-| `11` | KARTE | Gerät zeigt die eingebaute Visitenkarte |
+| `11` | KARTE | Gerät zeigt Home (früher die eingebaute Visitenkarte; Name aus der Durchstich-Zeit) |
 | `13` | BB_INDEX | Text: `seiten=N`, `toc=K`, `e x0 y0 x1 y1 seite` je Eintrag im Inhaltsverzeichnis (≤ 512 Byte) |
 | `15` | ZEIT | `15 unix-ms:u64` – stellt Systemzeit und Uhr (PCF8563) |
 | `16` | FAHRT_LAYOUT | Text `e x0 y0 x1 y1 Name` je Streifen (Display-Koordinaten) für Notizen ohne Handy |
@@ -30,12 +30,14 @@ Gedacht auch für den Microlino-Knopf: gleiche Rahmen, nur andere Bildgröße im
 | `30` | SUCHEN | `30 sekunden` – Sticky piept, bis eine Taste kommt → `{"t":"suche","a":"start|gefunden"}`; KI 3× am Sticky → `{"t":"suchen"}` (FW 0.25.0) |
 | `31` | TIPPEN | `31 text…` (UTF-8, ≤ 255 Byte) – erkanntes Diktat an die Schreibmarke der Tippen-Seite (FW 0.37.0) |
 | `1A` | HOME_VERSION | Text „crc;Anzahl Zettel“ nach dem Aufspielen der Home-Bilder |
+| `1B` | WACH | ohne Nutzlast – zählt nur als Aktivität (hält den Sticky wach), keine Antwort |
 | `20` | LISTE | `20 pfad[|ab]` (unter `/ist` und `/soll`; mit `|ab` ab dem n-ten Eintrag weiterblättern) → `{"t":"liste","p","d":[{"n","b","ordner"?}],"mehr":bool}` (ab FW 0.10.0) |
 | `21` | HOLEN | `21 offset:u32 pfad` → ein Stück auf DATEI wie PUFFER_HOLEN |
 | `22` | LOESCHEN | `22 pfad` → `{"t":"geloescht","p","ok"}`; falscher Pfad: `{"t":"abgleich","ok":false,"err":"pfad"}` |
 | `23` | SCHREIBEN_START | `23 größe:u32 crc32:u32 pfad` – nur unter `/soll/`, bis 1 MB (FW 0.11.0) |
 | `24` | SCHREIBEN_DATEN | `24 offset:u32 daten…` wie BILD_DATEN, write-no-response |
 | `25` | SCHREIBEN_ENDE | → CRC prüfen, ablegen, `{"t":"geschrieben","p","ok","b"\|"err":"crc\|unvollstaendig\|ablage\|pfad\|groesse"}` |
+| `26` | LEEREN | `26 "LEEREN"` (Kennwort im Rahmen, sonst wirkungslos) – löscht `/soll` und `/ist` auf der Karte, formatiert den internen Speicher, meldet `{"t":"geleert","ok","dateien"}` und startet neu (zum Weitergeben, FW 0.31.6) |
 
 Bild: Zeilen à 100 Byte, MSB = linkes Pixel, Bit 1 = schwarz. CRC-32 wie zlib.
 
@@ -79,11 +81,12 @@ nach jedem Bild und alle 30 s.
   `{"t":"itvl","v":…}`. Die App streamt erst, wenn `v ≤ 16` (spätestens nach 2,5 s). 2M PHY, Data Length 251;
   1,5 s nach dem Bild wieder träge
 
-## Audio (KI-Taste halten, nur mit Verbindung)
+## Audio (KI-Taste halten)
 - 16 kHz mono, IMA-ADPCM (4 bit, wie im WAV-Format: erstes Sample im unteren Nibble), ~65 kbit/s
 - Paket auf AUDIO: `seq:u16 prädiktor:i16 index:u8` + 240 Byte = 480 Samples (30 ms), 245 Byte, braucht MTU ≥ 248
 - Jedes Paket trägt den Decoder-Zustand vom Paketanfang. Fehlende `seq` werden zu Stille, die folgenden Pakete bleiben heil
 - Ablauf: Taste runter → `audio start` → Pakete → Taste hoch → `audio stop`. Höchstens 60 s
+- Ohne Verbindung (oder wenn die App nicht zuhört) landet das Diktat als Datei in `/ist/puffer/`, die App holt es später ab
 - Funk: während der Aufnahme 15–30 ms, 1,5 s nach dem Ende wieder Ruhetakt
 - Display: „● Aufnahme“ oben rechts per Teil-Refresh, danach wird die Stelle aus der Seite neu gezeichnet
 

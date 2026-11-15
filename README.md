@@ -6,28 +6,34 @@ Custom firmware and an Android companion app for the **Seeed reTerminal Sticky**
 with touch, microphone, buzzer, motion and climate sensors). The Sticky becomes a pocket helper that runs on its own
 for days and syncs with the phone when it is near.
 
-**Status: beta, used daily** on one device (Galaxy Z Fold6 + Sticky). Hobby project – feedback is welcome via GitHub
-Issues, answers without guarantee.
+**Status: beta, used daily** on two Stickys with one phone (Galaxy Z Fold6). Hobby project – feedback is welcome via
+GitHub Issues, answers without guarantee.
 
 ## What it does
 
-**On the Sticky, without the phone**
-- Home with clock and status line, notes page, order slips and **QR cards** (guest Wi-Fi, links, loyalty cards)
-- **Alarm** (rings even while dozing), **world time**, **timer**
-- **Calculator** and **unit converter** – computed on the Sticky (Braun ET66-style keys, % and memory like the original)
-- **Spirit level**, **ruler** in mm or inch, menu
-- **Scribble pad**, **single-stroke handwriting** (recognised on the Sticky), **voice notes** buffered on the microSD
-  card (IMA-ADPCM), button notes with timestamps
-- **Trip logger** and climate (motion sensor detects driving; temperature, humidity, dew point)
-- **Settings on the device:** 12/24 h, metric/US, set the clock (in case the battery ran flat and no phone is near)
+**On the Sticky, without the phone** – Home with clock, weather and status line; the menu has one tile per group, inside a
+tool the other members of its group are tabs at the top. ▲/▼ flip through your own carousel of pages.
+- **Time:** timer (tap the time to type your own), **alarm** (rings even while dozing), **world time**
+- **Measure:** **spirit level**, **ruler** in mm or inch
+- **Capture:** **recorder** for longer voice notes with markers (buffered on the microSD card, IMA-ADPCM), **typing**
+  (on-screen keyboard and number pad), **scribble pad**, **single-stroke handwriting** (recognised on the Sticky)
+- **Calculate:** **calculator** and **unit converter** – computed on the Sticky (Braun ET66-style keys, % and memory)
+- **Look up:** **manuals** (pages on the card), **cheat-sheet cards**, slips and **QR cards** (guest Wi-Fi, links, loyalty
+  cards)
+- **Trip logger** and climate in the background (motion sensor detects driving; temperature, humidity, dew point)
+- **Settings on the device:** language German/English, 12/24 h, metric/US, set the clock (in case the battery ran flat
+  and no phone is near)
 - Portrait/landscape per page, automatic via the motion sensor, or rotated 180° for upside-down mounting
 - One consistent look inspired by the Braun ET66 / BNE001 calculator (Dietrich Lubs, Dieter Rams)
 
 **Together with the phone**
-- Offline speech-to-text on the phone (whisper.cpp), optional copy to clipboard ("push-to-talk")
-- Weather on Home, logbook pages, new pages and widgets, time zones for the world clock
+- Offline speech-to-text on the phone (whisper.cpp) for voice notes and recordings, optional copy to clipboard
+  ("push-to-talk")
+- The app mirrors the Sticky and can operate it; choose which pages are in the carousel; questions like "remember the
+  parking spot?" appear on the Sticky; phone notifications and places on Home
+- Weather, manuals (from PDF), cheat-sheet cards, slips, time zones; several Stickys with their own profiles
 - **Find each other**: the app makes the Sticky beep; pressing the AI key 3× makes the phone ring
-- Content (slips, logbook pages, widgets, settings) is synced to the card; logs, notes and recordings are collected back
+- Content is synced to the card; logs, notes and recordings are collected back
 
 ## How it works
 
@@ -42,7 +48,6 @@ Issues, answers without guarantee.
 | `firmware-ble/` | Firmware (Arduino, ESP32-S3): display, keys/touch, sensors, BLE, card sync, widgets |
 | `firmware-ble/bibliothek-patch/` | Small patch for the Seeed_GFX2 library (faster partial refresh) |
 | `sticky-app/` | Android app (Capacitor 8 + Vite), whisper.cpp via JNI |
-| `visitenkarte/` | First pilot: business card with QR code, no app |
 
 ## Build it yourself
 

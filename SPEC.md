@@ -8,14 +8,16 @@ Grundidee (Markus, 11.11.2026): **Der Sticky als Erweiterung des Handys**, nicht
 Smart-Home-Tafel. Handy (Fold6) = Rechenleistung und Internet; Sticky = Knopf, Mikro und stromsparendes
 Papier-Display, das man auf den Tisch legt oder irgendwo ranpappt.
 
-Legende: **fest** = entschieden · **Vorschlag** = Claudes Idee, Markus entscheidet · **offen** = Frage
+Legende: **fest** = entschieden · **Vorschlag** = Claudes Idee, Markus entscheidet · **offen** = Frage ·
+**geparkt** / **Idee** = gesammelt, nicht entschieden · **Merker** = später prüfen · **umgesetzt FW x** / **abgenommen** =
+gebaut bzw. von Markus bestätigt · **abgelöst** = gilt nicht mehr, steht nur noch zur Geschichte da
 
 ## Rolle
 - Spitzname (Markus, 11.11.2026): **Bordcomputer-Beiboot**. Sitzt per Magnet im Microlino, wird für Theke,
   Werkstatt oder Sofa abgedockt
 - fest: Handy-Erweiterung zuerst; Smart-Home-Anzeige nur nebenbei (siehe `../homeserver/SPEC.md`)
 - fest: Werks-Firmware kann KI-Notizen, ist aber träge → eigene Firmware auf dem Bastel-Sticky
-- Vorschlag: das zweite Gerät bleibt in Folie, bis klar ist, ob es gebraucht wird
+- erledigt (14.11.2026): das zweite Gerät (5695) ist ausgepackt und im Betrieb, siehe Multiclient
 - Merker (Markus, 14.11.2026): **Mehrere Stickys an einer App** („Multiclient“) als nächste Baustelle für die APK, Start
   14.11.: Geräteliste mit Namen/MAC, je Gerät eigener Zwilling (Soll/Ist), Abgleich je Gerät. Anlass: der zweite
   Sticky bekommt zum Test die EDC-Firmware aus dem Playground. Vorher ein **Architekturbild** (App, Zwillinge, Stickys, Abgleich) als Grundlage → `docs/architektur-multiclient.svg` (14.11.2026). Entschieden: alle gleichzeitig verbunden, Bibliothek geteilt (nur Unpersönliches),
@@ -90,7 +92,8 @@ fest: Das MVP sind **zwei Funktionen für den Microlino**, alles andere wartet:
 - nicht im MVP: Bordbuch-Seiten aus Bubble Log (Fahrten, Akku, Wartung)
 
 ### Umschalten und Betrieb
-- Vorschlag: zwei Modi „Fahrt“ (Schnellknöpfe) und „Bordbuch“ (Lesen), Wechsel per langem Druck auf die KI-Taste
+- **abgelöst:** Modi und Tastenregeln gelten nicht mehr – heute „Bedienung und Oberfläche“ und „Gruppen im Menü“
+- Vorschlag (11.11.): zwei Modi „Fahrt“ (Schnellknöpfe) und „Bordbuch“ (Lesen), Wechsel per langem Druck auf die KI-Taste
 - Vorschlag: im Auto magnetisch, mit Akku; Halterung/Strom per USB-C erst nach dem MVP
 - fest: **Claude lädt die offizielle Betriebsanleitung** vom Hersteller (passend zum Pioneer; Quelle und
   Größe vorher Markus nennen). Bleibt privat, nicht im Repo
@@ -329,7 +332,7 @@ nehmen, die im Auto wirklich gefehlt hat, statt zu sammeln (Pflege!).
       alles durch. Für Fremde: im Playground-Text „microSD-Karte nötig“ sagen; langfristig Widgets auch im Flash ablegen
 - Vorschlag Lizenz: **MIT**. Steht in Seeeds Liste, ist am einfachsten und passt zu den Bausteinen
   (whisper.cpp MIT, NimBLE und pdf.js Apache-2.0). Anders als bei der Uhrenbox (bewusst ohne Lizenz), weil
-  Teilen hier heißt: andere dürfen es nutzen. offen: Entscheidung Markus
+  Teilen hier heißt: andere dürfen es nutzen. fest: **MIT** (`LICENSE` im Repo)
 - Leitfaden gelesen (11.11.2026), das Wichtigste:
   - Zwei Wege: **Quellcode** (`source/` mit LICENSE; Seeeds GitHub Actions bauen, Arduino wird unterstützt,
     Versionen festnageln: esp32-Core 3.3.12, Seeed_GFX2-Commit, NimBLE) oder **fertige .bin** mit `manifest.json`
@@ -364,20 +367,18 @@ Vorbild: Device Shadow / Device Twin aus der Industrie (AWS IoT, Azure).
   seine Reaktion (wach bleiben, schlafen, warnen) trifft er aus seinen Sensoren selbst. Inhaltliches bleibt in der App.
   Die App veredelt Ist-Daten (Ort, Fahrt aus Bubble Log, Wetter) und zeigt Verläufe
 
-### Wie autark ist der Sticky? (Stand 13.11.2026, FW 0.26.0)
-Die App ist Lieferant und Abholer, kaum noch Fernsteuerung. Das Handy ist nur noch für drei Dinge nötig:
-Einrichten, Abholen, Rechner/Umrechner.
-- **Läuft ohne Handy:** Uhr/Datum (eigene RTC, beim Verbinden gestellt) · Home, Notiz-Seite, Zettel mit QR, Bordbuch
-  (liegen auf Karte/Flash) · Timer (eigenes Uhrwerk, weckt aus dem Schlummer), Wasserwaage, Lineal, Menü ·
-  Kritzelblock · Diktat (ADPCM in `/ist/puffer`) · Knopf-Notizen mit Zeitstempel · Fahrtenschreiber und Klima
-  (Fahrterkennung per Lagesensor, Temperatur, Feuchte, Taupunkt) · Hoch/Quer automatisch und 180° · Statuszeile,
-  Tastenhilfe, Schlummer und Wecken
-- **Braucht das Handy zum Erledigen:** Spracherkennung (Diktat wird erst am Handy Text) · Ort für Notizen (GPS) ·
-  Rechner/Umrechner (einzige Thin-Client-Seite) · Gegenseitig suchen · Push-to-Talk in die Zwischenablage
-- **Braucht das Handy zum Einrichten:** neue Zettel, Bordbuch, Widget-Bilder, Karussell, Lage, Lineal-Kalibrierung,
-  Firmware-Updates
-- **Grenzen allein:** Akku und Kartenplatz. Denkbarer nächster Schritt: Rechner als Widget in die Firmware holen
-  (Logik überschaubar), dann bleibt nur noch Spracherkennung und Ort am Handy
+### Wie autark ist der Sticky? (Stand 15.11.2026, FW 0.37)
+Die App ist Lieferant und Abholer, kaum noch Fernsteuerung. Das Handy ist nur noch zum Einrichten und Abholen nötig.
+- **Läuft ohne Handy:** Uhr/Datum (eigene RTC, beim Verbinden gestellt) · Home, Zettel mit QR, Handbuch, Spickzettel
+  (liegen auf der Karte) · Timer, Wecker, Weltzeit · Wasserwaage, Lineal · Rechner, Umrechner (FW 0.28) · Recorder,
+  Tippen, Kritzelblock, Strichschrift · Diktat (ADPCM in `/ist/puffer`) · Ja/Nein und Ziffern · Fahrtenschreiber und
+  Klima (Fahrterkennung per Lagesensor, Temperatur, Feuchte, Taupunkt) · Hoch/Quer automatisch und 180° · Menü mit
+  Gruppen, Statuszeile, Tastenhilfe, Schlummer und Wecken · Einstellungen (Sprache, 12/24 h, Einheiten, Uhr)
+- **Braucht das Handy zum Erledigen:** Spracherkennung (Diktat und Recorder werden erst am Handy Text) · Ort für
+  Notizen (GPS) · Gegenseitig suchen · Push-to-Talk in die Zwischenablage · Wetter · Spiel (Thin Client)
+- **Braucht das Handy zum Einrichten:** neue Zettel, Handbücher, Spickzettel, Widget-Bilder, Karussell, Lage,
+  Lineal-Kalibrierung, Firmware-Updates
+- **Grenzen allein:** Akku und Kartenplatz
 
 #### Rechner und Umrechner lokal, gekapselt (Markus, 13.11.2026, umgesetzt FW 0.28.0)
 - Vorschlag **Aufteilung wie Timer/Waage:** Die App liefert nur die Optik (Braun-Tasten als `bild.bin`, Knöpfe in
@@ -1051,8 +1052,8 @@ abtippen, sortieren, Ziele). Nimmt die Idee „Gesprächs-/Meeting-Notizen“ au
 ### Eigene Sensoren (laut Schaltplan, Bus MISC_I2C)
 | Baustein | Adresse | heute | Vorschlag |
 |---|---|---|---|
-| Bewegung LSM6DS3TR-C (6 Achsen) | 0x6A, Interrupt 6D_INTn | ungenutzt | Fahrt selbst erkennen → wach bleiben ohne GPS-Umweg im Dienst; Wecken per Bewegung aus dem Schlaf (fast null Verbrauch im Stand, sofort da beim Losfahren); Klopfgeste; hoch/quer |
-| Temperatur/Feuchte SHT40 | 0x44 | ungenutzt | Innenraumklima Microlino als Messreihe; Warnung „lädt nicht, zu kalt/heiß“ (Lader nur 0–45 °C); Taupunkt → „Scheibe beschlägt gleich“ |
+| Bewegung LSM6DS3TR-C (6 Achsen) | 0x6A, Interrupt 6D_INTn | Fahrterkennung, hoch/quer automatisch, Wecken (FW 0.12/0.22.1) | Fahrt selbst erkennen → wach bleiben ohne GPS-Umweg im Dienst; Wecken per Bewegung aus dem Schlaf (fast null Verbrauch im Stand, sofort da beim Losfahren); Klopfgeste; hoch/quer |
+| Temperatur/Feuchte SHT40 | 0x44 | Klima-Messreihe, Taupunkt (FW 0.12) | Innenraumklima Microlino als Messreihe; Warnung „lädt nicht, zu kalt/heiß“ (Lader nur 0–45 °C); Taupunkt → „Scheibe beschlägt gleich“ |
 | Uhr PCF8563 | 0x51, Interrupt RTC_INTn | Uhrzeit | Zeitstempel aller Ist-Daten auch ohne Handy; Wecker für geplantes Aufwachen |
 | Akku BQ27220 | 0x55 | Prozent | Verlauf, Restlaufzeit; Strom-Register 0x0C liefert Unsinn (mehrere A), klären |
 | Lade-LED rot/grün, Summer, Mikro, Tasten, Touch | – | teils | LED als stille Rückmeldung (z. B. „Diktat gepuffert“) |
@@ -1126,7 +1127,7 @@ unseren App-Code lesen zu müssen.** Die Firmware bleibt dieselbe, Bluetooth LE 
 - **Uhr stellen:** gleich nach dem Verbinden `15 unix-ms:u64`. Ohne gestellte Uhr schreibt der Sticky Logs ohne Datum
 - **Touch und Tasten** kommen als Ereignis (`key`, `touch` in Display-Koordinaten 800 × 480)
 
-### Dateien auf der Karte (Stand FW 0.23.1)
+### Dateien auf der Karte (Grundstock FW 0.23.1, Nachträge bis FW 0.37 unter der Tabelle)
 | Pfad | Wer | Inhalt |
 |---|---|---|
 | `/soll/home/0–8.bin`, `version.txt` | App | Home-Bilder (hochkant gezeichnet, gedreht gespeichert); `version.txt` = Auslöser |
@@ -1142,10 +1143,21 @@ unseren App-Code lesen zu müssen.** Die Firmware bleibt dieselbe, Bluetooth LE 
 | `/ist/puffer/…` | Sticky | Diktate ohne Handy (ADPCM), Knopf-Notizen |
 | `/ist/kritzel/…bin` | Sticky | Kritzelblätter 1 bpp, `-h` am Namen = hochkant gemalt |
 
+Nachträge (Stand FW 0.37; genaues Format im Kopf der jeweiligen Firmware-Datei):
+- Karussell-Wörter außerdem `schrift`; Widget-Namen auch `recorder`, `tippen`, `rechner`, `umrechner`, `wecker`,
+  `weltzeit`; Widget-Typen `recorder`, `tippen`, `janein`, `ziffern` und Menü-Aktion `gruppe <Maske>` (`widget.h`)
+- Widget-Ordner für US-Einheiten zusätzlich mit `-us` am Namen (z. B. Lineal in Zoll, FW 0.31.0); Tippen-Arten als
+  `tippen-zf` und `tippen-sp`
+- `/ist/zeit.txt` (am Sticky gewählte Einstellungen), `/ist/wecker.txt`, `/ist/schrift/*.txt` (Strichschrift),
+  `/ist/recorder/` (laufende Aufnahme), `/ist/bildschirm.rle` (keine Datei, liefert das gezeigte Bild),
+  `/soll/hilfe/offline.bin`
+- Handbuch und Spickzettel (FW 0.38): siehe Abschnitt „Dokumente“
+
 ### Was sich noch ändern darf
 - Neue Dateien und neue Felder in `felder.txt` kommen dazu; **unbekannte Zeilen ignoriert der Sticky**, eine Fremd-App
   sollte unbekannte JSON-Felder ebenfalls ignorieren
-- Die alten Spezialbefehle (`13`, `14`, `16`–`19`, `1A`, BILD_ENDE 3–5) bleiben, sind aber Altlast. Neue Apps nehmen
+- Die alten Spezialbefehle (`13`, `16`–`19`, `1A`, BILD_ENDE 3–5) bleiben, sind aber Altlast (`14` MODUS ist keine:
+  damit bedient die App den Sticky). Neue Apps nehmen
   besser den Datei-Abgleich
 - Die App-Seite (Modus `app`) ist **Thin Client**: Der Sticky zeigt, was die App schickt, und meldet Tipps. Ohne eigene
   App-Seite einfach `app` aus dem Karussell lassen
@@ -1159,7 +1171,7 @@ unseren App-Code lesen zu müssen.** Die Firmware bleibt dieselbe, Bluetooth LE 
   nicht vorn ist. iOS sucht Geräte nach Dienst-UUID, nicht nach Name
 - **Voraussetzungen:** Mac mit Xcode. Mit kostenloser Apple-ID läuft die App 7 Tage, dauerhaft nur mit dem
   Entwicklerkonto (99 $ im Jahr)
-- **Unser Repo ist öffentlich, aber ohne Lizenz** (mitgucken ja). Wer mehr will, fragt Markus
+- **Unser Repo ist öffentlich, Lizenz MIT** (`LICENSE`): nutzen, ändern, weitergeben erlaubt, mit Hinweis auf die Herkunft
 
 ## Zusammenhang mit dem Microlino-Knopf
 Beide Geräte sind ESP32-S3 mit BLE, beide folgen dem Muster „Handy rechnet, Gerät zeigt“.
@@ -1283,6 +1295,9 @@ Flash (7,2 MB von 23,9 MB), Aufspielen 290 s, Blättern 2,2 s. Am Fahrzeug zu pr
 GPS für diese Notizen kommt bei der Auswertung über den Zeitstempel aus der Bubble-Log-Spur.
 
 ## Home, Modi und Bestellzettel (11.11.2026)
+**abgelöst:** Tastenregeln, Visitenkarte als Home und „bis zu 3 Zettel“ gelten nicht mehr – heute „Bedienung und
+Oberfläche“ (FW 0.13), „Gruppen im Menü“ (FW 0.36), bis zu 6 Zettel. Steht nur zur Geschichte da.
+
 Markus: „Visitenkarte quasi als Standardbild (inkl. Uhrzeit), KI-Button → Note-Mode, Up-Button → Bordbuch-Mode“.
 - **Home** = Visitenkarte hochkant (Name, Hinweis, große Uhr, QR) – gleiche Lage wie die Notiz-Seite. Die App
   rendert Karte und Ziffernblatt einmalig in den Flash; der Sticky setzt die Uhr jede Minute selbst aus den Ziffern
