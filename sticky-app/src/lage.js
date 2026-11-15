@@ -1,12 +1,12 @@
 // Lage je Seite (SPEC „Hoch/Quer in zwei Stufen“, Stufe 1): Seiten werden logisch gezeichnet (quer 800 × 480 oder
 // hochkant 480 × 800) und für das Display gedreht. Hochkant: logisch (lx, ly) ↔ Display (ly, 479 − lx), wie bei Home.
 
-export const LAGE_STANDARD = { menue: 'quer', timer: 'quer', wecker: 'quer', weltzeit: 'quer', waage: 'quer', rechner: 'hoch', umrechner: 'hoch', app: 'hoch', kritzel: 'quer' };
+export const LAGE_STANDARD = { menue: 'quer', timer: 'quer', wecker: 'quer', weltzeit: 'quer', waage: 'quer', rechner: 'hoch', umrechner: 'hoch', app: 'hoch', kritzel: 'quer', recorder: 'quer' };
 import { T } from './uebersetzen.js';
 
 const NAMEN = { menue: ['Menü', 'Menu'], timer: ['Timer', 'Timer'], wecker: ['Wecker', 'Alarm'], weltzeit: ['Weltzeit', 'World clock'],
   waage: ['Wasserwaage', 'Spirit level'], rechner: ['Rechner', 'Calculator'], umrechner: ['Umrechner', 'Converter'], app: ['Spiel', 'Game'],
-  kritzel: ['Kritzel', 'Doodle'] };
+  kritzel: ['Kritzel', 'Doodle'], recorder: ['Recorder', 'Recorder'] };
 /** Anzeigenamen der Seiten; Getter: jeder Zugriff in der wirksamen Sprache (Schlüssel und Reihenfolge fest) */
 export const LAGE_NAMEN = {};
 for (const [s, [de, en]] of Object.entries(NAMEN)) Object.defineProperty(LAGE_NAMEN, s, { enumerable: true, get: () => T(de, en) });

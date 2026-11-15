@@ -928,7 +928,43 @@ abtippen, sortieren, Ziele). Nimmt die Idee „Gesprächs-/Meeting-Notizen“ au
 - fest **Dauer**: kein hartes Limit; nach 60 min Piepton und Hinweis, unter 15 % Akku stoppt der Recorder selbst
 - fest **KI halten während der Aufnahme = Merker** statt Diktat (der Ton läuft ja schon mit). Einzige Ausnahme von
   der Regel „KI halten = Diktat“, nur solange der Recorder läuft
-- offen: Strom während der Aufnahme (Mikro + wach) nicht gemessen – vor dem Bauen im Lab messen
+- ~~offen: Strom während der Aufnahme~~ → **geschätzt** (15.11.2026, nicht gemessen): ESP32-S3 wach bei 80 MHz ohne
+  Leichtschlaf ~25–30 mA, PDM-Mikro ~0,6 mA, Karte schreibt alle ~0,5 s 4 KB (~3–5 mA im Mittel), live zusätzlich Funk
+  alle 15–30 ms (~5–10 mA) → **~30–40 mA nur Karte, ~40–50 mA live**. Bei ~300 mAh (Lab-Schätzung) etwa **10–17 % je
+  Stunde**. Der Akku-Chip misst den Strom nicht verlässlich (Register 0x0C), darum: Vorschlag (umgesetzt) **Messung
+  nebenbei** – jede Aufnahme schreibt Akku-% und mV bei Start und Stopp ins Protokoll; die ersten echten Aufnahmen
+  liefern den Wert. Lab-Station 8 kann es gezielt nachmessen
+- **umgesetzt FW 0.34.0** (15.11.2026, gebaut, noch nicht geflasht), App dazu:
+  - Seite = Widget `typ recorder` (Karussell-Wort „Recorder“, im Standard nach „Notiz“; Lage quer, hochkant geht).
+    Die App zeichnet Knopf, Liste und Glyphen (Symbole ● ▸ ✓ ⧗ ⚑ selbst gezeichnet, Handy-Schriften haben ⧗ nicht
+    sicher); der Sticky setzt Zustand, Zusatz und 5 Listenzeilen ein (`firmware-ble/recorder.h`)
+  - Vorschlag (umgesetzt) **Aufnahme immer auf die Karte, live nur zusätzlich**: so geht nichts verloren, wenn der
+    Funk abreißt. Während der Aufnahme `/ist/recorder/laeuft.adp` (das Abholen sieht sie nicht), beim Stopp
+    `/ist/puffer/rJJMMTT-hhmmss.adp` plus Notiz-Zeile `art: recorder` mit Merkern. Ringpuffer 128 KB (~16 s) im PSRAM,
+    eine eigene Aufgabe schreibt 4-KB-Blöcke (die Karte teilt sich den SPI-Bus mit dem E-Paper; ein Refresh darf die
+    Aufnahme nicht stören), alle ~30 s `flush`. Ohne Karte keine Aufnahme („! keine Karte“); ein Rest nach Absturz
+    wird beim nächsten Start in den Puffer gerettet
+  - Vorschlag (umgesetzt) **Stand aus der Datei**: liegt sie noch im Puffer = ⧗, weg = ✓. Die App löscht sie erst,
+    wenn der Text da ist – das ist das „hat Text“-Signal, ohne eigenen Befehl
+  - live vollständig (keine Lücke, alle Pakete) → die App tippt sofort ab; sonst holt sie die Datei in Stücken à
+    256 KB im Hintergrund ab (der übrige Abgleich läuft dazwischen weiter). Abtippen in Stücken ≤ 29 s, geschnitten an
+    der leisesten Stelle (`stuecke()` in `audio.js`), Merker als „⚑ mm:ss“ an der Stelle im Text. Die WAV wird in
+    1-MB-Teilen geschrieben (eine Stunde ~115 MB). seq (u16) läuft nach ~33 min über: die App zählt weiter bzw. liest
+    die Datei der Reihe nach
+  - Notiz `art: recorder` mit `datei`, `dauerMs`, `merker`; Sortieren wie beim Diktat (lang → eher „Erzählung“)
+  - KI halten während der Aufnahme = Merker (zwei kurze hohe Pieps); der Recorder läuft weiter, wenn man die Seite
+    verlässt; KI loslassen stoppt ihn nicht. ▲/▼ blättert die Liste (▲/▼ lang wie überall = Karussell)
+  - Vorschlag (umgesetzt) **Akku-Grenze robust**: Stopp, wenn der Chip unter 15 % meldet **und** die Spannung unter
+    3,7 V liegt, oder die Spannung allein unter 3,45 V (der Chip meldete nach Tiefentladung schon 3 % bzw. 83 % Unsinn).
+    Am USB nie. Geprüft alle 30 s
+  - Volle Stunde: zwei Pieps, „!“ vor der Minutenzahl (jede weitere Stunde wieder)
+  - **Fernbedienung** (billig, darum mit drin): mit Handy spielt ein Tipp auf eine Zeile die Aufnahme am Handy ab
+    (noch einmal = Pause), ▲/▼ springt dann zum vorigen/nächsten Merker. Nur für Aufnahmen, die schon beim Handy sind
+    (✓); ohne Handy wählt der Tipp nur die Zeile
+  - Löschen am Sticky: kommt mit Ja/Nein (nächster Schritt)
+  - offen: Abholen bricht bei Funkabriss ab und beginnt beim nächsten Mal von vorn (Merker gehen dann verloren, weil
+    die Notiz-Zeile schon abgeräumt ist); Weiterholen ab Byte n wäre der nächste Schritt
+  - offen: am Gerät prüfen – Strom, ob 128 KB Ring reichen, ob der Ton beim Teil-Refresh lückenlos bleibt
 
 ### Eigene Sensoren (laut Schaltplan, Bus MISC_I2C)
 | Baustein | Adresse | heute | Vorschlag |

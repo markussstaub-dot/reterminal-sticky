@@ -69,17 +69,22 @@ export class Aufnahme {
     this.bytes = 0;
     this.tErstes = null;
     this.tLetztes = null;
+    this.basis = 0;          // seq ist u16: nach 65536 Paketen (~33 min, Recorder) läuft sie über
+    this.letzte = null;
   }
   paket(p, jetzt = performance.now()) {
-    const { seq, pcm } = dekodiere(p);
+    const { seq: roh, pcm } = dekodiere(p);
+    if (this.letzte != null && roh < this.letzte - 32768) this.basis += 65536;
+    this.letzte = roh;
+    const seq = this.basis + roh;
     this.teile.set(seq, pcm);
     this.bytes += p.length;
     this.tErstes ??= jetzt;
     this.tLetztes = jetzt;
   }
   ergebnis() {
-    const seqs = [...this.teile.keys()];
-    const max = seqs.length ? Math.max(...seqs) : -1;
+    let max = -1;   // ohne Math.max(...): bei einer Stunde sind es 120 000 Pakete
+    for (const s of this.teile.keys()) if (s > max) max = s;
     const pcm = new Int16Array((max + 1) * SAMPLES_JE_PAKET);
     let fehlend = 0;
     for (let s = 0; s <= max; s++) {
@@ -100,6 +105,14 @@ export class Aufnahme {
       spitze,
     };
   }
+}
+
+/** nur der 44-Byte-Kopf einer WAV-Datei mit n Samples (zum Schreiben in Teilen) */
+export function wavKopf(n, rate = RATE) {
+  const k = wav(new Int16Array(0), rate), v = new DataView(k.buffer);
+  v.setUint32(4, 36 + n * 2, true);
+  v.setUint32(40, n * 2, true);
+  return k;
 }
 
 /** 16-bit-PCM mono → WAV-Datei. */
@@ -157,4 +170,52 @@ export function nurWortliste(text, liste) {
   const erlaubt = new Set(norm(liste));
   const woerter = norm(text);
   return woerter.length > 0 && woerter.every((w) => erlaubt.has(w));
+}
+
+/** Puffer-Datei (Pakete à 5 + 240 Byte hintereinander) der Reihe nach → PCM; seq zählt nicht (läuft nach ~33 min über) */
+export function dekodiereDatei(daten, paketBytes = 5 + SAMPLES_JE_PAKET / 2) {
+  const n = Math.floor(daten.length / paketBytes);
+  const pcm = new Int16Array(n * SAMPLES_JE_PAKET);
+  for (let k = 0; k < n; k++) pcm.set(dekodiere(daten.subarray(k * paketBytes, (k + 1) * paketBytes)).pcm, k * SAMPLES_JE_PAKET);
+  return pcm;
+}
+
+/**
+ * Lange Aufnahmen (Recorder) in Stücke für die Erkennung schneiden: whisper hört in 30-s-Fenstern, ein Stück der
+ * ganzen Stunde wäre zu groß. Geschnitten wird an der leisesten 30-ms-Stelle zwischen min und max Sekunden.
+ * → [[start, ende], …] in Samples
+ */
+export function stuecke(pcm, { minS = 20, maxS = 29, rate = RATE } = {}) {
+  const rahmen = Math.floor(rate * 0.03), aus = [];
+  let a = 0;
+  while (pcm.length - a > maxS * rate) {
+    let besterPegel = Infinity, schnitt = a + maxS * rate;
+    for (let o = a + minS * rate; o + rahmen <= a + maxS * rate; o += rahmen) {
+      let q = 0;
+      for (let i = o; i < o + rahmen; i++) q += pcm[i] * pcm[i];
+      if (q < besterPegel) { besterPegel = q; schnitt = o + (rahmen >> 1); }
+    }
+    aus.push([a, schnitt]);
+    a = schnitt;
+  }
+  if (pcm.length > a) aus.push([a, pcm.length]);
+  return aus;
+}
+
+/** „mm:ss“ bzw. „h:mm:ss“ */
+export function zeitmarke(ms) {
+  const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, p = (n) => String(n).padStart(2, '0');
+  return h ? `${h}:${p(m)}:${p(s % 60)}` : `${p(m)}:${p(s % 60)}`;
+}
+
+/** Texte der Stücke zusammensetzen, Merker (ms ab Beginn) als „⚑ mm:ss“ vor das Stück, in dem sie liegen */
+export function mitMerkern(teile, merker = [], rate = RATE) {
+  const rest = [...merker].sort((x, y) => x - y);
+  const aus = [];
+  for (const { von, bis, text } of teile) {
+    while (rest.length && rest[0] < (bis / rate) * 1000) aus.push(`⚑ ${zeitmarke(rest.shift())}`);
+    if (text) aus.push(text);
+  }
+  for (const m of rest) aus.push(`⚑ ${zeitmarke(m)}`);
+  return aus.join(' ').trim();
 }

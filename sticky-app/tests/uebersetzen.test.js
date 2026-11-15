@@ -62,7 +62,7 @@ test('Wetter, Zettel, Namenslisten und Spiel folgen der Sprache', () => {
   assert.deepEqual(en(() => zettelListe('## Gäste\nwlan: Hütte | geheim\n')[0].zeilen), ['Wi-Fi: Hütte', 'Password: geheim']);
   assert.equal(en(() => LAGE_NAMEN.wecker), 'Alarm');
   assert.equal(de(() => LAGE_NAMEN.wecker), 'Wecker');
-  assert.deepEqual(Object.keys(LAGE_NAMEN), ['menue', 'timer', 'wecker', 'weltzeit', 'waage', 'rechner', 'umrechner', 'app', 'kritzel']);
+  assert.deepEqual(Object.keys(LAGE_NAMEN), ['menue', 'timer', 'wecker', 'weltzeit', 'waage', 'rechner', 'umrechner', 'app', 'kritzel', 'recorder']);
   assert.equal(en(() => SORTEN.eingang.name), 'Inbox');
   const b = new Burgduell(false);
   assert.match(de(() => b.text), /^West beginnt/);

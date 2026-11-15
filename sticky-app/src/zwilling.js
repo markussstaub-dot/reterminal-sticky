@@ -47,6 +47,22 @@ export class Zwilling {
         this.aufnahmeStart = e.ms > 1.7e12 ? e.ms : Date.now();
         this.#melde('aufnahmeLaeuft', { start: this.aufnahmeStart });
       }
+      // Recorder (FW ≥ 0.34.0): live nur, wenn der Sticky „live“ meldet; die Datei liegt ohnehin auf seiner Karte
+      if (e.t === 'rec' && e.a === 'start') {
+        this.aufnahme = e.live ? new Aufnahme() : null;
+        this.rec = { datei: e.datei, start: e.ms > 1.7e12 ? e.ms : Date.now(), merker: [] };
+        this.#melde('recorderLaeuft', this.rec);
+      }
+      if (e.t === 'rec' && e.a === 'merker' && this.rec) this.rec.merker.push(e.ms);
+      if (e.t === 'rec' && e.a === 'stop') {
+        const r = this.aufnahme && this.rec?.datei === e.datei ? this.aufnahme.ergebnis() : null;
+        const rec = this.rec?.datei === e.datei ? this.rec : { datei: e.datei, start: Date.now() - (e.ms ?? 0), merker: [] };
+        this.aufnahme = null;
+        this.rec = null;
+        // vollständig: live begonnen, kein Paket fehlt und alle, die der Sticky aufnahm, sind da
+        const vollstaendig = !!(r && e.live && r.fehlend === 0 && r.pakete >= e.pakete);
+        this.#melde('recorder', { ...(r ?? {}), datei: e.datei, start: rec.start, merker: e.merker ?? rec.merker, dauerMs: e.ms, vollstaendig });
+      }
       if (e.t === 'audio' && e.a === 'stop' && this.aufnahme) {
         const r = this.aufnahme.ergebnis();
         this.aufnahme = null;

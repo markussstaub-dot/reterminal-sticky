@@ -129,7 +129,7 @@ function handyZeichen(g, x, y) {
 const NAMEN = { home: ['Home', 'Home'], notiz: ['Notiz', 'Note'], bordbuch: ['Bordbuch', 'Logbook'], zettel: ['Zettel', 'Cards'],
   kritzel: ['Kritzel', 'Doodle'], schrift: ['Schrift', 'Writing'], app: ['Spiel', 'Game'] };
 const WIDGET_EN = { timer: 'Timer', wecker: 'Alarm', weltzeit: 'World clock', waage: 'Level', lineal: 'Ruler', rechner: 'Calculator',
-  umrechner: 'Converter', einstellungen: 'Settings' };
+  umrechner: 'Converter', einstellungen: 'Settings', recorder: 'Recorder' };
 function kachelName(e) {
   if (e.startsWith('widget ')) { const w = e.slice(7); return T(w.replace(/^./, (b) => b.toUpperCase()), WIDGET_EN[w] ?? w.replace(/^./, (b) => b.toUpperCase())); }
   return NAMEN[e] ? T(...NAMEN[e]) : e;
@@ -253,7 +253,7 @@ export function linealWidget(echtBei80 = 80, zoll = false) {
 // Optik (Braun-Tasten), Glyphen für die Anzeige und die Felder. Lagen wie auf der App-Seite.
 
 /** Glyphenblatt für die Anzeige: Schrift passt sich der Zellbreite an (Einheiten wie „m“ sind breit) */
-function textBlatt(w, h, glyphen, hoch) {
+function textBlatt(w, h, glyphen, hoch, eigen = {}) {
   const n = glyphen.length, zw = hoch ? h : w, zh = hoch ? w : h;
   const c = leinwand(n * zw, zh);
   const g = c.getContext('2d', { willReadFrequently: true });
@@ -265,10 +265,77 @@ function textBlatt(w, h, glyphen, hoch) {
   glyphen.forEach((z, i) => {
     g.save();
     if (hoch) { g.translate(i * zw, w); g.rotate(-Math.PI / 2); } else g.translate(i * w, 0);
-    g.fillText(z === '-' ? '−' : z, w / 2, h / 2 + h * 0.04);
+    if (eigen[z]) eigen[z](g, w, h); else g.fillText(z === '-' ? '−' : z, w / 2, h / 2 + h * 0.04);
     g.restore();
   });
   return rgbaZu1bpp(g.getImageData(0, 0, n * zw, zh).data, n * zw, zh);
+}
+
+/** Zeichen, die nicht jede Handy-Schrift hat: selbst gezeichnet (Zelle w × h, Ursprung oben links) */
+const SYMBOLE = {
+  '●': (g, w, h) => { g.beginPath(); g.arc(w / 2, h / 2, Math.min(w, h) * 0.3, 0, Math.PI * 2); g.fill(); },
+  '▸': (g, w, h) => { g.beginPath(); g.moveTo(w * 0.25, h * 0.28); g.lineTo(w * 0.8, h / 2); g.lineTo(w * 0.25, h * 0.72); g.closePath(); g.fill(); },
+  '✓': (g, w, h) => { g.lineWidth = Math.max(3, w / 7); g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = '#000'; g.beginPath(); g.moveTo(w * 0.18, h * 0.52); g.lineTo(w * 0.42, h * 0.72); g.lineTo(w * 0.84, h * 0.26); g.stroke(); },
+  '⧗': (g, w, h) => {   // Sanduhr
+    g.lineWidth = Math.max(2, w / 10); g.strokeStyle = '#000';
+    g.beginPath(); g.moveTo(w * 0.2, h * 0.2); g.lineTo(w * 0.8, h * 0.2); g.lineTo(w * 0.2, h * 0.8); g.lineTo(w * 0.8, h * 0.8); g.closePath(); g.stroke();
+    g.beginPath(); g.moveTo(w * 0.3, h * 0.75); g.lineTo(w * 0.7, h * 0.75); g.lineTo(w * 0.5, h * 0.55); g.closePath(); g.fill();
+  },
+  '⚑': (g, w, h) => {   // Fähnchen = Merker
+    g.fillRect(w * 0.22, h * 0.18, Math.max(2, w / 10), h * 0.66);
+    g.beginPath(); g.moveTo(w * 0.3, h * 0.2); g.lineTo(w * 0.85, h * 0.32); g.lineTo(w * 0.3, h * 0.46); g.closePath(); g.fill();
+  },
+};
+
+// ---- Recorder (SPEC „Recorder für Längeres“, FW ≥ 0.34.0) -----------------------------------------------------------
+/** Texte, die die Firmware (recorder.h) in die Zeilen setzt – beide Sprachen, daraus entsteht das Glyphenblatt */
+export const RECORDER_TEXTE = ['bereit', 'ready', 'seit', 'since', '! Akku leer', '! battery low', '! keine Karte', '! no card',
+  '! Karte voll?', '! card full?', 'Tippen = Start', 'tap = start', ' min', '0123456789:ap', '●▸✓⧗⚑'];
+export const recorderGlyphen = () => [...new Set([...RECORDER_TEXTE.join(''), ' '])];
+
+/**
+ * Recorder: großer Knopf (Doppelring) = Start/Stopp, darunter Zustand und Zusatz, kleiner Knopf Merker; rechts die
+ * Aufnahmen des Tages (Uhrzeit, Minuten, ✓ beim Handy und Text da · ⧗ wartet aufs Handy). Tipp auf eine Zeile mit Handy =
+ * dort abspielen (noch einmal = Pause), ▲/▼ blättert die Liste bzw. springt beim Anhören von Merker zu Merker.
+ * Textfelder: 0 Zustand, 1 Zusatz (je 16 Zellen), 2–6 Liste (je 14 Zellen) – so liest sie firmware-ble/recorder.h.
+ */
+export function recorderWidget(hoch = false) {
+  const p = seite(hoch, 'Recorder', T('Tippen = Start/Stopp · KI halten = Merker', 'tap = start/stop · hold AI = mark'));
+  const { g } = p;
+  const Z = { w: 24, h: 40 };
+  const glyphen = recorderGlyphen();
+  const L = hoch
+    ? { knopf: [16, 52, 464, 264], t0: [16, 280], t1: [16, 328], merker: [16, 376, 464, 448], kopf: 470, zeilen: { x: 24, y: 504, h: 56, x0: 16, x1: 464 } }
+    : { knopf: [16, 52, 392, 292], t0: [16, 304], t1: [16, 352], merker: [16, 400, 392, 472], kopf: 60, zeilen: { x: 416, y: 96, h: 64, x0: 404, x1: 784 } };
+  p.k(...L.knopf, T('● Aufnahme', '● Record'), 'rec', 'haupt', 40);
+  p.k(...L.merker, T('Merker setzen', 'Set mark'), 'merker', 'werkzeug', 28);
+  g.fillStyle = '#000'; g.textAlign = 'left'; g.textBaseline = 'middle';
+  const R = L.zeilen;
+  g.font = `500 24px ${FONT}`; g.fillText(T('Heute', 'Today'), R.x0 + 8, L.kopf);
+  // Legende mit denselben selbst gezeichneten Zeichen wie in den Zeilen (Handy-Schriften haben ⧗ nicht sicher)
+  g.font = `400 15px ${FONT}`;
+  let lx = R.x0 + 8;
+  const ly = hoch ? 788 : 462;
+  for (const [z, t] of [['✓', T('beim Handy', 'on phone')], ['⧗', T('wartet', 'waiting')], ['', T('Tipp = am Handy hören', 'tap = play on phone')]]) {
+    if (z) { g.save(); g.translate(lx, ly - 11); SYMBOLE[z](g, 16, 22); g.restore(); lx += 18; }
+    g.fillText(t, lx, ly); lx += g.measureText(t).width + 14;
+  }
+  const pos = [p.ziffernPos(...L.t0, Z.w), p.ziffernPos(...L.t1, Z.w)];
+  for (let i = 0; i < 5; i++) {
+    const y = R.y + i * R.h;
+    g.fillRect(R.x0, y - 8, R.x1 - R.x0, 1);
+    pos.push(p.ziffernPos(R.x, y, Z.w));
+    const d = zuDisplay({ x: R.x0, y: y - 8, w: R.x1 - R.x0, h: R.h }, hoch);
+    p.felder.push(`knopf ${d.x} ${d.y} ${d.x + d.w} ${d.y + d.h} wahl ${i}`);
+  }
+  p.felder.unshift('typ recorder', hoch ? `ziffern ${Z.h} ${Z.w}` : `ziffern ${Z.w} ${Z.h}`, ...(hoch ? [`schritt 0 ${-Z.w}`] : []),
+    `glyphen ${glyphen.map((x) => (x === ' ' ? '_' : x)).join(' ')}`,
+    ...pos.map((z, i) => `text ${z.x} ${z.y} ${i < 2 ? 16 : 14}`), 'taste up hoch', 'taste down runter');
+  return [
+    { n: 'ziffern.bin', daten: textBlatt(Z.w, Z.h, glyphen, hoch, SYMBOLE) },
+    { n: 'bild.bin', daten: p.bild() },
+    { n: 'felder.txt', daten: text(p.felder) },
+  ];
 }
 
 /** Anzeige-Fenster wie das LCD beim Braun */
@@ -518,7 +585,7 @@ function linealZoll(pxmm) {
 }
 
 export const WIDGETS = { timer: timerWidget, waage: waageWidget, lineal: () => linealWidget(linealEcht()), rechner: rechnerWidget, umrechner: umrechnerWidget,
-  weltzeit: weltzeitWidget, wecker: weckerWidget, einstellungen: (h = false) => einstellungenWidget(h, HANDY_12H, HANDY_US),
+  weltzeit: weltzeitWidget, wecker: weckerWidget, recorder: recorderWidget, einstellungen: (h = false) => einstellungenWidget(h, HANDY_12H, HANDY_US),
   'lineal-us': () => linealWidget(linealEcht(), true) };
 /** Kalibrierung aus der App (Mehr → Lineal): so viele echte mm misst die 80-mm-Marke */
 function linealEcht() { try { return parseFloat(localStorage.getItem(schluessel('lineal80'))) || 80; } catch { return 80; } }

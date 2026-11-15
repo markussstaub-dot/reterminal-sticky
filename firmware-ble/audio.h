@@ -25,6 +25,15 @@ static int micKanal = 0;      // 0 = links, 1 = rechts (Selbsttest)
 // ×2 statt ×4: nah am Mund übersteuerten 6 von 16 Fahrt-Aufnahmen (0 dBFS); dazu weicher Begrenzer unten
 static int micVerstaerkung = 2;
 static volatile int indikator = 0;  // 1 = einblenden, 2 = ausblenden (erledigt loop())
+// Recorder (recorder.h, FW 0.34.0): gleiche Aufgabe, aber ohne Zeitlimit; Pakete gehen in einen Ringpuffer (eine zweite
+// Aufgabe schreibt ihn in 4-KB-Blöcken auf die Karte, die sich den SPI-Bus mit dem E-Paper teilt) und live zusätzlich an
+// die App, solange sie lückenlos zuhört
+static volatile bool audioRec = false, recLive = false;
+static volatile uint32_t recLiveVerlust = 0;
+static void recPaket(const uint8_t* p);   // recorder.h
+static void recAbschluss();               // recorder.h
+static bool recLaeuftJetzt();             // recorder.h
+static void recMerkerSetzen();            // recorder.h
 
 // ---- IMA-ADPCM ---------------------------------------------------------------------------
 static const int16_t ADPCM_STEP[89] = {
@@ -123,7 +132,7 @@ static void audioTask(void*) {
     uint32_t t0 = millis();
     audioPakete = audioVerworfen = 0;
     audioSpitze = 0;
-    while (!audioStopp && millis() - t0 < AUDIO_MAX_MS && (connected || audioOffline)) {
+    while (!audioStopp && (audioRec || (millis() - t0 < AUDIO_MAX_MS && (connected || audioOffline)))) {
         size_t b = i2s.readBytes((char*)roh, sizeof roh);
         if (b < sizeof roh) continue;
         paket[0] = seq & 0xFF; paket[1] = seq >> 8;
@@ -148,6 +157,14 @@ static void audioTask(void*) {
         }
         if (vorlauf) { vorlauf--; continue; }
         seq++;
+        if (audioRec) {
+            recPaket(paket);
+            if (recLive) {
+                if (connected && appHoert) { chAudio->setValue(paket, AUDIO_PAKET); if (!chAudio->notify()) recLiveVerlust++; }
+                else recLive = false;   // Funk weg: die App holt die Datei später, live bleibt unvollständig
+            }
+            continue;
+        }
         if (audioOffline) {
             if (audioDatei.write(paket, AUDIO_PAKET) == AUDIO_PAKET) audioPakete++; else audioVerworfen++;
             continue;
@@ -165,6 +182,7 @@ static void audioTask(void*) {
 static uint64_t offlineStartMs = 0;
 
 static void aufnahmeStart() {
+    if (recLaeuftJetzt()) { recMerkerSetzen(); return; }   // KI halten während des Recorders = Merker (SPEC „Recorder“)
     if (audioLaeuft) return;
     if (!appDa() || mtu < AUDIO_PAKET + 3) {
         // Ohne Handy bzw. ohne zuhörende App: in den Puffer aufnehmen, die App holt es später ab
@@ -194,11 +212,13 @@ static void aufnahmeStart() {
 }
 
 static void aufnahmeStopp() {
+    if (audioRec) return;               // den Recorder stoppt nur sein Knopf (bzw. Akku/Karte)
     if (audioLaeuft) audioStopp = true;
 }
 
 /** Aus loop(): Abschluss melden und Anzeige pflegen. */
 static void audioLoop() {
+    if (audioRec) { recAbschluss(); return; }
     if (audioFertig && audioOffline) {
         audioFertig = false;
         audioOffline = false;

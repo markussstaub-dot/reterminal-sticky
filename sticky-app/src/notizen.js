@@ -35,7 +35,7 @@ export async function standort() {
 export async function notiere(teile, ort = null) {
   // Sorte (SPEC „Sprachnotizen 2.0“): Knöpfe sind Fahrt-Notizen, Diktate sortiert sorte.js; Stichwort fällt aus dem Text
   if (!teile.sorte) {
-    if (teile.art === 'diktat' && teile.text && !teile.unklar) {
+    if ((teile.art === 'diktat' || teile.art === 'recorder') && teile.text && !teile.unklar) {
       const s = sortiere(teile.text, { tempo: ort?.tempo, dauerMs: teile.dauerMs, faehrt: teile.faehrt });
       teile = { ...teile, text: s.text, sorte: s.sorte, sorteGrund: s.grund, ...(s.text !== teile.text && teile.roh == null ? { roh: teile.text } : {}) };
     } else teile = { ...teile, sorte: teile.art === 'knopf' ? 'fahrt' : 'eingang' };

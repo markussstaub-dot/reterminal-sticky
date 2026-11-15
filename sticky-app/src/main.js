@@ -35,7 +35,7 @@ let letzteEinheitUs = null;
 setzeEinheitUs(HANDY_US);   // bis der Sticky seine Einheit meldet
 import { alphabetDatei, glyphenBlatt, schriftHintergrund, schriftHilfe } from './strichschrift.js';
 import { KARTEN_STANDARD, zeichneKarte } from './karten.js';
-import { Aufnahme, wav, sprachPruefung, nurWortliste, angehoben } from './audio.js';
+import { Aufnahme, wav, wavKopf, sprachPruefung, nurWortliste, angehoben, dekodiereDatei, stuecke, mitMerkern } from './audio.js';
 import * as notizen from './notizen.js';
 import { SORTEN, naechsteSorte } from './sorte.js';
 import { HILFE } from './hilfe.js';
@@ -293,6 +293,8 @@ zwilling.beobachte((art, d) => {
   if (art === 'zustand') stickySchlaeft = false;
   if (art === 'aufnahmeLaeuft') { $('aufnahmeStatus').hidden = false; ortBeiAufnahme = notizen.standort(); }
   if (art === 'aufnahme') { $('aufnahmeStatus').hidden = true; d.ort = ortBeiAufnahme; zeigeAufnahme(d); }
+  if (art === 'recorderLaeuft') eintrag(T(`Recorder läuft am Sticky (${d.datei})`, `Recorder running on the Sticky (${d.datei})`));
+  if (art === 'recorder') recorderFertig(d).catch((e) => eintrag(T(`Recorder: ${e.message}`, `Recorder: ${e.message}`), true));
   if (art === 'zustand' && d.us != null && fwAb('0.31.0')) {   // Einheiten am Sticky geändert: Home neu zeichnen (°C/°F)
     const us = !!d.us;
     if (us !== letzteEinheitUs) { const vorher = letzteEinheitUs; letzteEinheitUs = us; setzeEinheitUs(us); if (vorher != null && zwilling.verbunden) abgleich().catch((e) => eintrag(e.message, true)); }
@@ -317,6 +319,7 @@ zwilling.beobachte((art, d) => {
     else if (d.t === 'touch' && d.a === 'down' && stickyModus === 'app') { appSeite.tipp(d.x, d.y).catch((e) => eintrag(T(`Spiel: ${e.message}`, `Game: ${e.message}`), true)); }
     else if (d.t === 'touch' && d.a === 'down') { eintrag(T(`Touch bei ${d.x}, ${d.y}`, `Touch at ${d.x}, ${d.y}`)); touchMarke(d.x, d.y); fahrtTouch(d.x, d.y, d.ms); }
     else if (d.t === 'pong') eintrag('Pong');
+    else if (d.t === 'rec' && ['abspielen', 'pause', 'springe'].includes(d.a)) recorderFernbedienung(d).catch((e) => eintrag(T(`Anhören: ${e.message}`, `Playback: ${e.message}`), true));
     else if (d.t === 'suchen') handyKlingeln();
     else if (d.t === 'suche') eintrag(d.a === 'gefunden' ? T('Sticky gefunden', 'Sticky found') : T('Sticky piept', 'Sticky is beeping'));
     else if (d.t === 'schlaf') stickySchlaeft = true;
@@ -743,7 +746,7 @@ function zeigeNotiz(n, neu = false) {
   kopf.append(' ', schild);
   const was = document.createElement('div');
   was.className = 'was';
-  was.textContent = n.art === 'diktat' ? `🎙 ${notizText(n.text) || T('(nichts erkannt)', '(nothing recognised)')}` : n.art === 'kritzel' ? T('✎ Kritzel', '✎ Doodle') : n.art === 'schrift' ? `✍ ${n.text}` : n.knopf;
+  was.textContent = n.art === 'diktat' || n.art === 'recorder' ? `${n.art === 'recorder' ? `⏺ ${Math.round((n.dauerMs ?? 0) / 60000)} min · ` : '🎙 '}${notizText(n.text) || T('(nichts erkannt)', '(nothing recognised)')}` : n.art === 'kritzel' ? T('✎ Kritzel', '✎ Doodle') : n.art === 'schrift' ? `✍ ${n.text}` : n.knopf;
   if (n.art === 'kritzel' && n.bild) {
     const img = document.createElement('img');
     img.className = 'kritzel';
@@ -890,11 +893,11 @@ async function abgleichKern() {
 }
 
 // ---- Karussell (SPEC „Bedienung und Oberfläche“): Reihe, durch die ▲/▼ am Sticky blättern -------------------------
-const KARUSSELL_STANDARD_DE = 'Home, Timer, Wecker, Weltzeit, Waage, Lineal, Notiz, Kritzel, Schrift, Rechner, Umrechner, Bordbuch, Zettel, Spiel, Einstellungen';
-const KARUSSELL_STANDARD_EN = 'Home, Timer, Alarm, World clock, Spirit level, Ruler, Note, Doodle, Handwriting, Calculator, Converter, Logbook, List, Game, Settings';
+const KARUSSELL_STANDARD_DE = 'Home, Timer, Wecker, Weltzeit, Waage, Lineal, Notiz, Recorder, Kritzel, Schrift, Rechner, Umrechner, Bordbuch, Zettel, Spiel, Einstellungen';
+const KARUSSELL_STANDARD_EN = 'Home, Timer, Alarm, World clock, Spirit level, Ruler, Note, Recorder, Doodle, Handwriting, Calculator, Converter, Logbook, List, Game, Settings';
 /** Standard der App-Sprache (beide Fassungen lösen über KARUSSELL_WOERTER gleich auf) */
 const karussellStandard = () => (appIstEn() ? KARUSSELL_STANDARD_EN : KARUSSELL_STANDARD_DE);
-const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'bordbuch', zettel: 'zettel', bestellzettel: 'zettel', kritzel: 'kritzel', kritzelblock: 'kritzel', schrift: 'schrift', strichschrift: 'schrift', app: 'app', spiel: 'app', burgduell: 'app', rechner: 'app', umrechner: 'app', timer: 'widget timer', waage: 'widget waage', wasserwaage: 'widget waage', lineal: 'widget lineal', wecker: 'widget wecker', weltzeit: 'widget weltzeit', einstellungen: 'widget einstellungen',
+const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'bordbuch', zettel: 'zettel', bestellzettel: 'zettel', kritzel: 'kritzel', kritzelblock: 'kritzel', schrift: 'schrift', strichschrift: 'schrift', app: 'app', spiel: 'app', burgduell: 'app', rechner: 'app', umrechner: 'app', timer: 'widget timer', waage: 'widget waage', wasserwaage: 'widget waage', lineal: 'widget lineal', wecker: 'widget wecker', weltzeit: 'widget weltzeit', einstellungen: 'widget einstellungen', recorder: 'widget recorder',
   // englische Eingaben (Anzeige Englisch), intern dieselben deutschen Wörter
   alarm: 'widget wecker', 'world clock': 'widget weltzeit', worldclock: 'widget weltzeit', level: 'widget waage', ruler: 'widget lineal', note: 'notiz', notes: 'notiz', scribble: 'kritzel', doodle: 'kritzel', 'spirit level': 'widget waage', handwriting: 'schrift',
   calculator: 'app', converter: 'app', logbook: 'bordbuch', list: 'zettel', lists: 'zettel', game: 'app', settings: 'widget einstellungen' };
@@ -903,7 +906,8 @@ const KARUSSELL_LOKAL = { rechner: 'rechner', umrechner: 'umrechner', calculator
 function karussellText() {
   // Rechner/Umrechner rechnen ab FW 0.28.0 im Sticky (Widgets); vorher über die App-Seite
   const lokal = fwAb('0.28.0'), wort = (w) => (lokal && KARUSSELL_LOKAL[w] ? `widget ${KARUSSELL_LOKAL[w]}` : KARUSSELL_WOERTER[w]);
-  const roh = (localStorage.getItem(schluessel('karussell')) || karussellStandard()).split(/[,;\n]/).map((w) => wort(w.trim().toLowerCase())).filter(Boolean);
+  const roh = (localStorage.getItem(schluessel('karussell')) || karussellStandard()).split(/[,;\n]/).map((w) => wort(w.trim().toLowerCase())).filter(Boolean)
+    .filter((e) => e !== 'widget recorder' || fwAb('0.34.0'));   // Recorder erst ab FW 0.34.0
   return [...new Set(roh)].join('\n') + '\n';
 }
 /** Tastenhilfe je Modus (▲+▼ am Sticky): auf eigener Leinwand rendern, damit die Vorschau bleibt, wie sie ist */
@@ -964,7 +968,11 @@ function platzGeaendert() {   // je Gerät gemerkt; true, wenn sich „anders“
   return true;
 }
 const platzKachel = () => { const a = (bauZ ?? zwilling).geraet.anders; return !a || a === 'firmware-ble' ? null : a === 'firmware' ? 'Sticky Lab' : a; };
-const widgetFunktionen = () => ({ ...WIDGETS, menue: (h) => menueWidget(karussellText().trim().split('\n'), h, platzKachel()) });
+const widgetFunktionen = () => {
+  const w = { ...WIDGETS, menue: (h) => menueWidget(karussellText().trim().split('\n'), h, platzKachel()) };
+  if (!fwAb('0.34.0')) delete w.recorder;   // ältere Firmware kennt „typ recorder“ nicht
+  return w;
+};
 const widgetBauer = () => {
   const alle = widgetFunktionen();
   const b = {};
@@ -1205,6 +1213,96 @@ const puffer = {
   loeschen: (n, s) => { const z = s?.z ?? zwilling; return fwAbZ(s, '0.11.0') ? z.loeschen(`/ist/puffer/${n}`) : z.pufferLoeschen(n); },
 };
 
+// ---- Recorder (SPEC „Recorder für Längeres“, FW ≥ 0.34.0) ---------------------------------------------------------
+/** Startzeit aus dem Dateinamen rJJMMTT-hhmmss.adp (Ortszeit des Sticky) */
+function recorderZeit(name) {
+  const m = name.match(/^r(\d\d)(\d\d)(\d\d)-(\d\d)(\d\d)(\d\d)/);
+  return m && +m[1] ? new Date(2000 + +m[1], m[2] - 1, +m[3], +m[4], +m[5], +m[6]).getTime() : 0;
+}
+
+/** WAV in Teilen schreiben (eine Stunde sind ~115 MB – am Stück wäre die base64-Zeichenkette zu groß) */
+async function speichernWav(name, pcm) {
+  if (!nativ) return null;
+  const pfad = `aufnahmen/${name}`;
+  const b64 = (bytes) => { let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(bin); };
+  await Filesystem.writeFile({ path: pfad, data: b64(wavKopf(pcm.length)), directory: Directory.Data, recursive: true });
+  const TEIL = 1 << 19;   // 512 Ki Samples = 1 MB
+  for (let a = 0; a < pcm.length; a += TEIL) {
+    const t = pcm.subarray(a, a + TEIL);
+    await Filesystem.appendFile({ path: pfad, data: b64(new Uint8Array(t.buffer, t.byteOffset, t.byteLength)), directory: Directory.Data });
+  }
+  return pfad;
+}
+
+/** Abtippen in Stücken (whisper hört 30-s-Fenster), Merker in den Text, Notiz anlegen, dann die Datei am Sticky löschen (✓) */
+async function recorderVerarbeiten({ pcm, start, datei, merker = [], offline = false }, s = null) {
+  const wer = s ? { geraet: kurz(s.g) } : {}, vor = s ? `${s.g.name}: ` : '';
+  const dauerMs = Math.round(pcm.length / 16);
+  const teile = stuecke(pcm);
+  eintrag(vor + T(`Recorder ${datei}: ${Math.round(dauerMs / 60000)} min, tippe ab (${teile.length} Stücke) …`, `Recorder ${datei}: ${Math.round(dauerMs / 60000)} min, transcribing (${teile.length} parts) …`));
+  const pfad = await speichernWav(`sticky-${dateiZeit(start)}-recorder.wav`, pcm);
+  const texte = [];
+  for (const [von, bis] of teile) {
+    let text = '';
+    try { const r = await erkenne(pcm.subarray(von, bis)); text = r.unklar ? '' : r.text || ''; } catch (e) { console.info('[sticky] recorder stück', e.message); }
+    texte.push({ von, bis, text });
+  }
+  const text = mitMerkern(texte, merker);
+  const n = await notizen.notiere({ t: start, art: 'recorder', text, audio: pfad ?? datei, datei, dauerMs, merker, ...(offline ? { offline: true } : {}), ...wer });
+  zeigeNotiz(n, true);
+  await puffer.loeschen(datei, s).catch(() => {});   // hat Text: die Karte darf sie freigeben, am Sticky steht dann ✓
+  eintrag(vor + T(`Recorder ${datei}: abgetippt (${text.length} Zeichen, ${merker.length} Merker)`, `Recorder ${datei}: transcribed (${text.length} characters, ${merker.length} marks)`));
+}
+
+/** Live-Aufnahme fertig (zwilling.js): vollständig → gleich abtippen; sonst die Datei abholen */
+async function recorderFertig(d) {
+  if (d.vollstaendig) await recorderVerarbeiten({ pcm: d.pcm, start: d.start, datei: d.datei, merker: d.merker ?? [] });
+  else eintrag(T(`Recorder ${d.datei}: live unvollständig – hole die Datei vom Sticky`, `Recorder ${d.datei}: live stream incomplete – fetching the file`));
+  await pufferAbholen();   // räumt die Notiz-Zeile ab bzw. stößt das Abholen an
+}
+
+/** Abholen in Stücken à 256 KB (~30 s Ton): jedes Stück eine eigene Anfrage, dazwischen kommt der übrige Abgleich dran */
+let recorderSchlange = Promise.resolve();
+const recorderInArbeit = new Set();
+function recorderEinreihen(job, s) {
+  if (recorderInArbeit.has(job.name)) return;
+  recorderInArbeit.add(job.name);
+  const vor = s ? `${s.g.name}: ` : '';
+  recorderSchlange = recorderSchlange.then(async () => {
+    const z = s?.z ?? zwilling, STUECK = 256 * 1024, daten = new Uint8Array(job.groesse), t0 = performance.now();
+    const min = Math.round(job.groesse / 8167 / 60);
+    eintrag(vor + T(`Hole Recorder-Aufnahme ${job.name} (~${min} min Ton, dauert etwa so lange) …`, `Fetching recording ${job.name} (~${min} min of audio, takes about as long) …`));
+    for (let ab = 0; ab < job.groesse; ab += STUECK) {
+      if (!z.verbunden) throw new Error(T('Verbindung weg, nächstes Mal weiter', 'connection lost, will retry next time'));
+      daten.set(await z.holen(`/ist/puffer/${job.name}`, Math.min(job.groesse, ab + STUECK), ab), ab);
+    }
+    console.info('[sticky] recorder abgeholt', job.name, job.groesse, Math.round(performance.now() - t0));
+    await recorderVerarbeiten({ pcm: dekodiereDatei(daten), start: job.start, datei: job.name, merker: job.merker, offline: true }, s);
+  }).catch((e) => eintrag(`${vor}Recorder ${job.name}: ${e.message}`, true)).finally(() => recorderInArbeit.delete(job.name));
+}
+
+/** Fernbedienung (Vorschlag Markus): Tipp auf eine Zeile am Sticky → hier abspielen, noch einmal = Pause, ▲/▼ = Merker */
+const recSpieler = typeof Audio !== 'undefined' ? new Audio() : null;
+let recSpielt = null;
+async function recorderFernbedienung(d) {
+  if (!recSpieler) return;
+  if (d.a === 'springe') {
+    if (!recSpielt) return;
+    const jetzt = recSpieler.currentTime * 1000, m = [...(recSpielt.merker ?? [])].sort((a, b) => a - b);
+    const ziel = d.r < 0 ? [...m].reverse().find((x) => x < jetzt - 2000) ?? 0 : m.find((x) => x > jetzt + 500);
+    if (ziel != null) recSpieler.currentTime = ziel / 1000;
+    return;
+  }
+  if (d.a === 'pause' && recSpielt?.datei === d.datei) { if (recSpieler.paused) await recSpieler.play(); else recSpieler.pause(); return; }
+  const n = (await notizen.heute()).find((x) => x.datei === d.datei);
+  if (!n?.audio || !nativ) { eintrag(T(`${d.datei} ist noch nicht beim Handy`, `${d.datei} is not on the phone yet`)); return; }
+  const { uri } = await Filesystem.getUri({ path: n.audio, directory: Directory.Data });
+  recSpieler.src = Capacitor.convertFileSrc(uri);
+  recSpielt = n;
+  await recSpieler.play();
+  eintrag(T(`Spiele ${d.datei} (${(n.merker ?? []).length} Merker, ▲/▼ springt)`, `Playing ${d.datei} (${(n.merker ?? []).length} marks, ▲/▼ jumps)`));
+}
+
 async function pufferAbholen(s = null) {
   const wer = s ? { geraet: kurz(s.g) } : {}, vor = s ? `${s.g.name}: ` : '';
   const liste = (await puffer.liste(s)).filter((d) => !d.ordner);
@@ -1213,14 +1311,22 @@ async function pufferAbholen(s = null) {
   const groesse = Object.fromEntries(liste.map((d) => [d.n, d.b]));
   const roh = groesse['notizen.jsonl'] ? new TextDecoder().decode(await puffer.holen('notizen.jsonl', groesse['notizen.jsonl'], s)) : '';
   const zeilen = roh.split('\n').map((z) => { try { return JSON.parse(z); } catch { return null; } }).filter(Boolean);
-  // Aufnahmen ohne Notiz-Zeile (z. B. nach einem abgebrochenen Abholen) trotzdem mitnehmen
+  // Aufnahmen ohne Notiz-Zeile (z. B. nach einem abgebrochenen Abholen) trotzdem mitnehmen; r*.adp sind Recorder-Aufnahmen
   for (const d of liste) {
-    if (d.n.endsWith('.adp') && !zeilen.some((z) => z.audio === d.n)) zeilen.push({ t: 0, art: 'diktat', audio: d.n });
+    if (d.n.endsWith('.adp') && !zeilen.some((z) => z.audio === d.n)) zeilen.push(/^r\d{6}-/.test(d.n) ? { t: recorderZeit(d.n), art: 'recorder', audio: d.n, merker: [] } : { t: 0, art: 'diktat', audio: d.n });
   }
   let anzahl = 0;
   for (const z of zeilen) {
     const t = z.t > 1.7e12 ? z.t : Date.now();   // 0 = Sticky kannte die Uhrzeit nicht
     let n;
+    if (z.art === 'recorder') {
+      // Datei schon weg: live angekommen und abgetippt. Schon als Notiz da (Abbruch nach dem Abtippen): nur noch löschen
+      if (groesse[z.audio] == null) continue;
+      if ((await notizen.heute()).some((x) => x.datei === z.audio)) { await puffer.loeschen(z.audio, s); continue; }
+      // lange Übertragung (~so lange wie die Aufnahme): nicht hier warten, sonst steht der ganze Abgleich still
+      recorderEinreihen({ name: z.audio, groesse: groesse[z.audio], start: t, merker: z.merker ?? [] }, s);
+      continue;
+    }
     if (z.art === 'diktat' && z.audio) {
       let text = '', pfad = null, dauerMs = z.dauerMs;
       try {

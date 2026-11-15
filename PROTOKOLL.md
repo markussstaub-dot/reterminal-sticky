@@ -47,6 +47,11 @@ Bild: Zeilen à 100 Byte, MSB = linkes Pixel, Bit 1 = schwarz. CRC-32 wie zlib.
   `{"t":"img","ok":…,"gespeichert":n}` nach BILD_ENDE Modus 3
 - `{"t":"audio","a":"start","rate":16000,"codec":"ima-adpcm","n":480}`, `{"t":"audio","a":"stop","pakete","verworfen","ms","spitze"}`,
   `{"t":"audio","a":"fehler","err":"mtu|mikro"}`
+- Recorder (FW ≥ 0.34.0): `{"t":"rec","a":"start","rate","codec","n","ms","datei","live":0|1}` (bei live kommen die Pakete
+  auf AUDIO wie beim Diktat; seq läuft nach 65536 über), `{"t":"rec","a":"merker","ms"}` (ms ab Beginn),
+  `{"t":"rec","a":"stop","datei","ms","pakete","verlust","live","merker":[ms…]}`; Fernbedienung vom Sticky:
+  `{"t":"rec","a":"abspielen|pause","datei"}`, `{"t":"rec","a":"springe","r":-1|1}`. Die Datei liegt danach als
+  `/ist/puffer/rJJMMTT-hhmmss.adp` (Pakete à 245 Byte) samt Notiz-Zeile `art: recorder`; Löschen = „hat Text“
 
 Fahrtenschreiber (ab FW 0.10.0): `/ist/log/JJJJ-MM-TT.txt` auf der Karte, je Zeile `HH:MM:SS Text` in Ortszeit
 (ohne gestellte Uhr `/ist/log/ohne-zeit.txt` mit `+Sekunden`). Die App holt per LISTE/HOLEN ab dem bekannten Stand

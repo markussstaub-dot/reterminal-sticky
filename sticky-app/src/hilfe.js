@@ -94,6 +94,20 @@ function seiten() {
         ['!Cities', 'Home, Tokyo, New York, Los Angeles · ☀ = day, ☾ = night', '!Without phone',
           'the Sticky keeps counting itself; daylight saving changes come with the next sync']).concat(TASTEN_KURZ(), ZURUECK()),
     },
+    'w-recorder': {
+      titel: T('Hilfe · Recorder', 'Help · Recorder'),
+      zeilen: T(
+        ['!Aufnehmen', 'großer Knopf = Start / Stopp, Hände frei · läuft weiter, wenn du die Seite verlässt',
+          '!Merker', 'KI halten (solange er läuft) oder „Merker setzen“ – die Stelle steht später im Text',
+          '!Liste', 'Aufnahmen von heute · ✓ beim Handy und abgetippt · Sanduhr = wartet aufs Handy',
+          '!Anhören', 'nur am Handy: Zeile antippen spielt dort ab (noch einmal = Pause), ▲ ▼ springt zum Merker',
+          '!Grenzen', 'nach jeder Stunde Piepton · unter 15 % Akku stoppt er · braucht die Karte'],
+        ['!Record', 'big button = start / stop, hands free · keeps running when you leave the page',
+          '!Marks', 'hold AI (while recording) or “Set mark” – the spot shows up in the text later',
+          '!List', 'today’s recordings · ✓ on the phone and transcribed · hourglass = waiting for the phone',
+          '!Listen', 'on the phone only: tap a row to play it there (again = pause), ▲ ▼ jumps to marks',
+          '!Limits', 'beep after every hour · stops below 15 % battery · needs the card']).concat(ZURUECK()),
+    },
     'w-wecker': {
       titel: T('Hilfe · Wecker', 'Help · Alarm'),
       zeilen: T(

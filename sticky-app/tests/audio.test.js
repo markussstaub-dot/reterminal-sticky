@@ -57,3 +57,39 @@ test('Wächter: kurz, leise, Rauschen, Sprache', async () => {
   assert.equal(nurWortliste('Kreisel. Kreisel.', 'Microlino, Kreisel, Ampel'), true);
   assert.equal(nurWortliste('Tanke am Kreisel hat zu', 'Microlino, Kreisel, Tanke'), false);
 });
+
+import { dekodiereDatei, stuecke, mitMerkern, zeitmarke } from '../src/audio.js';
+
+test('Aufnahme zählt über den seq-Überlauf (Recorder > 33 min)', () => {
+  const a = new Aufnahme();
+  const leer = new Int16Array(SAMPLES_JE_PAKET);
+  for (const s of [65534, 65535, 0, 1]) a.paket(kodiere(leer, s));
+  const e = a.ergebnis();
+  assert.equal(e.pakete, 4);
+  assert.equal(e.pcm.length, (65536 + 2) * SAMPLES_JE_PAKET);   // Lücke vorn = Stille, aber nichts überschrieben
+});
+
+test('dekodiereDatei liest Pakete der Reihe nach, unabhängig von seq', () => {
+  const z = { pred: 0, index: 0 };
+  const p1 = kodiere(ton(SAMPLES_JE_PAKET), 65535, z), p2 = kodiere(ton(SAMPLES_JE_PAKET, SAMPLES_JE_PAKET), 0, z);
+  const datei = new Uint8Array(p1.length * 2 + 7);   // angehängter Rest wird ignoriert
+  datei.set(p1, 0); datei.set(p2, p1.length);
+  assert.equal(dekodiereDatei(datei).length, 2 * SAMPLES_JE_PAKET);
+});
+
+test('stuecke schneidet an der leisesten Stelle, höchstens 29 s je Stück', () => {
+  const rate = 16000, pcm = new Int16Array(70 * rate).fill(3000);
+  pcm.fill(0, 24 * rate, 24 * rate + 960);                        // Pause bei 24 s
+  const s = stuecke(pcm);
+  assert.ok(s.length >= 3);
+  assert.ok(Math.abs(s[0][1] - 24 * rate) < 960, `Schnitt bei ${s[0][1] / rate} s`);
+  for (const [a, b] of s) assert.ok(b - a <= 29 * rate);
+  assert.equal(s.at(-1)[1], pcm.length);
+  assert.deepEqual(stuecke(new Int16Array(10 * rate)), [[0, 10 * rate]]);
+});
+
+test('Merker landen vor dem Stück, in dem sie liegen', () => {
+  const teile = [{ von: 0, bis: 16000 * 20, text: 'erstes' }, { von: 16000 * 20, bis: 16000 * 40, text: 'zweites' }];
+  assert.equal(mitMerkern(teile, [25000, 5000, 99000]), '⚑ 00:05 erstes ⚑ 00:25 zweites ⚑ 01:39');
+  assert.equal(zeitmarke(3723000), '1:02:03');
+});
