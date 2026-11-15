@@ -811,6 +811,14 @@ abtippen, sortieren, Ziele). Nimmt die Idee „Gesprächs-/Meeting-Notizen“ au
 - Vorschlag **Fahrt**: die Bewegung entscheidet übers Wachbleiben, GPS im `StickyDienst` bleibt Rückfall, bis
   ein paar echte Fahrten gut gelaufen sind
 - Vorschlag **Firmware von der Karte** (`/soll/firmware.bin`): eigener Schritt nach den Sensoren
+- fest (Markus, 15.11.2026) **EDC und Sticky Lab auf einem Gerät**: EDC fest in `app0`, Lab fest in `app1` (je 4 MB,
+  EDC ~1,0 MB, Lab ~0,7 MB; gleiche `partitions.csv`). Details in der Lab-SPEC, Abschnitt 6
+  - Vorschlag EDC: Menüeintrag **„Sticky Lab“** (nur sichtbar, wenn in `app1` eine gültige Firmware liegt), setzt den
+    Start auf `app1` und startet neu; das Lab hat „zurück zu EDC“
+  - Vorschlag **Notausgang**: beim Einschalten ▲ halten startet den anderen Platz
+  - fest: Updates schreiben nur in den eigenen Platz (EDC → `app0`), nie „in den freien“. Gilt auch für Firmware von
+    der Karte und die Firmware-Bibliothek in der App
+  - Daten bleiben getrennt: EDC `/soll` `/ist` und LittleFS, Lab nur `/lab/` und NVS-Namensraum `lab`
 - Merker (Markus, 15.11.2026): **Akku-Symbol nach Tiefentladung unzuverlässig** – beide Stickys über Nacht leer,
   kurz geladen, abgesteckt: Symbol zeigte halbvoll, trotzdem aus (Neustart beim Einstecken mit `POWERON`, e-Ink
   behielt das alte Bild samt „verbunden“). Der BQ27220 meldete danach Unsinn (45 % bzw. 83 %, „lädt“ mit 3–5 A).
