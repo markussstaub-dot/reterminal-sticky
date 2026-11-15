@@ -735,7 +735,8 @@ Mockup: `docs/eingabe-mockup.html`.
 - Vorschlag **Englisch**: Oberfläche, Reiter („Keys · Digits · Stroke · Voice“) und Tastenbelegung folgen der EDC-Sprache.
 - offen: welche Ziele zuerst? (Vorschlag: Notiz und Zettel-Eintrag)
 - offen: Umlaute im englischen Tastenmodus (langes Drücken?)
-- offen: Strichschrift-Umlaute – Leiste reicht, oder doch Gesten?
+- fest (Markus, 15.11.2026): **Eingabewege sauber getrennt**, in EDC keine neuen Gesten. Umlaut- und andere Gesten
+  bleiben ein Kandidat fürs Sticky Lab (erst dort ausprobieren, dann entscheiden); in EDC gilt die Umlaut-Leiste
 - offen: Diktat später per Ollama nachbessern (Satzzeichen, Groß/klein)?
 - offen: Einfach-Profil für ältere Angehörige – nur Sprache und Tasten, keine Strichschrift?
 
