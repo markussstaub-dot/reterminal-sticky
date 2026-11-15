@@ -803,6 +803,9 @@ Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzu
   - **Taschenrechner** mit Touch-Tastenfeld, rechnet auf dem Sticky (aufwendigster Punkt)
 - Ideen, gemischt: **Weltzeituhr** (Tokio, New Jersey, Jacksonville, L.A.; Karte aus der App, Ziffern vom Sticky) ·
   **Klimaverlauf** 24 h mit Taupunkt-Linie (Daten aus `/ist/mess`)
+  - Merker (Markus, 15.11.2026 spät): **Weltzeit als Globus-Ansicht** fürs e-Paper – Erdkugel (gerastert, Braun-Stil)
+    mit Tag/Nacht-Grenze und den Städten als Punkte mit Uhrzeit; die App rendert Kugel und Schatten z. B. viertelstündlich,
+    der Sticky setzt nur die Ziffern ein (wie heute). Idee, nicht entschieden
 - Ideen, aus der App: **Tagesübersicht** (Termine, Wetter, Micro-Akku aus Bubble Log) · **Hanshin-Tigers-Ergebnis**
 - fest **Eingabe am Sticky nur für Kleinkram** (Markus, 13.11.2026): längere Texte tippt man am Fold/Zenbook oder
   diktiert. Am Sticky:
