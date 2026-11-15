@@ -6,7 +6,7 @@ const E = ['home', 'widget timer', 'widget waage', 'widget lineal', 'notiz', 'bo
 
 test('Blöcke folgen dem Karussell, Ausgeschaltetes hinten im Block', () => {
   const z = zustandAus(E);
-  assert.deepEqual(z.bloecke.slice(0, 4).map((b) => b.id), ['home', 'zeit', 'messen', 'schreiben']);
+  assert.deepEqual(z.bloecke.slice(0, 4).map((b) => b.id), ['home', 'zeit', 'messen', 'notieren']);
   assert.deepEqual(z.bloecke[1].glieder, ['timer', 'wecker', 'weltzeit']);
   assert.ok(!z.an.has('wecker'));
   assert.equal(wortliste(z), 'home, timer, waage, lineal, notiz, bordbuch, spiel');

@@ -9,7 +9,7 @@ test('Standard-Karussell ergibt 8 Kacheln in Karussell-Reihenfolge', () => {
   const k = menueKacheln(STANDARD);
   assert.equal(k.length, 8);
   assert.deepEqual(k.map((x) => x.gruppe?.id ?? x.glieder[0].e),
-    ['home', 'zeit', 'messen', 'schreiben', 'rechnen', 'nachschlagen', 'app', 'widget einstellungen']);
+    ['home', 'zeit', 'messen', 'notieren', 'rechnen', 'nachschlagen', 'app', 'widget einstellungen']);
 });
 
 test('Gruppenkachel trägt eine Bitmaske der Karussell-Indizes', () => {

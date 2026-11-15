@@ -832,7 +832,7 @@ Mockup: `docs/gruppen-mockup.html`.
   | Home | Home |
   | Zeit | Timer · Wecker · Weltzeit |
   | Messen | Waage · Lineal (später Winkel aus dem Bewegungssensor) |
-  | Schreiben | Notiz · Kritzel · Schrift (später Recorder) |
+  | Notieren (vorher „Schreiben“) | Notiz · Recorder · Kritzel · Schrift |
   | Rechnen | Rechner · Umrechner (eine Gruppe, fest) |
   | Nachschlagen | Bordbuch · Zettel (später Spickzettel getrennt vom Bordbuch) |
   | Spiel · Einstellungen | je allein |
@@ -870,6 +870,8 @@ Mockup: `docs/gruppen-mockup.html`.
   statt Textfeld (`src/karussellListe.js`): Gruppen-Blöcke mit Häkchen (drin/raus) und Pfeilen (Gruppe bzw. Werkzeug
   höher/tiefer), Home immer an und oben. Gespeichert wird weiter die Wortliste. Einmalig wird der Recorder in ältere
   eigene Listen hinter die Notiz eingetragen
+- fest (Markus, 15.11.2026 abends): Gruppe **„Notieren“** (EN „Capture“) statt „Schreiben“ – mit dem Recorder
+  schreibt man nicht; „Notieren“ passt auf Text, Ton, Bild und Strich
 
 ### Eingabe: Tasten, Ziffern, Strich, Sprache (Markus, 15.11.2026, abgenommen)
 
