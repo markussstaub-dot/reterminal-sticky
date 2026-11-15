@@ -46,7 +46,7 @@ Legende: **fest** = entschieden · **Vorschlag** = Claudes Idee, Markus entschei
     baut es selbst (Protokoll und SD-Vertrag stehen unter „Für Fremd-Apps“)
   - **Leeren vor der Weitergabe (14.11.2026, FW 0.31.6):** Befehl 0x26 „LEEREN“ löscht /soll und /ist auf der Karte
     samt Unterordnern, formatiert LittleFS und startet neu; in der App bei „Vergessen“ als Rückfrage, wenn der Sticky
-    verbunden ist. An Sticky B geprüft: 93 Dateien weg, Karte 0 MB, LittleFS leer
+    verbunden ist. Am zweiten Sticky (5695) geprüft: 93 Dateien weg, Karte 0 MB, LittleFS leer
   - offen: Wechsel des aktiven Sticky ohne Neuladen; Kopplung/Verschlüsselung
 
 ## MVP (Markus, 11.11.2026)
@@ -452,7 +452,7 @@ Was der Sticky als Immer-dabei-Helfer noch können könnte, sortiert nach Aufwan
     Braucht das Handy. **Zwei Stickys (umgesetzt 14.11.2026):** zeigen beide die Spielseite, schaltet die App ins Duell –
     West am aktiven, Ost am Hintergrund-Sticky, nur wer am Zug ist, darf tippen, jedes Bild geht an beide. Dazu
     **Computer gegen Computer** (`__sticky.maschinenDuell()`, gleicher Computer-Spieler, Münzwurf entscheidet den Anfang):
-    erstes Spiel Sticky B gegen 559D, Sticky B gewann nach knapp 3 min. „180° gedreht“ gilt jetzt je Gerät statt je Profil
+    erstes Spiel 5695 gegen 559D, 5695 gewann nach knapp 3 min. „180° gedreht“ gilt jetzt je Gerät statt je Profil
   - Nur Idee (Markus, 14.11.2026): **wenn Spiele, dann richtig**: auch Weltraum-Felsen-Ballern und Städte-Verteidigung
     (Raketen abfangen) im Stil der Arcade-Zeit, eigene Namen und Grafik. Haken E-Paper: Teil-Refresh ~0,3–0,75 s, also
     2–3 Bilder/s mit Geisterbildern. Vorschlag: bewusst langsame Fassungen („Zeitlupen-Arcade“: Welt bewegt sich nur
@@ -708,7 +708,7 @@ verloren (Touch-Abfrage in eigener Aufgabe), Klick sofort, Textzeile gesammelt ~
 Mockup: `docs/eingabe-mockup.html`.
 
 - Vorschlag **ein Baustein „Eingabe“** für alle Textziele (Notiz, Zettel-Eintrag, Spickzettel-Karte, Handbuch-Suche,
-  „Parkplatz“): oben die Textzeile, darunter eine von drei Arten **Tasten · Strich · Sprache**. Ein Modul `eingabe.h`
+  „Parkplatz“): oben die Textzeile, darunter eine der Arten **Tasten · Ziffern · Strich · Sprache**. Ein Modul `eingabe.h`
   mit drei Unterseiten statt drei eigener Seiten. Kritzel bleibt eigene Seite (liefert Bild, keinen Text).
 - fest (bestehende Regel) **KI halten = Diktat**, auch mitten im Tippen; der Text landet an der Schreibmarke.
 - Vorschlag **Art wählen**: sichtbare Reiter oben rechts (tippen) und ▲/▼. **Keine neuen Wisch-Gesten**
@@ -716,6 +716,9 @@ Mockup: `docs/eingabe-mockup.html`.
 - Vorschlag **jedes Ziel merkt sich die zuletzt genutzte Art** (Parkplatz → Tasten, Notiz → Sprache).
 - Vorschlag **Tasten** aus Lab-Station 10 übernehmen (MIT): QWERTZ mit Ä Ö Ü ß bzw. QWERTY, nur quer, Tasten nie neu
   zeichnen, Textzeile gesammelt auffrischen (0,3 s Pause, spätestens 1,5 s), Teil-Refresh „wach“.
+- Vorschlag (Markus, 15.11.2026) **vierte Art „Ziffern“**: Num-Pad mit großen runden Tasten im ET66-Stil (0–9, Komma,
+  Löschen, OK) für Zahlen, Codes, Parkplatz- und Telefonnummern, Timer-Minuten. Ziele, die nur Zahlen brauchen, öffnen
+  direkt das Num-Pad. Nur in EDC – das Lab braucht keins.
 - fest **Strich** = vorhandene Strichschrift (FW 0.27). Vorschlag: **Umlaut-Leiste** ä ö ü ß zum Antippen statt
   Umlaut-Gesten (nur im deutschen Modus).
 - Vorschlag **Sprache**: Erkennung am Fold (Whisper) **in der App-Sprache** statt fest Deutsch; ohne Handy bleibt es
