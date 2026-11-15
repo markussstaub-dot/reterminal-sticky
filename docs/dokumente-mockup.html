@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EDC Dokumente Mockup</title>
+<style>
+:root{--bg:#e9e6df;--ink:#111;--paper:#f4f2ec;--muted:#666}
+body{margin:0;background:var(--bg);font-family:Helvetica,Arial,sans-serif;color:var(--ink);padding:16px}
+h1{font-size:20px;margin:0 0 4px}h2{font-size:17px;margin:24px 0 8px}
+p.k{margin:0 0 16px;color:var(--muted);font-size:14px;max-width:820px}
+.grid{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+figure{margin:0}figure.quer{max-width:820px;width:100%}figure.handy{max-width:360px;width:100%}
+figcaption{font-size:13px;color:var(--muted);margin-top:6px}
+.dev{background:#2b2b2b;border-radius:18px;padding:14px}
+svg{display:block;width:100%;height:auto;background:var(--paper);border-radius:4px}
+svg text{font-family:Helvetica,Arial,sans-serif;fill:#111}
+/* App (dunkel wie die Sticky-App) */
+.app{background:#151515;color:#f1efe9;border-radius:22px;padding:16px;font-size:15px}
+.app h3{margin:0 0 10px;font-size:20px}.app .klein{color:#9b998f;font-size:13px}
+.app .zeile{display:flex;align-items:center;gap:10px;background:#232322;border:1px solid #343432;border-radius:12px;padding:10px 12px;margin:8px 0}
+.app .zeile .t{flex:1}.app .zeile b{display:block}
+.app .sch{width:42px;height:24px;border-radius:12px;background:#f0a63a;position:relative}.app .sch:after{content:"";position:absolute;right:3px;top:3px;width:18px;height:18px;border-radius:9px;background:#151515}
+.app .sch.aus{background:#343432}.app .sch.aus:after{left:3px;right:auto;background:#9b998f}
+.app .balken{height:10px;border-radius:5px;background:#343432;overflow:hidden;margin:6px 0}.app .balken i{display:block;height:100%;width:23%;background:#f0a63a}
+.app button{background:#f0a63a;color:#151515;border:0;border-radius:20px;padding:10px 16px;font-weight:600;min-height:44px}
+.app .reiter{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}.app .reiter span{padding:6px 12px;border-radius:14px;background:#232322;font-size:13px}.app .reiter span.an{background:#f0a63a;color:#151515}
+</style></head><body>
+<h1>EDC · Dokumente (Entwurf)</h1>
+<p class="k">Aus „Bordbuch“ werden zwei Dinge: Handbücher (große PDFs, nur lesen) und Spickzettel (kurze Karten). In der App verwaltet der Reiter „Dokumente“ beide; am Sticky liegen sie in der Gruppe „Nachschlagen“ als Reiter Handbuch · Spickzettel · Zettel.</p>
+
+<h2>App: Reiter „Dokumente“</h2>
+<div class="grid">
+<figure class="handy"><div class="app">
+ <div class="reiter"><span>Sticky</span><span>Notizen</span><span class="an">Dokumente</span><span>Zettel</span><span>Mehr</span></div>
+ <h3>Handbücher</h3>
+ <div class="zeile"><div class="t"><b>Microlino</b><span class="klein">212 Seiten · 9,8 MB · Inhalt 8 Kapitel</span></div><div class="sch"></div></div>
+ <div class="zeile"><div class="t"><b>Bambu X1C</b><span class="klein">96 Seiten · 4,4 MB</span></div><div class="sch"></div></div>
+ <div class="zeile"><div class="t"><b>Wallbox</b><span class="klein">18 Seiten · 0,8 MB</span></div><div class="sch aus"></div></div>
+ <button>+ PDF</button> <span class="klein">oder „Teilen → Sticky“ aus einer anderen App</span>
+ <p class="klein" style="margin-top:14px">Platz auf dem Sticky: 15 von 64 MB</p>
+ <div class="balken"><i></i></div>
+ <h3 style="margin-top:18px">Spickzettel</h3>
+ <div class="zeile"><div class="t"><b>Reifendruck</b><span class="klein">#micro #notfall · 5 Zeilen</span></div></div>
+ <div class="zeile"><div class="t"><b>Sicherungen</b><span class="klein">#micro · 7 Zeilen</span></div></div>
+ <div class="zeile"><div class="t"><b>Düse wechseln</b><span class="klein">#werkstatt · 6 Zeilen</span></div></div>
+ <p class="klein">Pflegen am bequemsten am Zenbook (Spickzettel-Konsole), hier ansehen und kleine Korrekturen.</p>
+</div><figcaption>Schalter = Dokument kommt auf den Sticky. Tippen auf ein Handbuch: Inhaltsverzeichnis, Suche („Reifendruck“ → Sticky springt zur Seite), umbenennen, löschen.</figcaption></figure>
+</div>
+
+<h2>Sticky: Gruppe „Nachschlagen“</h2>
+<div class="grid">
+<!-- Bibliothek -->
+<figure class="quer"><div class="dev"><svg viewBox="0 0 800 480" id="bib">
+ <g class="reiter" data-aktiv="0"></g>
+ <text x="780" y="24" font-size="16" text-anchor="end">14:05 · 82 %</text>
+ <line x1="0" y1="44" x2="800" y2="44" stroke="#111" stroke-width="2"/>
+ <text x="400" y="470" font-size="14" text-anchor="middle" style="fill:#666">Tippen = öffnen (letzte Seite) · ▲▼ = blättern · KI = Home</text>
+</svg></div><figcaption>Handbuch → Bibliothek: eine Kachel je Dokument, zuletzt gelesenes vorn, mit der Seite, auf der man war. Nur ein Dokument auf dem Sticky → gleich dessen Inhaltsverzeichnis.</figcaption></figure>
+
+<!-- Inhaltsverzeichnis -->
+<figure class="quer"><div class="dev"><svg viewBox="0 0 800 480" id="inhalt">
+ <g class="reiter" data-aktiv="0"></g>
+ <text x="780" y="24" font-size="16" text-anchor="end">14:05 · 82 %</text>
+ <line x1="0" y1="44" x2="800" y2="44" stroke="#111" stroke-width="2"/>
+ <text x="20" y="80" font-size="22" font-weight="bold">Microlino · Inhalt</text>
+ <text x="780" y="80" font-size="16" text-anchor="end">◆ S. 87 (Lesezeichen)</text>
+</svg></div><figcaption>Inhaltsverzeichnis: große Zeilen zum Antippen, rechts die Seitenzahl. ▲ lang auf einer Seite setzt ein Lesezeichen, das oben rechts zum Antippen steht.</figcaption></figure>
+
+<!-- Spickzettel -->
+<figure class="quer"><div class="dev"><svg viewBox="0 0 800 480" id="spick">
+ <g class="reiter" data-aktiv="1"></g>
+ <text x="780" y="24" font-size="16" text-anchor="end">14:05 · 82 %</text>
+ <line x1="0" y1="44" x2="800" y2="44" stroke="#111" stroke-width="2"/>
+</svg></div><figcaption>Spickzettel: links die Kartentitel (zuletzt benutzte oben), rechts die gewählte Karte. ▲/▼ = nächste Karte. Was auf dem Sticky landet, bestimmt die Szene (Marken #micro, #werkstatt …).</figcaption></figure>
+</div>
+<script>
+const ns = 'http://www.w3.org/2000/svg';
+const el = (t, a, x) => { const e = document.createElementNS(ns, t); for (const k in a) e.setAttribute(k, a[k]); if (x != null) e.textContent = x; return e; };
+document.querySelectorAll('g.reiter').forEach((g) => {
+  const a = +g.dataset.aktiv, namen = ['Handbuch', 'Spickzettel', 'Zettel'], B = 420, w = B / 3, X = 8, H = 36;
+  g.appendChild(el('rect', { x: X, y: 2, width: B, height: H, rx: H / 2, fill: 'none', stroke: '#111', 'stroke-width': 2 }));
+  namen.forEach((n, i) => { const cx = X + w * i + w / 2;
+    if (i === a) g.appendChild(el('rect', { x: cx - w / 2 + 3, y: 5, width: w - 6, height: H - 6, rx: (H - 6) / 2, fill: '#111' }));
+    const t = el('text', { x: cx, y: 27, 'font-size': 19, 'text-anchor': 'middle', 'font-weight': i === a ? 'bold' : 'normal' }, n); if (i === a) t.setAttribute('style', 'fill:#f4f2ec'); g.appendChild(t); });
+});
+const bib = document.getElementById('bib');
+[['Microlino', 'S. 87 von 212'], ['Bambu X1C', 'S. 12 von 96'], ['Wallbox', 'neu']].forEach(([n, s], i) => {
+  const x = 24 + i * 256, y = 70;
+  bib.appendChild(el('rect', { x, y, width: 240, height: 360, rx: 26, fill: 'none', stroke: '#111', 'stroke-width': i === 0 ? 5 : 2 }));
+  for (let l = 0; l < 6; l++) bib.appendChild(el('line', { x1: x + 40, y1: y + 70 + l * 26, x2: x + 200 - (l % 3) * 30, y2: y + 70 + l * 26, stroke: '#999', 'stroke-width': 6 }));
+  bib.appendChild(el('text', { x: x + 120, y: y + 280, 'font-size': 28, 'text-anchor': 'middle', 'font-weight': 'bold' }, n));
+  bib.appendChild(el('text', { x: x + 120, y: y + 318, 'font-size': 18, 'text-anchor': 'middle' }, s));
+});
+const inh = document.getElementById('inhalt');
+[['1  Sicherheit', 4], ['2  Bedienelemente', 18], ['3  Laden', 41], ['4  Fahren', 63], ['5  Pflege und Wartung', 87], ['6  Pannenhilfe', 112]].forEach(([n, s], i) => {
+  const y = 100 + i * 60;
+  inh.appendChild(el('rect', { x: 16, y, width: 768, height: 52, rx: 26, fill: i === 4 ? '#111' : 'none', stroke: '#111', 'stroke-width': 2 }));
+  const t1 = el('text', { x: 40, y: y + 34, 'font-size': 24 }, n), t2 = el('text', { x: 760, y: y + 34, 'font-size': 22, 'text-anchor': 'end' }, s);
+  if (i === 4) { t1.setAttribute('style', 'fill:#f4f2ec'); t2.setAttribute('style', 'fill:#f4f2ec'); }
+  inh.append(t1, t2);
+});
+const sp = document.getElementById('spick');
+['Reifendruck', 'Sicherungen', 'Laden unterwegs', 'Pannenhilfe', 'Warnleuchten'].forEach((n, i) => {
+  const y = 60 + i * 80;
+  sp.appendChild(el('rect', { x: 16, y, width: 280, height: 68, rx: 34, fill: i === 0 ? '#111' : 'none', stroke: '#111', 'stroke-width': 2 }));
+  const t = el('text', { x: 156, y: y + 42, 'font-size': 22, 'text-anchor': 'middle' }, n); if (i === 0) t.setAttribute('style', 'fill:#f4f2ec'); sp.appendChild(t);
+});
+sp.appendChild(el('line', { x1: 316, y1: 56, x2: 316, y2: 470, stroke: '#111', 'stroke-width': 2 }));
+sp.appendChild(el('text', { x: 340, y: 100, 'font-size': 30, 'font-weight': 'bold' }, 'Reifendruck'));
+['vorne 1,8 bar', 'hinten 2,0 bar', 'Ventil: Ladeklappe links', 'Pumpe: Kofferraum, Mulde', 'kalt messen'].forEach((z, i) => sp.appendChild(el('text', { x: 340, y: 160 + i * 52, 'font-size': 28 }, z)));
+</script>
+</body></html>

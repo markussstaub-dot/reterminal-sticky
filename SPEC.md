@@ -660,6 +660,29 @@ Seitentypen, beide eigene Seiten (gehen ohne Handy):
   Werkstatt-Handgriffe
 - Vorschlag: der Name „Bordbuch“ geht in diesen zwei Teilen auf (bleibt höchstens als Titel der Micro-Szene)
 
+### Dokumente: App-Reiter als Dokumenten-Manager, Handbuch und Spickzettel getrennt (Markus, 15.11.2026, Entwurf)
+Anlass (Markus): „Bordbuch ist eher File-/Doc-Manager?“ – ja; setzt „Spickzettel und Handbücher trennen“ (oben) um.
+Mockup: `docs/dokumente-mockup.html`.
+- Vorschlag **App-Reiter „Dokumente“** (EN „Docs“) statt „Bordbuch“: Liste aller Handbücher mit Seitenzahl und Größe,
+  je Dokument Schalter „auf dem Sticky“, unten Platz auf der Karte (belegt/frei). „+ PDF“ lädt ein Handbuch (Datei
+  wählen oder Teilen aus einer anderen App); die App rendert die Seiten wie heute fürs Bordbuch, legt sie unter
+  `/soll/doku/<name>/` ab und baut das Inhaltsverzeichnis. Tippen auf ein Dokument: Inhaltsverzeichnis bearbeiten,
+  Seite suchen („Reifendruck“ → Sticky springt hin), umbenennen, löschen
+- Vorschlag **Spickzettel in der App** bekommen einen eigenen Abschnitt im selben Reiter (Karten-Liste wie in der
+  Konsole, mit Szenen-Marken), nicht mehr im Handbuch versteckt; gepflegt wird bevorzugt am Zenbook (Konsole)
+- Vorschlag **am Sticky in „Nachschlagen“**: Reiter **Handbuch · Spickzettel · Zettel**.
+  - Handbuch: Bibliothek (Kachel je Dokument, zuletzt gelesenes vorn) → Inhaltsverzeichnis → Seite; ▲/▼ blättert,
+    jedes Dokument merkt sich die letzte Seite; ▲ lang = Lesezeichen. Ein Dokument allein → gleich das Inhaltsverzeichnis
+  - Spickzettel: Liste der Kartentitel (zuletzt benutzte oben), Tippen öffnet, ▲/▼ nächste Karte
+  - Zettel bleibt, wie er ist
+- Vorschlag **Technik**: einmal ein allgemeiner Viewer in der Firmware (der Bordbuch-Code kann das fast); neues
+  Handbuch = neuer Ordner, kein Flashen. Das heutige Bordbuch wird beim ersten Start zum Dokument „Microlino“
+  (Seiten bleiben im Flash bzw. ziehen auf die Karte um), Spickzettel und Handgriffe werden Karten
+- Vorschlag **Szenen**: Micro zeigt Microlino-Handbuch und Auto-Spickzettel, Werkstatt Bambu-Handbuch und
+  Werkstatt-Karten (Marken wie in der Konsole)
+- offen: Handbuch-Seiten im Flash (heute, ~500 Seiten Platz) oder auf der SD-Karte (viel mehr Platz, etwas langsamer)?
+- offen: Name am Sticky „Handbuch“ oder „Doku“? (Vorschlag: Handbuch – das sagt jeder)
+
 ### Spickzettel-Konsole: Karten am Zenbook pflegen (Markus, 15.11.2026, abgenommen)
 Anlass: Karten am Fold abzutippen ist mühsam (heute: `sticky-lab/SPICKZETTEL-EDC.md` → App, Bordbuch-Tab → Spickzettel).
 Am Zenbook mit Tastatur schreiben, in Sticky-Größe ansehen, dann rüber.
