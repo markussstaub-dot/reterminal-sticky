@@ -197,7 +197,7 @@ Rechenarbeit im Handy, KI und Cloud nur als zuschaltbare Zusatzstufe.
 ### Ideen mit Handy (Markus, 15.11.2026, geparkt – nur sammeln, nichts entschieden)
 Lab und EDC gelten als rund; das hier ist, was Sticky und Handy zusammen noch könnten. Von naheliegend bis Größenwahn.
 - naheliegend (Handy liefert, Sticky zeigt):
-  - **Kontextseite je Ort**: Micro → Akku, Reichweite, Tempolimit aus Bubble Log; Supermarkt → Zettel nach vorn;
+  - **Kontextseite je Ort** (→ umgesetzt, siehe unten): Micro → Akku, Reichweite, Tempolimit aus Bubble Log; Supermarkt → Zettel nach vorn;
     daheim → Termine, Wetter. Das Handy kennt den Ort, der Sticky wechselt die Szene selbst
   - **Rückfragen der App** mit den kleinen Eingaben („Fahrt beendet – wie war's? 1–5“, „Parkplatz merken? Ja/Nein“)
   - **ausgewählte Benachrichtigungen dauerhaft** auf e-Ink (Paket, Ladeende, eine Person), ohne Handy-Display
@@ -212,6 +212,63 @@ Lab und EDC gelten als rund; das hier ist, was Sticky und Handy zusammen noch k�
     600 km“); n:m bleibt verboten, es wären zwei Apps mit einem gemeinsamen Briefkasten
   - **Liegengelassen-Wächter**: Handy piept, wenn Sticky und Handy sich trennen; der Bewegungssensor merkt, wo er
     zuletzt lag
+
+#### Die drei naheliegenden ausgearbeitet (Markus, 15.11.2026, abgenommen, Stufe 1 umgesetzt in der App)
+Bestand, auf dem es aufbaut: die App kann den Sticky **auf eine Seite schicken** (Home, Bordbuch-Seite, Notiz, Zettel n,
+Kritzel, Spiel – Befehl 0x14), **Teilbilder ins Rückmeldefeld** auf Home/Notiz legen, **Home neu zeichnen** (Bild
+liegt auf dem Sticky, bleibt ohne Strom stehen) und auf der **Spielseite** alle Tipper selbst auswerten. Sie kennt
+den Ort (eigenes GPS oder passiv mit, wenn Bubble Log läuft) und merkt eine Fahrt am Tempo („Fahrt erkannt“).
+Daraus folgt: **alle drei gehen in Stufe 1 ohne Flashen**, nur App (und ein kleines Stück Android). Reihenfolge
+nach Aufwand: Benachrichtigungen → Rückfragen → Kontextseite. Code: `src/kontext.js` (Logik, getestet),
+`src/rueckfrage.js` (Zeichnen/Treffer), Verdrahtung in `main.js`, Home-Zeilen in `homeseite.js`, Melder in Java.
+
+**A. Ausgewählte Benachrichtigungen dauerhaft** (umgesetzt 15.11.2026, APK nötig)
+- fest (Bestand): Melder mit Positivliste, nur nach Freigabe, nichts verlässt das Handy außer zum Sticky
+- fest **Positivliste in der App** (Mehr → Benachrichtigungen): je Zeile ein Paketname, Bubble Log
+  (`app.bubblelog.microlino`) und die Sticky-App vorbelegt; **„paket: Name, Name“** = nur, wenn einer davon im Titel
+  steht (eine Person in einem Messenger). Die App schickt die Pakete an den Melder (Android filtert nach Paket, „nur von“
+  prüft die App). Ablage nur auf dem Handy, nie im Repo
+- fest **dauerhaft = auf Home**, als **„App · Titel“** ohne Nachrichtentext (Markus: Privatsphäre am Tisch): die letzten
+  **3** mit Uhrzeit unter der Uhr. Home wird dafür neu aufgespielt (gesammelt, ein Abgleich für mehrere Meldungen), steht
+  danach ohne Strom und ohne Handy. Das kurze Aufblitzen im Rückmeldefeld bleibt
+- fest **weg, wenn am Handy weg**: wischt man die Meldung am Handy weg, verschwindet sie auch vom Sticky; spätestens nach
+  **12 h** fällt sie von selbst raus. Am Sticky kein Löschen nötig (Grundfaulheit)
+- fest: nur auf der Home-Karte des **aktiven** Sticky (Hintergrund-Stickys bekommen nur das Aufblitzen)
+- Hinweis Platz: stehen Hinweise (Meldungen, Ort, Parkplatz) an, ersetzen sie **unter der Uhr den QR-Code** der
+  Visitenkarte (höchstens 4 Zeilen, darunter liegt das Rückmeldefeld); ohne Hinweise kommt der QR-Code zurück
+- offen (später, Firmware): Briefsymbol mit Zahl in der Statuszeile, Liste als eigene Seite
+
+**B. Rückfragen der App** mit den kleinen Eingaben (umgesetzt 15.11.2026, ohne Flashen)
+- fest **Stufe 1 als App-Seite, nur Touch** (Markus): die App schickt den Sticky auf die Spielseite und zeichnet dort
+  die Frage im Braun-Stil – **Ja/Nein** (zwei große Pillen, Ja als Doppelring), **Auswahl** (3–6 Zeilen),
+  **Stufe 1–5** (fünf runde Knöpfe), hoch und quer nach der Lage der Spielseite. Ein Tipp = fertig, danach zurück auf
+  die Seite von vorher. KI kurz = Home wie immer (= „nicht jetzt“). ▲/▼ bleiben Blättern (die Firmware reicht sie auf
+  der Spielseite nicht durch)
+- fest **nur fragen, wenn der Sticky ruht**: verbunden und auf Home oder Notiz, nie während eines Burgduells.
+  Unbeantwortet nach **2 min** → zurück, Frage verfällt (kein Stapel)
+- fest **erste Frage: „Parkplatz merken?“** Ja/Nein nach Fahrtende (Markus; „Wie war die Fahrt? 1–5“ vorerst nicht).
+  Fahrtende = nach erkannter Fahrt (> 2 m/s) zwei Minutenprüfungen in Folge Stillstand. Ja → Notiz „Parkplatz“ mit Zeit
+  und Ort (Liste und Bubble Log) und eine Zeile „Geparkt um 14:05“ auf Home; die fällt bei der nächsten Fahrt oder
+  nach 24 h weg. Zum Ausprobieren: Mehr → Orte → „Test-Rückfrage“
+- offen: steht der Micro länger als 2 min im Stau, fragt er schon dort – im Alltag beobachten
+- offen (Stufe 2, Firmware): Rückfragen offline und mit ▲ = Ja / ▼ = Nein über den Baustein `eingabe.h` – erst wenn
+  Stufe 1 im Alltag trägt
+
+**C. Kontextseite je Ort** (umgesetzt 15.11.2026, ohne Flashen)
+- fest **Orte selbst anlegen** (Mehr → Orte): je Zeile „Name; Breite, Länge; Ziel[; Umkreis m]“, Ziel Home, Notiz,
+  Zettel 1–6 oder Bordbuch, Umkreis 150 m. „Hier merken“ hängt den aktuellen Ort als „Neuer Ort“ an, Name und Ziel
+  passt man in der Liste an. Der **Micro** ist kein Ort, sondern „Fahrt erkannt“ → Notiz-Seite (Schnellknöpfe)
+- fest **springt nur aus Home, einmal je Ankunft** (Markus): Prüfung jede Minute, solange verbunden (Fahrterkennung),
+  Wegfallen erst ab dem 1,5-fachen Umkreis, ungenauer Ort (> 100 m) zählt nicht, unterwegs kein Ortswechsel. Wer
+  weiterblättert, bleibt, wo er ist
+- fest Home zeigt unter der Uhr **„Ort: Supermarkt“**, solange man dort ist
+- offen (nicht naheliegend): **Akku, Reichweite, Tempolimit aus Bubble Log** – die Werte liegen in Bubble Logs eigener
+  Ablage, die Sticky-App kommt nicht heran. Braucht eine Schnittstelle in Bubble Log (z. B. Rundruf „Fahrtstand“),
+  also eine eigene Baustelle im Bubble-Log-Projekt
+- offen (nicht naheliegend): **Termine** auf Home braucht Kalenderzugriff (neue Android-Freigabe, neues Plugin)
+- offen (Stufe 2): **Karussell je Ort** (die App spielt beim Ortswechsel ein anderes `karussell.txt` auf) – das wären
+  die Szenen aus „Nutzung“; kostet je Wechsel einen Abgleich
+- offen: Orte und Fahrt werden nur geprüft, solange der Sticky verbunden ist (die Minutenschleife der Fahrterkennung)
 
 ### Anregungen aus dem Seeed-Playground (11.11.2026, seeedstudio.com/sticky/playground/firmware/)
 Gesichtet: 38 Firmwares. Passend zu unserer Rolle (Handy-Erweiterung, Microlino), alles geparkt:

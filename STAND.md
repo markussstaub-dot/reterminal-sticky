@@ -3,8 +3,8 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.32.0 – EDC-Sticky, allein nützlich: Uhr/Wecker/Weltzeit, Rechner/Umrechner, Strichschrift, Waage, Lineal, Zettel mit QR, Einstellungen am Sticky; Braun-Optik, Hoch/Quer; MIT-Lizenz (14.11.2026: App-Vorschau = Bildschirmfoto, Multiclient Stufe 2: zwei Stickys gleichzeitig; 15.11.: sparsamer schlummern, Spiel ohne Handy erklärt, Namen vereinheitlicht; 0.31.9: zweiter Haltepin GPIO46; 0.32.0: zweisprachig DE/EN, auf meinem Sticky geflasht und gepusht; SPEC Eingabe abgenommen: Tasten/Ziffern/Strich/Sprache, kleine Eingaben, Recorder; 0.33.0: Umschalten EDC ↔ Sticky Lab (app0/app1, Menü-Kachel, ▲ beim Einschalten), gebaut, nicht geflasht; Release noch 0.31.6)
-wartet: Markus: APK 2026.11.15-1452 installieren (falls noch nicht), dann auf Englisch alle Seiten auf Überläufe prüfen; Playground-Update-PR #125 (0.31.6) im Blick behalten; Lineal nachmessen, Einfügen in WhatsApp probieren; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Spickzettel-Konsole (Lab-Console, Reiter „Spickzettel“) ausprobieren: Karte am Zenbook → Zwischenablage → Fold → Aufspielen; Nachtverbrauch messen
+version: FW 0.32.0 – EDC-Sticky, allein nützlich: Uhr/Wecker/Weltzeit, Rechner/Umrechner, Strichschrift, Waage, Lineal, Zettel mit QR, Einstellungen am Sticky; Braun-Optik, Hoch/Quer; MIT-Lizenz (14.11.2026: App-Vorschau = Bildschirmfoto, Multiclient Stufe 2: zwei Stickys gleichzeitig; 15.11.: sparsamer schlummern, Spiel ohne Handy erklärt, Namen vereinheitlicht; 0.31.9: zweiter Haltepin GPIO46; 0.32.0: zweisprachig DE/EN, auf meinem Sticky geflasht und gepusht; SPEC Eingabe abgenommen: Tasten/Ziffern/Strich/Sprache, kleine Eingaben, Recorder; 0.33.0: Umschalten EDC ↔ Sticky Lab (app0/app1, Menü-Kachel, ▲ beim Einschalten), gebaut, nicht geflasht; Release noch 0.31.6; App 15.11. abends: Meldungen dauerhaft auf Home, Rückfrage „Parkplatz merken?“, Orte mit Seitensprung – gebaut, APK noch nicht installiert)
+wartet: Markus: Ja zur neuen APK (Meldungen/Orte/Parkplatz), danach Positivliste und erste Orte eintragen; APK 2026.11.15-1452 installieren (falls noch nicht), dann auf Englisch alle Seiten auf Überläufe prüfen; Playground-Update-PR #125 (0.31.6) im Blick behalten; Lineal nachmessen, Einfügen in WhatsApp probieren; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Spickzettel-Konsole (Lab-Console, Reiter „Spickzettel“) ausprobieren: Karte am Zenbook → Zwischenablage → Fold → Aufspielen; Nachtverbrauch messen
 ---
 
 Repo: github.com/markussstaub-dot/reterminal-sticky (privat, seit 11.11.2026). `backup/`, Modelle und
@@ -406,3 +406,9 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
 - **Notizen an Bubble Log (15.11.2026, APK 2026.11.15-1126 auf dem Fold):** `notizen.notiere()` schickt jede Notiz zusätzlich per
   Broadcast an Bubble Log (`Hintergrund.anBubbleLog`, Berechtigung `app.bubblelog.microlino.permission.NOTIZ`,
   Signatur). Dort stehen sie in der Konsole und im Devlog. Sticky-App nach Bubble Log installieren
+- **Handy liefert, Sticky zeigt (15.11.2026, SPEC „Die drei naheliegenden“, nur App, kein Flashen):** Melder mit
+  Positivliste aus der App (Mehr → Benachrichtigungen, „paket: Name“ = nur von), die letzten 3 Meldungen als „App · Titel“
+  unter der Uhr auf Home, weg beim Wegwischen am Handy bzw. nach 12 h. Rückfrage als Spielseite (`src/rueckfrage.js`:
+  Ja/Nein, Auswahl, Stufe), erste Frage „Parkplatz merken?“ nach Fahrtende → Notiz + „Geparkt um …“ auf Home. Orte
+  (Mehr → Orte, „Hier merken“): bei Ankunft einmal aus Home aufs Ziel (Zettel n, Notiz, Bordbuch), „Ort: …“ auf Home;
+  Fahrt erkannt → Notiz-Seite. Logik in `src/kontext.js` (Tests). Offen: Bubble-Log-Werte, Termine, Karussell je Ort

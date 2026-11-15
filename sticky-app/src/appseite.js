@@ -7,6 +7,7 @@ import { braunKnopf, BRAUN_FONT } from './braun.js';
 import { Umrechner, PAARE } from './umrechner.js';
 import { groesse, vonDisplay, aufsDisplay, ausschnittAufsDisplay } from './lage.js';
 import { burgduellWidget } from './burgduell.js';
+import { frageZeichnen, frageTreffer } from './rueckfrage.js';
 import { T, fuerSticky, zahlText } from './uebersetzen.js';
 
 const FONT = BRAUN_FONT;
@@ -127,6 +128,7 @@ export class AppSeite {
     this.aktiv = 0;
     this.hoch = false;   // Lage (Mehr → Lage der Seiten), FW ≥ 0.21.0
     this.spieler = 0;    // Burgduell auf zwei Stickys: 0 = aktiver, 1 = Hintergrund-Sticky
+    this.frage = null;   // Rückfrage der App (src/rueckfrage.js): { art, text, antworten?, antwort(wert) } – geht dem Spiel vor
   }
 
   #lage() { L = this.hoch ? LAGEN.hoch : LAGEN.quer; return groesse(this.hoch); }
@@ -153,7 +155,7 @@ export class AppSeite {
     const { w, h } = this.#lage();
     const c = leinwand(w, h);
     const g = c.getContext('2d', { willReadFrequently: true });
-    this.#sprache(() => this.w.seite(g, this.z, this.hoch));
+    this.#sprache(() => (this.frage ? frageZeichnen(g, this.frage, this.hoch) : this.w.seite(g, this.z, this.hoch)));
     const d = aufsDisplay(c, this.hoch);
     return { bytes: rgbaZu1bpp(d.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, BREITE, HOEHE).data), canvas: d };
   }
@@ -169,6 +171,13 @@ export class AppSeite {
   /** Tipper vom Sticky (Display-Koordinaten); true, wenn etwas getroffen wurde */
   async tipp(dx, dy) {
     this.#lage();
+    if (this.frage) {
+      const f = this.frage, k = this.#sprache(() => frageTreffer(f, dx, dy, this.hoch));
+      if (!k) return false;
+      this.frage = null;
+      await f.antwort(k.wert);
+      return true;
+    }
     const { x, y } = vonDisplay(dx, dy, this.hoch);
     const reiter = y >= L.REITER_Y && y < L.REITER_Y + L.REITER_H ? L.REITER.findIndex((r) => x >= r.x0 && x < r.x1) : -1;
     if (reiter >= 0) {

@@ -20,15 +20,15 @@ const ZEICHEN = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', 'PM:']; 
 const leinwand = (b, h) => (typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(b, h) : Object.assign(document.createElement('canvas'), { width: b, height: h }));
 
 /** Home-Karte (Uhrfeld bleibt leer) gedreht in den 800×480-Kontext g; mit beispielZeit zur Vorschau gefüllt */
-export function zeichneHome(g, karte = KARTE, beispielZeit = null, wetter = null) {
-  const c = homeHochkant(karte, beispielZeit, wetter);
+export function zeichneHome(g, karte = KARTE, beispielZeit = null, wetter = null, zeilen = []) {
+  const c = homeHochkant(karte, beispielZeit, wetter, zeilen);
   g.fillStyle = '#fff';
   g.fillRect(0, 0, BREITE, HOEHE);
   drehe(c, g, PB, PH);
 }
 
 /** Home-Karte hochkant (480×800), wie man sie am Sticky sieht – für die Vorschau in der App */
-export function homeHochkant(karte = KARTE, beispielZeit = null, wetter = null) {
+export function homeHochkant(karte = KARTE, beispielZeit = null, wetter = null, zeilen = []) {
   const c = leinwand(PB, PH);
   const p = c.getContext('2d');
   p.fillStyle = '#fff';
@@ -55,6 +55,9 @@ export function homeHochkant(karte = KARTE, beispielZeit = null, wetter = null) 
     p.font = '16px system-ui, sans-serif';
     p.fillText(T(`Wetter, Stand ${uhrzeit(wetter.zeit)}`, `Weather as of ${uhrzeit(wetter.zeit)}`), PB / 2, 330);
   }
+  // Hinweise (SPEC „Die drei naheliegenden“: Ort, Parkplatz, Meldungen) stehen statt des QR-Codes unter der Uhr –
+  // die Visitenkarte gibt es weiter als Zettel; ohne Hinweise kommt der QR-Code zurück
+  if (zeilen?.length) { hinweiseZeichnen(p, zeilen); if (beispielZeit) zeichneZeit(p, beispielZeit); return c; }
   // QR-Code unter der Uhr (nur mit Link; Multiclient: weitere Stickys haben erst einmal keinen)
   if (!karte.qr) { if (beispielZeit) zeichneZeit(p, beispielZeit); return c; }
   const qr = qrcode(0, 'M');
@@ -69,6 +72,22 @@ export function homeHochkant(karte = KARTE, beispielZeit = null, wetter = null) 
   p.fillText(karte.zeile ?? '', PB / 2, qy + n * m + 22);
   if (beispielZeit) zeichneZeit(p, beispielZeit);
   return c;
+}
+
+/** bis 4 Zeilen ab y 490, je 56 hoch (ab y 720 liegt das Rückmeldefeld), dünne Linie dazwischen; zu lange Zeilen werden kleiner, dann gekürzt */
+function hinweiseZeichnen(p, zeilen) {
+  p.fillStyle = '#000';
+  p.fillRect(60, 484, PB - 120, 2);
+  p.textAlign = 'left';
+  zeilen.slice(0, 4).forEach((z, i) => {
+    const y = 490 + i * 56;
+    let gr = 28, t = z;
+    do { p.font = `${gr}px system-ui, sans-serif`; gr -= 2; } while (p.measureText(t).width > PB - 60 && gr > 20);
+    while (p.measureText(t).width > PB - 60 && t.length > 4) t = t.slice(0, -2) + '…';
+    p.fillText(t, 30, y + 28);
+    if (i < Math.min(zeilen.length, 4) - 1) p.fillRect(30, y + 55, PB - 60, 1);
+  });
+  p.textAlign = 'center';
 }
 
 function zeichneZiffer(p, z, x, y) {

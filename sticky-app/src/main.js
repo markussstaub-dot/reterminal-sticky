@@ -50,6 +50,8 @@ import { spiegelEinrichten } from './spiegel.js';
 import { BREITE, HOEHE, rgbaZu1bpp, crc32, rueckDatei } from './protokoll.js';
 import { BleVerbindung, SimVerbindung } from './verbindung.js';
 import { Zwilling } from './zwilling.js';
+import { MELDE_STANDARD, meldeRegeln, meldePakete, meldungErlaubt, meldungDazu, meldungWeg, orteLesen, ortFinden, ortZeile, fahrtSchritt, homeZeilen } from './kontext.js';
+import { FRAGE_DAUER_MS } from './rueckfrage.js';
 import { schluessel, schluesselFuer, mitGeraet, karteFuer, kurz, geraete, aktivesGeraet, aktivSetzen, geraetAendern, geraetVergessen, PROFILE, profilName } from './geraete.js';
 
 const $ = (id) => document.getElementById(id);
@@ -318,7 +320,7 @@ zwilling.beobachte((art, d) => {
     else if (d.t === 'suchen') handyKlingeln();
     else if (d.t === 'suche') eintrag(d.a === 'gefunden' ? T('Sticky gefunden', 'Sticky found') : T('Sticky piept', 'Sticky is beeping'));
     else if (d.t === 'schlaf') stickySchlaeft = true;
-    else if (d.t === 'modus') { spiegelSetze({ modus: d.m, w: d.w ?? '', lh: d.lh ?? 0, ...(d.zettel != null ? { zettel: d.zettel } : {}), verbunden: true }); stickyModus = d.m; imBordbuch = d.m === 'bordbuch'; fotoAnstossen(); eintrag(T('Modus: ', 'Mode: ') + ({ home: 'Home', notiz: T('Notiz', 'Note'), bordbuch: T('Bordbuch', 'Logbook'), kritzel: T('Kritzel', 'Doodle'), schrift: T('Schrift', 'Handwriting'), app: T('Spiel', 'Game'), widget: 'Widget', bestell: `${T('Zettel', 'List')} ${(d.zettel ?? 0) + 1}` }[d.m] ?? d.m)); if (d.m === 'app') { if (d.hoch != null) appSeite.hoch = !!d.hoch; } duellPruefen(); if (d.m === 'app' && !imDuell()) appSeite.zeigen().catch((e) => eintrag(T(`Spiel: ${e.message}`, `Game: ${e.message}`), true)); }
+    else if (d.t === 'modus') { spiegelSetze({ modus: d.m, w: d.w ?? '', lh: d.lh ?? 0, ...(d.zettel != null ? { zettel: d.zettel } : {}), verbunden: true }); stickyModus = d.m; imBordbuch = d.m === 'bordbuch'; if (d.m !== 'app' && appSeite.frage) { appSeite.frage = null; eintrag(T('Rückfrage: nicht jetzt', 'Question: not now')); } fotoAnstossen(); eintrag(T('Modus: ', 'Mode: ') + ({ home: 'Home', notiz: T('Notiz', 'Note'), bordbuch: T('Bordbuch', 'Logbook'), kritzel: T('Kritzel', 'Doodle'), schrift: T('Schrift', 'Handwriting'), app: T('Spiel', 'Game'), widget: 'Widget', bestell: `${T('Zettel', 'List')} ${(d.zettel ?? 0) + 1}` }[d.m] ?? d.m)); if (d.m === 'app') { if (d.hoch != null) appSeite.hoch = !!d.hoch; } duellPruefen(); if (d.m === 'app' && !imDuell()) appSeite.zeigen().catch((e) => eintrag(T(`Spiel: ${e.message}`, `Game: ${e.message}`), true)); }
     else if (d.t === 'seite') { $('bbStatus').textContent = T(`Sticky zeigt Bordbuch-Seite ${d.n + 1} von ${d.von}`, `Sticky shows logbook page ${d.n + 1} of ${d.von}`); spiegelSetze({ bb: d.n }); }
     else if (d.t === 'audio' && (d.a === 'start' || d.a === 'stop')) spiegelSetze({ aufnahme: d.a === 'start' });
     else if (d.t === 'bordbuch') eintrag(T(`Bordbuch auf dem Sticky: ${d.seiten} Seiten, ${d.belegtKB} KB`, `Logbook on the Sticky: ${d.seiten} pages, ${d.belegtKB} KB`));
@@ -814,7 +816,7 @@ async function abgleichKern() {
   // Wetter für die Home-Karte (bei Fehler bleibt die letzte Vorhersage)
   const ort = await notizen.standort();
   const wetter = (await holeWetter(ort)) ?? letztesWetter();
-  zeichneHome(g, karteFuer(aktivesGeraet(), KARTE), null, wetter);
+  zeichneHome(g, karteFuer(aktivesGeraet(), KARTE), null, wetter, homeHinweise());
   const home = bildBytes();
   zeichneFahrt(g, knoepfe());
   const notiz = bildBytes();
@@ -842,7 +844,7 @@ async function abgleichKern() {
     try { localStorage.setItem(schluessel('homecrcs'), JSON.stringify({ version: homeV, crcs })); } catch { /* egal */ }
     eintrag(T(`Home-Karte, Notiz-Seite, Uhr und ${zettelBilder.length} Zettel/Karten aufgespielt`, `Home card, note page, clock and ${zettelBilder.length} lists/cards uploaded`));
   }
-  zeichneHome(g, karteFuer(aktivesGeraet(), KARTE), uhrzeit(new Date()), wetter);
+  zeichneHome(g, karteFuer(aktivesGeraet(), KARTE), uhrzeit(new Date()), wetter, homeHinweise());
   pruefeAbgleich();
   if (zwilling.geraet.modus) stickyModus = zwilling.geraet.modus;
   // Sprache der Rückmeldungen merken: fahrtv hängt nur am Layout, ein Sprachwechsel soll sie trotzdem neu zeichnen
@@ -1434,6 +1436,7 @@ setInterval(async () => {
       if (s > 0 && d > o.gen + letzterOrt.gen) v = d / s;
     }
     letzterOrt = { ...o, zeit: Date.now() };
+    kontextSchritt(o, o.gen < 100 ? v : null);
     if (v != null && v > 2 && o.gen < 100) {
       if (Date.now() >= fahrtBis) eintrag(T('Fahrt erkannt – Sticky bleibt wach', 'Driving detected – Sticky stays awake'));
       fahrtBis = Date.now() + 10 * 60 * 1000;
@@ -1623,7 +1626,15 @@ $('meldeZugriff').onclick = () => Hintergrund.meldeZugriffOeffnen().catch((e) =>
 $('meldeTest').onclick = () => Hintergrund.testMeldung({ titel: 'Sticky', text: `Test ${uhrzeit(new Date())}` }).catch((e) => eintrag(e.message, true));
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') meldeStatusZeigen(); });
 meldeStatusZeigen();
+// Dauerhaft (SPEC „Die drei naheliegenden“, A, abgenommen 15.11.2026): die letzten 3 erlaubten Meldungen stehen als
+// „App · Titel“ auf der Home-Karte des aktiven Sticky, bis sie am Handy weggewischt sind (spätestens 12 h)
+const meldeText = () => { try { return localStorage.getItem('sticky.meldeListe') ?? MELDE_STANDARD; } catch { return MELDE_STANDARD; } };
+const meldeListeSchicken = () => Hintergrund.meldeListe({ pakete: meldePakete(meldeRegeln(meldeText())) }).catch(() => {});
+$('meldeListe').value = meldeText();
+$('meldeListe').onchange = () => { try { localStorage.setItem('sticky.meldeListe', $('meldeListe').value); } catch { /* egal */ } meldeListeSchicken(); };
+meldeListeSchicken();
 Promise.resolve().then(() => Hintergrund.addListener('benachrichtigung', (e) => {
+  if (!meldungErlaubt(meldeRegeln(meldeText()), e.paket, e.titel)) return;   // „nur von“ prüft die App
   const zeile = [e.titel, e.text].filter(Boolean).join(': ').replace(/\s+/g, ' ').trim();
   const kurzText = zeile.length > 30 ? zeile.slice(0, 29) + '…' : zeile;
   eintrag(`${T('Meldung', 'Notification')}: ${zeile}`);
@@ -1636,7 +1647,103 @@ Promise.resolve().then(() => Hintergrund.addListener('benachrichtigung', (e) => 
   for (const s of sitzungen.values()) {
     if (s.z.verbunden && (s.modus === 'home' || s.modus === 'notiz')) s.z.sendeBild(r.bytes, { bereich: r.bereich }).catch(() => {});
   }
+  kontextSetzen('meldungen', meldungDazu(kontextLesen('meldungen', []), { key: e.key, paket: e.paket, app: e.app, titel: (e.titel || e.text || '').replace(/\s+/g, ' ').trim() }));
+  homeAuffrischen();
 })).catch(() => {});
+Promise.resolve().then(() => Hintergrund.addListener('benachrichtigungWeg', (e) => {
+  const alt = kontextLesen('meldungen', []), neu = meldungWeg(alt, e.key);
+  if (neu.length === alt.length) return;
+  kontextSetzen('meldungen', neu);
+  eintrag(T('Meldung am Handy weggewischt – auch vom Sticky', 'Notification dismissed on the phone – removed from the Sticky too'));
+  homeAuffrischen();
+})).catch(() => {});
+
+// ---- Kontext: Ort, Fahrt-Ende, Rückfragen (SPEC „Die drei naheliegenden“, B und C, abgenommen 15.11.2026) ---------------
+// Ablage je Profil des aktiven Sticky; die Hinweise stehen nur auf SEINER Home-Karte (Hintergrund-Stickys nicht).
+function kontextLesen(n, vorgabe) { try { return JSON.parse(localStorage.getItem(schluessel(n)) ?? 'null') ?? vorgabe; } catch { return vorgabe; } }
+function kontextSetzen(n, v) { try { localStorage.setItem(schluessel(n), JSON.stringify(v)); } catch { /* egal */ } }
+let aktuellerOrt = null, fahrtZustand = null;
+function homeHinweise() {
+  if (bauZ) return [];   // Bau für einen Hintergrund-Sticky oder die Grundausstattung: keine persönlichen Hinweise
+  return homeZeilen({ ort: aktuellerOrt, parkplatz: kontextLesen('parkplatz', null), meldungen: kontextLesen('meldungen', []) }, { T, uhrzeit });
+}
+/** Home-Karte neu aufspielen (gesammelt: mehrere Meldungen kurz nacheinander = ein Abgleich) */
+let homeTimer = null;
+function homeAuffrischen() {
+  clearTimeout(homeTimer);
+  homeTimer = setTimeout(function nochmal() {
+    if (!zwilling.verbunden) return;
+    if (vordergrundGleichtAb) { homeTimer = setTimeout(nochmal, 5000); return; }
+    abgleich().catch((e) => eintrag(`Home: ${e.message}`, true));
+  }, 3000);
+}
+/** Rückfrage stellen, nur wenn der Sticky auf Home oder Notiz ruht; Antwort per Tipp, sonst nach 2 min verworfen */
+function frageStellen(frage) {
+  if (!zwilling.verbunden || !fwAb('0.17.0') || !(stickyModus === 'home' || stickyModus === 'notiz') || appSeite.frage || duellSitzung()) return false;
+  const vorher = stickyModus === 'notiz' ? 2 : 0;
+  const f = { ...frage, antwort: async (wert) => {
+    clearTimeout(f.timer);
+    eintrag(`${T('Rückfrage', 'Question')}: ${frage.text} → ${wert === true ? T('Ja', 'Yes') : wert === false ? T('Nein', 'No') : wert}`);
+    await zwilling.modusSetzen(vorher).catch(() => {});
+    await frage.beiAntwort?.(wert);
+  } };
+  f.timer = setTimeout(() => {
+    if (appSeite.frage !== f) return;
+    appSeite.frage = null;
+    eintrag(T(`Rückfrage verfallen: ${frage.text}`, `Question expired: ${frage.text}`));
+    if (stickyModus === 'app') zwilling.modusSetzen(vorher).catch(() => {});
+  }, FRAGE_DAUER_MS);
+  appSeite.frage = f;
+  eintrag(`${T('Rückfrage', 'Question')}: ${frage.text}`);
+  zwilling.modusSetzen(5).catch((e) => { appSeite.frage = null; eintrag(e.message, true); });   // das Bild kommt mit „modus app“
+  return true;
+}
+function parkplatzFragen(ort) {
+  frageStellen({ art: 'janein', text: T('Parkplatz merken?', 'Remember parking spot?'), beiAntwort: async (ja) => {
+    if (!ja) return;
+    const t = Date.now();
+    kontextSetzen('parkplatz', { t, lat: ort?.lat ?? null, lon: ort?.lon ?? null });
+    await neueNotiz({ t, art: 'knopf', knopf: T('Parkplatz', 'Parking') }, ort, T('Parkplatz', 'Parking'));
+    homeAuffrischen();
+  } });
+}
+/** Jede Minute aus der Fahrterkennung (nur verbunden): Fahrt-Anfang/-Ende und Ankunft an einem eigenen Ort */
+function kontextSchritt(o, v) {
+  const vorher = !!fahrtZustand?.faehrt;
+  const { zustand, ende } = fahrtSchritt(fahrtZustand, v);
+  fahrtZustand = zustand;
+  if (!vorher && zustand.faehrt) {
+    // Micro = „Fahrt erkannt“: aus der Ruhe auf die Notiz-Seite (Schnellknöpfe); alter Parkplatz ist damit erledigt
+    if (stickyModus === 'home') zwilling.modusSetzen(2).catch(() => {});
+    if (kontextLesen('parkplatz', null)) { kontextSetzen('parkplatz', null); homeAuffrischen(); }
+  }
+  if (ende) parkplatzFragen(o);
+  if (zustand.faehrt) return;   // unterwegs keine Ortswechsel
+  const orte = orteLesen(orteText());
+  const neu = ortFinden(orte, o, aktuellerOrt);
+  if (neu === aktuellerOrt) return;
+  aktuellerOrt = neu;
+  eintrag(neu ? T(`Ort: ${neu}`, `Place: ${neu}`) : T('Ort verlassen', 'Left the place'));
+  const ziel = neu && orte.find((x) => x.name === neu)?.ziel;
+  // nur aus Home und einmal je Ankunft; wer weiterblättert, bleibt, wo er ist
+  if (ziel && ziel.modus !== 0 && stickyModus === 'home') zwilling.modusSetzen(ziel.modus, ziel.seite ?? null).catch(() => {});
+  homeAuffrischen();
+}
+const orteText = () => (bauZ ? '' : $('orte').value);
+try { $('orte').value = localStorage.getItem(schluessel('orte')) ?? ''; } catch { /* egal */ }
+$('orte').onchange = () => { try { localStorage.setItem(schluessel('orte'), $('orte').value); } catch { /* egal */ } aktuellerOrt = null; };
+$('ortMerken').onclick = async () => {
+  const o = await notizen.standort();
+  if (!o) { eintrag(T('Kein Standort – GPS an?', 'No location – GPS on?'), true); return; }
+  const t = $('orte').value.trimEnd();
+  $('orte').value = (t ? `${t}\n` : '') + ortZeile(T('Neuer Ort', 'New place'), o, 'Home');
+  $('orte').onchange();
+  eintrag(T(`Ort gemerkt (±${o.gen} m) – Namen und Ziel in der Liste anpassen`, `Place saved (±${o.gen} m) – adjust name and target in the list`));
+};
+$('frageTest').onclick = () => {
+  if (!frageStellen({ art: 'janein', text: T('Parkplatz merken?', 'Remember parking spot?'), beiAntwort: (ja) => eintrag(`Test: ${ja}`) }))
+    eintrag(T('Rückfrage geht nur, wenn der Sticky verbunden ist und Home oder Notiz zeigt', 'Questions only work while the Sticky is connected and shows Home or Note'), true);
+};
 
 // ---- Grundausstattung für die SD-Karte (14.11.2026) ---------------------------------------------------------------
 // Wer die Firmware aus dem Playground flasht und keine App hat, packt dieses ZIP auf eine microSD (FAT32): Menü,

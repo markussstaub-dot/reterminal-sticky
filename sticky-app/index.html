@@ -177,9 +177,16 @@
       </section>
       <section>
         <h2 data-en="Notifications">Benachrichtigungen</h2>
-        <p class="klein" data-en="Sparing: only selected apps (for testing the Sticky app itself, Bubble Log later) show briefly at the bottom of the Sticky while it shows Home or Note. Nothing is stored. You grant access once yourself in the Android settings.">Sparsam: nur ausgewählte Apps (zum Testen die Sticky-App selbst, Bubble Log später) erscheinen kurz unten am Sticky, wenn er Home oder Notiz zeigt. Nichts wird gespeichert. Den Zugriff gibst du einmal selbst in den Android-Einstellungen frei.</p>
+        <p class="klein" data-en="Sparing: only apps from this list (one package name per line; “package: name, name” = only when one of them is in the title) show briefly at the bottom of the Sticky. The last three stay on the Home card as “App · title” until you dismiss them on the phone (at the latest after 12 h). You grant access once yourself in the Android settings.">Sparsam: nur Apps aus dieser Liste (je Zeile ein Paketname; „paket: Name, Name“ = nur, wenn einer davon im Titel steht) erscheinen kurz unten am Sticky. Die letzten drei bleiben als „App · Titel“ auf der Home-Karte stehen, bis du sie am Handy wegwischst (spätestens nach 12 h). Den Zugriff gibst du einmal selbst in den Android-Einstellungen frei.</p>
+        <textarea id="meldeListe" rows="3" spellcheck="false"></textarea>
         <p class="klein" id="meldeStatus" data-en="Access: checking …">Zugriff: wird geprüft …</p>
         <div class="leiste"><button id="meldeZugriff" data-en="Grant access …">Zugriff freigeben …</button><button id="meldeTest" data-en="Test notification">Test-Meldung</button></div>
+      </section>
+      <section>
+        <h2 data-en="Places">Orte</h2>
+        <p class="klein" data-en="One place per line: “name; latitude, longitude; target[; radius m]”. Target: Home, Note, List 1–6 or Logbook. On arrival the Sticky jumps there once, but only from Home; Home shows the place. While driving it goes to the note page, after the ride it asks “Remember parking spot?”.">Je Zeile ein Ort: „Name; Breite, Länge; Ziel[; Umkreis m]“. Ziel: Home, Notiz, Zettel 1–6 oder Bordbuch. Bei Ankunft springt der Sticky einmal dorthin, aber nur aus Home; Home zeigt den Ort. Beim Fahren geht er auf die Notiz-Seite, nach der Fahrt fragt er „Parkplatz merken?“.</p>
+        <textarea id="orte" rows="3" spellcheck="false" placeholder="Supermarkt; 47.12345, 8.12345; Zettel 1" data-en-placeholder="Supermarket; 47.12345, 8.12345; List 1"></textarea>
+        <div class="leiste"><button id="ortMerken" data-en="Remember this place">Hier merken</button><button id="frageTest" data-en="Test question">Test-Rückfrage</button></div>
       </section>
       <section>
         <h2>Push-to-Talk</h2>

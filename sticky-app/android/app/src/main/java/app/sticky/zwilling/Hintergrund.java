@@ -116,15 +116,40 @@ public class Hintergrund extends Plugin {
         }
     }
 
-    /** Vom Melder: eine Benachrichtigung einer erlaubten App (Titel, Text) */
-    static void benachrichtigung(String paket, String titel, String text) {
+    /** Vom Melder: eine Benachrichtigung einer erlaubten App (App-Name, Schlüssel, Titel, Text) */
+    static void benachrichtigung(String paket, String app, String key, String titel, String text) {
         Hintergrund h = instanz;
         if (h == null) return;
         JSObject o = new JSObject();
         o.put("paket", paket);
+        o.put("app", app);
+        o.put("key", key);
         o.put("titel", titel);
         o.put("text", text);
         h.notifyListeners("benachrichtigung", o);
+    }
+
+    /** Vom Melder: am Handy weggewischt (oder von der App zurückgezogen) */
+    static void benachrichtigungWeg(String key) {
+        Hintergrund h = instanz;
+        if (h == null) return;
+        JSObject o = new JSObject();
+        o.put("key", key);
+        h.notifyListeners("benachrichtigungWeg", o);
+    }
+
+    /** Positivliste aus der App (Mehr → Benachrichtigungen): { pakete: [..] } */
+    @PluginMethod
+    public void meldeListe(PluginCall call) {
+        try {
+            com.getcapacitor.JSArray a = call.getArray("pakete");
+            java.util.Set<String> s = new java.util.HashSet<>();
+            if (a != null) for (int i = 0; i < a.length(); i++) s.add(a.getString(i));
+            Melder.setzeErlaubt(getContext(), s);
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("Positivliste: " + e.getMessage());
+        }
     }
 
     /** Hat der Nutzer den Benachrichtigungszugriff für die Sticky-App freigegeben? */
