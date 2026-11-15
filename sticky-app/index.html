@@ -19,20 +19,12 @@
       <section class="leiste">
         <button id="verbinden" class="haupt" data-en="Connect">Verbinden</button>
         <label id="simWahl" class="schalter" hidden><input type="checkbox" id="sim"> Simulator</label>
+        <button id="stickySuchen" class="werkzeug" disabled data-en="Find Sticky">Sticky suchen</button>
         <span id="geraet" class="klein"></span>
       </section>
-
-      <section>
-        <h2 data-en="Sticky mode">Modus am Sticky</h2>
-        <div class="leiste">
-          <button id="homeZeigen" disabled>Home</button>
-          <button id="fahrtZeigen" disabled data-en="Note">Notiz</button>
-          <button id="bbZeigen" disabled data-en="Logbook">Bordbuch</button>
-          <button id="stickySuchen" class="werkzeug" disabled data-en="Find Sticky">Sticky suchen</button>
-        </div>
-        <button id="handyRuhe" class="haupt" hidden data-en="Phone found – silence">Handy gefunden – Ruhe</button>
-        <p id="aufnahmeStatus" class="klein" hidden data-en="● Recording …">● Aufnahme läuft …</p>
-      </section>
+      <!-- „Modus am Sticky“ (Home/Notiz/Bordbuch) entfernt 15.11.2026: der Spiegel unten bedient den Sticky direkt -->
+      <button id="handyRuhe" class="haupt" hidden data-en="Phone found – silence">Handy gefunden – Ruhe</button>
+      <p id="aufnahmeStatus" class="klein" hidden data-en="● Recording …">● Aufnahme läuft …</p>
 
       <section class="spiegel">
         <h2><span data-en="On the Sticky">Am Sticky</span> <span class="klein" style="text-transform:none;letter-spacing:0" data-en="– tap and ▲▼ control the Sticky">– tippen und ▲▼ steuern den Sticky</span></h2>

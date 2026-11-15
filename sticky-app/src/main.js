@@ -365,11 +365,9 @@ function zeigeVerbindung() {
   $('verbinden').textContent = an ? T('Trennen', 'Disconnect') : wiederTimer ? T('Wiederverbinden stoppen', 'Stop reconnecting') : T('Verbinden', 'Connect');
   $('verbinden').classList.toggle('haupt', !an);
   $('senden').disabled = !an;
-  $('fahrtZeigen').disabled = !an;
-  $('homeZeigen').disabled = !an;
   $('stickySuchen').disabled = !an;
   $('bestellZeigen').disabled = !an;
-  for (const id of ['bbAufspielen', 'bbZeigen']) $(id).disabled = !an;
+  $('bbAufspielen').disabled = !an;
   if (an) $('bbAufspielen').disabled = !pdf && !$('spickzettel').value.trim();
   $('karte').disabled = !an;
   $('simTasten').hidden = !(an && verbindung instanceof SimVerbindung);
@@ -673,8 +671,6 @@ async function zeigeFahrtSeite() {
   eintrag(T(`Fahrt-Seite gezeigt (${m.gesamt} ms)`, `Trip page shown (${m.gesamt} ms)`));
   pruefeAbgleich();
 }
-$('fahrtZeigen').onclick = () => zwilling.modusSetzen(2).catch((e) => eintrag(e.message, true));
-$('homeZeigen').onclick = () => zwilling.modusSetzen(0).catch((e) => eintrag(e.message, true));
 // Gegenseitig suchen (FW ≥ 0.25.0): Knopf lässt den Sticky piepen; KI 3× am Sticky lässt das Handy klingeln
 $('stickySuchen').onclick = () => {
   if (!fwAb('0.25.0')) { eintrag(T('Sticky suchen braucht Firmware 0.25.0', 'Find Sticky needs firmware 0.25.0'), true); return; }
@@ -1558,7 +1554,6 @@ $('bbAufspielen').onclick = async () => {
     knopf.disabled = !zwilling.verbunden;
   }
 };
-$('bbZeigen').onclick = () => zwilling.modusSetzen(1).catch((e) => eintrag(e.message, true));
 window.__sticky = { ladePdf, zwilling, spiegelSetze: (t) => spiegelSetze(t), pufferAbholen, fahrtenschreiberAbholen, erkenne, sprachPruefung, zeigeNotiz, notizen };   // zum Prüfen per WebView-Fernsteuerung (adb)
 
 try { $('woerter').value = localStorage.getItem(schluessel('woerter')) ?? WOERTER_STANDARD; } catch { $('woerter').value = WOERTER_STANDARD; }
