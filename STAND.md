@@ -393,3 +393,7 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
 
 ## Idee: Diktier-Knopf à la Wispr Flow (geparkt)
 - Siehe SPEC.md (Diktat über BLE-Audio an die App). Der ESP32-S3 kann nur BLE, kein klassisches BT
+
+- **Notizen an Bubble Log (15.11.2026, APK 2026.11.15-1126 auf dem Fold):** `notizen.notiere()` schickt jede Notiz zusätzlich per
+  Broadcast an Bubble Log (`Hintergrund.anBubbleLog`, Berechtigung `app.bubblelog.microlino.permission.NOTIZ`,
+  Signatur). Dort stehen sie in der Konsole und im Devlog. Sticky-App nach Bubble Log installieren

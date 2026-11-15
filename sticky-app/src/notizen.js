@@ -42,6 +42,7 @@ export async function notiere(teile, ort = null) {
   // geraet: von welchem Sticky (Multiclient, 14.11.2026) – nur die Quelle markieren, Notizen bleiben zentral
   const zeile = { t: Date.now(), typ: 'notiz', quelle: 'sticky', geraet: kurz(aktivesGeraet()), ...teile, ...(ort ?? {}) };
   const json = JSON.stringify(zeile);
+  if (NATIV) HintergrundOrt.anBubbleLog({ json }).catch(() => {});   // Bubble-Log-Konsole; ohne Bubble Log egal
   if (NATIV) {
     await Filesystem.appendFile({ path: `${ORDNER}/${tagesName()}`, data: json + '\n', directory: Directory.Data, encoding: Encoding.UTF8, recursive: true });
   } else {

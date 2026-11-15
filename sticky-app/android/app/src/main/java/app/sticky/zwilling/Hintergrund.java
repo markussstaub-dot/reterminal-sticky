@@ -41,6 +41,21 @@ public class Hintergrund extends Plugin {
         }
     }
 
+    /** Notiz an Bubble Log (Konsole im Entwicklermodus, 15.11.2026): expliziter Broadcast, Empfänger dort in Notizen.java.
+     *  Ankommen kann er nur mit der Signatur-Berechtigung von Bubble Log (gleicher Schlüssel); fehlt Bubble Log, passiert nichts. */
+    @PluginMethod
+    public void anBubbleLog(PluginCall call) {
+        String json = call.getString("json");
+        if (json == null) { call.reject("json fehlt"); return; }
+        Intent i = new Intent("app.bubblelog.microlino.NOTIZ");
+        i.setPackage("app.bubblelog.microlino");
+        i.putExtra("json", json);
+        // Ohne receiverPermission: die müsste Bubble Log selbst halten (15.11.2026 deshalb verworfen). Geschützt ist der
+        // Empfänger über android:permission, das Ziel ist fest Bubble Log (setPackage)
+        getContext().sendBroadcast(i);
+        call.resolve();
+    }
+
     /** Letzter Ort, den der Dienst passiv mitbekommen hat (z. B. von Bubble Logs GPS): lat, lon, gen, tempo, alterMs */
     @PluginMethod
     public void letzterOrt(PluginCall call) {
