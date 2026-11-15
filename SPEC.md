@@ -756,6 +756,10 @@ abtippen, sortieren, Ziele). Nimmt die Idee „Gesprächs-/Meeting-Notizen“ au
 - fest **eigene Seite im Karussell**, kein Eingabe-Modus: großer Knopf (Doppelring), Tippen = Start/Stopp
 - fest **Anhören nur am Handy**: der Sticky hat ein PDM-Mikro, aber nur einen Piezo-Summer an GPIO48 (Klicks und
   Pieptöne über `tone()`); Sprache darüber wäre leise und kaum verständlich. Die Seite sagt das ehrlich
+- Vorschlag (Markus, 15.11.2026) **Sticky als Fernbedienung fürs Anhören**: Tipp auf eine Aufnahme in der Liste →
+  das Handy spielt sie ab, der Ton kommt über dessen Kopfhörer/Earbuds; ▲/▼ springt zum vorigen/nächsten Merker,
+  Tipp = Pause. Direkt vom Sticky auf Earbuds geht nicht: der ESP32-S3 kann nur BLE 5.0, kein klassisches BT (A2DP)
+  und kein LE Audio (braucht BLE 5.2). Firmware wenig, das meiste in der App; ohne Handy bleibt es stumm
 - Vorschlag **Anzeige**: „● läuft seit 14:02, 3 min“, nur minutenweise aufgefrischt (e-Ink); rechts die Aufnahmen des
   Tages mit Uhrzeit, Länge und Stand (✓ beim Handy und als Text da · ⧗ wartet aufs Handy); ▲/▼ blättert die Liste
 - Vorschlag **Merker**: kleiner Knopf setzt eine Zeitmarke in die laufende Aufnahme („hier war's wichtig“); die App
