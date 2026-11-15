@@ -185,6 +185,7 @@ Rechenarbeit im Handy, KI und Cloud nur als zuschaltbare Zusatzstufe.
 - **Werkstatt-Begleiter**: Druckstatus X1C, Lasergravierer-Einstellungen, Anleitungen, die man mit
   schmutzigen Fingern per Taste weiterblättert
 - **Gesprächs-/Meeting-Notizen**: Taste → Aufnahme, Handy transkribiert, auf Wunsch Zusammenfassung
+  → ausgearbeitet als „Recorder für Längeres“ (15.11.2026)
   (Stufe Zuhause oder Cloud)
 - **Uhrenbox-Begleiter**: Gangwerte aus dem Zeitwaage-Labor neben der Uhr
 - **„Bitte nicht stören“-Schild**: an der Tür, per Handy oder Kalender umgeschaltet
@@ -628,6 +629,7 @@ Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzu
 - fest **Eingabe am Sticky nur für Kleinkram** (Markus, 13.11.2026): längere Texte tippt man am Fold/Zenbook oder
   diktiert. Am Sticky:
   - **Zahlenfeld** (Touch, große Tasten, Teil-Refresh je Taste): Minuten für den Timer, Zähler, kurze Zahlen
+    → aufgegangen in der Art „Ziffern“ des Bausteins Eingabe (15.11.2026)
   - **Kritzelblock**: mit dem Finger auf dem E-Paper zeichnen (Striche gesammelt alle ~200 ms per Teil-Refresh),
     ▼ = speichern nach `/ist/kritzel/JJJJ-MM-TT-hhmmss.bin`, die App holt es ab und legt es als Bild-Notiz ab
     (später ggf. Handschrift erkennen). Eigener Eintrag im Karussell
@@ -701,7 +703,7 @@ Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzu
     Handy-Zeichen gleich dabei
   - Vorschlag: Wetter auf Home mit Uhrzeit des Stands, ab ~3 h alt ausgegraut
 
-### Eingabe: Tasten, Strich, Sprache (Markus, 15.11.2026, Entwurf)
+### Eingabe: Tasten, Ziffern, Strich, Sprache (Markus, 15.11.2026, abgenommen)
 
 Anlass: Das Sticky Lab (Station 10) zeigt, dass eine Bildschirmtastatur auf e-Ink trägt – kein Anschlag geht
 verloren (Touch-Abfrage in eigener Aufgabe), Klick sofort, Textzeile gesammelt ~0,85 s; erster Mensch 49 Zeichen/min.
@@ -709,26 +711,64 @@ Mockup: `docs/eingabe-mockup.html`.
 
 - Vorschlag **ein Baustein „Eingabe“** für alle Textziele (Notiz, Zettel-Eintrag, Spickzettel-Karte, Handbuch-Suche,
   „Parkplatz“): oben die Textzeile, darunter eine der Arten **Tasten · Ziffern · Strich · Sprache**. Ein Modul `eingabe.h`
-  mit drei Unterseiten statt drei eigener Seiten. Kritzel bleibt eigene Seite (liefert Bild, keinen Text).
+  mit vier Unterseiten statt vier eigener Seiten. Kritzel bleibt eigene Seite (liefert Bild, keinen Text).
 - fest (bestehende Regel) **KI halten = Diktat**, auch mitten im Tippen; der Text landet an der Schreibmarke.
 - Vorschlag **Art wählen**: sichtbare Reiter oben rechts (tippen) und ▲/▼. **Keine neuen Wisch-Gesten**
   (Markus skeptisch).
 - Vorschlag **jedes Ziel merkt sich die zuletzt genutzte Art** (Parkplatz → Tasten, Notiz → Sprache).
 - Vorschlag **Tasten** aus Lab-Station 10 übernehmen (MIT): QWERTZ mit Ä Ö Ü ß bzw. QWERTY, nur quer, Tasten nie neu
   zeichnen, Textzeile gesammelt auffrischen (0,3 s Pause, spätestens 1,5 s), Teil-Refresh „wach“.
-- Vorschlag (Markus, 15.11.2026) **vierte Art „Ziffern“**: Num-Pad mit großen runden Tasten im ET66-Stil (0–9, Komma,
-  Löschen, OK) für Zahlen, Codes, Parkplatz- und Telefonnummern, Timer-Minuten. Ziele, die nur Zahlen brauchen, öffnen
-  direkt das Num-Pad. Nur in EDC – das Lab braucht keins.
+- fest (Markus, 15.11.2026) **vierte Art „Ziffern“** (Num-Pad, ET66-Stil), nur in EDC – das Lab braucht keins:
+  - fest **Ziele, die direkt mit Ziffern aufgehen**: Timer-Minuten (eigene Zeit), Parkplatz/Etage, Codes (Tür,
+    Schließfach – merken, kein Passwort-Tresor), Telefonnummer. Buchstaben dazu (P3) über den Reiter „Tasten“
+  - fest **getrennt vom Rechner, gleiche Optik**: Ziffern liefern nur eine Zahl ans Ziel und rechnen nicht; der Rechner
+    bleibt eigenes Widget (FW 0.28) und zeigt dieselben Tasten. Löst das „Zahlenfeld“ aus der Widget-Liste ab
+  - Vorschlag **Tastenfeld**: runde schwarze Zifferntasten, 7-8-9 oben wie beim Rechner (nicht wie am Telefon), 0
+    unten in der Mitte; rechts eine **Sondertaste je Ziel** (gerastert: „,“ bei Zahlen, „+“ bei Telefon, „#“ bei
+    Codes, „−“ bei Werten, die negativ sein dürfen), darunter ← (lang = alles weg) und OK als Doppelring
+  - Vorschlag: Telefonnummern in Gruppen mit Leerzeichen anzeigen; die App kann sie später anrufbar machen. Englisch:
+    „.“ statt „,“ (wie beim Rechner)
 - fest **Strich** = vorhandene Strichschrift (FW 0.27). Vorschlag: **Umlaut-Leiste** ä ö ü ß zum Antippen statt
   Umlaut-Gesten (nur im deutschen Modus).
 - Vorschlag **Sprache**: Erkennung am Fold (Whisper) **in der App-Sprache** statt fest Deutsch; ohne Handy bleibt es
   eine Sprachnotiz, bis der Abgleich sie zu Text macht.
-- Vorschlag **Englisch**: Oberfläche, Reiter („Keys · Stroke · Voice“) und Tastenbelegung folgen der EDC-Sprache.
+- Vorschlag **Englisch**: Oberfläche, Reiter („Keys · Digits · Stroke · Voice“) und Tastenbelegung folgen der EDC-Sprache.
 - offen: welche Ziele zuerst? (Vorschlag: Notiz und Zettel-Eintrag)
 - offen: Umlaute im englischen Tastenmodus (langes Drücken?)
 - offen: Strichschrift-Umlaute – Leiste reicht, oder doch Gesten?
 - offen: Diktat später per Ollama nachbessern (Satzzeichen, Groß/klein)?
 - offen: Einfach-Profil für ältere Angehörige – nur Sprache und Tasten, keine Strichschrift?
+
+#### Kleine Eingaben (Markus, 15.11.2026)
+Neben Text und Zahlen braucht EDC ein paar Eingaben, die mit einem Tipp fertig sind – für Einstellungen am Sticky und
+für Rückfragen der App. Teil desselben Bausteins `eingabe.h`, alle ohne Handy, Bilder im Mockup.
+- fest **Ja/Nein**: zwei große Pillen, Ja als Doppelring; ▲ = Ja, ▼ = Nein (z. B. „Aufnahme löschen?“, „erledigt?“)
+- fest **Auswahl**: 3–6 große Zeilen, Tippen wählt, ▲/▼ blättert bei mehr (Szene, Vorlage, Zettel-Eintrag)
+- fest **Uhrzeit/Datum**: +/− je Stelle, langes Drücken läuft schneller; Englisch 12 h mit a/p (Wecker, Erinnerung,
+  Uhr stellen)
+- fest **Stufe 1–5**: ein Tipp = fertig (Fahrt, Laune, wie gut lief's)
+- Vorschlag: die App kann jede davon als Rückfrage schicken (Frage + Antworten), die Antwort geht wie eine Notiz zurück
+
+#### Recorder für Längeres (Markus, 15.11.2026)
+Abgrenzung: **Diktat** (KI halten) ist für Kurzes, die Hand ist dabei belegt. Der **Recorder** ist für Minuten:
+Gespräch, Gedanke beim Gehen, Werkstatt – Hände frei. Beides läuft danach durch dieselbe Kette (Sprachnotizen 2.0:
+abtippen, sortieren, Ziele). Nimmt die Idee „Gesprächs-/Meeting-Notizen“ aus der Ideensammlung auf.
+- fest **eigene Seite im Karussell**, kein Eingabe-Modus: großer Knopf (Doppelring), Tippen = Start/Stopp
+- fest **Anhören nur am Handy**: der Sticky hat ein PDM-Mikro, aber nur einen Piezo-Summer an GPIO48 (Klicks und
+  Pieptöne über `tone()`); Sprache darüber wäre leise und kaum verständlich. Die Seite sagt das ehrlich
+- Vorschlag **Anzeige**: „● läuft seit 14:02, 3 min“, nur minutenweise aufgefrischt (e-Ink); rechts die Aufnahmen des
+  Tages mit Uhrzeit, Länge und Stand (✓ beim Handy und als Text da · ⧗ wartet aufs Handy); ▲/▼ blättert die Liste
+- Vorschlag **Merker**: kleiner Knopf setzt eine Zeitmarke in die laufende Aufnahme („hier war's wichtig“); die App
+  zeigt die Stelle im Text
+- Vorschlag **Format und Weg** wie beim Diktat: IMA-ADPCM 16 kHz (~8 kB/s, ~29 MB je Stunde auf der Karte). Ist das
+  Handy verbunden, geht der Ton live mit; sonst landet er in `/ist/puffer`. Achtung: BLE schafft gemessen ~66 kbit/s,
+  das Abholen einer Offline-Aufnahme dauert also etwa so lange wie die Aufnahme selbst
+- Vorschlag: Löschen am Sticky über Ja/Nein; nach dem Abholen bleibt die Datei auf der Karte, bis die App „hat Text“
+  meldet
+- fest **Dauer**: kein hartes Limit; nach 60 min Piepton und Hinweis, unter 15 % Akku stoppt der Recorder selbst
+- fest **KI halten während der Aufnahme = Merker** statt Diktat (der Ton läuft ja schon mit). Einzige Ausnahme von
+  der Regel „KI halten = Diktat“, nur solange der Recorder läuft
+- offen: Strom während der Aufnahme (Mikro + wach) nicht gemessen – vor dem Bauen im Lab messen
 
 ### Eigene Sensoren (laut Schaltplan, Bus MISC_I2C)
 | Baustein | Adresse | heute | Vorschlag |

@@ -4,7 +4,8 @@
 <style>
 :root{--bg:#e9e6df;--ink:#111;--paper:#f4f2ec;--muted:#666}
 body{margin:0;background:var(--bg);font-family:Helvetica,Arial,sans-serif;color:var(--ink);padding:16px}
-h1{font-size:20px;margin:0 0 4px}p.k{margin:0 0 16px;color:var(--muted);font-size:14px;max-width:820px}
+h1{font-size:20px;margin:0 0 4px}h2{font-size:17px;margin:28px 0 8px}
+p.k{margin:0 0 16px;color:var(--muted);font-size:14px;max-width:820px}
 .grid{display:flex;flex-wrap:wrap;gap:20px}
 figure{margin:0;max-width:820px;width:100%}
 figcaption{font-size:13px;color:var(--muted);margin-top:6px}
@@ -12,8 +13,8 @@ figcaption{font-size:13px;color:var(--muted);margin-top:6px}
 svg{display:block;width:100%;height:auto;background:var(--paper);border-radius:4px}
 svg text{font-family:Helvetica,Arial,sans-serif;fill:#111}
 </style></head><body>
-<h1>EDC · Baustein „Eingabe“ (Entwurf)</h1>
-<p class="k">Ein Eingabe-Bildschirm für alle Textziele (Notiz, Zettel, Spickzettel, Suche, Parkplatz). Oben die Textzeile, darunter eine von drei Arten: Tasten, Strich, Sprache. ▲/▼ wechselt die Art, KI halten = Diktat (wie überall), Tippen = Eingabe. Jedes Ziel merkt sich die zuletzt genutzte Art. Sprache der Oberfläche und Tastenbelegung folgen der EDC-Sprache (DE/EN).</p>
+<h1>EDC · Baustein „Eingabe“ (abgenommen 15.11.2026)</h1>
+<p class="k">Ein Eingabe-Bildschirm für alle Textziele (Notiz, Zettel, Spickzettel, Suche, Parkplatz). Oben die Textzeile, darunter eine von vier Arten: Tasten, Ziffern, Strich, Sprache. Reiter tippen oder ▲/▼ wechselt die Art, KI halten = Diktat (wie überall), Tippen = Eingabe. Ziele, die nur Zahlen brauchen, öffnen direkt die Ziffern; sonst merkt sich jedes Ziel die zuletzt genutzte Art. Sprache der Oberfläche und Tastenbelegung folgen der EDC-Sprache (DE/EN).</p>
 <svg width="0" height="0" style="position:absolute"><defs>
  <pattern id="r" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="2" height="2" fill="#111"/><rect x="2" y="2" width="2" height="2" fill="#111"/></pattern>
 </defs></svg>
@@ -25,33 +26,31 @@ svg text{font-family:Helvetica,Arial,sans-serif;fill:#111}
  <text x="780" y="30" font-size="16" text-anchor="end">14:05 · 📱 · 82 %</text>
  <line x1="0" y1="44" x2="800" y2="44" stroke="#111" stroke-width="2"/>
  <text x="20" y="88" font-size="30">Parkplatz P3 Reihe 12_</text>
- <!-- Art-Reiter -->
- <g font-size="15" text-anchor="middle">
-  <rect x="520" y="104" width="260" height="40" rx="20" fill="none" stroke="#111" stroke-width="3"/>
-  <rect x="525" y="109" width="80" height="30" rx="15" fill="#111"/><text x="565" y="129" style="fill:#f4f2ec">⌨ Tasten</text>
-  <text x="650" y="129">✎ Strich</text><text x="735" y="129">🎙 Sprache</text>
- </g>
- <text x="20" y="132" font-size="13" fill="#666" style="fill:#666">▲▼ = Art wechseln · KI halten = Diktat</text>
+ <g class="reiter" data-aktiv="0" data-y="104" data-lang="de"></g>
+ <text x="20" y="132" font-size="13" style="fill:#666">▲▼ = Art wechseln · KI halten = Diktat</text>
  <line x1="0" y1="152" x2="800" y2="152" stroke="#111" stroke-width="2"/>
- <g font-size="22" text-anchor="middle">
-  <!-- Reihe 1 -->
-  <g id="r1"></g>
- </g>
  <g font-size="22" text-anchor="middle" id="tasten"></g>
 </svg></div><figcaption>Tasten (aus Lab-Station 10): QWERTZ mit Ä Ö Ü ß bzw. QWERTY. Tasten werden nie neu gezeichnet, Rückmeldung = Klick, die Textzeile frischt gesammelt auf (~0,85 s). Gut für Kurzes, das man nicht sagen will.</figcaption></figure>
 
-<!-- 2: Strich -->
+<!-- 2: Ziffern (Timer) -->
+<figure><div class="dev"><svg viewBox="0 0 800 480">
+ <text x="20" y="30" font-size="20" font-weight="bold">Timer · eigene Zeit</text>
+ <text x="780" y="30" font-size="16" text-anchor="end">14:05 · 📱 · 82 %</text>
+ <line x1="0" y1="44" x2="800" y2="44" stroke="#111" stroke-width="2"/>
+ <text x="20" y="92" font-size="40" font-weight="bold">12_</text><text x="96" y="92" font-size="26">min</text>
+ <g class="reiter" data-aktiv="1" data-y="104" data-lang="de"></g>
+ <text x="20" y="132" font-size="13" style="fill:#666">Ziel will nur Zahlen → öffnet direkt Ziffern</text>
+ <line x1="0" y1="152" x2="800" y2="152" stroke="#111" stroke-width="2"/>
+ <g id="numpadDe"></g>
+</svg></div><figcaption>Ziffern (Num-Pad, ET66-Stil): runde schwarze Zifferntasten wie beim Rechner, Anordnung 7-8-9 oben (wie der Rechner, nicht wie ein Telefon). Rechts eine Sondertaste je Ziel (hier „,“; beim Telefon „+“, bei Codes „#“), Löschen und OK als Doppelring. Rechnet nicht – Rechnen bleibt im Rechner-Widget, das dieselben Tasten zeigt. Geht ganz ohne Handy.</figcaption></figure>
+
+<!-- 3: Strich -->
 <figure><div class="dev"><svg viewBox="0 0 800 480">
  <text x="20" y="30" font-size="20" font-weight="bold">Notiz</text>
  <text x="780" y="30" font-size="16" text-anchor="end">14:05 · 📱 · 82 %</text>
  <line x1="0" y1="44" x2="800" y2="44" stroke="#111" stroke-width="2"/>
  <text x="20" y="88" font-size="30">Parkplatz P3 Rei_</text>
- <g font-size="15" text-anchor="middle">
-  <rect x="520" y="104" width="260" height="40" rx="20" fill="none" stroke="#111" stroke-width="3"/>
-  <text x="565" y="129">⌨ Tasten</text>
-  <rect x="610" y="109" width="80" height="30" rx="15" fill="#111"/><text x="650" y="129" style="fill:#f4f2ec">✎ Strich</text>
-  <text x="735" y="129">🎙 Sprache</text>
- </g>
+ <g class="reiter" data-aktiv="2" data-y="104" data-lang="de"></g>
  <line x1="0" y1="152" x2="800" y2="152" stroke="#111" stroke-width="2"/>
  <rect x="20" y="170" width="360" height="290" rx="16" fill="none" stroke="url(#r)" stroke-width="6"/>
  <text x="200" y="196" font-size="14" text-anchor="middle">Buchstaben</text>
@@ -72,62 +71,174 @@ svg text{font-family:Helvetica,Arial,sans-serif;fill:#111}
  </g>
 </svg></div><figcaption>Strich (vorhandene Strichschrift, FW 0.27): ein Strich je Zeichen, links Buchstaben, rechts Ziffern. Alphabet sprachneutral. Statt Umlaut-Gesten eine Umlaut-Leiste zum Antippen (nur im deutschen Modus) – Gesten bleiben offen, Markus ist skeptisch. Geht ganz ohne Handy.</figcaption></figure>
 
-<!-- 3: Sprache -->
+<!-- 4: Sprache -->
 <figure><div class="dev"><svg viewBox="0 0 800 480">
  <text x="20" y="30" font-size="20" font-weight="bold">Notiz</text>
  <text x="780" y="30" font-size="16" text-anchor="end">14:05 · 📱 · 82 %</text>
  <line x1="0" y1="44" x2="800" y2="44" stroke="#111" stroke-width="2"/>
  <text x="20" y="88" font-size="30">Parkplatz P3 Reihe 12, neben dem</text>
  <text x="20" y="124" font-size="30">Aufzug_</text>
- <g font-size="15" text-anchor="middle">
-  <rect x="520" y="150" width="260" height="40" rx="20" fill="none" stroke="#111" stroke-width="3"/>
-  <text x="565" y="175">⌨ Tasten</text><text x="650" y="175">✎ Strich</text>
-  <rect x="695" y="155" width="80" height="30" rx="15" fill="#111"/><text x="735" y="175" style="fill:#f4f2ec">🎙 Sprache</text>
- </g>
+ <g class="reiter" data-aktiv="3" data-y="150" data-lang="de"></g>
  <line x1="0" y1="198" x2="800" y2="198" stroke="#111" stroke-width="2"/>
  <circle cx="400" cy="320" r="86" fill="#111"/>
  <rect x="384" y="270" width="32" height="64" rx="16" fill="#f4f2ec"/>
  <path d="M366 320 a34 34 0 0 0 68 0" fill="none" stroke="#f4f2ec" stroke-width="6"/>
  <rect x="396" y="352" width="8" height="18" fill="#f4f2ec"/>
  <text x="400" y="440" font-size="18" text-anchor="middle">KI halten und sprechen · loslassen = fertig</text>
- <text x="400" y="466" font-size="14" text-anchor="middle" fill="#666" style="fill:#666">ohne Handy: wird aufgenommen und später am Fold zu Text (Whisper, Sprache DE/EN)</text>
+ <text x="400" y="466" font-size="14" text-anchor="middle" style="fill:#666">ohne Handy: wird aufgenommen und später am Fold zu Text (Whisper, Sprache DE/EN)</text>
 </svg></div><figcaption>Sprache: KI halten = Diktat, wie überall in EDC; der Text landet an der Schreibmarke. Erkennung am Fold (Whisper) in der App-Sprache statt fest Deutsch. Ohne Handy bleibt es eine Sprachnotiz, bis der Abgleich sie zu Text macht.</figcaption></figure>
 
-<!-- 4: Englisch -->
+<!-- 5: Englisch Tasten -->
 <figure><div class="dev"><svg viewBox="0 0 800 480">
  <text x="20" y="30" font-size="20" font-weight="bold">Note</text>
  <text x="780" y="30" font-size="16" text-anchor="end">2:05p · 📱 · 82 %</text>
  <line x1="0" y1="44" x2="800" y2="44" stroke="#111" stroke-width="2"/>
  <text x="20" y="88" font-size="30">Parking P3 row 12_</text>
- <g font-size="15" text-anchor="middle">
-  <rect x="520" y="104" width="260" height="40" rx="20" fill="none" stroke="#111" stroke-width="3"/>
-  <rect x="525" y="109" width="80" height="30" rx="15" fill="#111"/><text x="565" y="129" style="fill:#f4f2ec">⌨ Keys</text>
-  <text x="650" y="129">✎ Stroke</text><text x="735" y="129">🎙 Voice</text>
- </g>
- <text x="20" y="132" font-size="13" fill="#666" style="fill:#666">▲▼ = switch mode · hold AI = dictate</text>
+ <g class="reiter" data-aktiv="0" data-y="104" data-lang="en"></g>
+ <text x="20" y="132" font-size="13" style="fill:#666">▲▼ = switch mode · hold AI = dictate</text>
  <line x1="0" y1="152" x2="800" y2="152" stroke="#111" stroke-width="2"/>
  <g font-size="22" text-anchor="middle" id="tastenEn"></g>
 </svg></div><figcaption>Englisch: Oberfläche, 12-h-Uhr und QWERTY folgen der EDC-Sprache. Umlaute im englischen Modus über langes Drücken (offen).</figcaption></figure>
+
+<!-- 6: Englisch Ziffern (Telefon) -->
+<figure><div class="dev"><svg viewBox="0 0 800 480">
+ <text x="20" y="30" font-size="20" font-weight="bold">Phone number</text>
+ <text x="780" y="30" font-size="16" text-anchor="end">2:05p · 📱 · 82 %</text>
+ <line x1="0" y1="44" x2="800" y2="44" stroke="#111" stroke-width="2"/>
+ <text x="20" y="92" font-size="36" font-weight="bold">+41 79 123 45_</text>
+ <g class="reiter" data-aktiv="1" data-y="104" data-lang="en"></g>
+ <line x1="0" y1="152" x2="800" y2="152" stroke="#111" stroke-width="2"/>
+ <g id="numpadEn"></g>
+</svg></div><figcaption>Digits (English): same pad, the extra key follows the target – here „+“ for phone numbers; spaces are added automatically in groups. The app can later make the number callable.</figcaption></figure>
 </div>
+
+<h2>Recorder (eigene Seite im Karussell, kein Eingabe-Modus)</h2>
+<div class="grid">
+<!-- 7: Recorder DE -->
+<figure><div class="dev"><svg viewBox="0 0 800 480">
+ <text x="20" y="30" font-size="20" font-weight="bold">Recorder</text>
+ <text x="780" y="30" font-size="16" text-anchor="end">14:05 · 📱 · 82 %</text>
+ <line x1="0" y1="44" x2="800" y2="44" stroke="#111" stroke-width="2"/>
+ <!-- großer Knopf: Doppelring = Hauptaktion -->
+ <circle cx="190" cy="230" r="120" fill="none" stroke="#111" stroke-width="5"/>
+ <circle cx="190" cy="230" r="106" fill="#111"/>
+ <rect x="160" y="200" width="60" height="60" rx="6" fill="#f4f2ec"/>
+ <text x="190" y="390" font-size="30" font-weight="bold" text-anchor="middle">● läuft seit 14:02</text>
+ <text x="190" y="424" font-size="18" text-anchor="middle">3 min · Tippen = Stopp</text>
+ <rect x="110" y="438" width="160" height="34" rx="17" fill="none" stroke="#111" stroke-width="2"/>
+ <text x="190" y="461" font-size="16" text-anchor="middle">◆ Merker setzen</text>
+ <line x1="380" y1="60" x2="380" y2="470" stroke="#111" stroke-width="2"/>
+ <text x="400" y="80" font-size="16" font-weight="bold">Heute</text>
+ <g font-size="20">
+  <text x="400" y="122">13:10  Werkstatt-Gedanke</text><text x="780" y="122" text-anchor="end">8 min ✓</text>
+  <line x1="400" y1="136" x2="780" y2="136" stroke="#111"/>
+  <text x="400" y="174">11:45  Gespräch Garage</text><text x="780" y="174" text-anchor="end">21 min ✓</text>
+  <line x1="400" y1="188" x2="780" y2="188" stroke="#111"/>
+  <text x="400" y="226">09:30  Aufnahme</text><text x="780" y="226" text-anchor="end">2 min ⧗</text>
+  <line x1="400" y1="240" x2="780" y2="240" stroke="#111"/>
+ </g>
+ <text x="400" y="290" font-size="14" style="fill:#666">✓ beim Handy, als Text da · ⧗ wartet auf das Handy</text>
+ <text x="400" y="312" font-size="14" style="fill:#666">Anhören nur am Handy – der Sticky hat keinen Lautsprecher</text>
+ <text x="400" y="452" font-size="14" style="fill:#666">▲▼ = Liste · KI halten = Merker (nur hier)</text>
+</svg></div><figcaption>Recorder für Längeres: Tippen auf den großen Knopf = Start/Stopp (Hände frei, Gespräch, Gedanke über Minuten). Die Laufzeit zählt nur minutenweise hoch (e-Ink). „Merker“ (oder KI halten, nur solange die Aufnahme läuft) setzt eine Zeitmarke; ab 60 min piept es, unter 15 % Akku stoppt die Aufnahme. Rechts die Aufnahmen des Tages mit Länge und Stand. Anhören und Text gibt es am Handy (Sprachnotizen 2.0); der Summer kann keine Sprache.</figcaption></figure>
+</div>
+
+<h2>Kleine Eingaben (für Rückfragen und Einstellungen)</h2>
+<div class="grid">
+<!-- 8: vier Kleinbausteine -->
+<figure><div class="dev"><svg viewBox="0 0 800 480">
+ <line x1="400" y1="0" x2="400" y2="480" stroke="#111" stroke-width="2"/>
+ <line x1="0" y1="240" x2="800" y2="240" stroke="#111" stroke-width="2"/>
+ <!-- Ja/Nein -->
+ <text x="20" y="34" font-size="18" font-weight="bold">Ja/Nein</text>
+ <text x="200" y="80" font-size="24" text-anchor="middle">Aufnahme 09:30 löschen?</text>
+ <rect x="30" y="120" width="160" height="80" rx="40" fill="none" stroke="#111" stroke-width="2"/><text x="110" y="168" font-size="24" text-anchor="middle">Nein</text>
+ <rect x="210" y="120" width="160" height="80" rx="40" fill="none" stroke="#111" stroke-width="5"/><rect x="218" y="128" width="144" height="64" rx="32" fill="none" stroke="#111" stroke-width="3"/><text x="290" y="168" font-size="24" font-weight="bold" text-anchor="middle">Ja</text>
+ <!-- Auswahl -->
+ <text x="420" y="34" font-size="18" font-weight="bold">Auswahl</text>
+ <g font-size="22">
+  <rect x="420" y="50" width="360" height="54" rx="27" fill="#111"/><text x="444" y="85" style="fill:#f4f2ec">● Micro</text>
+  <rect x="420" y="112" width="360" height="54" rx="27" fill="none" stroke="#111" stroke-width="2"/><text x="444" y="147">○ Werkstatt</text>
+  <rect x="420" y="174" width="360" height="54" rx="27" fill="none" stroke="#111" stroke-width="2"/><text x="444" y="209">○ Unterwegs</text>
+ </g>
+ <!-- Uhrzeit -->
+ <text x="20" y="274" font-size="18" font-weight="bold">Uhrzeit</text>
+ <g text-anchor="middle">
+  <circle cx="110" cy="310" r="28" fill="none" stroke="#111" stroke-width="2"/><text x="110" y="319" font-size="26">+</text>
+  <circle cx="290" cy="310" r="28" fill="none" stroke="#111" stroke-width="2"/><text x="290" y="319" font-size="26">+</text>
+  <text x="200" y="398" font-size="64" font-weight="bold">07 : 30</text>
+  <circle cx="110" cy="440" r="28" fill="none" stroke="#111" stroke-width="2"/><text x="110" y="449" font-size="26">−</text>
+  <circle cx="290" cy="440" r="28" fill="none" stroke="#111" stroke-width="2"/><text x="290" y="449" font-size="26">−</text>
+ </g>
+ <!-- Bewertung -->
+ <text x="420" y="274" font-size="18" font-weight="bold">Stufe</text>
+ <text x="600" y="320" font-size="22" text-anchor="middle">Wie war die Fahrt?</text>
+ <g text-anchor="middle" font-size="26">
+  <circle cx="460" cy="390" r="30" fill="#111"/><text x="460" y="399" style="fill:#f4f2ec">1</text>
+  <circle cx="530" cy="390" r="30" fill="#111"/><text x="530" y="399" style="fill:#f4f2ec">2</text>
+  <circle cx="600" cy="390" r="30" fill="#111"/><text x="600" y="399" style="fill:#f4f2ec">3</text>
+  <circle cx="670" cy="390" r="30" fill="#111"/><text x="670" y="399" style="fill:#f4f2ec">4</text>
+  <circle cx="740" cy="390" r="30" fill="none" stroke="#111" stroke-width="4"/><text x="740" y="399">5</text>
+ </g>
+ <text x="600" y="456" font-size="14" text-anchor="middle" style="fill:#666">ein Tipp = fertig</text>
+</svg></div><figcaption>Vier kleine Bausteine, je ein Viertel gezeigt (am Gerät jeweils als ganze Seite oder Teilbild): Ja/Nein (Ja als Doppelring, ▲ = Ja, ▼ = Nein), Auswahl (3–6 große Zeilen, ▲/▼ blättert, Tippen wählt), Uhrzeit (+/− je Stelle, langes Drücken läuft schneller; in Englisch 12 h mit a/p), Stufe 1–5 (ein Tipp, fertig). Alle gehen ohne Handy; die App kann sie für Rückfragen aufrufen.</figcaption></figure>
+</div>
+
 <script>
+const ns = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, text) { const e = document.createElementNS(ns, tag); Object.entries(attrs).forEach(([k, v]) => e.setAttribute(k, v)); if (text != null) e.textContent = text; return e; }
+// Art-Reiter: vier Pillen oben rechts
+const REITER = { de: ['⌨ Tasten', '# Ziffern', '✎ Strich', '🎙 Sprache'], en: ['⌨ Keys', '# Digits', '✎ Stroke', '🎙 Voice'] };
+document.querySelectorAll('g.reiter').forEach(g => {
+  const a = +g.dataset.aktiv, y = +g.dataset.y, namen = REITER[g.dataset.lang], X = 430, B = 350, w = B / 4;
+  g.setAttribute('font-size', 15); g.setAttribute('text-anchor', 'middle');
+  g.appendChild(el('rect', { x: X, y, width: B, height: 40, rx: 20, fill: 'none', stroke: '#111', 'stroke-width': 3 }));
+  namen.forEach((n, i) => {
+    const cx = X + w * i + w / 2;
+    if (i === a) g.appendChild(el('rect', { x: cx - w / 2 + 4, y: y + 5, width: w - 8, height: 30, rx: 15, fill: '#111' }));
+    const t = el('text', { x: cx, y: y + 25 }, n); if (i === a) t.setAttribute('style', 'fill:#f4f2ec'); g.appendChild(t);
+  });
+});
 // Tastatur-Reihen zeichnen (wie Lab-Station 10)
 function tasten(id, reihen) {
-  const g = document.getElementById(id), KY = 160, KH = 78, W = 800, ns = 'http://www.w3.org/2000/svg';
+  const g = document.getElementById(id), KY = 160, KH = 78, W = 800;
   reihen.forEach((r, ri) => {
     const sum = r.reduce((a, t) => a + (t[1] || 10), 0); let pos = 0;
     r.forEach(([l, b]) => {
       b = b || 10; const x = pos * W / sum, w = b * W / sum; pos += b;
-      const rect = document.createElementNS(ns, 'rect');
-      Object.entries({ x: x + 4, y: KY + ri * KH + 4, width: w - 8, height: KH - 8, rx: 12, fill: 'none', stroke: '#111', 'stroke-width': b > 10 ? 4 : 2 }).forEach(([k, v]) => rect.setAttribute(k, v));
-      g.appendChild(rect);
-      const t = document.createElementNS(ns, 'text');
-      t.setAttribute('x', x + w / 2); t.setAttribute('y', KY + ri * KH + KH / 2 + 8); t.textContent = l; t.setAttribute('font-size', l.length > 2 ? 15 : 24);
-      g.appendChild(t);
+      g.appendChild(el('rect', { x: x + 4, y: KY + ri * KH + 4, width: w - 8, height: KH - 8, rx: 12, fill: 'none', stroke: '#111', 'stroke-width': b > 10 ? 4 : 2 }));
+      g.appendChild(el('text', { x: x + w / 2, y: KY + ri * KH + KH / 2 + 8, 'font-size': l.length > 2 ? 15 : 24 }, l));
     });
   });
 }
 const z = s => [...s].map(c => [c]);
 tasten('tasten', [z('qwertzuiopü'), z('asdfghjklöä'), [['⇧', 15], ...z('yxcvbnmß'), ['←', 15]], [['DE', 15], [','], ['Leerzeichen', 50], ['.'], ['OK', 15]]]);
 tasten('tastenEn', [z('qwertyuiop'), z('asdfghjkl'), [['⇧', 15], ...z('zxcvbnm'), ['←', 15]], [['EN', 15], [','], ['space', 50], ['.'], ['OK', 15]]]);
+// Num-Pad im ET66-Stil: runde schwarze Ziffern 7-8-9 oben, rechts Sondertaste, Löschen, OK
+function numpad(id, sonder, ok, loeschen, hinweis) {
+  const g = document.getElementById(id), R = 33, DX = 92, DY = 76, X0 = 180, Y0 = 196;
+  g.setAttribute('text-anchor', 'middle');
+  const reihen = ['789', '456', '123', ' 0 '];
+  reihen.forEach((r, ri) => [...r].forEach((c, ci) => {
+    if (c === ' ') return;
+    const cx = X0 + ci * DX, cy = Y0 + ri * DY;
+    g.appendChild(el('circle', { cx, cy, r: R, fill: '#111' }));
+    g.appendChild(el('text', { cx, x: cx, y: cy + 10, 'font-size': 30, style: 'fill:#f4f2ec' }, c));
+  }));
+  // rechte Spalte: Sondertaste (Werkzeug, gerastert), Löschen (dünner Ring), OK (Doppelring)
+  const RX = 560;
+  g.appendChild(el('circle', { cx: RX, cy: Y0, r: R, fill: 'none', stroke: 'url(#r)', 'stroke-width': 6 }));
+  g.appendChild(el('text', { x: RX, y: Y0 + 10, 'font-size': 30 }, sonder));
+  g.appendChild(el('circle', { cx: RX, cy: Y0 + DY, r: R, fill: 'none', stroke: '#111', 'stroke-width': 2 }));
+  g.appendChild(el('text', { x: RX, y: Y0 + DY + 10, 'font-size': 28 }, '←'));
+  g.appendChild(el('rect', { x: RX - 40, y: Y0 + 2 * DY - 36, width: 80, height: DY + 72, rx: 40, fill: 'none', stroke: '#111', 'stroke-width': 5 }));
+  g.appendChild(el('rect', { x: RX - 32, y: Y0 + 2 * DY - 28, width: 64, height: DY + 56, rx: 32, fill: 'none', stroke: '#111', 'stroke-width': 3 }));
+  g.appendChild(el('text', { x: RX, y: Y0 + 2.5 * DY + 8, 'font-size': 22, 'font-weight': 'bold' }, ok));
+  // Hinweis rechts außen
+  hinweis.forEach((h, i) => g.appendChild(el('text', { x: 700, y: 210 + i * 24, 'font-size': 14, style: 'fill:#666' }, h)));
+  g.appendChild(el('text', { x: 700, y: Y0 + 3 * DY + 10, 'font-size': 14, style: 'fill:#666' }, loeschen));
+}
+numpad('numpadDe', ',', 'OK', 'lang ← = alles weg', ['Sondertaste', 'je Ziel:', ', Zahl', '+ Telefon', '# Code', '− Wert']);
+numpad('numpadEn', '+', 'OK', 'hold ← = clear', ['Extra key', 'per target:', '. number', '+ phone', '# code', '− value']);
 </script>
 </body></html>
