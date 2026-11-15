@@ -68,9 +68,9 @@ function seiten() {
     'w-timer': {
       titel: T('Hilfe · Timer', 'Help · Timer'),
       zeilen: T(
-        ['!Tippen', 'Start / Stopp, ± 1 min, Vorlage (1, 3, 5, 10, 25 min), Reset', '!Tasten', '▲ ▼   blättern wie überall · KI   Home', '!Läuft weiter',
+        ['!Tippen', 'Start / Stopp, ± 1 min, Vorlage (1, 3, 5, 10, 25 min), Reset', 'auf die Zeit = eigene Zeit mit Ziffern', '!Tasten', '▲ ▼   blättern wie überall · KI   Home', '!Läuft weiter',
           'auch wenn du die Seite verlässt; beim Ablauf piept er', 'und holt die Timer-Seite nach vorn (auch ohne Handy)'],
-        ['!Tap', 'Start / Stop, ± 1 min, preset (1, 3, 5, 10, 25 min), Reset', '!Keys', '▲ ▼   scroll as everywhere · AI   Home', '!Keeps running',
+        ['!Tap', 'Start / Stop, ± 1 min, preset (1, 3, 5, 10, 25 min), Reset', 'the time = your own time with digits', '!Keys', '▲ ▼   scroll as everywhere · AI   Home', '!Keeps running',
           'even when you leave the page; when time is up it beeps', 'and brings the timer page to the front (even without phone)']).concat(ZURUECK()),
     },
     'w-waage': {
@@ -117,12 +117,12 @@ function seiten() {
       titel: T('Hilfe · Recorder', 'Help · Recorder'),
       zeilen: T(
         ['!Aufnehmen', 'großer Knopf = Start / Stopp, Hände frei · läuft weiter, wenn du die Seite verlässt',
-          '!Merker', 'KI halten (solange er läuft) oder „Merker setzen“ – die Stelle steht später im Text',
+          '!Merker', 'KI halten (solange er läuft) oder „Merker“ – die Stelle steht später im Text',
           '!Liste', 'Aufnahmen von heute · ✓ beim Handy und abgetippt · Sanduhr = wartet aufs Handy',
           '!Anhören', 'nur am Handy: Zeile antippen spielt dort ab (noch einmal = Pause), ▲ ▼ springt zum Merker',
           '!Grenzen', 'nach jeder Stunde Piepton · unter 15 % Akku stoppt er · braucht die Karte'],
         ['!Record', 'big button = start / stop, hands free · keeps running when you leave the page',
-          '!Marks', 'hold AI (while recording) or “Set mark” – the spot shows up in the text later',
+          '!Marks', 'hold AI (while recording) or “Mark” – the spot shows up in the text later',
           '!List', 'today’s recordings · ✓ on the phone and transcribed · hourglass = waiting for the phone',
           '!Listen', 'on the phone only: tap a row to play it there (again = pause), ▲ ▼ jumps to marks',
           '!Limits', 'beep after every hour · stops below 15 % battery · needs the card']).concat(ZURUECK()),
@@ -177,8 +177,8 @@ function seiten() {
     'w-menue': {
       titel: T('Hilfe · Menü', 'Help · Menu'),
       zeilen: T(
-        ['!Öffnen', 'KI kurz auf Home', '!Tippen', 'auf eine Kachel = direkt dorthin', '!Kacheln', 'kommen aus dem Karussell (App → Mehr → Karussell)'],
-        ['!Open', 'AI short on Home', '!Tap', 'a tile = go straight there', '!Tiles', 'come from the carousel (app → More → Carousel)']).concat(TASTEN_KURZ(), ZURUECK()),
+        ['!Öffnen', 'KI kurz auf Home', '!Tippen', 'Kachel = Gruppe, öffnet das zuletzt benutzte Werkzeug', '!Reiter', 'oben = die anderen der Gruppe · Auswahl: App → Mehr'],
+        ['!Open', 'AI short on Home', '!Tap', 'tile = group, opens the last used tool', '!Tabs', 'at the top = the rest of the group · choose: app → More']).concat(TASTEN_KURZ(), ZURUECK()),
     },
     app: {
       titel: T('Hilfe · Spiel', 'Help · Game'),
@@ -195,19 +195,19 @@ function seiten() {
       titel: T('Spiel braucht das Handy', 'Game needs the phone'),
       zeilen: T(
         ['!Gerade nicht verbunden', 'Das Burgduell rechnet die App auf dem Handy.', '!Was hilft', 'App auf dem Handy öffnen, Bluetooth an – dann noch mal antippen',
-          '!Ohne Handy geht', 'Uhr, Timer, Wecker, Weltzeit, Rechner, Umrechner, Waage, Lineal, Notiz, Diktat, Kritzel, Schrift, Handbuch, Spickzettel, Zettel',
+          '!Ohne Handy geht', 'Uhr, Timer, Wecker, Weltzeit, Rechner, Umrechner, Waage, Lineal, Recorder, Tippen, Diktat, Kritzel, Schrift, Handbuch, Spickzettel, Zettel',
           '!Zurück', 'beliebige Taste'],
         ['!Not connected right now', 'Castle Duel is computed by the app on the phone.', '!What helps', 'open the app on the phone, Bluetooth on – then tap again',
-          '!Works without phone', 'clock, timer, alarm, world clock, calculator, converter, level, ruler, note, dictation, doodle, writing, manual, cheat sheets, cards',
+          '!Works without phone', 'clock, timer, alarm, world clock, calculator, converter, level, ruler, recorder, typing, dictation, doodle, writing, manual, cheat sheets, lists',
           '!Back', 'any key']),
     },
     zettel: {
-      titel: T('Hilfe · Zettel', 'Help · Cards'),
+      titel: T('Hilfe · Zettel', 'Help · Lists'),
       zeilen: T(
         ['!Tasten', '▲ ▼ kurz   Zettel zurück / vor', '▲ 1 s halten   erster Zettel', '▼ 1 s halten   nächster Eintrag im Karussell',
-          'KI kurz   Home · KI halten   Diktat', '!Zettel ändern', 'in der App unter „Zettel“ bzw. „Karten“'],
-        ['!Keys', '▲ ▼ short   card back / forward', '▲ hold 1 s   first card', '▼ hold 1 s   next carousel entry',
-          'AI short   Home · AI hold   dictate', '!Change cards', 'in the app under “Cards”']).concat(ZURUECK()),
+          'KI kurz   Home · KI halten   Diktat', '!Zettel ändern', 'in der App unter „Zettel“'],
+        ['!Keys', '▲ ▼ short   list back / forward', '▲ hold 1 s   first list', '▼ hold 1 s   next carousel entry',
+          'AI short   Home · AI hold   dictate', '!Change lists', 'in the app under “Lists”']).concat(ZURUECK()),
     },
   };
   // Lineal in Zoll: dieselbe Hilfe wie das Lineal

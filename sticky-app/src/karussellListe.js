@@ -48,8 +48,6 @@ export function wortliste(z) {
   return z.bloecke.flatMap((b) => b.glieder.filter((w) => z.an.has(w))).join(', ');
 }
 
-/** Einträge (für die Vorschau) aus dem Zustand */
-export const eintraegeAus = (z) => z.bloecke.flatMap((b) => b.glieder.filter((w) => z.an.has(w))).map((w) => EINTRAG[w]);
 
 /** Häkchen umschalten (Home bleibt immer an) */
 export function umschalten(z, wort) {

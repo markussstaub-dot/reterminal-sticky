@@ -25,9 +25,21 @@ Blick von außen (neuer Nutzer + Reviewer) nach den Umbauten vom 15.11. (Gruppen
   `rahmenPing`/`rahmenBbModus`, `aktivesProfil`
 - Doku: Legende ergänzt, Sensor-Tabelle, „Wie autark“ auf FW 0.37, zweites Gerät nicht mehr „in Folie“
 
-**Zurückgestellt**, weil die Dokumente-Session gerade dort arbeitet: Top 1, 2, 6 (Knopf), 7, 9 und
-`zeigeFahrtSeite`/`eintraegeAus`/IDs – in `main.js`, `index.html`, `hilfe.js`, `kontext.js`, `widgets.js`,
-`karussellListe.js`. Firmware-Punkte ebenso.
+## Erledigt (15.11.2026, Runde 2, nach der Dokumente-Session)
+
+- **Top 1** Fahrtbeginn springt nicht mehr auf die Notiz-Seite; Orte-Text ohne „beim Fahren Notiz-Seite“.
+  (Ein Ort mit Ziel „Notiz“ bleibt möglich – das wählt man selbst.)
+- **Top 2** Zettel-Hinweis (Menü → Nachschlagen → Zettel), Lage-Text ohne Notiz/FW-Stand; Hilfe am Sticky: Menü
+  (Kachel = Gruppe, Reiter), Timer (Zeit antippen = Ziffern), „ohne Handy geht“ mit Recorder/Tippen, Reiter „Karten“
+  weg, Recorder-Knopf „Merker“
+- **Top 6** Knopf „Visitenkarte“ samt `zeigeKarte`/`rahmenKarte` raus (Firmware-Befehl 0x11 bleibt)
+- **Top 7** „Zettel zeigen“ raus; Schnellknöpfe der Notiz-Seite nach Mehr → Karussell (nur bei Häkchen „Notiz“)
+- **Top 9 (Teil)** EN: Zettel = „Lists“ überall, Schrift = „Writing“ überall (Karussell versteht weiter „handwriting“)
+- **C Rest** `zeigeFahrtSeite`/`fahrtCrc`, `eintraegeAus`, IDs `#fahrt`/`#bestellung`
+
+**Noch offen:** Waage heißt auf der Kachel „Waage/Level“, auf der Seite „Wasserwaage/Spirit level“ (Platzfrage, bewusst
+gelassen) · Werkstatt/Mehr gliedern · `fwAb`-Weichen · alte Namen im Code · alle Firmware-Punkte · SPEC-Umbau A/B/C ·
+STAND kürzen. Hilfeseiten erst nach dem nächsten Verbinden am Sticky sichtbar (nicht am Gerät geprüft).
 
 ## Top 10
 

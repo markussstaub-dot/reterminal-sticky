@@ -337,7 +337,7 @@ zwilling.beobachte((art, d) => {
     else if (d.t === 'puffer' && d.a === 'neu') pufferAbholen().catch((e) => eintrag(T(`Notizen: ${e.message}`, `Notes: ${e.message}`), true));   // getippt (FW ≥ 0.37.0)
     else if (d.t === 'suche') eintrag(d.a === 'gefunden' ? T('Sticky gefunden', 'Sticky found') : T('Sticky piept', 'Sticky is beeping'));
     else if (d.t === 'schlaf') stickySchlaeft = true;
-    else if (d.t === 'modus') { spiegelSetze({ modus: d.m, w: d.w ?? '', lh: d.lh ?? 0, ...(d.zettel != null ? { zettel: d.zettel } : {}), verbunden: true }); stickyModus = d.m; if (d.m !== 'app' && appSeite.frage) { appSeite.frage = null; eintrag(T('Rückfrage: nicht jetzt', 'Question: not now')); } fotoAnstossen(); eintrag(T('Modus: ', 'Mode: ') + ({ home: 'Home', notiz: T('Notiz', 'Note'), bordbuch: T('Bordbuch', 'Logbook'), handbuch: T('Handbuch', 'Manual'), spick: T('Spickzettel', 'Cheat sheets'), kritzel: T('Kritzel', 'Doodle'), schrift: T('Schrift', 'Handwriting'), app: T('Spiel', 'Game'), widget: 'Widget', bestell: `${T('Zettel', 'List')} ${(d.zettel ?? 0) + 1}` }[d.m] ?? d.m)); if (d.m === 'app') { if (d.hoch != null) appSeite.hoch = !!d.hoch; } duellPruefen(); if (d.m === 'app' && !imDuell()) appSeite.zeigen().catch((e) => eintrag(T(`Spiel: ${e.message}`, `Game: ${e.message}`), true)); }
+    else if (d.t === 'modus') { spiegelSetze({ modus: d.m, w: d.w ?? '', lh: d.lh ?? 0, ...(d.zettel != null ? { zettel: d.zettel } : {}), verbunden: true }); stickyModus = d.m; if (d.m !== 'app' && appSeite.frage) { appSeite.frage = null; eintrag(T('Rückfrage: nicht jetzt', 'Question: not now')); } fotoAnstossen(); eintrag(T('Modus: ', 'Mode: ') + ({ home: 'Home', notiz: T('Notiz', 'Note'), bordbuch: T('Bordbuch', 'Logbook'), handbuch: T('Handbuch', 'Manual'), spick: T('Spickzettel', 'Cheat sheets'), kritzel: T('Kritzel', 'Doodle'), schrift: T('Schrift', 'Writing'), app: T('Spiel', 'Game'), widget: 'Widget', bestell: `${T('Zettel', 'List')} ${(d.zettel ?? 0) + 1}` }[d.m] ?? d.m)); if (d.m === 'app') { if (d.hoch != null) appSeite.hoch = !!d.hoch; } duellPruefen(); if (d.m === 'app' && !imDuell()) appSeite.zeigen().catch((e) => eintrag(T(`Spiel: ${e.message}`, `Game: ${e.message}`), true)); }
     else if (d.t === 'seite') { spiegelSetze({ bb: d.n }); dokumente.seiteGemeldet(d); }   // Handbuch (FW ≥ 0.38.0: d = Dokument, bib)
     else if (d.t === 'spick') spiegelSetze({ bb: d.n });
     else if (d.t === 'audio' && (d.a === 'start' || d.a === 'stop')) spiegelSetze({ aufnahme: d.a === 'start' });
@@ -367,9 +367,7 @@ function zeigeVerbindung() {
   $('verbinden').classList.toggle('haupt', !an);
   $('senden').disabled = !an;
   $('stickySuchen').disabled = !an;
-  $('bestellZeigen').disabled = !an;
   dokumente?.zeigeVerbindung();
-  $('karte').disabled = !an;
   $('simTasten').hidden = !(an && verbindung instanceof SimVerbindung);
   if (!an) $('geraet').textContent = '';
 }
@@ -588,9 +586,6 @@ $('senden').onclick = async () => {
   }
 };
 
-$('karte').onclick = async () => {
-  try { await zwilling.zeigeKarte(); eintrag(T('Visitenkarte angefordert', 'Business card requested')); } catch (e) { eintrag(e.message, true); }
-};
 
 document.querySelectorAll('[data-taste]').forEach((b) => {
   b.addEventListener('pointerdown', () => verbindung?.tasteRunter?.(b.dataset.taste));
@@ -647,7 +642,6 @@ function duellPruefen() {
     if (stickyModus === 'app') appSeite.zeigen().catch(() => {});
   }
 }
-let fahrtCrc = null;
 const knoepfe = () => {
   const roh = bauZ ? (localStorage.getItem(schluessel('knoepfe')) ?? '') : $('knoepfe').value;
   const l = roh.split(',').map((t) => t.trim()).filter(Boolean).slice(0, 5);
@@ -662,15 +656,6 @@ $('knoepfe').onchange = () => {
 // Notizen per Touch nur, wenn der Sticky die Notiz-Seite zeigt (Modus meldet die Firmware)
 const fahrtAktiv = () => stickyModus === 'notiz';
 
-async function zeigeFahrtSeite() {
-  zeichneFahrt(g, knoepfe());
-  const bytes = bildBytes();
-  fahrtCrc = crc32(bytes);
-  pruefeAbgleich();
-  const m = await zwilling.sendeBild(bytes, { schnell: false });
-  eintrag(T(`Fahrt-Seite gezeigt (${m.gesamt} ms)`, `Trip page shown (${m.gesamt} ms)`));
-  pruefeAbgleich();
-}
 // Gegenseitig suchen (FW ≥ 0.25.0): Knopf lässt den Sticky piepen; KI 3× am Sticky lässt das Handy klingeln
 $('stickySuchen').onclick = () => {
   if (!fwAb('0.25.0')) { eintrag(T('Sticky suchen braucht Firmware 0.25.0', 'Find Sticky needs firmware 0.25.0'), true); return; }
@@ -683,7 +668,6 @@ function handyKlingeln() {
   setTimeout(() => { $('handyRuhe').hidden = true; }, 20000);
 }
 $('handyRuhe').onclick = () => { Hintergrund.ruhe().catch(() => {}); $('handyRuhe').hidden = true; };
-$('bestellZeigen').onclick = () => zwilling.modusSetzen(3).catch((e) => eintrag(e.message, true));
 // Zettel (13.11.2026): ein Feld für Bestellzettel und QR-Karten; einmaliger Umzug aus den alten zwei Feldern
 function zettelLaden() {
   try {
@@ -887,7 +871,7 @@ async function abgleichKern() {
   if (fwAb('0.15.0')) await hilfeAufspielen().catch((e) => eintrag(T(`Hilfe: ${e.message}`, `Help: ${e.message}`), true));
   if (fwAb('0.27.0')) {   // Strichschrift: Alphabet, Glyphen und Hintergrund (Vorlagen in strichschrift.js)
     const n = await zwilling.sollAbgleich('schrift', [{ n: 'zeichen.bin', daten: glyphenBlatt() }, { n: 'bild.bin', daten: schriftHintergrund() },
-      { n: 'alphabet.txt', daten: alphabetDatei() }]).catch((e) => { eintrag(T(`Schrift: ${e.message}`, `Handwriting: ${e.message}`), true); return 0; });
+      { n: 'alphabet.txt', daten: alphabetDatei() }]).catch((e) => { eintrag(T(`Schrift: ${e.message}`, `Writing: ${e.message}`), true); return 0; });
     if (n) eintrag(T('Strichschrift aufgespielt', 'Stroke alphabet uploaded'));
   }
   if (fwAb('0.18.0')) {   // Widget-Maschine: nur Geändertes geht rüber (Bestandsliste je Widget)
@@ -903,12 +887,12 @@ async function abgleichKern() {
 
 // ---- Karussell (SPEC „Bedienung und Oberfläche“): Reihe, durch die ▲/▼ am Sticky blättern -------------------------
 const KARUSSELL_STANDARD_DE = 'Home, Timer, Wecker, Weltzeit, Waage, Lineal, Recorder, Tippen, Kritzel, Schrift, Rechner, Umrechner, Handbuch, Spickzettel, Zettel, Spiel, Einstellungen';
-const KARUSSELL_STANDARD_EN = 'Home, Timer, Alarm, World clock, Spirit level, Ruler, Recorder, Type, Doodle, Handwriting, Calculator, Converter, Manual, Cheat sheets, List, Game, Settings';
+const KARUSSELL_STANDARD_EN = 'Home, Timer, Alarm, World clock, Spirit level, Ruler, Recorder, Type, Doodle, Writing, Calculator, Converter, Manual, Cheat sheets, Lists, Game, Settings';
 /** Standard der App-Sprache (beide Fassungen lösen über KARUSSELL_WOERTER gleich auf) */
 const karussellStandard = () => (appIstEn() ? KARUSSELL_STANDARD_EN : KARUSSELL_STANDARD_DE);
 const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'handbuch', handbuch: 'handbuch', spickzettel: 'spickzettel', spick: 'spickzettel', zettel: 'zettel', bestellzettel: 'zettel', kritzel: 'kritzel', kritzelblock: 'kritzel', schrift: 'schrift', strichschrift: 'schrift', app: 'app', spiel: 'app', burgduell: 'app', rechner: 'app', umrechner: 'app', timer: 'widget timer', waage: 'widget waage', wasserwaage: 'widget waage', lineal: 'widget lineal', wecker: 'widget wecker', weltzeit: 'widget weltzeit', einstellungen: 'widget einstellungen', recorder: 'widget recorder', tippen: 'widget tippen', type: 'widget tippen', tastatur: 'widget tippen', keyboard: 'widget tippen',
   // englische Eingaben (Anzeige Englisch), intern dieselben deutschen Wörter
-  alarm: 'widget wecker', 'world clock': 'widget weltzeit', worldclock: 'widget weltzeit', level: 'widget waage', ruler: 'widget lineal', note: 'notiz', notes: 'notiz', scribble: 'kritzel', doodle: 'kritzel', 'spirit level': 'widget waage', handwriting: 'schrift',
+  alarm: 'widget wecker', 'world clock': 'widget weltzeit', worldclock: 'widget weltzeit', level: 'widget waage', ruler: 'widget lineal', note: 'notiz', notes: 'notiz', scribble: 'kritzel', doodle: 'kritzel', 'spirit level': 'widget waage', handwriting: 'schrift', writing: 'schrift',
   calculator: 'app', converter: 'app', logbook: 'handbuch', manual: 'handbuch', manuals: 'handbuch', 'cheat sheets': 'spickzettel', 'cheat sheet': 'spickzettel', list: 'zettel', lists: 'zettel', game: 'app', settings: 'widget einstellungen' };
 /** englische Wörter, die ab FW 0.28.0 zu eigenen Widgets werden (wie rechner/umrechner) */
 const KARUSSELL_LOKAL = { rechner: 'rechner', umrechner: 'umrechner', calculator: 'rechner', converter: 'umrechner' };
@@ -1285,7 +1269,7 @@ async function fahrtenschreiberAbholen(s = null) {
   if (zeilen) eintrag(`${s ? `${s.g.name}: ` : ''}${T(`Fahrtenschreiber: ${zeilen} neue ${zeilen === 1 ? 'Zeile' : 'Zeilen'}`, `Trip recorder: ${zeilen} new ${zeilen === 1 ? 'line' : 'lines'}`)}`);
   if (!s) await zeigeFahrtenschreiber();
   if (fwAbZ(s, '0.16.0')) await kritzelAbholen(s).catch((e) => eintrag(T(`Kritzel: ${e.message}`, `Doodle: ${e.message}`), true));
-  if (fwAbZ(s, '0.27.0')) await schriftAbholen(s).catch((e) => eintrag(T(`Schrift: ${e.message}`, `Handwriting: ${e.message}`), true));
+  if (fwAbZ(s, '0.27.0')) await schriftAbholen(s).catch((e) => eintrag(T(`Schrift: ${e.message}`, `Writing: ${e.message}`), true));
   if (fwAbZ(s, '0.12.0')) {
     const mess = await istAbholen('mess', 'messreihen', s);
     if (mess) eintrag(`${s ? `${s.g.name}: ` : ''}${T(`Messreihen: ${mess} neue Werte`, `Measurements: ${mess} new values`)}`);
@@ -1695,7 +1679,7 @@ async function hgAbgleichKern(s) {
     const nE = await einstellungenAufspielen(s).catch((e) => { eintrag(`${s.g.name}: ${T('Karussell', 'Carousel')}: ${e.message}`, true); return 0; });
     if (nE) eintrag(`${s.g.name}: ${T('Karussell und Lage aufgespielt', 'carousel and orientation uploaded')}`);
     await hilfeAufspielen(s).catch((e) => eintrag(`${s.g.name}: ${T('Hilfe', 'Help')}: ${e.message}`, true));
-    const nS = await z.sollAbgleich('schrift', teile.schrift).catch((e) => { eintrag(`${s.g.name}: ${T('Schrift', 'Handwriting')}: ${e.message}`, true); return 0; });
+    const nS = await z.sollAbgleich('schrift', teile.schrift).catch((e) => { eintrag(`${s.g.name}: ${T('Schrift', 'Writing')}: ${e.message}`, true); return 0; });
     if (nS) eintrag(`${s.g.name}: ${T('Strichschrift aufgespielt', 'stroke alphabet uploaded')}`);
     for (const [name, dateien] of teile.widgets) {
       const n = await z.sollAbgleich(`widgets/${name}`, dateien).catch((e) => { eintrag(`${s.g.name}: Widget ${name}: ${e.message}`, true); return 0; });
@@ -1807,8 +1791,8 @@ function kontextSchritt(o, v) {
   const { zustand, ende } = fahrtSchritt(fahrtZustand, v);
   fahrtZustand = zustand;
   if (!vorher && zustand.faehrt) {
-    // Micro = „Fahrt erkannt“: aus der Ruhe auf die Notiz-Seite (Schnellknöpfe); alter Parkplatz ist damit erledigt
-    if (stickyModus === 'home') zwilling.modusSetzen(2).catch(() => {});
+    // Micro = „Fahrt erkannt“: alter Parkplatz ist damit erledigt. Kein Sprung mehr auf die Notiz-Seite (seit 15.11.2026
+    // Altlast, nur noch per Häkchen) – der Sticky bleibt, wo er ist
     if (kontextLesen('parkplatz', null)) { kontextSetzen('parkplatz', null); homeAuffrischen(); }
   }
   if (ende) parkplatzFragen(o);

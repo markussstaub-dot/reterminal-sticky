@@ -68,23 +68,16 @@
         <section class="leiste">
           <button id="senden" class="haupt" disabled data-en="Send">Senden</button>
           <label class="schalter"><input type="checkbox" id="schnell"> <span data-en="fast">schnell</span></label>
-          <button id="karte" disabled data-en="Business card">Visitenkarte</button>
         </section>
       </details>
     </div>
 
     <!-- ======================= Notizen ======================= -->
     <div class="tab" data-tab="notizen" hidden>
-      <section id="fahrt">
+      <section>
         <div class="leiste">
           <button id="notizenTeilen" class="haupt" data-en="Share notes">Notizen teilen</button>
         </div>
-        <details>
-          <summary class="klein" data-en="Quick buttons of the note page">Schnellknöpfe der Notiz-Seite</summary>
-          <div class="leiste">
-            <input id="knoepfe" placeholder="Schnellknöpfe, durch Komma getrennt" data-en-placeholder="Quick buttons, separated by commas">
-          </div>
-        </details>
         <h2 data-en="Today">Heute</h2>
         <ol id="notizen"></ol>
       </section>
@@ -123,11 +116,8 @@
 
     <!-- ======================= Bestellen ======================= -->
     <div class="tab" data-tab="bestellen" hidden>
-      <section id="bestellung">
-        <p class="klein" data-en="On the Sticky: ▼ on Home, then ▼/▲ to flip, AI to go back.">Am Sticky: ▼ auf Home, dann ▼/▲ blättern, KI zurück.</p>
-        <div class="leiste">
-          <button id="bestellZeigen" disabled data-en="Show lists">Zettel zeigen</button>
-        </div>
+      <section>
+        <p class="klein" data-en="On the Sticky: menu → Look up → Lists, or ▲/▼ through the carousel.">Am Sticky: Menü → Nachschlagen → Zettel, oder mit ▲/▼ durchs Karussell.</p>
         <h2 data-en="Lists (up to 6, “## Title” starts one)">Zettel (bis zu 6, „## Titel“ beginnt einen)</h2>
         <p class="klein"><span data-en="Same order on the Sticky as here. With one of these lines a list becomes a QR code:">Reihenfolge am Sticky wie hier. Mit einer dieser Zeilen wird der Zettel ein QR-Code:</span>
           <code>wlan: Name | <span data-en="Password">Passwort</span></code> <span data-en="(guest Wi-Fi),">(Gast-WLAN),</span> <code>link: https://…</code>, <code>qr: <span data-en="content">Inhalt</span></code>
@@ -179,7 +169,7 @@
       </section>
       <section>
         <h2 data-en="Places">Orte</h2>
-        <p class="klein" data-en="One place per line: “name; latitude, longitude; target[; radius m]”. Target: Home, Note, List 1–6, Manual or Cheat sheets. On arrival the Sticky jumps there once, but only from Home; Home shows the place. While driving it goes to the note page, after the ride it asks “Remember parking spot?”.">Je Zeile ein Ort: „Name; Breite, Länge; Ziel[; Umkreis m]“. Ziel: Home, Notiz, Zettel 1–6, Handbuch oder Spickzettel. Bei Ankunft springt der Sticky einmal dorthin, aber nur aus Home; Home zeigt den Ort. Beim Fahren geht er auf die Notiz-Seite, nach der Fahrt fragt er „Parkplatz merken?“.</p>
+        <p class="klein" data-en="One place per line: “name; latitude, longitude; target[; radius m]”. Target: Home, Note, List 1–6, Manual or Cheat sheets. On arrival the Sticky jumps there once, but only from Home; Home shows the place. After a ride it asks “Remember parking spot?”.">Je Zeile ein Ort: „Name; Breite, Länge; Ziel[; Umkreis m]“. Ziel: Home, Notiz, Zettel 1–6, Handbuch oder Spickzettel. Bei Ankunft springt der Sticky einmal dorthin, aber nur aus Home; Home zeigt den Ort. Nach der Fahrt fragt er „Parkplatz merken?“.</p>
         <textarea id="orte" rows="3" spellcheck="false" placeholder="Supermarkt; 47.12345, 8.12345; Zettel 1" data-en-placeholder="Supermarket; 47.12345, 8.12345; List 1"></textarea>
         <div class="leiste"><button id="ortMerken" data-en="Remember this place">Hier merken</button><button id="frageTest" data-en="Test question">Test-Rückfrage</button></div>
       </section>
@@ -192,13 +182,19 @@
         <h2 data-en="Carousel">Karussell</h2>
         <p class="klein" data-en="Tick what belongs on the Sticky; arrows set the order. Groups are one tile in the menu (tap = last used tool) and tabs on the page; ▲/▼ still flips through every page.">Häkchen = kommt auf den Sticky, Pfeile = Reihenfolge. Eine Gruppe ist im Menü eine Kachel (Tippen = zuletzt benutztes Werkzeug) und auf der Seite ein Reiter; ▲/▼ blättert weiter durch jede Seite einzeln.</p>
         <div id="karussellListe" class="kliste"></div>
+        <details>
+          <summary class="klein" data-en="Buttons of the old note page (only if “Note” is ticked)">Knöpfe der alten Notiz-Seite (nur wenn „Notiz“ angehakt ist)</summary>
+          <div class="leiste">
+            <input id="knoepfe" placeholder="Schnellknöpfe, durch Komma getrennt" data-en-placeholder="Quick buttons, separated by commas">
+          </div>
+        </details>
       </section>
       <section>
         <h2 data-en="Page orientation">Lage der Seiten</h2>
         <div id="lagen"></div>
         <label class="lage"><span data-en="Sticky is upside down (rotated 180°)">Sticky steht auf dem Kopf (180° gedreht)</span> <input type="checkbox" id="dreh180"></label>
         <label class="lage"><span data-en="Ruler: the 8 cm mark really measures (mm)">Lineal: die 8-cm-Marke misst in echt (mm)</span> <input id="lineal80" inputmode="decimal" size="5"></label>
-        <p class="klein" data-en="Portrait or landscape, per page. Home and Note stay portrait. From firmware 0.21.0.">Hochkant oder quer, je Seite. Home und Notiz bleiben hochkant. Gilt ab Firmware 0.21.0.</p>
+        <p class="klein" data-en="Portrait or landscape, per page. Home stays portrait.">Hochkant oder quer, je Seite. Home bleibt hochkant.</p>
       </section>
       <section>
         <h2 data-en="Trip recorder">Fahrtenschreiber</h2>

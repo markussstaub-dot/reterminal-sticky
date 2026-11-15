@@ -147,7 +147,6 @@ export const rahmenHolen = (pfad, offset = 0) => {
 export const rahmenLoeschen = (pfad) => textRahmen(OP.LOESCHEN, pfad);
 /** „Bleib wach“: zählt am Sticky als Bedienung, er schlummert nicht ein (während der Fahrt, Firmware ≥ 0.8.0) */
 export const rahmenWach = () => Uint8Array.of(OP.WACH);
-export const rahmenKarte = () => Uint8Array.of(OP.KARTE);
 
 /** Nutzlast pro DATEN-Rahmen aus der ATT-MTU (Kennlinie max. 512 Byte). */
 export const nutzlastFuer = (mtu) => Math.min(mtu - 3, 512) - 5;
