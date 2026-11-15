@@ -692,6 +692,12 @@ Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzu
 - Vorschlag **Fahrt**: die Bewegung entscheidet übers Wachbleiben, GPS im `StickyDienst` bleibt Rückfall, bis
   ein paar echte Fahrten gut gelaufen sind
 - Vorschlag **Firmware von der Karte** (`/soll/firmware.bin`): eigener Schritt nach den Sensoren
+- Merker (Markus, 15.11.2026): **Akku-Symbol nach Tiefentladung unzuverlässig** – beide Stickys über Nacht leer,
+  kurz geladen, abgesteckt: Symbol zeigte halbvoll, trotzdem aus (Neustart beim Einstecken mit `POWERON`, e-Ink
+  behielt das alte Bild samt „verbunden“). Der BQ27220 meldete danach Unsinn (45 % bzw. 83 %, „lädt“ mit 3–5 A).
+  Vorschlag: Symbol zusätzlich an der Spannung festmachen (unter ~3,5 V „fast leer“, egal was der Chip meldet) und
+  beim Abschalten wegen Unterspannung ein „Akku leer“-Bild zeichnen, damit kein veraltetes Bild stehen bleibt.
+  Bis dahin: nach Tiefentladung einmal voll laden, dann lernt der Chip neu
 
 ## Für Fremd-Apps: eigene App für den Sticky bauen (Markus, 13.11.2026)
 

@@ -850,7 +850,7 @@ async function abgleichKern() {
 }
 
 // ---- Karussell (SPEC „Bedienung und Oberfläche“): Reihe, durch die ▲/▼ am Sticky blättern -------------------------
-const KARUSSELL_STANDARD = 'Home, Timer, Wecker, Weltzeit, Waage, Lineal, Notiz, Kritzel, Schrift, Rechner, Umrechner, Bordbuch, Zettel, Einstellungen';
+const KARUSSELL_STANDARD = 'Home, Timer, Wecker, Weltzeit, Waage, Lineal, Notiz, Kritzel, Schrift, Rechner, Umrechner, Bordbuch, Zettel, Spiel, Einstellungen';
 const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'bordbuch', zettel: 'zettel', bestellzettel: 'zettel', kritzel: 'kritzel', kritzelblock: 'kritzel', schrift: 'schrift', strichschrift: 'schrift', app: 'app', spiel: 'app', burgduell: 'app', rechner: 'app', umrechner: 'app', timer: 'widget timer', waage: 'widget waage', wasserwaage: 'widget waage', lineal: 'widget lineal', wecker: 'widget wecker', weltzeit: 'widget weltzeit', einstellungen: 'widget einstellungen' };
 function karussellText() {
   // Rechner/Umrechner rechnen ab FW 0.28.0 im Sticky (Widgets); vorher über die App-Seite
@@ -1498,6 +1498,9 @@ async function hgAbgleichKern(s) {
   const z = s.z;
   // direkt nach dem Verbinden kann der Zustand (Firmware-Stand) noch unterwegs sein: kurz warten statt „zu alt“ melden
   for (let i = 0; i < 20 && !z.geraet.fw && z.verbunden; i++) await new Promise((r) => setTimeout(r, 250));
+  // Uhr sofort stellen (ein kleiner Rahmen), nicht erst nach dem Vordergrund-Abgleich: nach leerem Akku zeigt der
+  // Sticky sonst bis zu einer Minute keine Zeit (Beobachtung 15.11.2026)
+  if (z.geraet.fw) await z.zeitSetzen().catch(() => {});
   for (let i = 0; i < 120 && vordergrundGleichtAb && z.verbunden; i++) await new Promise((r) => setTimeout(r, 500));   // höchstens 60 s
   if (!z.geraet.fw) return;
   if (!fwAbZ(s, '0.31.0')) { eintrag(`${s.g.name}: Firmware ${z.geraet.fw ?? '?'} ist zu alt für den Hintergrund (ab 0.31)`, true); return; }
