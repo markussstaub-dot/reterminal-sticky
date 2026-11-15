@@ -884,6 +884,8 @@ Anlass: Merker „Globus-Ansicht“ – „das kann e-Ink ab“. Mockup: `docs/w
 - umgesetzt **Stufe 1** (App, 16.11.2026): `src/weltkarte.js` zeichnet Karte und Schatten beim Abgleich (quer), Kacheln
   je Stadt mit Ziffernfeld; „HIER“ sitzt am letzten Wetter-Ort (bleibt im Gerät). Schatten steht ohne Handy still bis
   zum nächsten Abgleich. Hochkant bleibt vorerst die Liste. Stufe 2 (Sticky rechnet den Schatten) folgt
+- fest (Markus, 16.11.2026, am Gerät): **hochkant bleibt die nüchterne Liste, quer die Karte** – zwei Gesichter je nach
+  Lage („wirkt cooler und bietet entweder nüchtern oder aufgepeppt“); mit Lage „auto“ wechselt man durchs Drehen
 
 ### Bedienung und Oberfläche (Markus, 13.11.2026, Mockup abgenommen)
 - fest **Tastenregeln überall gleich**: KI kurz = Home, KI halten = Diktat (Rettungsanker, nie anders belegt);
