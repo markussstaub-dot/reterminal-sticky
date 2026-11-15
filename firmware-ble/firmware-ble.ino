@@ -27,7 +27,7 @@
 #include "qrcode.h"
 #include <esp_mac.h>
 
-static const char* FW_VERSION = "0.37.0";
+static const char* FW_VERSION = "0.38.0";
 
 // ---- Sprache (FW 0.32.0, SPEC „Zweisprachig Deutsch/Englisch“): wirksame Sprache der Anzeige, Muster aus dem Sticky Lab.
 // Gesetzt in modus.h (uhrFormatLaden): Standard vom Handy, am Sticky überstimmbar. Nur Anzeige, Logs bleiben deutsch.
@@ -114,7 +114,6 @@ static volatile uint32_t imgLen = 0, imgCrc = 0, imgGot = 0, imgT0 = 0, imgT1 = 
 static volatile uint16_t dleTx = 27, dleRx = 27;
 
 static volatile bool imgActive = false, imgReady = false, imgFast = false;
-static volatile int imgSpeichern = -1;   // >= 0: Bild als Bordbuch-Seite n speichern statt zeigen
 
 // ---- 180° gedreht (SPEC „Hoch/Quer“, FW 0.23.0): alles dreht zentral an der Ausgabe ---------------------------------
 // Seiten, App und Teilbilder rechnen weiter in normalen Koordinaten; erst hier wird das Bild gespiegelt (Bytes rückwärts,
@@ -160,7 +159,7 @@ static volatile bool wantFast = false, wantSlow = false, wantKarte = false, want
 static volatile uint32_t slowAt = 0;
 static uint32_t advFastUntil = 0;
 static const char* seite = "karte";
-enum Modus { M_HOME = 0, M_BORDBUCH = 1, M_NOTIZ = 2, M_BESTELL = 3, M_KRITZEL = 4, M_APP = 5, M_WIDGET = 6, M_SCHRIFT = 7 };
+enum Modus { M_HOME = 0, M_HANDBUCH = 1, M_NOTIZ = 2, M_BESTELL = 3, M_KRITZEL = 4, M_APP = 5, M_WIDGET = 6, M_SCHRIFT = 7, M_SPICK = 8 };   // 1 hieß bis FW 0.37.0 Bordbuch
 static Modus modus = M_HOME;
 
 // ---- Hilfen ------------------------------------------------------------------
@@ -306,7 +305,7 @@ static void touchInit() {
     Serial.printf("Touch: GT%c%c%c%c an 0x%02X, %ux%u\n", id[0], id[1], id[2], id[3] ? id[3] : ' ', tpAddr, tpResX, tpResY);
 }
 // GT911 liefert hochkant (480x800); x/y im Querformat des Displays (am Gerät geprüft 11.11.2026), rx/ry = roh
-static void bbTouch(int x, int y);
+static void dokTouch(int x, int y);
 static void pufferTouch(int x, int y);
 static void rahmenAntippen(int x, int y);
 static void widgetTipp(int x, int y);
@@ -318,7 +317,7 @@ static void sendTouch(const char* a, int x, int y) {
     aktiv();
     int dx, dy;
     touchDisplay(x, y, dx, dy);
-    if (a[0] == 'd') { rahmenAntippen(dx, dy); bbTouch(dx, dy); pufferTouch(dx, dy); widgetTipp(dx, dy); }
+    if (a[0] == 'd') { rahmenAntippen(dx, dy); dokTouch(dx, dy); pufferTouch(dx, dy); widgetTipp(dx, dy); }
     else widgetLos();
     char j[128];
     snprintf(j, sizeof j, "{\"t\":\"touch\",\"a\":\"%s\",\"x\":%d,\"y\":%d,\"rx\":%d,\"ry\":%d,\"ms\":%llu}", a, dx, dy, x, y, (unsigned long long)jetztMs());
@@ -457,7 +456,7 @@ static void zeigeKarte() {
 #include <vector>
 #include "karte.h"
 #include "ablage.h"
-#include "bordbuch.h"
+#include "doku.h"
 #include "puffer.h"
 #include "audio.h"
 #include "modus.h"
@@ -476,13 +475,13 @@ static void sendState() {
     readBattery();
     char j[600];
     snprintf(j, sizeof j,
-             "{\"fw\":\"%s\",\"seite\":\"%s\",\"bat\":%d,\"mv\":%d,\"ma\":%d,\"chg\":%s,\"mtu\":%u,\"phy\":%u,\"itvl\":%u,\"tp\":\"%ux%u\",\"fahrtv\":\"%08lx\",\"offen\":%d,\"uhr\":%s,\"modus\":\"%s\",\"homev\":\"%s\",\"usb\":%s,\"bb\":%d,\"zettel\":%d,\"temp\":%.1f,\"rf\":%.0f,\"taupunkt\":%.1f,\"fahrt\":%s,\"sensoren\":\"%s%s\",\"us\":%d,\"en\":%d,\"w\":\"%s\",\"lh\":%d,\"platz\":%d,\"anders\":\"%s\"}",
+             "{\"fw\":\"%s\",\"seite\":\"%s\",\"bat\":%d,\"mv\":%d,\"ma\":%d,\"chg\":%s,\"mtu\":%u,\"phy\":%u,\"itvl\":%u,\"tp\":\"%ux%u\",\"fahrtv\":\"%08lx\",\"offen\":%d,\"uhr\":%s,\"modus\":\"%s\",\"homev\":\"%s\",\"usb\":%s,\"bb\":%d,\"zettel\":%d,\"temp\":%.1f,\"rf\":%.0f,\"taupunkt\":%.1f,\"fahrt\":%s,\"sensoren\":\"%s%s\",\"us\":%d,\"en\":%d,\"w\":\"%s\",\"lh\":%d,\"platz\":%d,\"anders\":\"%s\",\"sdmb\":%lu,\"dok\":%d,\"spick\":%d}",
              FW_VERSION, seite, batPct, batMv, batMa, laedt ? "true" : "false", mtu, phy, connItvl, tpResX, tpResY,
              (unsigned long)fahrtVersion, offeneNotizen, rtcDa ? "true" : "false",
-             modusName(), homeVersion, usbDa() ? "true" : "false", bbAktuell, bestellAktuell,
+             modusName(), homeVersion, usbDa() ? "true" : "false", hb.aktuell, bestellAktuell,
              isnan(klimaT) ? -99.0f : klimaT, isnan(klimaRf) ? -1.0f : klimaRf, isnan(klimaTp) ? -99.0f : klimaTp,
              fahrt ? "true" : "false", lsmDa ? "b" : "", shtDa ? "k" : "", einhUs ? 1 : 0, EN ? 1 : 0, modus == M_WIDGET ? widgetName : "", seiteHoch() ? 1 : 0,
-             platzNummer(), platzAndererName());
+             platzNummer(), platzAndererName(), sdEingebunden ? (unsigned long)(SD.totalBytes() >> 20) : 0UL, dokN, sp.seiten);
     if (connected && chState) {
         chState->setValue((const uint8_t*)j, strlen(j));
         chState->notify();
@@ -585,7 +584,7 @@ class CmdCb : public NimBLECharacteristicCallbacks {
             imgActive = false;
             imgT1 = millis();
             imgFast = n > 1 && d[1] == 1;
-            imgSpeichern = (n > 2 && d[1] == 3) ? d[2] : -1;   // Modus 3: als Bordbuch-Seite d[2] speichern
+            // Modus 3 (als Bordbuch-Seite speichern, App vor FW 0.11.0) gibt es seit FW 0.38.0 nicht mehr
             imgRueckSlot = (n > 2 && d[1] == 4) ? d[2] : -1;   // Modus 4: Teilbild als Rückmeldung d[2] speichern
             imgHome = (n > 2 && d[1] == 5) ? d[2] : -1;        // Modus 5: Home-Bild d[2] speichern (3–8 Bestellzettel und Karten)
             imgReady = true;
@@ -601,9 +600,6 @@ class CmdCb : public NimBLECharacteristicCallbacks {
             break;
         case OP_KARTE:
             wantKarte = true;
-            break;
-        case OP_BB_INDEX:    // 13 Text (Zeilen „seiten=N“, „toc=K“, „e y0 y1 seite“)
-            if (n - 1 < sizeof bbIndexNeu) { memcpy(bbIndexNeu, d + 1, n - 1); bbIndexNeu[n - 1] = 0; bbIndexDa = true; }
             break;
         case OP_ZEIT:        // 15 unix-ms:u64
             if (n >= 9) { uint64_t ms = 0; for (int i = 7; i >= 0; i--) ms = ms << 8 | d[1 + i]; zeitSetzen(ms); }
@@ -627,12 +623,14 @@ class CmdCb : public NimBLECharacteristicCallbacks {
                 if (!strchr(loeschName, '/')) loeschWunsch = true;
             }
             break;
-        case OP_BB_MODUS:    // 14 modus [seite] – 0 Home, 1 Bordbuch, 2 Notiz
-            // Fernbedienung aus der App: Modus und optional Seite (Bordbuch) bzw. Zettel (Bestellen)
-            if (n > 1 && d[1] <= 5) {
+        case OP_BB_MODUS:    // 14 modus [seite] – 0 Home, 1 Handbuch, 2 Notiz, 3 Zettel, 8 Spickzettel
+            // Fernbedienung aus der App: Modus und optional Seite (Handbuch: Bildschirm im offenen Dokument, Spickzettel:
+            // Karte) bzw. Zettel (Bestellen)
+            if (n > 1 && (d[1] <= 5 || d[1] == M_SPICK)) {
                 modusWunsch = d[1];
                 if (n > 2 && d[1] == M_BESTELL) bestellWunsch = d[2];
-                else if (n > 2) bbWunsch = d[2];
+                else if (n > 2 && d[1] == M_SPICK) spWunsch = d[2];
+                else if (n > 2 && d[1] == M_HANDBUCH) hbWunsch = d[2];
             }
             break;
         case 0x31:           // TIPPEN Text (UTF-8): erkanntes Diktat an die Schreibmarke der Tippen-Seite (FW 0.37.0)
@@ -740,9 +738,9 @@ void setup() {
         delay(300);
     }
     // Tasten und Touch erst nach display.begin(): vorher eingerichtet, kamen keine Tastendrücke an (11.11.2026)
-    bbInit();
+    LittleFS.begin(true, "/littlefs", 10, "spiffs");   // interner Speicher (Home-Spiegel, Puffer ohne Karte); bis 0.37.0 in bbInit
     sdStart();
-    bbIndexLaden();
+    dokuStart();
     pufferInit();
     homeInit();
     tastenInit();
@@ -793,16 +791,8 @@ void loop() {
                 sendEvt(j);
                 goto fertig;
             }
-            if (imgSpeichern >= 0) {
-                bool gut = !teil && bbSpeichern(imgSpeichern, rxBuf);
-                char j[96];
-                snprintf(j, sizeof j, "{\"t\":\"img\",\"ok\":%s,\"gespeichert\":%d,\"ms\":%lu}", gut ? "true" : "false", imgSpeichern, (unsigned long)empfang);
-                imgSpeichern = -1;
-                sendEvt(j);
-                goto fertig;
-            }
-            if (bordbuch) {
-                // Im Bordbuch nichts überzeichnen (Rückmeldungen gehören zu Home/Notiz)
+            if (modus == M_HANDBUCH || modus == M_SPICK) {
+                // In Handbuch und Spickzettel nichts überzeichnen (Rückmeldungen gehören zu Home/Notiz)
             } else if (teil) {
                 // Teilbild in die gemerkte Seite einsetzen (zeilenweise, x und w sind Byte-genau) und nur den Bereich auffrischen
                 for (int r = 0; r < imgH; r++) memcpy(imgBuf + (imgY + r) * (W / 8) + imgX / 8, rxBuf + r * (imgW / 8), imgW / 8);
@@ -845,7 +835,6 @@ void loop() {
     tastenPoll();
     modusLoop();
     audioLoop();
-    bbLoop();
     pufferLoop();
     abgleichLoop();
     protokollLoop();

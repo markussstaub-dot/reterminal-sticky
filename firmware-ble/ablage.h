@@ -2,7 +2,8 @@
  * Soll-Ablage (SPEC „Zwilling 2.0“, SD-Karte als Vertrag, FW 0.11.0): was die App dem Sticky vorgibt, liegt unter
  * /soll/… auf der Karte. Ohne Karte gilt der Flash mit den alten Pfaden (Rückfall):
  *   home/…      ↔ /home/…    Home-Karte 0, Notiz-Seite 1, Ziffern 2, Zettel 3–8, version.txt
- *   bordbuch/…  ↔ /bb/…      Seiten NN.bin, index.txt
+ *   bordbuch/…  ↔ /bb/…      bis FW 0.37.0; seit 0.38.0 zieht es beim Start nach doku/microlino/ (nur Karte)
+ *   doku/…, spick/…          Handbücher und Spickzettel (doku.h), nur auf der Karte
  *   notiz/…     ↔ /fahrt/…   layout.txt, Rückmeldungen rNN.bin
  * Home 0–2 (Karte, Notiz-Seite, Ziffern) spiegelt der Sticky zusätzlich in den Flash, damit Uhr und Karte auch
  * ohne Karte gehen. Nur aus loop() benutzen (SPI mit dem Display).
@@ -98,7 +99,7 @@ static void sollUmzug() {
     SD.mkdir("/ist");
     if (!SD.exists("/soll/home")) { int n = ordnerKopieren("/home", "/soll/home"); if (n) protokoll("Umzug: %d Home-Dateien auf die Karte", n); }
     if (!SD.exists("/soll/notiz")) { int n = ordnerKopieren("/fahrt", "/soll/notiz"); if (n) protokoll("Umzug: %d Notiz-Dateien auf die Karte", n); }
-    if (!SD.exists("/soll/bordbuch")) {
+    if (!SD.exists("/soll/bordbuch") && !SD.exists("/soll/doku")) {
         int n = ordnerKopieren("/bb", "/soll/bordbuch");
         if (n) {
             protokoll("Umzug: %d Bordbuch-Dateien auf die Karte, Flash freigegeben", n);
@@ -108,6 +109,12 @@ static void sollUmzug() {
             d.close();
             for (auto& p : weg) LittleFS.remove(p);
         }
+    }
+    // Dokumente (FW 0.38.0): das Bordbuch wird einmalig das Handbuch „microlino“; Spickzettel spielt die App neu auf
+    if (SD.exists("/soll/bordbuch/index.txt") && !SD.exists("/soll/doku/microlino")) {
+        SD.mkdir("/soll/doku");
+        bool ok = SD.rename("/soll/bordbuch", "/soll/doku/microlino");
+        protokoll("Umzug: Bordbuch wird Handbuch microlino %s", ok ? "ok" : "fehlgeschlagen");
     }
     if (SD.exists("/puffer") && !SD.exists("/ist/puffer")) {
         bool ok = SD.rename("/puffer", "/ist/puffer");

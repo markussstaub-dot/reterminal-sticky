@@ -10,7 +10,8 @@
  *   26 LEEREN   "LEEREN"                  → alles Persönliche weg (vor der Weitergabe, FW 0.31.6): /soll und /ist auf der
  *               Karte samt Unterordnern, internen Speicher (LittleFS) formatieren, EVT {"t":"geleert","ok"}, dann Neustart
  * /ist/… schreibt nur der Sticky (die App holt ab und quittiert mit LOESCHEN), /soll/… nur die App.
- * Ohne Karte landet /soll/home|bordbuch|notiz im Flash (ablage.h). Die Befehle kommen im BLE-Task an,
+ * <ordner>/umbenennen.txt („alt neu“ je Zeile) benennt Dateien im Soll um und verschwindet dann (FW 0.38.0, doku.h).
+ * Ohne Karte landet /soll/home|notiz im Flash (ablage.h). Die Befehle kommen im BLE-Task an,
  * die Karte wird nur aus loop() angefasst (SPI mit dem Display).
  */
 static const uint8_t OP_LISTE = 0x20, OP_HOLEN = 0x21, OP_LOESCHEN = 0x22,
@@ -90,8 +91,8 @@ static void sollGeaendert(const char* rel) {
         wantState = true;
     } else if (!strcmp(rel, "home/2.bin")) {
         ziffernDa = homeLaden(2, ziffernBuf);
-    } else if (!strcmp(rel, "bordbuch/index.txt")) {
-        bbIndexMelden();
+    } else if (dokSollGeaendert(rel)) {
+        // Handbuch, Spickzettel, Umbenennen (doku.h)
     } else if (!strncmp(rel, "widgets/", 8) && strstr(rel, "/felder.txt")) {
         if (modus == M_WIDGET && !strncmp(rel + 8, widgetName, strlen(widgetName))) neuZeichnen = true;   // neu aufspielen
     } else if (!strcmp(rel, "einstellungen/lage.txt")) {

@@ -1,13 +1,14 @@
 /**
- * Modi (Markus, 11.11.2026): Home = Visitenkarte hochkant mit Uhrzeit · Notiz = Fahrt-Seite · Bordbuch.
+ * Modi (Markus, 11.11.2026): Home = Visitenkarte hochkant mit Uhrzeit · Notiz = Fahrt-Seite · Handbuch und Spickzettel
+ * (bis FW 0.37.0 zusammen „Bordbuch“, seit 0.38.0 getrennt, doku.h).
  *
  * Tasten (SPEC „Bedienung und Oberfläche“, FW 0.13.0), überall gleich:
  *   KI kurz = Home · KI halten (≥ 0,5 s) = Diktat
- *   ▲/▼ kurz = eine Seite zurück/vor; am Ende von Bordbuch oder Zetteln weiter zum nächsten Eintrag im Karussell (rundum)
+ *   ▲/▼ kurz = eine Seite zurück/vor; am Ende von Handbuch, Spickzettel oder Zetteln weiter zum nächsten Eintrag im Karussell (rundum)
  *   ▼ 1 s = nächster Eintrag · ▲ 1 s = Anfang des Eintrags (Inhaltsverzeichnis, erster Zettel), dort: voriger Eintrag
  *   Tippen = Hauptaktion der Seite (Inhaltsverzeichnis: Kapitel, Notiz: Streifen)
- * Karussell: Reihe aus /soll/einstellungen/karussell.txt (je Zeile home|notiz|bordbuch|zettel), sonst
- *   home, notiz, bordbuch, zettel. Leere Einträge (kein Bordbuch, keine Zettel) werden übersprungen.
+ * Karussell: Reihe aus /soll/einstellungen/karussell.txt (je Zeile home|notiz|handbuch|spickzettel|zettel …; „bordbuch“
+ *   heißt seit FW 0.38.0 Handbuch), sonst home, notiz, handbuch, spickzettel, zettel. Leere Einträge werden übersprungen.
  * Rückweg: KI kurz oder 5 min ohne Bedienung → Home.
  *
  * Bestellzettel (11.11.2026): ▼ auf Home → erster Zettel, ▼/▲ blättern (rundum), KI kurz → Home. Quer, große Schrift,
@@ -185,7 +186,7 @@ static void bestellZaehlen() {
 }
 
 static const char* modusName() {
-    return modus == M_HOME ? "home" : modus == M_NOTIZ ? "notiz" : modus == M_BESTELL ? "bestell" : modus == M_KRITZEL ? "kritzel" : modus == M_SCHRIFT ? "schrift" : modus == M_APP ? "app" : modus == M_WIDGET ? "widget" : "bordbuch";
+    return modus == M_HOME ? "home" : modus == M_NOTIZ ? "notiz" : modus == M_BESTELL ? "bestell" : modus == M_KRITZEL ? "kritzel" : modus == M_SCHRIFT ? "schrift" : modus == M_APP ? "app" : modus == M_WIDGET ? "widget" : modus == M_SPICK ? "spick" : "handbuch";
 }
 
 static bool homeLaden(int n, uint8_t* ziel) {
@@ -215,6 +216,11 @@ static void homeLesen() {
     bestellZaehlen();
     statusLaden();
 }
+
+// für doku.h (steht vor modus.h)
+static bool hilfeOffen() { return hilfeAn; }
+static void seiteNeuZeichnen() { neuZeichnen = true; }
+static void modusWuenschen(int m) { modusWunsch = m; }
 
 static void karussellLaden();
 static void homeInit() {
@@ -598,8 +604,8 @@ static void kzBlattNeu() {
 
 static void setzeModus(Modus m) {
     lageSofort();
-    if ((m == M_BORDBUCH && bbSeiten == 0) || (m == M_BESTELL && bestellAnzahl == 0)) {
-        tone(PIN_BUZZER, 900, 120);   // tiefer Ton: kein Bordbuch aufgespielt
+    if ((m == M_HANDBUCH && dokN == 0) || (m == M_SPICK && sp.seiten == 0) || (m == M_BESTELL && bestellAnzahl == 0)) {
+        tone(PIN_BUZZER, 900, 120);   // tiefer Ton: nichts aufgespielt
         return;
     }
     hilfeAn = false;
@@ -608,18 +614,12 @@ static void setzeModus(Modus m) {
         if (modus == M_KRITZEL) kritzelSpeichern(); else schriftSpeichern();
     }
     if (modus == M_WIDGET && m != M_WIDGET) gfxPartialWachHalten = false;
-    if (m != modus) protokoll("Modus %s", m == M_HOME ? "home" : m == M_BORDBUCH ? "bordbuch" : m == M_NOTIZ ? "notiz" : m == M_KRITZEL ? "kritzel" : m == M_SCHRIFT ? "schrift" : m == M_APP ? "app" : m == M_WIDGET ? "widget" : "bestell");
+    if (m != modus) protokoll("Modus %s", m == M_HOME ? "home" : m == M_HANDBUCH ? "handbuch" : m == M_SPICK ? "spick" : m == M_NOTIZ ? "notiz" : m == M_KRITZEL ? "kritzel" : m == M_SCHRIFT ? "schrift" : m == M_APP ? "app" : m == M_WIDGET ? "widget" : "bestell");
     modus = m;
-    bordbuch = m == M_BORDBUCH;
     letzteBedienung = millis();
     tone(PIN_BUZZER, 3300, 25);   // heller Doppelklick: Wechsel angenommen, das Bild kommt gleich
     delay(60);
     tone(PIN_BUZZER, 3300, 25);
-    if (m == M_BORDBUCH) {
-        // Ins Bordbuch kommt man immer auf das Inhaltsverzeichnis – außer die App springt gezielt auf eine Seite
-        if (bbWunsch >= 0) { bbAktuell = bbWunsch; bbWunsch = -1; }
-        else bbAktuell = bbToc;
-    }
     if (m == M_BESTELL && homeLaden(3 + bestellAktuell, imgBuf)) {
         statusPruefen(false, true);
         bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
@@ -642,8 +642,11 @@ static void setzeModus(Modus m) {
         // App-Seite (SPEC „Widgets ohne ständiges Flashen“): die App zeichnet, sobald sie „modus app“ hört;
         // Tipper gehen an die App, ▲/▼ blättern wie überall
         seite = "app";
-    } else if (m == M_BORDBUCH) {
-        bbZeige(bbAktuell);
+    } else if (m == M_HANDBUCH) {
+        hbBetreten();                    // Bibliothek, Inhaltsverzeichnis oder Sprung aus der App
+    } else if (m == M_SPICK) {
+        if (spWunsch >= 0) { sp.aktuell = min((int)spWunsch, sp.seiten - 1); spWunsch = -1; }
+        spZeige(sp.aktuell);
     } else if (m == M_NOTIZ && notizDa && homeLaden(1, imgBuf)) {
         statusPruefen(false, true);
         bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
@@ -691,7 +694,8 @@ static void karussellLaden() {
             z.toLowerCase();
             if (z == "home") karussell[kAnzahl++] = M_HOME;
             else if (z == "notiz") karussell[kAnzahl++] = M_NOTIZ;
-            else if (z == "bordbuch") karussell[kAnzahl++] = M_BORDBUCH;
+            else if (z == "handbuch" || z == "bordbuch") karussell[kAnzahl++] = M_HANDBUCH;   // „bordbuch“: Listen bis FW 0.37.0
+            else if (z == "spickzettel" || z == "spick") karussell[kAnzahl++] = M_SPICK;
             else if (z == "zettel") karussell[kAnzahl++] = M_BESTELL;
             else if (z == "kritzel") karussell[kAnzahl++] = M_KRITZEL;
             else if (z == "schrift") karussell[kAnzahl++] = M_SCHRIFT;
@@ -701,7 +705,7 @@ static void karussellLaden() {
     }
     bool homeDrin = false;
     for (int i = 0; i < kAnzahl; i++) homeDrin |= karussell[i] == M_HOME;
-    if (kAnzahl == 0) { const Modus std[] = {M_HOME, M_NOTIZ, M_BORDBUCH, M_BESTELL}; for (auto m : std) karussell[kAnzahl++] = m; }
+    if (kAnzahl == 0) { const Modus std[] = {M_HOME, M_NOTIZ, M_HANDBUCH, M_SPICK, M_BESTELL}; for (auto m : std) karussell[kAnzahl++] = m; }
     else if (!homeDrin && kAnzahl < 16) {
         memmove(karussell + 1, karussell, kAnzahl * sizeof(Modus));
         memmove(kWidget + 1, kWidget, kAnzahl * sizeof kWidget[0]);
@@ -711,7 +715,8 @@ static void karussellLaden() {
 }
 
 static bool karussellDa(Modus m) {
-    if (m == M_BORDBUCH) return bbSeiten > 0;
+    if (m == M_HANDBUCH) return dokN > 0;
+    if (m == M_SPICK) return sp.seiten > 0;
     if (m == M_BESTELL) return bestellAnzahl > 0;
     if (m == M_NOTIZ) return notizDa;
     if (m == M_APP) return appDa();   // ohne zuhörende App gibt es nichts zu zeigen
@@ -735,7 +740,7 @@ static void karussellSchritt(int richtung) {
         if (!karussellDaI(k) || (m == modus && (m != M_WIDGET || !strcmp(kWidget[k], widgetName)))) continue;
         if (m == M_WIDGET) { strlcpy(widgetName, kWidget[k], sizeof widgetName); if (modus == M_WIDGET) neuZeichnen = true; }
         karussellBesucht(k);
-        if (m == M_BORDBUCH) bbWunsch = richtung > 0 ? bbToc : bbSeiten - 1;
+        if (m == M_SPICK) spWunsch = richtung > 0 ? 0 : sp.seiten - 1;
         if (m == M_BESTELL) bestellAktuell = richtung > 0 ? 0 : bestellAnzahl - 1;
         modusWunsch = m;
         return;
@@ -750,7 +755,6 @@ static void karussellGehe(int i) {
     if (i >= 0 && i < kAnzahl && karussell[i] == M_APP && !appDa()) { hilfeZeigen(OFFLINE_HINWEIS); return; }
     if (i < 0 || i >= kAnzahl || !karussellDaI(i)) { tone(PIN_BUZZER, 900, 120); return; }
     Modus m = karussell[i];
-    if (m == M_BORDBUCH) bbWunsch = bbToc;
     if (m == M_BESTELL) bestellAktuell = 0;
     if (m == M_WIDGET) { strlcpy(widgetName, kWidget[i], sizeof widgetName); if (modus == M_WIDGET) neuZeichnen = true; }
     karussellBesucht(i);
@@ -769,10 +773,8 @@ static void karussellGruppe(uint32_t maske) {
 
 /** ▲/▼ kurz: innerhalb von Bordbuch und Zetteln blättern, an den Enden weiter im Karussell */
 static void blaettern(int richtung) {
-    if (modus == M_BORDBUCH) {
-        int n = bbAktuell + richtung;
-        if (n >= 0 && n < bbSeiten) { bbWunsch = n; return; }
-    } else if (modus == M_BESTELL) {
+    if (dokBlaettern(richtung)) return;
+    if (modus == M_BESTELL) {
         int n = bestellAktuell + richtung;
         if (n >= 0 && n < bestellAnzahl) { bestellAktuell = n; modusWunsch = M_BESTELL; return; }
     }
@@ -795,7 +797,7 @@ static void rahmenAntippen(int x, int y) {
     };
     bool getroffen = false;
     if (modus == M_NOTIZ) for (int i = 0; i < streifenAnzahl && !getroffen; i++) getroffen = treffer(streifen[i].x0, streifen[i].y0, streifen[i].x1, streifen[i].y1);
-    else if (bordbuch && bbAktuell == bbToc) for (int i = 0; i < bbAnzahl && !getroffen; i++) getroffen = treffer(bbEintraege[i].x0, bbEintraege[i].y0, bbEintraege[i].x1, bbEintraege[i].y1);
+    else if (modus == M_HANDBUCH || modus == M_SPICK) { int a, b, c, d; if (dokTreffer(x, y, a, b, c, d)) getroffen = treffer(a, b, c, d); }
     if (getroffen) rahmenNeu = true;
 }
 
@@ -814,12 +816,12 @@ static void rahmenLoop() {
         bildRechteck(rhX1 - d, rhY0, d, h, true);
         bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
         teilZeigen(rhX0, rhY0, rhX1 - rhX0, h);
-        rhModus = modus; rhSeite = bbAktuell;
+        rhModus = modus; rhSeite = dokKennung();
         rahmenBis = millis() + 1500;
     }
     if (rahmenBis && millis() > rahmenBis) {
         rahmenBis = 0;
-        if (modus != rhModus || bbAktuell != rhSeite || hilfeAn) return;   // Seite schon gewechselt: nichts zurückzumalen
+        if (modus != rhModus || dokKennung() != rhSeite || hilfeAn) return;   // Seite schon gewechselt: nichts zurückzumalen
         int bpz = (rhX1 - rhX0) / 8, h = rhY1 - rhY0;
         for (int r = 0; r < h; r++) memcpy(imgBuf + (rhY0 + r) * (W / 8) + rhX0 / 8, rahmenSicher + r * bpz, bpz);
         bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
@@ -839,7 +841,7 @@ static const char* widgetHilfe() {
 }
 
 static const char* hilfeName() {
-    return modus == M_HOME ? "hilfe/home.bin" : modus == M_NOTIZ ? "hilfe/notiz.bin" : modus == M_BORDBUCH ? "hilfe/bordbuch.bin"
+    return modus == M_HOME ? "hilfe/home.bin" : modus == M_NOTIZ ? "hilfe/notiz.bin" : modus == M_HANDBUCH ? "hilfe/handbuch.bin" : modus == M_SPICK ? "hilfe/spick.bin"
          : modus == M_KRITZEL ? "hilfe/kritzel.bin" : modus == M_SCHRIFT ? "hilfe/schrift.bin" : modus == M_WIDGET ? widgetHilfe() : modus == M_APP ? "hilfe/app.bin" : "hilfe/zettel.bin";
 }
 
@@ -970,7 +972,7 @@ static void modusLoop() {
         tone(PIN_BUZZER, 2000, 60);
         protokoll("Taste up lang");
         // ▲ 1 s: an den Anfang des Eintrags, steht man schon dort: voriger Eintrag
-        if (modus == M_BORDBUCH && bbAktuell != bbToc) bbWunsch = bbToc;
+        if (dokHochLang()) { }   // Handbuch: Lesezeichen bzw. Bibliothek · Spickzettel: erste Karte
         else if (modus == M_BESTELL && bestellAktuell != 0) { bestellAktuell = 0; modusWunsch = M_BESTELL; }
         else karussellSchritt(-1);
     }
@@ -993,7 +995,8 @@ static void modusLoop() {
     if (hilfeWunsch) { hilfeWunsch = false; hilfeZeigen(); }
     if (neuZeichnen) {                    // Hilfe zu: dieselbe Seite wieder zeigen
         neuZeichnen = false;
-        if (modus == M_BORDBUCH) bbWunsch = bbAktuell;
+        if (modus == M_HANDBUCH && !hbBib && hb.seiten > 0) hbWunsch = hb.aktuell;   // dieselbe Seite, nicht die Bibliothek
+        if (modus == M_SPICK) spWunsch = sp.aktuell;
         setzeModus(modus);
     }
     if (modusWunsch >= 0) {
@@ -1001,6 +1004,7 @@ static void modusLoop() {
         modusWunsch = -1;
         if (m != modus || m == M_NOTIZ || m == M_BESTELL) setzeModus(m);
     }
+    dokuLoop();
     if (modus != M_HOME && !audioLaeuft && millis() - letzteBedienung > ZURUECK_MS) setzeModus(M_HOME);
     if (modus == M_APP && !appDa()) { protokoll("App weg, zurück nach Home"); setzeModus(M_HOME); hilfeZeigen(OFFLINE_HINWEIS); }
     if (modus == M_HOME && homeDa && !audioLaeuft && !hilfeAn && uhrZeichnen()) uhrAuffrischen(uhrMinute == 0);
