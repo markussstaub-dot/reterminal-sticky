@@ -80,12 +80,12 @@ function seite(hoch, titel, hinweis) {
     if (!hoch) {
       const n = reiter.glieder.length, b = Math.floor(REITER_QUER_B / n);
       reiter.glieder.forEach((x, j) => {
-        braunKnopf(g, 8 + j * b, 0, b, 36, kachelName(x.e), j === reiter.aktiv ? 'wahl' : 'neben', { gr: n > 3 ? 18 : 22, rand: 3 });
+        braunKnopf(g, 8 + j * b, 0, b, 42, kachelName(x.e), j === reiter.aktiv ? 'wahl' : 'neben', { gr: n > 3 ? 21 : 26, rand: 2 });   // Markus 15.11.: „n Ticken größer“
         if (j !== reiter.aktiv) feld(8 + j * b, 0, 8 + (j + 1) * b, 44, x.i);
       });
     } else {   // hochkant ist neben der Statuszeile nur Platz für eine Pille: aktueller Name, Tippen = nächstes Glied
       const nach = reiter.glieder[(reiter.aktiv + 1) % reiter.glieder.length];
-      braunKnopf(g, 2, 0, REITER_HOCH_B, 36, `${kachelName(reiter.glieder[reiter.aktiv].e)} ›`, 'wahl', { gr: 17, rand: 3 });
+      braunKnopf(g, 2, 0, REITER_HOCH_B, 42, `${kachelName(reiter.glieder[reiter.aktiv].e)} ›`, 'wahl', { gr: 20, rand: 2 });
       feld(0, 0, REITER_HOCH_B + 4, 44, nach.i);
     }
   }
