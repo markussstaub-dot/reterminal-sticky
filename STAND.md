@@ -7,7 +7,7 @@ version: FW 0.32.0 – EDC-Sticky, allein nützlich: Uhr/Wecker/Weltzeit, Rechne
 wartet: Markus: FW 0.36.0 + APK 2026.11.15-2113 sind drauf (15.11.) – Gruppen, Recorder, Num-Pad ausprobieren; – Positivliste und erste Orte eintragen, auf Englisch alle Seiten auf Überläufe prüfen; Playground-Update-PR #125 (0.31.6) im Blick behalten; Lineal nachmessen, Einfügen in WhatsApp probieren; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.); Spickzettel-Konsole (Lab-Console, Reiter „Spickzettel“) ausprobieren: Karte am Zenbook → Zwischenablage → Fold → Aufspielen; Nachtverbrauch messen
 ---
 
-Repo: github.com/markussstaub-dot/reterminal-sticky (öffentlich seit 15.11.2026, Geschichte vorher gesäubert: Name und Hinweis auf Angehörige, MAC; Sicherung der alten Geschichte lokal unter %LOCALAPPDATA%sticky-backup). `backup/`, Modelle und
+Repo: github.com/markussstaub-dot/reterminal-sticky (öffentlich seit 15.11.2026, Geschichte vorher gesäubert: Name und Hinweis auf Angehörige, MAC; Sicherung der alten Geschichte lokal unter `%LOCALAPPDATA%\sticky-backup`). `backup/`, Modelle und
 Build-Ausgaben sind per `.gitignore` draußen.
 
 ## Zwei Geräte
