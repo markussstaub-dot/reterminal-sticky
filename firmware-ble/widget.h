@@ -337,10 +337,19 @@ static void wPaarMarkieren() {
     for (int i = 0; i < wKnopfAnzahl; i++) {
         const WKnopf& k = wKnoepfe[i];
         if (strcmp(k.aktion, "paar")) continue;
+        // Pillenform statt Rechteck (FW 0.36.1, Markus: „Pille km mi“ sah eckig aus): abgerundetes Rechteck 6 px innen,
+        // Radius wie braun.js (halbe kurze Seite, höchstens 40); gefüllt = Rand und Fläche schwarz, Schrift weiß
+        const int ix0 = k.x0 + 6, iy0 = k.y0 + 6, ix1 = k.x1 - 6, iy1 = k.y1 - 6;
+        const int r = min(40, min(ix1 - ix0, iy1 - iy0) / 2);
+        auto inPille = [&](int x, int y) {
+            if (x < ix0 || x >= ix1 || y < iy0 || y >= iy1) return false;
+            int cx = constrain(x, ix0 + r, ix1 - 1 - r), cy = constrain(y, iy0 + r, iy1 - 1 - r);
+            return (x - cx) * (x - cx) + (y - cy) * (y - cy) <= r * r;
+        };
         for (int y = max(0, k.y0); y < min(H, k.y1); y++) for (int x = max(0, k.x0); x < min(W, k.x1); x++) {
             uint8_t m = 0x80 >> (x & 7);
             bool s = wHintergrund[y * (W / 8) + x / 8] & m;
-            bool innen = k.wert == wUm.paar && x >= k.x0 + 8 && x < k.x1 - 8 && y >= k.y0 + 8 && y < k.y1 - 8;
+            bool innen = k.wert == wUm.paar && inPille(x, y);
             if (innen) s = !s;
             if (s) imgBuf[y * (W / 8) + x / 8] |= m; else imgBuf[y * (W / 8) + x / 8] &= ~m;
         }

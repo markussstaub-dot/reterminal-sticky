@@ -385,7 +385,7 @@ Einrichten, Abholen, Rechner/Umrechner.
 - Vorschlag **Umrechner** gleich mit: Paare als Zeilen in `felder.txt` (`paar km mi 0.621371`, `paar °C °F 1.8 32`),
   die Firmware rechnet nur `a · x + b`; neue Paare ohne Flashen
   - Merker (Markus, 14.11.2026): **Schrift im Umrechner darf größer** – Platz ist da
-  - Merker (Markus, 15.11.2026 abends, am Gerät): **Umrechner – Optik der Pillen** nachschärfen, auffällig die Pille „km mi“ (Details offen)
+  - Merker (Markus, 15.11.2026 abends, am Gerät): **Umrechner – Optik der Pillen** nachschärfen, auffällig die Pille „km mi“ → FW 0.36.1: gewählte Pille in Pillenform invertiert statt eckig
 - offen: kleine Rechenzeile („80 × 20 =“) braucht eine zweite Schrift, erst weglassen
 - Aufwand grob ein halber Tag, ein Flash. Danach braucht der Sticky das Handy nur noch für Spracherkennung und GPS;
   die App-Seite (Thin Client) bleibt als Technik erhalten
