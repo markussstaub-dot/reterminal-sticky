@@ -819,7 +819,7 @@ Anlass: Bose-Earbuds am Zenbook koppeln (Taste am Case, Bose-App „Gerät hinzu
     Handy-Zeichen gleich dabei
   - Vorschlag: Wetter auf Home mit Uhrzeit des Stands, ab ~3 h alt ausgegraut
 
-### Gruppen im Menü: Werkzeuge mit Reitern (Markus, 15.11.2026, Entwurf)
+### Gruppen im Menü: Werkzeuge mit Reitern (Markus, 15.11.2026, abgenommen)
 Anlass: 15 Kacheln im Menü sind zu viele; manches gehört zusammen (Waage und Lineal, Rechner und Umrechner).
 Mockup: `docs/gruppen-mockup.html`.
 - fest **Weg A: Reiter statt Untermenü**: eine Kachel je Gruppe; im Werkzeug oben Reiter der Gruppe („Waage · Lineal“),
