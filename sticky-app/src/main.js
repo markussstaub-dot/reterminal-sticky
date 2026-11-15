@@ -895,8 +895,8 @@ async function abgleichKern() {
 }
 
 // ---- Karussell (SPEC „Bedienung und Oberfläche“): Reihe, durch die ▲/▼ am Sticky blättern -------------------------
-const KARUSSELL_STANDARD_DE = 'Home, Timer, Wecker, Weltzeit, Waage, Lineal, Notiz, Recorder, Kritzel, Schrift, Rechner, Umrechner, Bordbuch, Zettel, Spiel, Einstellungen';
-const KARUSSELL_STANDARD_EN = 'Home, Timer, Alarm, World clock, Spirit level, Ruler, Note, Recorder, Doodle, Handwriting, Calculator, Converter, Logbook, List, Game, Settings';
+const KARUSSELL_STANDARD_DE = 'Home, Timer, Wecker, Weltzeit, Waage, Lineal, Recorder, Kritzel, Schrift, Rechner, Umrechner, Bordbuch, Zettel, Spiel, Einstellungen';
+const KARUSSELL_STANDARD_EN = 'Home, Timer, Alarm, World clock, Spirit level, Ruler, Recorder, Doodle, Handwriting, Calculator, Converter, Logbook, List, Game, Settings';
 /** Standard der App-Sprache (beide Fassungen lösen über KARUSSELL_WOERTER gleich auf) */
 const karussellStandard = () => (appIstEn() ? KARUSSELL_STANDARD_EN : KARUSSELL_STANDARD_DE);
 const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'bordbuch', zettel: 'zettel', bestellzettel: 'zettel', kritzel: 'kritzel', kritzelblock: 'kritzel', schrift: 'schrift', strichschrift: 'schrift', app: 'app', spiel: 'app', burgduell: 'app', rechner: 'app', umrechner: 'app', timer: 'widget timer', waage: 'widget waage', wasserwaage: 'widget waage', lineal: 'widget lineal', wecker: 'widget wecker', weltzeit: 'widget weltzeit', einstellungen: 'widget einstellungen', recorder: 'widget recorder',
@@ -1054,6 +1054,18 @@ function karussellEintraegeRoh() {   // ohne Firmware-Filter, damit die Liste al
     if (w.some((x) => x.toLowerCase() === 'recorder')) return;
     const nach = w.findIndex((x) => ['notiz', 'note', 'notes'].includes(x.toLowerCase()));
     w.splice(nach >= 0 ? nach + 1 : w.length, 0, 'Recorder');
+    localStorage.setItem(k, w.join(', '));
+  } catch { /* egal */ }
+})();
+// Einmalig (Markus, 15.11.2026 abends): die Knopf-Notizseite (MVP-Testnotizen) ist Altlast – raus aus eigenen Listen,
+// der Recorder steht damit vorn in „Notieren“. Per Häkchen in Mehr → Karussell jederzeit wieder einschaltbar.
+(function notizSeiteRaus() {
+  try {
+    const k = schluessel('karussell'), merk = schluessel('karussellOhneNotiz'), alt = localStorage.getItem(k);
+    if (localStorage.getItem(merk)) return;
+    localStorage.setItem(merk, '1');
+    if (!alt) return;
+    const w = alt.split(/[,;\n]/).map((x) => x.trim()).filter((x) => x && !['notiz', 'note', 'notes'].includes(x.toLowerCase()));
     localStorage.setItem(k, w.join(', '));
   } catch { /* egal */ }
 })();

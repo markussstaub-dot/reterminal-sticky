@@ -6,7 +6,7 @@
 export const GRUPPEN = [
   { id: 'zeit', de: 'Zeit', en: 'Time', glieder: ['widget timer', 'widget wecker', 'widget weltzeit'] },
   { id: 'messen', de: 'Messen', en: 'Measure', glieder: ['widget waage', 'widget lineal'] },
-  { id: 'notieren', de: 'Notieren', en: 'Capture', glieder: ['notiz', 'widget recorder', 'kritzel', 'schrift'] },
+  { id: 'notieren', de: 'Notieren', en: 'Capture', glieder: ['widget recorder', 'kritzel', 'schrift', 'notiz'] },   // Notiz-Knopfseite nur noch per Häkchen
   { id: 'rechnen', de: 'Rechnen', en: 'Calculate', glieder: ['widget rechner', 'widget umrechner'] },
   { id: 'nachschlagen', de: 'Nachschlagen', en: 'Look up', glieder: ['bordbuch', 'zettel'] },
 ];

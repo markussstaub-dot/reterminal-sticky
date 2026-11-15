@@ -74,6 +74,10 @@ fest: Das MVP sind **zwei Funktionen für den Microlino**, alles andere wartet:
   kommt erst, wenn sich das bewährt
 - Vorschlag Rückmeldung am Sticky: kurzes „✓ Bug 14:32“ unten in der Ecke (Teil-Refresh), keine Ablenkung
 - fest: Fahrsicherheit – ein Tipp bzw. ein Knopf, nichts lesen während der Fahrt
+- fest (Markus, 15.11.2026 abends): **Knopf-Notizseite ist Altlast** – während der Fahrt gehen ohnehin nur
+  Sprachnotizen (KI halten, überall). Sie fliegt aus dem Standard-Karussell und einmalig aus eigenen Listen; in der
+  Gruppe „Notieren“ steht der Recorder vorn (Recorder · Kritzel · Schrift). Für Testfahrten per Häkchen in
+  Mehr → Karussell wieder einschaltbar. Später evtl. Umbau zur Seite „Heute“ (siehe Sprachnotizen 2.0)
 
 ### 2. Digitales Bordbuch mit Handbuch
 - fest: **Betriebsanleitung** des Microlino zum Blättern; die App rendert die PDF-Seiten für 800×480 und
@@ -832,7 +836,7 @@ Mockup: `docs/gruppen-mockup.html`.
   | Home | Home |
   | Zeit | Timer · Wecker · Weltzeit |
   | Messen | Waage · Lineal (später Winkel aus dem Bewegungssensor) |
-  | Notieren (vorher „Schreiben“) | Notiz · Recorder · Kritzel · Schrift |
+  | Notieren (vorher „Schreiben“) | Recorder · Kritzel · Schrift (Notiz-Knopfseite nur per Häkchen) |
   | Rechnen | Rechner · Umrechner (eine Gruppe, fest) |
   | Nachschlagen | Bordbuch · Zettel (später Spickzettel getrennt vom Bordbuch) |
   | Spiel · Einstellungen | je allein |
