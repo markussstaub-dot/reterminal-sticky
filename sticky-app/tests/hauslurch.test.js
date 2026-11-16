@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { adresseNormal, kurzAntwort, anHauslurch, hauslurchStatus } from '../src/hauslurch.js';
+import { adresseNormal, kurzAntwort, anHauslurch, hauslurchStatus, stimmeZiel } from '../src/hauslurch.js';
 
 test('Adresse: Schema und Standardport ergänzen', () => {
   assert.equal(adresseNormal('192.168.2.61'), 'http://192.168.2.61:8765');
@@ -35,4 +35,23 @@ test('verständliche Fehler', async () => {
   await assert.rejects(anHauslurch('x', { adresse: 'a', schluessel: '' }, mit(200)), /kein Schlüssel/);
   await assert.rejects(anHauslurch('x', { adresse: 'a', schluessel: 'k' }, async () => { throw new Error('Timeout'); }), /nicht erreichbar \(Timeout\)/);
   assert.deepEqual(await hauslurchStatus({ adresse: 'a', schluessel: 'k' }, async () => ({ status: 200, data: '{"ok":true}' })), { ok: true });
+});
+
+test('Stimme: automatisch zu Hause Zenbook, unterwegs Fold', () => {
+  const orte = [{ name: 'Zuhause' }, { name: 'Supermarkt' }];
+  assert.equal(stimmeZiel('auto', { orte, aktuellerOrt: 'Zuhause' }), 'zenbook');
+  assert.equal(stimmeZiel('auto', { orte, aktuellerOrt: 'Supermarkt' }), 'fold');
+  assert.equal(stimmeZiel('auto', { orte, aktuellerOrt: null }), 'fold');
+  assert.equal(stimmeZiel('auto', { orte: [{ name: 'Supermarkt' }], aktuellerOrt: null }), 'zenbook');
+  assert.equal(stimmeZiel('beide', { orte }), 'beide');
+});
+
+test('Wunsch „Stimme aufs Fold“ geht mit, Ton kommt zurück', async () => {
+  let daten;
+  const post = async (url, kopf, d) => { daten = d; return { status: 200, data: { antwort: 'Es ist 15 Uhr.', ton: 'UklGRg==' } }; };
+  const r = await anHauslurch('Uhrzeit', { adresse: 'zenbook', schluessel: 'k', stimme: 'fold' }, post);
+  assert.deepEqual(daten, { text: 'Uhrzeit', stimme: 'fold' });
+  assert.equal(r.ton, 'UklGRg==');
+  await anHauslurch('Uhrzeit', { adresse: 'zenbook', schluessel: 'k' }, post);
+  assert.deepEqual(daten, { text: 'Uhrzeit' });
 });

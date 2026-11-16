@@ -30,13 +30,13 @@ const FEHLER = {
  * Text an den Hauslurch. `post(url, kopf, daten)` liefert {status, data} (native: CapacitorHttp, Browser: fetch).
  * Wirft Error mit kurzer Meldung (de/en über `T`).
  */
-export async function anHauslurch(text, { adresse, schluessel }, post, T = (de) => de) {
+export async function anHauslurch(text, { adresse, schluessel, stimme = 'zenbook' }, post, T = (de) => de) {
   const basis = adresseNormal(adresse);
   if (!basis) throw new Error(T('keine Adresse', 'no address'));
   if (!schluessel) throw new Error(T('kein Schlüssel', 'no key'));
   let r;
   try {
-    r = await post(`${basis}/befehl`, { 'Content-Type': 'application/json', 'X-Hauslurch-Schluessel': schluessel }, { text });
+    r = await post(`${basis}/befehl`, { 'Content-Type': 'application/json', 'X-Hauslurch-Schluessel': schluessel }, { text, ...(stimme && stimme !== 'zenbook' ? { stimme } : {}) });
   } catch (e) {
     throw new Error(T(`nicht erreichbar (${e.message})`, `not reachable (${e.message})`));
   }
@@ -45,7 +45,21 @@ export async function anHauslurch(text, { adresse, schluessel }, post, T = (de) 
     throw new Error(T(de, en));
   }
   const d = typeof r.data === 'string' ? JSON.parse(r.data) : r.data;
-  return { antwort: String(d?.antwort ?? ''), grantelt: !!d?.grantelt, timer: Array.isArray(d?.timer) ? d.timer : [] };
+  return { antwort: String(d?.antwort ?? ''), grantelt: !!d?.grantelt, timer: Array.isArray(d?.timer) ? d.timer : [], ...(d?.ton ? { ton: String(d.ton) } : {}) };
+}
+
+/** Name des eigenen Zuhauses in der Ortsliste („Zuhause“, „Daheim“, „Home“) */
+export const ZUHAUSE_RE = /^(zuhause|zu hause|daheim|home)$/i;
+
+/**
+ * Wo spricht der Lurch? Wahl „auto“ (Standard): zu Hause das Zenbook, unterwegs das Fold. Ohne Ort „Zuhause“ in der
+ * Ortsliste weiß die App nicht, wo zu Hause ist → dann wie bisher das Zenbook.
+ */
+export function stimmeZiel(wahl, { orte = [], aktuellerOrt = null } = {}) {
+  if (wahl === 'zenbook' || wahl === 'fold' || wahl === 'beide') return wahl;
+  const daheim = orte.find((o) => ZUHAUSE_RE.test(o.name));
+  if (!daheim) return 'zenbook';
+  return aktuellerOrt === daheim.name ? 'zenbook' : 'fold';
 }
 
 /** Lebenszeichen für „Verbindung testen“: GET /status */

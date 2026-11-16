@@ -1,5 +1,5 @@
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
-import { anHauslurch, hauslurchStatus, kurzAntwort } from './hauslurch.js';
+import { anHauslurch, hauslurchStatus, kurzAntwort, stimmeZiel } from './hauslurch.js';
 import { qrAusBild, deuteQr } from './qrlesen.js';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Clipboard } from '@capacitor/clipboard';
@@ -20,7 +20,13 @@ const pttAblage = () => { try { return localStorage.getItem('sticky.pttAblage') 
 /** Diktat an den Hauslurch (Zenbook): Schalter, Adresse, Schlüssel – nur auf diesem Handy gespeichert */
 const lurchWert = (k) => { try { return localStorage.getItem(`sticky.hauslurch${k}`) || ''; } catch { return ''; } };
 const lurchAn = () => lurchWert('') === '1' && !!lurchWert('Adresse');
-const lurchZiel = () => ({ adresse: lurchWert('Adresse'), schluessel: lurchWert('Schluessel') });
+const lurchZiel = () => ({ adresse: lurchWert('Adresse'), schluessel: lurchWert('Schluessel'),
+  // wo die Lurch-Stimme spricht: automatisch zu Hause Zenbook, unterwegs Fold (Ort „Zuhause“ in Mehr → Orte)
+  stimme: stimmeZiel(lurchWert('Stimme') || 'auto', { orte: orteLesen(orteText()), aktuellerOrt }) });
+/** Lurch-Stimme am Fold abspielen (WAV aus dem Hauslurch, Base64) */
+function lurchSpielen(ton) {
+  try { new Audio(`data:audio/wav;base64,${ton}`).play().catch((e) => eintrag(T(`Lurch-Stimme: ${e.message}`, `Lurch voice: ${e.message}`), true)); } catch { /* egal */ }
+}
 /** HTTP ohne Umweg: in der App nativ (kein CORS, http im Heimnetz erlaubt), im Browser fetch */
 async function http(methode, url, headers, data) {
   if (nativ) {
@@ -310,6 +316,7 @@ async function zeigeAufnahme(a) {
           zeile.textContent = `🏠 ${h.antwort}`;
           text.after(zeile);
           eintrag(T(`Hauslurch: ${h.antwort}`, `Hauslurch: ${h.antwort}`));
+          if (h.ton) lurchSpielen(h.ton);
           notizDa.then(() => lurchMeldung(`Lurch: ${kurzAntwort(h.antwort)}`, a.sitzung));
         })
         .catch((e) => { eintrag(T(`Hauslurch: ${e.message}`, `Hauslurch: ${e.message}`), true); notizDa.then(() => lurchMeldung(T('Lurch nicht erreicht', 'Lurch not reached'), a.sitzung)); });
@@ -1080,6 +1087,8 @@ $('pttAblage').onchange = () => { try { localStorage.setItem('sticky.pttAblage',
 $('lurchAn').checked = lurchWert('') === '1';
 $('lurchAdresse').value = lurchWert('Adresse');
 $('lurchSchluessel').value = lurchWert('Schluessel');
+$('lurchStimme').value = lurchWert('Stimme') || 'auto';
+$('lurchStimme').onchange = () => { try { localStorage.setItem('sticky.hauslurchStimme', $('lurchStimme').value); } catch { /* egal */ } };
 for (const [id, k, wert] of [['lurchAn', '', (el) => (el.checked ? '1' : '0')], ['lurchAdresse', 'Adresse', (el) => el.value.trim()], ['lurchSchluessel', 'Schluessel', (el) => el.value.trim()]]) {
   $(id).onchange = () => { try { localStorage.setItem(`sticky.hauslurch${k}`, wert($(id))); } catch { /* egal */ } };
 }
