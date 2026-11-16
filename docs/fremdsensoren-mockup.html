@@ -61,11 +61,20 @@ td.frei{color:var(--muted)}
 canvas.vergleich{background:var(--paper);image-rendering:auto;margin-bottom:6px}
 .legende{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;color:var(--muted);margin:0 0 12px}
 .legende i{display:inline-block;width:22px;height:0;border-top:3px solid #111;vertical-align:4px;margin-right:6px}
-.legende i.zp{border-color:var(--tom)}.legende i.sw{border-top:2px dashed #888}
+.legende i.zp{border-color:var(--tom)}.legende i.gr{border-color:#999}.legende i.pkt{border-top:2px dotted #bbb}.legende i.sw{border-top:2px dashed #888}
 @media (max-width:760px){.wege{grid-template-columns:1fr}}
 svg.oszi{display:block;width:100%;height:auto;border-radius:6px;margin:0 0 6px}
 svg.oszi text{font-family:Consolas,Menlo,monospace}
 .vorsicht{border-left:6px solid var(--tom);background:var(--paper);border-radius:6px;padding:10px 14px;font-size:14px;margin:0 0 14px}
+.formel{background:var(--paper);border-radius:6px;padding:14px;margin:0 0 14px;font-family:"Times New Roman",Georgia,serif;font-size:21px;text-align:center;overflow-x:auto;white-space:nowrap}
+.formel small{display:block;font-family:Helvetica,Arial,sans-serif;font-size:12.5px;color:var(--muted);white-space:normal;margin-top:6px}
+.formel .bruch{display:inline-flex;flex-direction:column;vertical-align:middle;font-size:.8em;line-height:1.1;margin:0 2px}
+.formel .bruch span:first-child{border-bottom:1px solid #111;padding:0 2px}
+.anteil{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:0 0 14px}
+.anteil>div{background:var(--paper);border-radius:6px;padding:12px 14px;font-size:14px;min-width:0}
+.anteil h3{font-size:15px;margin:0 0 2px}.anteil .zeit{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+.anteil p{margin:0 0 6px;font-size:14px}
+@media (max-width:760px){.anteil{grid-template-columns:1fr}}
 @media (max-width:620px){.zwei{grid-template-columns:1fr}.regler{grid-template-columns:auto 1fr}.regler output{grid-column:2;text-align:left;margin-top:-6px}table{font-size:12.5px}th,td{padding:6px 6px}td:first-child{min-width:90px}}
 </style></head><body><main>
 
@@ -306,7 +315,36 @@ svg.oszi text{font-family:Consolas,Menlo,monospace}
 <figure class="quer"><div class="dev"><canvas id="alarm" width="800" height="480"></canvas></div>
 <figcaption>Alarm (hier Fühlerbruch um 14:30). Das Board hat die Heizung schon abgeschaltet, bevor der Sticky piept; der Sticky meldet nur. Gleiches Bild bei Übertemperatur (Sticky-Grenze 130 °C) und bei „keine Daten seit 2 min“.</figcaption></figure>
 
-<h2>5 · Was passiert wenn …</h2>
+<h2>5 · PID kurz erklärt</h2>
+<p>Der Regler sieht nur die Regelabweichung <i>e</i> = Soll − Ist und rechnet daraus die Heizleistung <i>u</i> in Prozent. Drei Anteile, drei Blickrichtungen:</p>
+<div class="formel">
+ <i>u</i>(<i>t</i>) = <i>K</i><sub>p</sub> · ( <i>e</i>(<i>t</i>) + <span class="bruch"><span>1</span><span><i>T</i><sub>n</sub></span></span> ∫ <i>e</i> d<i>t</i> − <i>T</i><sub>v</sub> · <span class="bruch"><span>d<i>Ist</i></span><span>d<i>t</i></span></span> )
+ <small>Board rechnet alle 2 s: P = Kp·e · I += Kp/Tn·e·Δt · D = −Kp·Tv·ΔIst/Δt · u auf 0–100 % begrenzt. D wirkt auf den Messwert, nicht auf e, damit ein Sollwertsprung keinen Stoß erzeugt.</small>
+</div>
+<div class="anteil">
+ <div><h3>P · Proportional</h3><p class="zeit">Gegenwart</p>
+  <p>Je weiter weg vom Soll, desto mehr Heizung. Reagiert sofort.</p>
+  <p><b>Allein reicht er nicht:</b> Um 95 °C zu halten, braucht der Ofen rund 41 % Leistung. Die liefert P nur, wenn noch ein Fehler übrig ist: <i>e</i> = 41 % / Kp, bei Kp = 6 also rund 7 K zu kalt.</p>
+  <p><b>Mehr Kp:</b> schneller, aber ab einem Punkt schwingt es (Totzeit!).</p></div>
+ <div><h3>I · Integral</h3><p class="zeit">Vergangenheit</p>
+  <p>Summiert den Fehler auf, solange einer da ist. Er übernimmt nach und nach die 41 % Grundlast, bis <i>e</i> = 0 ist.</p>
+  <p><b>Wann wichtig:</b> immer, wenn exakt auf Soll geregelt werden soll, und nach Störungen wie der offenen Tür.</p>
+  <p><b>Kleineres Tn</b> = stärkerer I-Anteil: schneller am Soll, aber Überschwingen. Anti-Windup verhindert, dass er beim Anheizen auf 100 % „volläuft“.</p></div>
+ <div><h3>D · Differential</h3><p class="zeit">Zukunft</p>
+  <p>Schaut auf die Steigung des Ist-Werts und bremst, bevor der Ofen ankommt. Gegen Überschwingen bei trägen Strecken mit Totzeit.</p>
+  <p><b>Wann weglassen:</b> bei verrauschtem Messwert, denn D verstärkt Rauschen. Beim PT1000 mit MAX31865 ist das Signal ruhig genug für ein kleines Tv.</p>
+  <p><b>Faustregel:</b> Tv deutlich kleiner als Tn, etwa die halbe Totzeit.</p></div>
+</div>
+<p class="k">Unten die Anteile über den simulierten Tag (gleiche Einstellungen wie in Abschnitt 4): beim Anheizen dominiert P und läuft in die 100-%-Grenze, im Beharrungszustand trägt I fast alles, bei Sollwertsprung und Tür zuckt D.</p>
+<canvas class="vergleich" id="anteile" width="800" height="300"></canvas>
+<div class="legende"><span><i></i>P</span><span><i class="zp"></i>I</span><span><i class="sw"></i>D</span><span>· Heizleistung = P + I + D, begrenzt auf 0–100 %</span></div>
+<p class="k">Und dasselbe Anfahren mit nur P, mit PI und mit PID:</p>
+<canvas class="vergleich" id="pipid" width="800" height="300"></canvas>
+<div class="legende"><span><i class="gr"></i>nur P</span><span><i class="pkt"></i>Soll</span><span><i class="zp"></i>PI</span><span><i></i>PID</span><span id="pBleibend"></span></div>
+<h3 style="font-size:15px;margin:14px 0 6px">Startwerte aus der Sprungantwort</h3>
+<p>Heizung fest auf einen Wert stellen, Ist-Kurve aufnehmen, Wendetangente anlegen: Totzeit <i>T</i><sub>t</sub>, Ausgleichszeit <i>T</i> und Streckenverstärkung <i>K</i><sub>s</sub> (K pro %). Nach Chien, Hrones und Reswick (aperiodisch, Führung): Kp ≈ 0,6 · T / (Ks · Tt), Tn ≈ T, Tv ≈ 0,5 · Tt. Für das Modell hier (Ks = 2 K/%, T ≈ 25 min, Tt ≈ 1 min) ergibt das etwa Kp 7,5 %/K, Tn 1500 s, Tv 30 s. Danach am Sticky nachschärfen.</p>
+
+<h2>6 · Was passiert wenn …</h2>
 <div class="tab"><table>
  <tr><th>Fall</th><th>Board</th><th>Sticky</th><th>Hardware</th></tr>
  <tr><td>Funk weg, Sticky schläft, Akku leer</td><td>regelt mit letztem Sollwert weiter</td><td>„Funk weg“, Lücke, Ton nach 2 min</td><td>–</td></tr>
@@ -316,7 +354,7 @@ svg.oszi text{font-family:Consolas,Menlo,monospace}
  <tr><td>SSR legiert durch</td><td>merkt es nur am Ist</td><td>Übertemperatur-Alarm</td><td class="t">Begrenzer 150 °C trennt</td></tr>
 </table></div>
 
-<h2>6 · Funkzeilen</h2>
+<h2>7 · Funkzeilen</h2>
 <p>Kurze Textzeilen, je ESP-NOW-Paket eine (max. 250 Byte). Unbekannte Namen zeigt der Sticky als neues Instrument.</p>
 <pre>Board → Sticky, 1×/s           Sticky → Board, nur bei Änderung
 ist   93.4 C                   soll 95
@@ -325,13 +363,13 @@ y     42 %                     tn   400
 gut   71.8 C                   tv   30
 stat  ok                       → Board antwortet mit derselben Zeile (Echo)</pre>
 
-<h2>7 · Ohne Sticky: Toms Laptop</h2>
+<h2>8 · Ohne Sticky: Toms Laptop</h2>
 <p>Mag Tom den Sticky nicht, nimmt er seinen Laptop. Das Board spricht dieselben Textzeilen auch über seine eigene USB-Buchse (nicht die des Sticky), also reicht ein serielles Terminal; für Kurven ein kleines Python-Skript oder sein gewohntes Messprogramm. Ohne Kabel: ein zweiter XIAO am Laptop als ESP-NOW-Brücke, oder das Board stellt eine kleine Webseite ins WLAN bzw. spricht BLE (Web Bluetooth im Browser).</p>
 <pre>Laptop  ── USB (seriell, 115200) ──  Board          ist 93.4 C / soll 95 / y 42 %
 Laptop  ── USB ── XIAO-Brücke ~~ ESP-NOW ~~ Board   (Sticky kann parallel mithören)</pre>
 <p class="k">Sticky und Laptop sind gleichwertige Bedienteile; der Regler und die Sicherheit bleiben auf dem Board und in Toms Hardware. Beide gleichzeitig geht: wer zuletzt den Sollwert ändert, gilt, das Board meldet den neuen Wert an alle.</p>
 
-<h2>8 · Ganz ohne Computer</h2>
+<h2>9 · Ganz ohne Computer</h2>
 <p>Räucheröfen haben jahrzehntelang ohne Mikrocontroller funktioniert. Drei Wege, vom einfachsten zum genauesten. Den Temperaturbegrenzer braucht jeder davon.</p>
 <svg class="schema" viewBox="0 0 820 230" role="img" aria-label="Schema ohne Computer: Netz, Kapillarrohrthermostat mit Fühler im Garraum, Temperaturbegrenzer, Heizung, Zeigerthermometer">
  <rect x="16" y="70" width="120" height="70" rx="8" fill="#f4f2ec" stroke="#d4561f" stroke-width="2.5"/>
@@ -391,7 +429,7 @@ Laptop  ── USB ── XIAO-Brücke ~~ ESP-NOW ~~ Board   (Sticky kann parall
 <canvas class="vergleich" id="vergleich" width="800" height="300"></canvas>
 <div class="legende"><span><i></i>PID (Bastel-Board)</span><span><i class="zp"></i>Zweipunkt (mechanisch)</span><span><i class="sw"></i>Soll</span><span id="schwankung"></span></div>
 
-<h2>9 · Aus Markus' Werkstatt</h2>
+<h2>10 · Aus Markus' Werkstatt</h2>
 <p>Ein kleines FNIRSI-Labornetzteil und ein FNIRSI-Taschenoszi sind schon da. Beide passen in den Bauplan, vor allem in Schritt 4, bei dem noch keine Netzspannung im Spiel ist.</p>
 <div class="wege">
  <div><h3>Labornetzteil</h3><p class="unter">einstellbare Spannung, Strombegrenzung</p><ul>
@@ -431,7 +469,7 @@ Laptop  ── USB ── XIAO-Brücke ~~ ESP-NOW ~~ Board   (Sticky kann parall
 <p class="k">So sollte es auf dem Oszi aussehen (gezeichnet, nicht gemessen): oben der Zeitproportional-Takt, unten der Neustart ohne Zucken am Ausgang.</p>
 <div class="vorsicht"><b>Nicht an 230 V:</b> Das Taschenoszi gehört nicht an die Netzseite, also nicht an den Lastausgang des Halbleiterrelais. Messungen dort macht Tom mit Trenntrafo oder Differenztastkopf.</div>
 
-<h2>10 · Mit Tom klären</h2>
+<h2>11 · Mit Tom klären</h2>
 <p>PT1000 oder Thermoelement? SSR oder Relais (Takt, Verschleiß)? Welcher Begrenzer, welcher Grenzwert? Startwerte aus einer Sprungantwort (Tt, T, Ks) nach CHR statt Autotune? Und: welche anderen Messgeräte von Tom könnten per BLE einfach mitlaufen (Multimeter, Stromzange)?</p>
 </main>
 
@@ -443,7 +481,7 @@ let plan = [[0, 60], [40 * 60, 95]];          // Sollwert-Sprünge [s, °C]
 const spAt = (t) => { let s = plan[0][1]; for (const [ts, v] of plan) if (ts <= t) s = v; return s; };
 
 function simuliere(o) {
-  const N = DAUER / DT + 1, ist = new Float32Array(N), echt = new Float32Array(N), y = new Float32Array(N), sp = new Float32Array(N), fehler = new Uint8Array(N);
+  const N = DAUER / DT + 1, pA = new Float32Array(N), iA = new Float32Array(N), dA = new Float32Array(N), ist = new Float32Array(N), echt = new Float32Array(N), y = new Float32Array(N), sp = new Float32Array(N), fehler = new Uint8Array(N);
   let T = TA, Tm = TA, I = 0, vor = TA, uAlt = 0; const puffer = new Array(Math.round(TOT / DT)).fill(0);
   for (let i = 0; i < N; i++) {
     const t = i * DT, w = spAt(t);
@@ -456,7 +494,7 @@ function simuliere(o) {
       const roh = P + I + D;
       if (!((roh >= 100 && e > 0) || (roh <= 0 && e < 0))) I += o.kp / o.tn * e * DT;
       I = Math.max(-100, Math.min(100, I));
-      u = Math.max(0, Math.min(100, P + I + D));
+      u = Math.max(0, Math.min(100, P + I + D)); pA[i] = P; iA[i] = I; dA[i] = D;
     } else I = 0;
     vor = Tm; uAlt = u;
     puffer.push(u); const uw = puffer.shift();
@@ -465,7 +503,7 @@ function simuliere(o) {
     Tm += (T - Tm) / TF * DT;
     ist[i] = Tm; echt[i] = T; y[i] = u; sp[i] = w; fehler[i] = f;
   }
-  return { ist, echt, y, sp, fehler };
+  return { ist, echt, y, sp, fehler, pA, iA, dA };
 }
 
 // ---------- 1-bpp-Zeichnen: schwarz auf transparent, danach hart schwellen ----------
@@ -669,6 +707,41 @@ function vergleich() {
 $('hyst').addEventListener('input', vergleich);
 for (const id of ['kp', 'tn', 'tv', 'tuer', 'soll']) $(id).addEventListener('input', vergleich);
 vergleich();
+
+// ---------- PID-Anteile und P/PI/PID ----------
+function achsen(g, X0, X1, Y0, Y1, lo, hi, schritte, einheit, xs) {
+  const ys = (v) => Y0 - (Y0 - Y1) * (v - lo) / (hi - lo);
+  g.font = `13px ${SCHRIFT}`; g.fillStyle = '#666'; g.strokeStyle = '#cfcbc2'; g.lineWidth = 1;
+  for (const v of schritte) { g.beginPath(); g.moveTo(X0, ys(v) + .5); g.lineTo(X1, ys(v) + .5); g.stroke(); g.textAlign = 'right'; g.fillText(v + einheit, X0 - 4, ys(v) + 4); }
+  g.textAlign = 'center'; for (let k = 0; k <= 3; k++) g.fillText(`${12 + k}:00`, Math.min(X1 - 18, Math.max(X0 + 18, xs(k * 3600))), 290);
+  return ys;
+}
+function kurve(g, arr, xs, ys, farbe, breite, strich, schritt = 3) { g.strokeStyle = farbe; g.lineWidth = breite; g.setLineDash(strich || []); g.beginPath(); for (let k = 0; k < arr.length; k += schritt) { const x = xs(k * DT), y = ys(arr[k]); k ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke(); g.setLineDash([]); }
+const TOM = () => getComputedStyle(document.documentElement).getPropertyValue('--tom').trim() || '#d4561f';
+function pidBilder() {
+  const o = { ...opts(), bruch: false, funk: false };
+  const X0 = 52, X1 = 786, xs = (s) => X0 + (X1 - X0) * s / DAUER;
+  // Anteile
+  const a = simuliere(o), c = $('anteile'), g = c.getContext('2d'); g.clearRect(0, 0, 800, 300);
+  const ys = achsen(g, X0, X1, 268, 14, -60, 140, [-50, 0, 50, 100], ' %', xs);
+  g.strokeStyle = '#111'; g.lineWidth = 1; g.beginPath(); g.moveTo(X0, ys(0) + .5); g.lineTo(X1, ys(0) + .5); g.stroke();
+  const clip = (arr) => arr.map((v) => Math.max(-60, Math.min(140, v)));
+  kurve(g, clip(a.dA), xs, ys, '#888', 1.5, [5, 4], 1);
+  kurve(g, clip(a.iA), xs, ys, TOM(), 2.5);
+  kurve(g, clip(a.pA), xs, ys, '#111', 2.5);
+  // P / PI / PID
+  const sp = simuliere({ ...o, tn: Infinity, tv: 0 }), spi = simuliere({ ...o, tv: 0 }), spid = a;
+  const c2 = $('pipid'), g2 = c2.getContext('2d'); g2.clearRect(0, 0, 800, 300);
+  const ys2 = achsen(g2, X0, X1, 268, 14, 0, 150, [0, 50, 100, 150], ' °C', xs);
+  kurve(g2, spid.sp, xs, ys2, '#bbb', 1.5, [2, 4]);
+  kurve(g2, sp.ist, xs, ys2, '#999', 2.2);
+  kurve(g2, spi.ist, xs, ys2, TOM(), 2.2);
+  kurve(g2, spid.ist, xs, ys2, '#111', 2.5);
+  const k = Math.round(5100 / DT);
+  $('pBleibend').textContent = `· um 13:25 bleibt nur P ${komma(sp.sp[k] - sp.ist[k])} K unter Soll`;
+}
+for (const id of ['kp', 'tn', 'tv', 'tuer', 'soll']) $(id).addEventListener('input', pidBilder);
+pidBilder();
 // Alarm-Vorschau: fester Lauf mit Fühlerbruch um 14:30
 const simA = simuliere({ ...opts(), bruch: true });
 alarmbild($('alarm'), simA, Math.round((BRUCH + 120) / DT), opts());
