@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lab Fremdsensoren Regler</title>
+<style>
+:root{--bg:#e9e6df;--ink:#111;--paper:#f4f2ec;--muted:#666;--tom:#d4561f}
+body{margin:0;background:var(--bg);font-family:Helvetica,Arial,sans-serif;color:var(--ink);padding:16px;line-height:1.4}
+main{max-width:860px;margin:0 auto}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:17px;margin:28px 0 8px;border-top:2px solid var(--ink);padding-top:10px}
+p.k,p{margin:0 0 12px;font-size:14px;max-width:820px}p.k{color:var(--muted)}
+figure{margin:0 0 20px}figure.quer{max-width:820px}figure.hoch{max-width:420px}
+figcaption{font-size:13px;color:var(--muted);margin-top:6px}
+.dev{background:#2b2b2b;border-radius:18px;padding:14px}
+canvas{display:block;width:100%;height:auto;border-radius:4px;background:var(--paper);image-rendering:pixelated}
+svg.schema{display:block;width:100%;height:auto;background:var(--paper);border-radius:6px}
+svg.schema text{font-family:Helvetica,Arial,sans-serif;fill:#111}
+.zwei{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.zwei>div{background:var(--paper);border-radius:6px;padding:12px 14px;font-size:14px}
+.zwei h3{font-size:14px;margin:0 0 6px;text-transform:uppercase;letter-spacing:.06em}
+.zwei ul{margin:0;padding-left:18px}.zwei li{margin:2px 0}
+.tom h3{color:var(--tom)}.tom{border-left:6px solid var(--tom)}.sw{border-left:6px solid var(--ink)}
+.tab{overflow-x:auto;border-radius:6px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--paper);border-radius:6px;overflow:hidden}
+th,td{text-align:left;vertical-align:top;padding:7px 10px;border-bottom:1px solid #cfcbc2}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+td.t{color:var(--tom);font-weight:bold}
+code,pre{font-family:Consolas,Menlo,monospace;font-size:13px}
+pre{background:var(--paper);border-radius:6px;padding:10px 12px;margin:0 0 12px;overflow-x:auto}
+.regler{background:var(--paper);border-radius:6px;padding:12px 14px;margin:0 0 14px;display:grid;grid-template-columns:auto 1fr auto;gap:6px 12px;align-items:center;font-size:14px}
+.regler input[type=range]{width:100%;accent-color:#111}
+.regler output{font-variant-numeric:tabular-nums;min-width:74px;text-align:right}
+.reihe{display:flex;flex-wrap:wrap;gap:8px 18px;grid-column:1/-1;align-items:center}
+button.pille{font:inherit;font-size:14px;background:none;border:2px solid #111;border-radius:99px;padding:5px 16px;box-shadow:inset 0 0 0 2px var(--paper),inset 0 0 0 3.5px #111;cursor:pointer}
+.reihe label{white-space:nowrap}
+.knr{display:inline-block;min-width:1.4em;font-weight:bold}
+@media (max-width:620px){.zwei{grid-template-columns:1fr}.regler{grid-template-columns:auto 1fr}.regler output{grid-column:2;text-align:left;margin-top:-6px}table{font-size:12.5px}th,td{padding:6px 6px}td:first-child{min-width:90px}}
+</style></head><body><main>
+
+<h1>Sticky Lab · Station 12 Fremdsensoren · Beispiel Räucherofen mit PID</h1>
+<p class="k">Skizze zum Durchsprechen mit Tom (geparkt 16.11.2026). Ein Bastel-Board liest den Garraumfühler und regelt die Heizung selbst; der reTerminal Sticky ist nur das Bedienteil über Funk. Die USB-Buchse des Sticky hängt am Wandler CH343, deshalb kommt nichts per Kabel an den Sticky.</p>
+
+<h2>1 · Aufbau</h2>
+<svg class="schema" viewBox="0 0 820 420" role="img" aria-label="Schema: Fühler, Messwandler, XIAO-Board mit PID, Halbleiterrelais, Heizung, Temperaturbegrenzer; Funk zum Sticky">
+ <defs>
+  <marker id="pf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#111"/></marker>
+  <marker id="pfT" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#d4561f"/></marker>
+  <pattern id="schraffur" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" fill="#f4f2ec"/><line x1="0" y1="0" x2="0" y2="8" stroke="#d4561f" stroke-width="2" opacity=".35"/></pattern>
+ </defs>
+ <!-- Legende -->
+ <rect x="16" y="16" width="22" height="14" fill="url(#schraffur)" stroke="#d4561f" stroke-width="2.5"/><text x="46" y="28" font-size="13">Tom: Hardware, Netz, Sicherheit</text>
+ <rect x="16" y="38" width="22" height="14" fill="none" stroke="#111" stroke-width="2"/><text x="46" y="50" font-size="13">Software</text>
+
+ <!-- Sticky -->
+ <rect x="300" y="14" width="300" height="104" rx="14" fill="#2b2b2b"/>
+ <rect x="312" y="24" width="276" height="84" rx="4" fill="#f4f2ec"/>
+ <text x="450" y="50" font-size="16" font-weight="bold" text-anchor="middle">reTerminal Sticky</text>
+ <text x="450" y="70" font-size="12.5" text-anchor="middle">Bedienteil: Ist, Soll per Drehrad, Kurve,</text>
+ <text x="450" y="86" font-size="12.5" text-anchor="middle">P/I/D, Alarm-Ton, CSV auf SD</text>
+ <text x="450" y="101" font-size="11" text-anchor="middle" style="fill:#666">E-Ink 800×480, 1 bpp · regelt nicht</text>
+
+ <!-- Funk -->
+ <path d="M440,190 L440,170 L452,160 L428,146 L440,136 L440,122" fill="none" stroke="#111" stroke-width="2" marker-end="url(#pf)" marker-start="url(#pf)"/>
+ <text x="464" y="148" font-size="13" font-weight="bold">ESP-NOW</text>
+ <text x="464" y="164" font-size="12">ohne Router, ohne Koppeln · alt. BLE</text>
+ <text x="464" y="179" font-size="12" style="fill:#666">↑ 1 Zeile/s · ↓ Sollwert, P/I/D</text>
+
+ <!-- Untere Reihe -->
+ <g font-size="12.5">
+  <rect x="12" y="200" width="128" height="100" rx="8" fill="url(#schraffur)" stroke="#d4561f" stroke-width="2.5"/>
+  <text x="76" y="226" font-weight="bold" text-anchor="middle" font-size="14">Fühler</text>
+  <text x="76" y="246" text-anchor="middle">PT1000 im Garraum,</text><text x="76" y="262" text-anchor="middle">2. Fühler im Gargut</text><text x="76" y="284" text-anchor="middle" style="fill:#666">4-Leiter</text>
+
+  <rect x="160" y="200" width="120" height="100" rx="8" fill="url(#schraffur)" stroke="#d4561f" stroke-width="2.5"/>
+  <text x="220" y="226" font-weight="bold" text-anchor="middle" font-size="14">Messwandler</text>
+  <text x="220" y="246" text-anchor="middle">MAX31865 (SPI)</text><text x="220" y="262" text-anchor="middle">meldet Bruch</text><text x="220" y="278" text-anchor="middle">und Kurzschluss</text>
+
+  <rect x="300" y="196" width="280" height="108" rx="10" fill="#f4f2ec" stroke="#111" stroke-width="3"/>
+  <rect x="306" y="202" width="268" height="96" rx="6" fill="none" stroke="#111" stroke-width="1.5"/>
+  <text x="440" y="224" font-weight="bold" text-anchor="middle" font-size="14">Bastel-Board XIAO ESP32-C3</text>
+  <text x="440" y="244" text-anchor="middle">PID-Regler, Fühlerprüfung, Watchdog</text>
+  <text x="440" y="261" text-anchor="middle">Software-Abschaltung bei 140 °C</text>
+  <text x="440" y="278" text-anchor="middle">Sollwert und P/I/D im Flash</text>
+  <text x="440" y="294" text-anchor="middle" style="fill:#666">regelt weiter, wenn der Sticky schläft</text>
+
+  <rect x="600" y="200" width="100" height="100" rx="8" fill="url(#schraffur)" stroke="#d4561f" stroke-width="2.5"/>
+  <text x="650" y="226" font-weight="bold" text-anchor="middle" font-size="14">Stellglied</text>
+  <text x="650" y="246" text-anchor="middle">SSR mit Null-</text><text x="650" y="262" text-anchor="middle">durchgangs-</text><text x="650" y="278" text-anchor="middle">schaltung</text>
+
+  <rect x="716" y="200" width="92" height="100" rx="8" fill="url(#schraffur)" stroke="#d4561f" stroke-width="2.5"/>
+  <text x="762" y="226" font-weight="bold" text-anchor="middle" font-size="14">Heizung</text>
+  <text x="762" y="246" text-anchor="middle">1,5 kW</text><text x="762" y="262" text-anchor="middle">230 V</text>
+ </g>
+ <line x1="140" y1="250" x2="158" y2="250" stroke="#d4561f" stroke-width="2" marker-end="url(#pfT)"/>
+ <line x1="280" y1="250" x2="298" y2="250" stroke="#111" stroke-width="2" marker-end="url(#pf)"/>
+ <line x1="580" y1="250" x2="598" y2="250" stroke="#111" stroke-width="2" marker-end="url(#pf)"/>
+ <line x1="700" y1="250" x2="716" y2="250" stroke="#d4561f" stroke-width="4"/>
+
+ <!-- Lastkreis mit Begrenzer -->
+ <path d="M650,300 L650,352 L600,352" fill="none" stroke="#d4561f" stroke-width="4"/>
+ <path d="M762,300 L762,352 L786,352" fill="none" stroke="#d4561f" stroke-width="4"/>
+ <rect x="420" y="330" width="180" height="44" rx="8" fill="url(#schraffur)" stroke="#d4561f" stroke-width="2.5"/>
+ <text x="510" y="349" font-size="12.5" font-weight="bold" text-anchor="middle">Temperaturbegrenzer 150 °C</text>
+ <text x="510" y="365" font-size="11.5" text-anchor="middle">im Lastkreis, ohne Software</text>
+ <path d="M420,352 L330,352" fill="none" stroke="#d4561f" stroke-width="4"/>
+ <text x="324" y="348" font-size="12.5" text-anchor="end" font-weight="bold">230 V L/N/PE</text>
+ <text x="324" y="364" font-size="11.5" text-anchor="end">LS, FI, Zugentlastung</text>
+ <text x="790" y="348" font-size="11.5" text-anchor="end" style="fill:#666">N</text>
+ <text x="16" y="404" font-size="12" style="fill:#666">Der Sticky ist austauschbar: fällt er aus, regelt das Board mit dem letzten Sollwert weiter. Versagt die Software, trennt der Begrenzer.</text>
+</svg>
+
+<div class="zwei">
+ <div class="tom"><h3>Tom</h3><ul>
+  <li>Fühlerwahl, Einbau, Messkreis (PT1000 + MAX31865 oder Typ K + MAX31856)</li>
+  <li>Stellglied: SSR mit Kühlkörper, Ansteuerung 3 V, Ausgang beim Booten sicher aus (Pull-down)</li>
+  <li>Temperaturbegrenzer unabhängig vom Mikrocontroller</li>
+  <li>Netzseite: Gehäuse, Schutzleiter, LS/FI, Zugentlastung</li>
+  <li>Kalibrieren (Eispunkt, Siedepunkt), Strecke vermessen</li>
+ </ul></div>
+ <div class="sw"><h3>Software</h3><ul>
+  <li>Board: PID mit Anti-Windup, D auf den Messwert, Zeitproportional-Ausgang (Takt 10 s)</li>
+  <li>Board: Fühlerfehler → Heizung aus; Watchdog; Funk weg → weiterregeln</li>
+  <li>Sticky: Anzeige, Drehrad, P/I/D-Seite, Alarm-Ton, CSV-Log auf SD</li>
+  <li>Sticky: unbekannter Kanal → automatisch als Instrument, kein Update nötig</li>
+ </ul></div>
+</div>
+
+<h2>2 · Am Sticky (1 bpp, echtes Raster)</h2>
+<p class="k">Simulierter Räuchertag ab 12:00: erst Trocknen bei 60 °C, ab 12:40 Garen bei 95 °C. Modell: Strecke 1. Ordnung mit Totzeit (T ≈ 25 min, Tt ≈ 40 s, Fühler 20 s), Heizung 0–100 %. Zeit laufen lassen, Sollwert am „Drehrad“ ändern (gilt ab dem gewählten Zeitpunkt), P/I/D verstellen.</p>
+
+<div class="regler">
+ <label for="zeit">Zeit</label><input type="range" id="zeit" min="0" max="180" step="1" value="125"><output id="zeitTxt"></output>
+ <label for="soll">Sollwert</label><input type="range" id="soll" min="40" max="120" step="1"><output id="sollTxt"></output>
+ <label for="kp">P · Kp</label><input type="range" id="kp" min="1" max="30" step="0.5" value="6"><output id="kpTxt"></output>
+ <label for="tn">I · Tn</label><input type="range" id="tn" min="60" max="1500" step="20" value="400"><output id="tnTxt"></output>
+ <label for="tv">D · Tv</label><input type="range" id="tv" min="0" max="120" step="5" value="30"><output id="tvTxt"></output>
+ <div class="reihe">
+  <button class="pille" id="play" type="button">▶ Abspielen</button>
+  <label><input type="checkbox" id="tuer" checked> Tür auf um 13:30</label>
+  <label><input type="checkbox" id="funk" checked> Funk weg 13:00–13:15</label>
+  <label><input type="checkbox" id="bruch"> Fühlerbruch um 14:30</label>
+ </div>
+</div>
+
+<figure class="quer"><div class="dev"><canvas id="haupt" width="800" height="480"></canvas></div>
+<figcaption>Hauptbild quer. Links Ist groß und das Drehrad (Doppelring): Zeiger = Soll, Punkt am Ring = Ist; Ring ziehen oder ▲/▼ ±1 K. Rechts Soll gestrichelt, Ist durchgezogen, darunter die Heizleistung gerastert. Funk weg: Lücke in der Kurve, Kopfzeile kippt auf schwarz, das Board regelt weiter. Kurve per Teil-Refresh alle 10 s, Voll-Refresh alle paar Minuten gegen Geisterbilder.</figcaption></figure>
+
+<figure class="hoch"><div class="dev"><canvas id="pid" width="480" height="800"></canvas></div>
+<figcaption>Reiter „Regler“ hochkant: P/I/D mit −/+ einstellen, das Board übernimmt erst nach „Übernehmen“ und bestätigt mit Echo. Unten die Güte des letzten Sollwertsprungs, live aus der Kurve.</figcaption></figure>
+
+<figure class="quer"><div class="dev"><canvas id="alarm" width="800" height="480"></canvas></div>
+<figcaption>Alarm (hier Fühlerbruch um 14:30). Das Board hat die Heizung schon abgeschaltet, bevor der Sticky piept; der Sticky meldet nur. Gleiches Bild bei Übertemperatur (Sticky-Grenze 130 °C) und bei „keine Daten seit 2 min“.</figcaption></figure>
+
+<h2>3 · Was passiert wenn …</h2>
+<div class="tab"><table>
+ <tr><th>Fall</th><th>Board</th><th>Sticky</th><th>Hardware</th></tr>
+ <tr><td>Funk weg, Sticky schläft, Akku leer</td><td>regelt mit letztem Sollwert weiter</td><td>„Funk weg“, Lücke, Ton nach 2 min</td><td>–</td></tr>
+ <tr><td>Fühlerbruch, Kurzschluss</td><td>MAX31865-Fehler → Heizung aus, meldet <code>fehler fuehler</code></td><td>Alarm, Ton</td><td>–</td></tr>
+ <tr><td>Übertemperatur</td><td>&gt; 140 °C → Heizung aus</td><td>&gt; 130 °C Alarm</td><td class="t">Begrenzer 150 °C trennt</td></tr>
+ <tr><td>Board hängt</td><td>Watchdog-Neustart, Ausgang startet aus</td><td>„keine Daten“</td><td class="t">Pull-down am SSR-Eingang</td></tr>
+ <tr><td>SSR legiert durch</td><td>merkt es nur am Ist</td><td>Übertemperatur-Alarm</td><td class="t">Begrenzer 150 °C trennt</td></tr>
+</table></div>
+
+<h2>4 · Funkzeilen</h2>
+<p>Kurze Textzeilen, je ESP-NOW-Paket eine (max. 250 Byte). Unbekannte Namen zeigt der Sticky als neues Instrument.</p>
+<pre>Board → Sticky, 1×/s           Sticky → Board, nur bei Änderung
+ist   93.4 C                   soll 95
+soll  95 C                     kp   6.0
+y     42 %                     tn   400
+gut   71.8 C                   tv   30
+stat  ok                       → Board antwortet mit derselben Zeile (Echo)</pre>
+
+<h2>5 · Mit Tom klären</h2>
+<p>PT1000 oder Thermoelement? SSR oder Relais (Takt, Verschleiß)? Welcher Begrenzer, welcher Grenzwert? Startwerte aus einer Sprungantwort (Tt, T, Ks) nach CHR statt Autotune? Und: welche anderen Messgeräte von Tom könnten per BLE einfach mitlaufen (Multimeter, Stromzange)?</p>
+</main>
+
+<script>
+// ---------- Simulation: Strecke PT1 + Totzeit, PID mit Anti-Windup ----------
+const DT = 2, DAUER = 180 * 60, TA = 12, KS = 2.0, T1 = 1500, TOT = 40, TF = 20;
+const TUER = [90 * 60, 92 * 60], FUNK = [60 * 60, 75 * 60], BRUCH = 150 * 60;
+let plan = [[0, 60], [40 * 60, 95]];          // Sollwert-Sprünge [s, °C]
+const spAt = (t) => { let s = plan[0][1]; for (const [ts, v] of plan) if (ts <= t) s = v; return s; };
+
+function simuliere(o) {
+  const N = DAUER / DT + 1, ist = new Float32Array(N), echt = new Float32Array(N), y = new Float32Array(N), sp = new Float32Array(N), fehler = new Uint8Array(N);
+  let T = TA, Tm = TA, I = 0, vor = TA; const puffer = new Array(Math.round(TOT / DT)).fill(0);
+  for (let i = 0; i < N; i++) {
+    const t = i * DT, w = spAt(t);
+    let u = 0, f = o.bruch && t >= BRUCH ? 1 : 0;
+    if (Tm > 140) f = 2;
+    if (!f) {
+      const e = w - Tm, P = o.kp * e, D = -o.kp * o.tv * (Tm - vor) / DT;
+      const roh = P + I + D;
+      if (!((roh >= 100 && e > 0) || (roh <= 0 && e < 0))) I += o.kp / o.tn * e * DT;
+      I = Math.max(-100, Math.min(100, I));
+      u = Math.max(0, Math.min(100, P + I + D));
+    } else I = 0;
+    vor = Tm;
+    puffer.push(u); const uw = puffer.shift();
+    const verlust = o.tuer && t >= TUER[0] && t < TUER[1] ? 6 : 1;
+    T += (KS * uw - (T - TA) * verlust) / T1 * DT;
+    Tm += (T - Tm) / TF * DT;
+    ist[i] = Tm; echt[i] = T; y[i] = u; sp[i] = w; fehler[i] = f;
+  }
+  return { ist, echt, y, sp, fehler };
+}
+
+// ---------- 1-bpp-Zeichnen: schwarz auf transparent, danach hart schwellen ----------
+const SCHRIFT = 'Helvetica, Arial, sans-serif';
+const PAPIER = [244, 242, 236], TINTE = [17, 17, 17];
+function muster(n, punkte) { const c = document.createElement('canvas'); c.width = c.height = n; const g = c.getContext('2d'); g.fillStyle = '#000'; for (const [x, y] of punkte) g.fillRect(x, y, 1, 1); return c; }
+const MUSTER = { schach: muster(2, [[0, 0], [1, 1]]), duenn: muster(4, [[0, 0], [2, 2]]) };
+function stift(c) {
+  const g = c.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, c.width, c.height);
+  g.fillStyle = g.strokeStyle = '#000'; g.lineCap = 'butt'; g.lineJoin = 'round'; g.setLineDash([]);
+  g.raster = (art) => g.createPattern(MUSTER[art], 'repeat');
+  return g;
+}
+function schwelle(c) {
+  const g = c.getContext('2d'), im = g.getImageData(0, 0, c.width, c.height), d = im.data;
+  for (let i = 0; i < d.length; i += 4) { const f = d[i + 3] > 110 ? TINTE : PAPIER; d[i] = f[0]; d[i + 1] = f[1]; d[i + 2] = f[2]; d[i + 3] = 255; }
+  g.putImageData(im, 0, 0);
+}
+const txt = (g, s, x, y, gr, o = {}) => { g.font = `${o.fett ? 'bold ' : ''}${gr}px ${SCHRIFT}`; g.textAlign = o.a || 'left'; g.textBaseline = 'alphabetic'; g.fillText(s, x, y); return g.measureText(s).width; };
+const ausschneiden = (g, f) => { g.save(); g.globalCompositeOperation = 'destination-out'; f(); g.restore(); };
+function rundRect(g, x, y, w, h, r) { g.beginPath(); g.roundRect(x, y, w, h, r); }
+function pille(g, x, y, w, h, s, o = {}) {        // o.doppel = Hauptaktion, o.voll = aktiv
+  g.lineWidth = o.doppel ? 5 : 2; rundRect(g, x, y, w, h, h / 2); g.stroke();
+  if (o.doppel) { g.lineWidth = 3; rundRect(g, x + 8, y + 8, w - 16, h - 16, (h - 16) / 2); g.stroke(); }
+  if (o.voll) { rundRect(g, x + 4, y + 4, w - 8, h - 8, (h - 8) / 2); g.fill(); ausschneiden(g, () => txt(g, s, x + w / 2, y + h / 2 + o.gr * 0.36, o.gr, { a: 'center', fett: true })); }
+  else txt(g, s, x + w / 2, y + h / 2 + (o.gr || 22) * 0.36, o.gr || 22, { a: 'center', fett: o.doppel });
+}
+function reiter(g, x, y, B, namen, aktiv) {
+  const H = 42, w = B / namen.length; g.lineWidth = 3; rundRect(g, x, y, B, H, H / 2); g.stroke();
+  namen.forEach((n, i) => {
+    const cx = x + w * i + w / 2;
+    if (i === aktiv) { rundRect(g, cx - w / 2 + 4, y + 4, w - 8, H - 8, (H - 8) / 2); g.fill(); ausschneiden(g, () => txt(g, n, cx, y + 28, 19, { a: 'center', fett: true })); }
+    else txt(g, n, cx, y + 28, 19, { a: 'center' });
+  });
+}
+const komma = (v, n = 1) => v.toFixed(n).replace('.', ',');
+const uhr = (s) => { const m = 12 * 60 + Math.floor(s / 60); return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`; };
+const imFunkLoch = (t, o) => o.funk && t >= FUNK[0] && t < FUNK[1];
+
+// ---------- Hauptbild quer ----------
+function hauptbild(c, sim, tS, o) {
+  const i = Math.round(tS / DT);
+  if (sim.fehler[i]) return alarmbild(c, sim, i, o);
+  const g = stift(c), loch = imFunkLoch(tS, o);
+  let iSicht = i; if (loch) iSicht = Math.round(FUNK[0] / DT) - 1;      // letzter empfangener Wert
+  // Kopf
+  txt(g, 'Räucherofen', 20, 38, 24, { fett: true });
+  if (loch) {
+    const m = Math.round((tS - FUNK[0]) / 60);
+    rundRect(g, 330, 10, 450, 40, 20); g.fill();
+    ausschneiden(g, () => txt(g, `FUNK WEG ${m} min · Board regelt weiter`, 555, 37, 19, { a: 'center', fett: true }));
+  } else txt(g, `Funk ok · −61 dBm · Board 3,9 V   ${uhr(tS)}`, 780, 37, 17, { a: 'right' });
+  g.lineWidth = 2; g.beginPath(); g.moveTo(0, 60); g.lineTo(800, 60); g.stroke();
+
+  // Ist groß
+  const ist = sim.ist[iSicht], soll = sim.sp[i];
+  txt(g, loch ? `Ist · vor ${Math.round((tS - FUNK[0]) / 60)} min` : 'Ist', 24, 96, 18);
+  const w = txt(g, komma(ist), 24, 168, 76, { fett: true }); txt(g, '°C', 30 + w, 168, 28);
+
+  // Drehrad
+  const cx = 165, cy = 330, R = 108, a0 = Math.PI * 0.75, a1 = Math.PI * 2.25, wink = (v) => a0 + (a1 - a0) * Math.max(0, Math.min(150, v)) / 150;
+  g.lineWidth = 5; g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.stroke();
+  g.lineWidth = 2; g.beginPath(); g.arc(cx, cy, R - 10, 0, Math.PI * 2); g.stroke();
+  for (let v = 0; v <= 150; v += 10) { const a = wink(v), l = v % 50 ? 8 : 16; g.lineWidth = v % 50 ? 2 : 3; g.beginPath(); g.moveTo(cx + Math.cos(a) * (R - 16), cy + Math.sin(a) * (R - 16)); g.lineTo(cx + Math.cos(a) * (R - 16 - l), cy + Math.sin(a) * (R - 16 - l)); g.stroke(); }
+  txt(g, '0', cx + Math.cos(a0) * (R + 6) - 14, cy + Math.sin(a0) * (R + 6) + 14, 15);
+  txt(g, '150', cx + Math.cos(a1) * (R + 6) - 4, cy + Math.sin(a1) * (R + 6) + 14, 15);
+  const as = wink(soll); g.lineWidth = 7; g.lineCap = 'round'; g.beginPath(); g.moveTo(cx + Math.cos(as) * (R - 44), cy + Math.sin(as) * (R - 44)); g.lineTo(cx + Math.cos(as) * (R - 20), cy + Math.sin(as) * (R - 20)); g.stroke(); g.lineCap = 'butt';
+  const ai = wink(ist); g.beginPath(); g.arc(cx + Math.cos(ai) * (R - 5), cy + Math.sin(ai) * (R - 5), 9, 0, Math.PI * 2); g.fill();
+  ausschneiden(g, () => { g.beginPath(); g.arc(cx + Math.cos(ai) * (R - 5), cy + Math.sin(ai) * (R - 5), 3.5, 0, Math.PI * 2); g.fill(); });
+  txt(g, String(Math.round(soll)), cx, cy + 14, 50, { a: 'center', fett: true });
+  txt(g, 'Soll °C', cx, cy + 40, 16, { a: 'center' });
+  txt(g, '▲▼ ±1 K', cx, 468, 15, { a: 'center' });
+
+  // Kurve
+  const X0 = 350, X1 = 780, Y0 = 290, Y1 = 76, xs = (s) => X0 + (X1 - X0) * s / DAUER, ys = (v) => Y0 - (Y0 - Y1) * v / 150;
+  if (o.funk && tS > FUNK[0]) { g.fillStyle = g.raster('duenn'); g.fillRect(Math.round(xs(FUNK[0])), Y1, Math.round(xs(Math.min(tS, FUNK[1])) - xs(FUNK[0])), Y0 - Y1); g.fillStyle = '#000'; }
+  g.lineWidth = 2; g.beginPath(); g.moveTo(X0, Y1 - 4); g.lineTo(X0, Y0); g.lineTo(X1, Y0); g.stroke();
+  g.lineWidth = 1; g.setLineDash([1, 4]);
+  for (const v of [50, 100, 150]) { g.beginPath(); g.moveTo(X0, ys(v) + .5); g.lineTo(X1, ys(v) + .5); g.stroke(); txt(g, String(v), X0 - 6, ys(v) + 5, 14, { a: 'right' }); }
+  g.setLineDash([10, 4, 2, 4]); g.lineWidth = 2; g.beginPath(); g.moveTo(X0, ys(130)); g.lineTo(X1, ys(130)); g.stroke(); txt(g, 'Alarm 130', X1 - 2, ys(130) - 6, 13, { a: 'right' });
+  // Soll (Treppe, bis jetzt)
+  g.setLineDash([8, 5]); g.lineWidth = 2; g.beginPath();
+  for (let k = 0; k <= i; k += 5) { const x = xs(k * DT), v = ys(sim.sp[k]); k ? g.lineTo(x, v) : g.moveTo(x, v); } g.stroke(); g.setLineDash([]);
+  // Ist
+  g.lineWidth = 3; g.beginPath(); let an = false;
+  for (let k = 0; k <= i; k += 3) { const t = k * DT; if (imFunkLoch(t, o)) { an = false; continue; } const x = xs(t), v = ys(sim.ist[k]); an ? g.lineTo(x, v) : g.moveTo(x, v); an = true; } g.stroke();
+  if (!loch) { g.beginPath(); g.arc(xs(tS), ys(ist), 6, 0, Math.PI * 2); g.fill(); }
+  // Heizleistung
+  const H0 = 362, HH = 48; txt(g, 'Heizung', X0, 307, 14);
+  txt(g, loch ? '–' : `${Math.round(sim.y[i])} %`, X1, 307, 14, { a: 'right', fett: true });
+  g.fillStyle = g.raster('schach');
+  for (let m = 0; m * 60 <= tS; m++) { const t = m * 60; if (imFunkLoch(t, o)) continue; let s = 0; for (let k = 0; k < 30; k++) s += sim.y[Math.min(sim.y.length - 1, m * 30 + k)]; const h = Math.round(HH * s / 30 / 100); const x = Math.floor(xs(t)); g.fillRect(x, H0 - h, Math.max(1, Math.floor(xs(t + 60)) - x), h); }
+  g.fillStyle = '#000'; g.lineWidth = 2; g.beginPath(); g.moveTo(X0, H0); g.lineTo(X1, H0); g.stroke();
+  for (let h = 0; h <= 3; h++) { const x = xs(h * 3600); g.beginPath(); g.moveTo(x, H0); g.lineTo(x, H0 + 6); g.stroke(); txt(g, `${12 + h}:00`, x, H0 + 22, 14, { a: h === 0 ? 'left' : h === 3 ? 'right' : 'center' }); }
+  // Knöpfe
+  pille(g, 350, 412, 136, 58, 'Regler', { doppel: true });
+  pille(g, 497, 412, 150, 58, 'Alarm 130°', { gr: 20 });
+  pille(g, 658, 412, 122, 58, 'Stopp');
+  schwelle(c);
+}
+
+// ---------- Alarm quer ----------
+function alarmbild(c, sim, i, o) {
+  const g = stift(c), t = i * DT, art = sim.fehler[i];
+  let j = i; while (j > 0 && sim.fehler[j]) j--;
+  txt(g, 'Räucherofen', 20, 38, 24, { fett: true }); txt(g, uhr(t), 780, 37, 17, { a: 'right' });
+  g.fillRect(0, 60, 800, 230);
+  ausschneiden(g, () => {
+    txt(g, art === 1 ? 'FÜHLERBRUCH' : 'ÜBERTEMPERATUR', 400, 170, 76, { a: 'center', fett: true });
+    txt(g, art === 1 ? `seit ${uhr(j * DT + DT)} · Messkreis offen (MAX31865)` : `seit ${uhr(j * DT + DT)} · Ist über 140 °C`, 400, 222, 24, { a: 'center' });
+    g.lineWidth = 3; g.beginPath(); g.moveTo(240, 252); g.lineTo(560, 252); g.stroke();
+  });
+  txt(g, 'Heizung vom Board abgeschaltet.', 30, 340, 28, { fett: true });
+  txt(g, `Letzter Messwert ${komma(sim.ist[j])} °C um ${uhr(j * DT)}.`, 30, 376, 22);
+  txt(g, 'Begrenzer 150 °C im Lastkreis bleibt unabhängig aktiv.', 30, 408, 18);
+  pille(g, 30, 420, 230, 54, 'Quittieren', { doppel: true, gr: 22 });
+  pille(g, 276, 420, 150, 54, 'Ton aus', { gr: 20 });
+  schwelle(c);
+}
+
+// ---------- Regler hochkant ----------
+function reglerbild(c, sim, tS, o) {
+  const g = stift(c), i = Math.round(tS / DT);
+  reiter(g, 16, 10, 300, ['Ofen', 'Regler', 'Alarm'], 1);
+  txt(g, uhr(tS), 464, 37, 17, { a: 'right' });
+  g.lineWidth = 2; g.beginPath(); g.moveTo(0, 60); g.lineTo(480, 60); g.stroke();
+  txt(g, 'PID läuft auf dem Board', 24, 94, 18);
+  const zeilen = [['P', 'Verstärkung', komma(o.kp), '%/K'], ['I', 'Nachstellzeit', String(o.tn), 's'], ['D', 'Vorhaltzeit', String(o.tv), 's']];
+  zeilen.forEach(([k, n, v, e], z) => {
+    const y = 110 + z * 138;
+    txt(g, k, 24, y + 34, 26, { fett: true }); txt(g, n, 54, y + 34, 18);
+    const w = txt(g, v, 24, y + 100, 56, { fett: true }); txt(g, e, 32 + w, y + 100, 20);
+    for (const [cx, s] of [[336, '−'], [420, '+']]) { g.lineWidth = 2; g.beginPath(); g.arc(cx, y + 76, 34, 0, Math.PI * 2); g.stroke(); txt(g, s, cx, y + 89, 38, { a: 'center' }); }
+    g.lineWidth = 1; g.beginPath(); g.moveTo(16, y + 130.5); g.lineTo(464, y + 130.5); g.stroke();
+  });
+  // Güte des letzten Sprungs
+  let s0 = 0, alt = plan[0][1]; for (const [ts, v] of plan) if (ts <= tS && ts > 0) { s0 = ts; }
+  for (const [ts, v] of plan) if (ts < s0) alt = v;
+  // Ausregelzeit = Beginn des ersten Laufs, der 5 min im Band ±1 K bleibt (spätere Störungen wie die Tür zählen nicht)
+  const neu = spAt(tS), k0 = Math.round(s0 / DT); let ueber = 0, erreicht = false, lauf0 = -1, ruhig = -1;
+  for (let k = k0; k <= i; k++) {
+    if (sim.fehler[k]) break; const d = sim.ist[k] - sim.sp[k];
+    if (Math.abs(d) <= 1) { erreicht = true; if (lauf0 < 0) lauf0 = k; if ((k - lauf0) * DT >= 300) { ruhig = lauf0 * DT; break; } } else lauf0 = -1;
+    if (erreicht) ueber = Math.max(ueber, neu > alt ? d : -d);
+  }
+  const drin = ruhig >= 0, letzt = ruhig;
+  const y = 540;
+  txt(g, s0 ? `Letzter Sprung ${alt} → ${neu} °C um ${uhr(s0)}` : `Anfahren auf ${neu} °C`, 24, y, 19, { fett: true });
+  txt(g, 'Überschwingen', 24, y + 36, 19); txt(g, erreicht ? `${komma(Math.max(0, ueber))} K` : '–', 456, y + 36, 19, { a: 'right', fett: true });
+  txt(g, 'Ausregelzeit ±1 K', 24, y + 66, 19); txt(g, drin ? `${Math.round((letzt - s0) / 60)} min` : 'läuft', 456, y + 66, 19, { a: 'right', fett: true });
+  txt(g, 'Heizung jetzt', 24, y + 96, 19); txt(g, `${Math.round(sim.y[i])} %`, 456, y + 96, 19, { a: 'right', fett: true });
+  // Mini-Balken Heizung
+  g.lineWidth = 2; g.strokeRect(24, y + 112, 432, 22); g.fillStyle = g.raster('schach'); g.fillRect(27, y + 115, Math.round(426 * sim.y[i] / 100), 16); g.fillStyle = '#000';
+  pille(g, 16, 712, 232, 72, 'Übernehmen', { doppel: true, gr: 24 });
+  pille(g, 262, 712, 202, 72, 'Zurück', { gr: 24 });
+  schwelle(c);
+}
+
+// ---------- Verdrahtung ----------
+const $ = (id) => document.getElementById(id);
+function opts() { return { kp: +$('kp').value, tn: +$('tn').value, tv: +$('tv').value, tuer: $('tuer').checked, funk: $('funk').checked, bruch: $('bruch').checked }; }
+let sim;
+function rechne() { sim = simuliere(opts()); zeige(); }
+function zeige() {
+  const o = opts(), tS = +$('zeit').value * 60;
+  $('zeitTxt').textContent = `${uhr(tS)} Uhr`; $('soll').value = spAt(tS); $('sollTxt').textContent = `${spAt(tS)} °C`;
+  $('kpTxt').textContent = `${komma(o.kp)} %/K`; $('tnTxt').textContent = `${o.tn} s`; $('tvTxt').textContent = `${o.tv} s`;
+  hauptbild($('haupt'), sim, tS, o); reglerbild($('pid'), sim, tS, o);
+}
+$('soll').addEventListener('input', () => {
+  const t = +$('zeit').value * 60; plan = plan.filter(([ts]) => ts < t); plan.push([t, +$('soll').value]); if (!plan.length || plan[0][0] !== 0) plan.unshift([0, 60]); rechne();
+});
+for (const id of ['kp', 'tn', 'tv', 'tuer', 'funk', 'bruch']) $(id).addEventListener('input', rechne);
+$('zeit').addEventListener('input', zeige);
+let lauf = null;
+$('play').addEventListener('click', () => {
+  if (lauf) { clearInterval(lauf); lauf = null; $('play').textContent = '▶ Abspielen'; return; }
+  if (+$('zeit').value >= 180) $('zeit').value = 0;
+  $('play').textContent = '❚❚ Anhalten';
+  lauf = setInterval(() => { const z = +$('zeit').value + 1; $('zeit').value = z; zeige(); if (z >= 180) $('play').click(); }, 120);
+});
+rechne();
+// Alarm-Vorschau: fester Lauf mit Fühlerbruch um 14:30
+const simA = simuliere({ ...opts(), bruch: true });
+alarmbild($('alarm'), simA, Math.round((BRUCH + 120) / DT), opts());
+</script>
+</body></html>
