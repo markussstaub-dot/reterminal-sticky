@@ -26,8 +26,10 @@
 #include <Wire.h>
 #include "qrcode.h"
 #include <esp_mac.h>
+#include <driver/rtc_io.h>
+#include <soc/gpio_reg.h>
 
-static const char* FW_VERSION = "0.39.1";
+static const char* FW_VERSION = "0.39.2";
 
 // ---- Sprache (FW 0.32.0, SPEC „Zweisprachig Deutsch/Englisch“): wirksame Sprache der Anzeige, Muster aus dem Sticky Lab.
 // Gesetzt in modus.h (uhrFormatLaden): Standard vom Handy, am Sticky überstimmbar. Nur Anzeige, Logs bleiben deutsch.
@@ -354,12 +356,28 @@ static void touchPoll() {
 // ---- Tasten ------------------------------------------------------------------
 // Tasten: Abfrage in loop() plus Interrupt, der einen Druck festhält. Während eines E-Paper-Refreshs (bis 2,3 s)
 // steht loop(); ein kurzer Druck in dieser Zeit ging sonst verloren („Navigation hakt“, 11.11.2026).
-struct Taste { int pin; const char* name; int ruhe; int stand; uint32_t seit; volatile bool gedrueckt; };
+struct Taste { int pin; const char* name; int ruhe; int stand; uint32_t seit; volatile bool gedrueckt;
+               volatile uint32_t sturmT; volatile uint16_t sturmN; volatile bool sturm; };
 static Taste tasten[] = { {PIN_BTN_PWR, "ki"}, {PIN_BTN_UP, "up"}, {PIN_BTN_DOWN, "down"} };
 
-static void IRAM_ATTR tasteIsr(void* arg) { ((Taste*)arg)->gedrueckt = true; }
+// Interrupt-Sturm (16.11.2026 nach dem Wechsel aus dem Lab: Watchdog-Neustart im Sekundentakt): feuert ein Pin
+// mehr als 50-mal in derselben Millisekunde, Interrupt dieses Pins aus – die Taste läuft über die Abfrage weiter.
+static void IRAM_ATTR tasteIsr(void* arg) {
+    Taste* t = (Taste*)arg;
+    t->gedrueckt = true;
+    uint32_t jetzt = (uint32_t)(esp_timer_get_time() / 1000);
+    if (jetzt != t->sturmT) { t->sturmT = jetzt; t->sturmN = 0; }
+    if (++t->sturmN > 50) { REG_CLR_BIT(GPIO_PIN0_REG + 4 * t->pin, GPIO_PIN0_INT_ENA_M); t->sturm = true; }
+}
 static void tastenInit() {
-    for (auto& t : tasten) pinMode(t.pin, INPUT_PULLUP);
+    // Reste fremder Einstellungen (Leichtschlaf-Wecken, Halten, RTC-Funktion) löschen, bevor die Interrupts kommen
+    for (auto& t : tasten) {
+        gpio_wakeup_disable((gpio_num_t)t.pin);
+        gpio_hold_dis((gpio_num_t)t.pin);
+        if (rtc_gpio_is_valid_gpio((gpio_num_t)t.pin)) rtc_gpio_deinit((gpio_num_t)t.pin);
+        gpio_reset_pin((gpio_num_t)t.pin);
+        pinMode(t.pin, INPUT_PULLUP);
+    }
     delay(5);
     // Ruhepegel beim Start lernen (der Einschaltknopf kann aktiv-high sein)
     for (auto& t : tasten) {
@@ -375,6 +393,7 @@ static void startAdvertising(bool schnell);
 static void tasteAktion(const char* name, bool gedrueckt);
 static void tastenPoll() {
     for (auto& t : tasten) {
+        if (t.sturm) { t.sturm = false; protokoll("Taste %s GPIO%d: Interrupt-Sturm, nur noch Abfrage", t.name, t.pin); }
         int v = digitalRead(t.pin);
         if (v != t.ruhe || t.gedrueckt) { aktiv(); letzteTaste = millis(); }
         // Druck, der komplett in eine Blockade fiel (gedrückt und wieder los, ohne dass loop() lief): nachholen
