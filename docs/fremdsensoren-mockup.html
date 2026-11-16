@@ -32,13 +32,35 @@ pre{background:var(--paper);border-radius:6px;padding:10px 12px;margin:0 0 12px;
 button.pille{font:inherit;font-size:14px;background:none;border:2px solid #111;border-radius:99px;padding:5px 16px;box-shadow:inset 0 0 0 2px var(--paper),inset 0 0 0 3.5px #111;cursor:pointer}
 .reihe label{white-space:nowrap}
 .knr{display:inline-block;min-width:1.4em;font-weight:bold}
+/* Animation & Bauplan */
+.fluss{fill:none;stroke:#111;stroke-width:5;stroke-linecap:round;stroke-dasharray:.1 14;animation:lauf 1s linear infinite}
+.fluss.t{stroke:#8a2f0a}
+@keyframes lauf{to{stroke-dashoffset:-14.1}}
+#schleier{transition:opacity .4s}
+@media (prefers-reduced-motion:reduce){.fluss{animation:none}#schleier{transition:none}}
+.bauplan{background:var(--paper);border-radius:6px;padding:12px 14px;margin:10px 0 14px}
+.schritte{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.schritte button{font:inherit;font-size:14px;background:none;border:2px solid #111;border-radius:99px;min-width:38px;padding:4px 10px;cursor:pointer;color:#111}
+.schritte button[aria-pressed=true]{background:#111;color:var(--paper);font-weight:bold}
+.schritte .play{margin-left:auto;box-shadow:inset 0 0 0 2px var(--paper),inset 0 0 0 3.5px #111}
+#schrittText h3{font-size:16px;margin:0 0 4px}
+#schrittText p{margin:0 0 6px}
+.wer{display:inline-block;font-size:11px;font-weight:bold;letter-spacing:.06em;text-transform:uppercase;border-radius:99px;padding:1px 8px;margin-right:4px;border:1.5px solid #111;vertical-align:2px}
+.wer.tom{border-color:var(--tom);color:var(--tom)}
+.pruef{border-left:3px solid #111;padding-left:8px}
+details{margin:0 0 14px;font-size:14px}details summary{cursor:pointer;color:var(--muted)}
+details ol{padding-left:20px}details li{margin:6px 0}
+svg.pins{display:block;width:100%;height:auto;background:var(--paper);border-radius:6px;margin-bottom:12px}
+svg.pins text{font-family:Helvetica,Arial,sans-serif;fill:#111}
+ul.hinweis{font-size:14px;padding-left:20px;margin:10px 0 0}ul.hinweis li{margin:3px 0}
+td.frei{color:var(--muted)}
 @media (max-width:620px){.zwei{grid-template-columns:1fr}.regler{grid-template-columns:auto 1fr}.regler output{grid-column:2;text-align:left;margin-top:-6px}table{font-size:12.5px}th,td{padding:6px 6px}td:first-child{min-width:90px}}
 </style></head><body><main>
 
 <h1>Sticky Lab · Station 12 Fremdsensoren · Beispiel Räucherofen mit PID</h1>
 <p class="k">Skizze zum Durchsprechen mit Tom (geparkt 16.11.2026). Ein Bastel-Board liest den Garraumfühler und regelt die Heizung selbst; der reTerminal Sticky ist nur das Bedienteil über Funk. Die USB-Buchse des Sticky hängt am Wandler CH343, deshalb kommt nichts per Kabel an den Sticky.</p>
 
-<h2>1 · Aufbau</h2>
+<h2>1 · Aufbau und Bauplan</h2>
 <svg class="schema" viewBox="0 0 820 420" role="img" aria-label="Schema: Fühler, Messwandler, XIAO-Board mit PID, Halbleiterrelais, Heizung, Temperaturbegrenzer; Funk zum Sticky">
  <defs>
   <marker id="pf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#111"/></marker>
@@ -86,7 +108,7 @@ button.pille{font:inherit;font-size:14px;background:none;border:2px solid #111;b
 
   <rect x="300" y="196" width="280" height="108" rx="10" fill="#f4f2ec" stroke="#111" stroke-width="3"/>
   <rect x="306" y="202" width="268" height="96" rx="6" fill="none" stroke="#111" stroke-width="1.5"/>
-  <text x="440" y="224" font-weight="bold" text-anchor="middle" font-size="14">Bastel-Board XIAO ESP32-C3</text>
+  <text x="440" y="224" font-weight="bold" text-anchor="middle" font-size="14">XIAO ESP32-C3 · bestellt</text>
   <text x="440" y="244" text-anchor="middle">PID-Regler, Fühlerprüfung, Watchdog</text>
   <text x="440" y="261" text-anchor="middle">Software-Abschaltung bei 140 °C</text>
   <text x="440" y="278" text-anchor="middle">Sollwert und P/I/D im Flash</text>
@@ -115,8 +137,24 @@ button.pille{font:inherit;font-size:14px;background:none;border:2px solid #111;b
  <text x="324" y="348" font-size="12.5" text-anchor="end" font-weight="bold">230 V L/N/PE</text>
  <text x="324" y="364" font-size="11.5" text-anchor="end">LS, FI, Zugentlastung</text>
  <text x="790" y="348" font-size="11.5" text-anchor="end" style="fill:#666">N</text>
+ <!-- Fluss (animiert) -->
+ <g aria-hidden="true">
+  <path class="fluss" d="M140,250 L156,250"/><path class="fluss" d="M280,250 L296,250"/><path class="fluss" d="M580,250 L596,250"/>
+  <path class="fluss" d="M440,190 L440,170 L452,160 L428,146 L440,136 L440,122"/>
+  <path class="fluss" d="M560,196 L560,150 L733,150 L733,112"/>
+  <path class="fluss t" d="M330,352 L420,352"/><path class="fluss t" d="M600,352 L650,352 L650,300"/>
+  <path class="fluss t" d="M700,250 L716,250"/><path class="fluss t" d="M762,300 L762,352 L786,352"/>
+ </g>
+ <mask id="spot"><rect width="820" height="420" fill="#fff"/><g id="loecher"></g></mask>
+ <rect id="schleier" width="820" height="392" fill="#f4f2ec" opacity="0" mask="url(#spot)"/>
  <text x="16" y="404" font-size="12" style="fill:#666">Ohne Sticky oder Laptop regelt das Board mit dem letzten Sollwert weiter. Versagt die Software, trennt der Begrenzer.</text>
 </svg>
+
+<div class="bauplan">
+ <div class="schritte" id="schritte"></div>
+ <div id="schrittText" aria-live="polite"></div>
+</div>
+<details><summary>Alle Schritte als Liste</summary><ol id="schrittListe"></ol></details>
 
 <div class="zwei">
  <div class="tom"><h3>Tom</h3><ul>
@@ -134,7 +172,103 @@ button.pille{font:inherit;font-size:14px;background:none;border:2px solid #111;b
  </ul></div>
 </div>
 
-<h2>2 · Am Sticky (1 bpp, echtes Raster)</h2>
+<h2>2 · Pinbelegung XIAO ESP32-C3</h2>
+<p class="k">Vorschlag für zwei PT1000 an MAX31865 (SPI) und ein Stellglied. Gefüllte Punkte sind belegt, orange ist der Ausgang zum Stellglied.</p>
+<svg class="pins" viewBox="0 0 640 360" role="img" aria-label="Pinbelegung XIAO ESP32-C3 von oben">
+<text x="320" y="20" font-size="12" text-anchor="middle" style="fill:#666">von oben, USB-C oben</text>
+<rect x="250" y="60" width="140" height="262" rx="12" fill="#f4f2ec" stroke="#111" stroke-width="3"/>
+<rect x="296" y="44" width="48" height="24" rx="6" fill="#111"/>
+<text x="320" y="196" font-size="15" font-weight="bold" text-anchor="middle">XIAO</text>
+<text x="320" y="214" font-size="13" text-anchor="middle">ESP32-C3</text>
+<circle cx="320" cy="300" r="6" fill="none" stroke="#111" stroke-width="2"/><circle cx="320" cy="300" r="2" fill="#111"/>
+<text x="320" y="345" font-size="11.5" text-anchor="middle">Antenne (U.FL) immer aufstecken</text>
+<circle cx="250" cy="92" r="7" fill="#f4f2ec" stroke="#111" stroke-width="2"/>
+<text x="264" y="97" font-size="13" font-weight="bold">D0</text>
+<text x="216" y="97" font-size="13" text-anchor="end" style="fill:#666">frei · Strapping</text>
+<circle cx="250" cy="126" r="7" fill="#111" stroke="#111" stroke-width="2"/>
+<text x="264" y="131" font-size="13" font-weight="bold">D1</text>
+<line x1="236" y1="126" x2="222" y2="126" stroke="#111" stroke-width="2"/>
+<text x="216" y="131" font-size="13" text-anchor="end">CS Gargut-Fühler</text>
+<circle cx="250" cy="160" r="7" fill="#d4561f" stroke="#d4561f" stroke-width="2"/>
+<text x="264" y="165" font-size="13" font-weight="bold">D2</text>
+<line x1="236" y1="160" x2="222" y2="160" stroke="#d4561f" stroke-width="2"/>
+<text x="216" y="165" font-size="13" text-anchor="end" font-weight="bold">Stellglied (SSR/MOSFET)</text>
+<circle cx="250" cy="194" r="7" fill="#111" stroke="#111" stroke-width="2"/>
+<text x="264" y="199" font-size="13" font-weight="bold">D3</text>
+<line x1="236" y1="194" x2="222" y2="194" stroke="#111" stroke-width="2"/>
+<text x="216" y="199" font-size="13" text-anchor="end">CS Garraum-Fühler</text>
+<circle cx="250" cy="228" r="7" fill="#f4f2ec" stroke="#111" stroke-width="2"/>
+<text x="264" y="233" font-size="13" font-weight="bold">D4</text>
+<text x="216" y="233" font-size="13" text-anchor="end" style="fill:#666">frei (SDA)</text>
+<circle cx="250" cy="262" r="7" fill="#f4f2ec" stroke="#111" stroke-width="2"/>
+<text x="264" y="267" font-size="13" font-weight="bold">D5</text>
+<text x="216" y="267" font-size="13" text-anchor="end" style="fill:#666">frei (SCL)</text>
+<circle cx="250" cy="296" r="7" fill="#f4f2ec" stroke="#111" stroke-width="2"/>
+<text x="264" y="301" font-size="13" font-weight="bold">D6</text>
+<text x="216" y="301" font-size="13" text-anchor="end" style="fill:#666">frei (TX)</text>
+<circle cx="390" cy="92" r="7" fill="#111" stroke="#111" stroke-width="2"/>
+<text x="376" y="97" font-size="13" font-weight="bold" text-anchor="end">5V</text>
+<line x1="404" y1="92" x2="418" y2="92" stroke="#111" stroke-width="2"/>
+<text x="424" y="97" font-size="13">5 V vom Netzteil</text>
+<circle cx="390" cy="126" r="7" fill="#111" stroke="#111" stroke-width="2"/>
+<text x="376" y="131" font-size="13" font-weight="bold" text-anchor="end">GND</text>
+<line x1="404" y1="126" x2="418" y2="126" stroke="#111" stroke-width="2"/>
+<text x="424" y="131" font-size="13">Masse</text>
+<circle cx="390" cy="160" r="7" fill="#111" stroke="#111" stroke-width="2"/>
+<text x="376" y="165" font-size="13" font-weight="bold" text-anchor="end">3V3</text>
+<line x1="404" y1="160" x2="418" y2="160" stroke="#111" stroke-width="2"/>
+<text x="424" y="165" font-size="13">3,3 V → MAX31865</text>
+<circle cx="390" cy="194" r="7" fill="#111" stroke="#111" stroke-width="2"/>
+<text x="376" y="199" font-size="13" font-weight="bold" text-anchor="end">D10</text>
+<line x1="404" y1="194" x2="418" y2="194" stroke="#111" stroke-width="2"/>
+<text x="424" y="199" font-size="13">MOSI → SDI</text>
+<circle cx="390" cy="228" r="7" fill="#111" stroke="#111" stroke-width="2"/>
+<text x="376" y="233" font-size="13" font-weight="bold" text-anchor="end">D9</text>
+<line x1="404" y1="228" x2="418" y2="228" stroke="#111" stroke-width="2"/>
+<text x="424" y="233" font-size="13">MISO ← SDO · BOOT</text>
+<circle cx="390" cy="262" r="7" fill="#111" stroke="#111" stroke-width="2"/>
+<text x="376" y="267" font-size="13" font-weight="bold" text-anchor="end">D8</text>
+<line x1="404" y1="262" x2="418" y2="262" stroke="#111" stroke-width="2"/>
+<text x="424" y="267" font-size="13">SCK · Strapping</text>
+<circle cx="390" cy="296" r="7" fill="#f4f2ec" stroke="#111" stroke-width="2"/>
+<text x="376" y="301" font-size="13" font-weight="bold" text-anchor="end">D7</text>
+<text x="424" y="301" font-size="13" style="fill:#666">frei (RX)</text>
+</svg>
+<div class="tab"><table><tr><th>Pin</th><th>GPIO</th><th>Anschluss</th><th>Hinweis</th></tr>
+<tr><td class="frei"><b>D0</b></td><td class="frei">GPIO2</td><td class="frei">–</td><td class="frei">Strapping-Pin, frei lassen</td></tr>
+<tr><td><b>D1</b></td><td>GPIO3</td><td>CS MAX31865 Gargut</td><td>10 kΩ nach 3V3</td></tr>
+<tr><td><b>D2</b></td><td>GPIO4</td><td>Stellglied: SSR-Eingang bzw. MOSFET-Gate</td><td>10 kΩ nach GND, damit beim Booten aus</td></tr>
+<tr><td><b>D3</b></td><td>GPIO5</td><td>CS MAX31865 Garraum</td><td>10 kΩ nach 3V3</td></tr>
+<tr><td class="frei"><b>D4/D5</b></td><td class="frei">GPIO6/7</td><td class="frei">–</td><td class="frei">frei für I²C (z. B. Summer, kleines Display)</td></tr>
+<tr><td class="frei"><b>D6/D7</b></td><td class="frei">GPIO21/20</td><td class="frei">–</td><td class="frei">UART, frei</td></tr>
+<tr><td><b>D8</b></td><td>GPIO8</td><td>SCK → CLK beider MAX31865</td><td>Strapping-Pin, nur Eingänge daran</td></tr>
+<tr><td><b>D9</b></td><td>GPIO9</td><td>MISO ← SDO beider MAX31865</td><td>hängt an der BOOT-Taste</td></tr>
+<tr><td><b>D10</b></td><td>GPIO10</td><td>MOSI → SDI beider MAX31865</td><td></td></tr>
+<tr><td><b>3V3</b></td><td></td><td>VIN beider MAX31865</td><td></td></tr>
+<tr><td><b>5V</b></td><td></td><td>5 V vom Netzteil</td><td>entweder USB-C oder 5-V-Pin speisen, nicht beides</td></tr>
+<tr><td><b>GND</b></td><td></td><td>Masse für alles</td><td></td></tr>
+</table></div>
+<ul class="hinweis">
+ <li>Die Strapping-Pins GPIO2, 8 und 9 entscheiden beim Start über den Boot-Modus. Deshalb bleibt D0 frei, und an D8/D9 hängen nur Eingänge bzw. Tri-State-Ausgänge.</li>
+ <li>Viele DC-Halbleiterrelais schalten ab 3 V direkt. Braucht der Eingang mehr als etwa 10 mA, treibt ihn ein NPN-Transistor oder MOSFET aus 5 V (Tom).</li>
+ <li>Die Stiftleisten liegen meist lose bei und werden selbst eingelötet.</li>
+</ul>
+
+<h2>3 · Einkaufsliste</h2>
+<div class="tab"><table>
+ <tr><th>Teil</th><th>Worauf achten</th><th>Wer</th><th>Stand</th></tr>
+ <tr><td><b>XIAO ESP32-C3</b> mit Antenne</td><td>Seeed Studio, Antenne liegt bei</td><td>Markus</td><td><b>bestellt</b></td></tr>
+ <tr><td>Steckbrett, Jumperkabel, 10-kΩ-Widerstände</td><td>für die Schritte 1–4</td><td>Markus</td><td>offen</td></tr>
+ <tr><td>2× PT1000-Fühler</td><td>Edelstahlhülse, Kabel PTFE oder Silikon bis 250 °C, 4-Leiter; 1× Garraum, 1× Einstechfühler</td><td class="t">Tom</td><td>offen</td></tr>
+ <tr><td>2× MAX31865-Modul</td><td>Ausführung für PT1000 (Referenzwiderstand 4,3 kΩ), auf 4-Leiter gebrückt</td><td class="t">Tom</td><td>offen</td></tr>
+ <tr><td>Halbleiterrelais</td><td>DC-gesteuert ab 3 V, ≥ 25 A, Nulldurchgang, Markenware (Fälschungen sind häufig), Kühlkörper</td><td class="t">Tom</td><td>offen</td></tr>
+ <tr><td>Temperaturbegrenzer</td><td>Öffner, z. B. 150 °C, Schaltstrom deutlich über 6,5 A (1,5 kW), am besten mit Wiedereinschaltsperre</td><td class="t">Tom</td><td>offen</td></tr>
+ <tr><td>5-V-Netzteil</td><td>≥ 1 A, eingebaut oder als Steckernetzteil</td><td class="t">Tom</td><td>offen</td></tr>
+ <tr><td>Gehäuse und Kleinteile</td><td>Schutzklasse I mit Schutzleiter, Klemmen, Kabelverschraubungen, Zugentlastung, Sicherung</td><td class="t">Tom</td><td>offen</td></tr>
+ <tr><td>Für Schritt 4 (ohne Netz)</td><td>12-V-Netzteil, Heizwiderstand ca. 10 Ω / 25 W, Logic-Level-MOSFET (bei 3,3 V voll durchgesteuert), Becher</td><td>Markus + Tom</td><td>offen</td></tr>
+</table></div>
+
+<h2>4 · Am Sticky (1 bpp, echtes Raster)</h2>
 <p class="k">Simulierter Räuchertag ab 12:00: erst Trocknen bei 60 °C, ab 12:40 Garen bei 95 °C. Modell: Strecke 1. Ordnung mit Totzeit (T ≈ 25 min, Tt ≈ 40 s, Fühler 20 s), Heizung 0–100 %. Zeit laufen lassen, Sollwert am „Drehrad“ ändern (gilt ab dem gewählten Zeitpunkt), P/I/D verstellen.</p>
 
 <div class="regler">
@@ -160,7 +294,7 @@ button.pille{font:inherit;font-size:14px;background:none;border:2px solid #111;b
 <figure class="quer"><div class="dev"><canvas id="alarm" width="800" height="480"></canvas></div>
 <figcaption>Alarm (hier Fühlerbruch um 14:30). Das Board hat die Heizung schon abgeschaltet, bevor der Sticky piept; der Sticky meldet nur. Gleiches Bild bei Übertemperatur (Sticky-Grenze 130 °C) und bei „keine Daten seit 2 min“.</figcaption></figure>
 
-<h2>3 · Was passiert wenn …</h2>
+<h2>5 · Was passiert wenn …</h2>
 <div class="tab"><table>
  <tr><th>Fall</th><th>Board</th><th>Sticky</th><th>Hardware</th></tr>
  <tr><td>Funk weg, Sticky schläft, Akku leer</td><td>regelt mit letztem Sollwert weiter</td><td>„Funk weg“, Lücke, Ton nach 2 min</td><td>–</td></tr>
@@ -170,7 +304,7 @@ button.pille{font:inherit;font-size:14px;background:none;border:2px solid #111;b
  <tr><td>SSR legiert durch</td><td>merkt es nur am Ist</td><td>Übertemperatur-Alarm</td><td class="t">Begrenzer 150 °C trennt</td></tr>
 </table></div>
 
-<h2>4 · Funkzeilen</h2>
+<h2>6 · Funkzeilen</h2>
 <p>Kurze Textzeilen, je ESP-NOW-Paket eine (max. 250 Byte). Unbekannte Namen zeigt der Sticky als neues Instrument.</p>
 <pre>Board → Sticky, 1×/s           Sticky → Board, nur bei Änderung
 ist   93.4 C                   soll 95
@@ -179,13 +313,13 @@ y     42 %                     tn   400
 gut   71.8 C                   tv   30
 stat  ok                       → Board antwortet mit derselben Zeile (Echo)</pre>
 
-<h2>5 · Ohne Sticky: Toms Laptop</h2>
+<h2>7 · Ohne Sticky: Toms Laptop</h2>
 <p>Mag Tom den Sticky nicht, nimmt er seinen Laptop. Das Board spricht dieselben Textzeilen auch über seine eigene USB-Buchse (nicht die des Sticky), also reicht ein serielles Terminal; für Kurven ein kleines Python-Skript oder sein gewohntes Messprogramm. Ohne Kabel: ein zweiter XIAO am Laptop als ESP-NOW-Brücke, oder das Board stellt eine kleine Webseite ins WLAN bzw. spricht BLE (Web Bluetooth im Browser).</p>
 <pre>Laptop  ── USB (seriell, 115200) ──  Board          ist 93.4 C / soll 95 / y 42 %
 Laptop  ── USB ── XIAO-Brücke ~~ ESP-NOW ~~ Board   (Sticky kann parallel mithören)</pre>
 <p class="k">Sticky und Laptop sind gleichwertige Bedienteile; der Regler und die Sicherheit bleiben auf dem Board und in Toms Hardware. Beide gleichzeitig geht: wer zuletzt den Sollwert ändert, gilt, das Board meldet den neuen Wert an alle.</p>
 
-<h2>6 · Mit Tom klären</h2>
+<h2>8 · Mit Tom klären</h2>
 <p>PT1000 oder Thermoelement? SSR oder Relais (Takt, Verschleiß)? Welcher Begrenzer, welcher Grenzwert? Startwerte aus einer Sprungantwort (Tt, T, Ks) nach CHR statt Autotune? Und: welche anderen Messgeräte von Tom könnten per BLE einfach mitlaufen (Multimeter, Stromzange)?</p>
 </main>
 
@@ -403,5 +537,64 @@ rechne();
 // Alarm-Vorschau: fester Lauf mit Fühlerbruch um 14:30
 const simA = simuliere({ ...opts(), bruch: true });
 alarmbild($('alarm'), simA, Math.round((BRUCH + 120) / DT), opts());
+
+// ---------- Bauplan: Schritte heben Teile im Schema hervor ----------
+const TEILE = { sticky: [296, 10, 308, 112], laptop: [644, 16, 180, 96], funk: [418, 118, 48, 80], usb: [552, 108, 190, 92],
+  fuehler: [8, 196, 136, 108], wandler: [156, 196, 128, 108], board: [294, 190, 292, 120], ssr: [596, 196, 108, 108],
+  heizung: [712, 196, 100, 108], netz: [196, 322, 612, 60] };
+const SCHRITTE = [
+  { t: 'Board in Betrieb', wer: ['markus'], teile: ['board', 'usb', 'laptop'],
+    text: 'Antenne an den U.FL-Stecker, Stiftleisten einlöten, per USB-C an den Laptop. Arduino-IDE oder PlatformIO mit Board „XIAO_ESP32C3“, ein Testprogramm schreibt 1×/s eine Zeile.',
+    pruef: 'Zeilen kommen im seriellen Monitor an (115200 Baud).' },
+  { t: 'Fühler lesen', wer: ['tom', 'software'], teile: ['fuehler', 'wandler', 'board', 'usb', 'laptop'],
+    text: 'MAX31865 auf dem Steckbrett an SPI (D8/D9/D10), CS an D3, PT1000 im 4-Leiter-Anschluss. Das Board gibt <code>ist 21.4 C</code> aus.',
+    pruef: 'Eiswasser 0,0 ± 0,3 °C, kochendes Wasser ≈ 100 °C (Luftdruck). Fühler abziehen → <code>stat fehler fuehler</code>.' },
+  { t: 'Funk zum Sticky', wer: ['software'], teile: ['fuehler', 'wandler', 'board', 'funk', 'sticky'],
+    text: 'Das Board sendet dieselben Zeilen per ESP-NOW. Station 12 im Sticky Lab zeigt den Kanal ohne Update als Instrument und schreibt CSV auf SD.',
+    pruef: 'Latenz und Paketverlust in der Station ablesen, Reichweite Garten → Küche ausprobieren.' },
+  { t: 'Regeln, noch ohne Netzspannung', wer: ['tom', 'software'], teile: ['fuehler', 'wandler', 'board', 'ssr', 'funk', 'sticky'],
+    text: 'Statt Ofen ein Becher Wasser: 12-V-Heizwiderstand über Logic-Level-MOSFET an D2. Der PID läuft auf dem Board, der Sollwert kommt vom Sticky – ein Mini-Sous-vide.',
+    pruef: 'Hält 50 °C auf ± 0,5 K. Sticky aus → regelt weiter. Fühler ab → Heizung aus.' },
+  { t: 'Lastkreis 230 V', wer: ['tom'], teile: ['ssr', 'heizung', 'netz', 'board'],
+    text: 'Nur Tom: Halbleiterrelais mit Kühlkörper, Temperaturbegrenzer in Reihe, LS/FI, Schutzleiter am Gehäuse, 5-V-Netzteil für das Board.',
+    pruef: 'Begrenzer im leeren Ofen auslösen lassen (Software-Grenze testweise hoch) → trennt. Board-Neustart → Ausgang bleibt aus.' },
+  { t: 'Einregeln und räuchern', wer: ['tom', 'markus'], teile: Object.keys(TEILE),
+    text: 'Sprungantwort bei 30 % Heizleistung aufnehmen (CSV vom Sticky), Ks, Tt und T ablesen, Startwerte nach CHR, Feinschliff am Sticky.',
+    pruef: 'Sprung 60 → 95 °C mit unter 2 K Überschwingen. Dann kommt der Fisch rein.' },
+];
+const WER = { tom: 'Tom', software: 'Software', markus: 'Markus' };
+const svgNS = 'http://www.w3.org/2000/svg', loecher = $('loecher'), schleier = $('schleier');
+const werHtml = (s) => s.wer.map((w) => `<span class="wer ${w}">${WER[w]}</span>`).join('');
+let aktiv = -1, bauLauf = null, bauPlay;
+function stopBau() { clearInterval(bauLauf); bauLauf = null; if (bauPlay) bauPlay.textContent = '▶ Abspielen'; }
+function waehle(n) {
+  aktiv = n;
+  schleier.setAttribute('opacity', n < 0 ? 0 : 0.8);
+  const teile = n < 0 ? [] : SCHRITTE[n].teile;
+  // Maske jedes Mal neu bauen und neu zuweisen – Chrome zeichnet geänderte Masken sonst nicht immer neu
+  loecher.replaceChildren(...teile.map((k) => { const [x, y, w, h] = TEILE[k], r = document.createElementNS(svgNS, 'rect'); Object.entries({ x, y, width: w, height: h, rx: 12, fill: '#000' }).forEach(([a, v]) => r.setAttribute(a, v)); return r; }));
+  schleier.removeAttribute('mask'); schleier.getBBox(); schleier.setAttribute('mask', 'url(#spot)');
+  $('schritte').querySelectorAll('button[data-n]').forEach((b) => b.setAttribute('aria-pressed', +b.dataset.n === n));
+  const s = SCHRITTE[n];
+  $('schrittText').innerHTML = n < 0
+    ? '<h3>Gesamtbild</h3><p>Sechs Schritte vom ausgepackten Board bis zum Räuchern. Erst ab Schritt 5 ist Netzspannung im Spiel, und die ist Toms Sache. Schritt antippen oder abspielen.</p>'
+    : `<h3>${n + 1} · ${s.t}</h3><p>${werHtml(s)}</p><p>${s.text}</p><p class="pruef"><b>Prüfen:</b> ${s.pruef}</p>`;
+}
+(() => {
+  const leiste = $('schritte');
+  const knopf = (txt, n, kl) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = txt; if (n !== undefined) b.dataset.n = n; if (kl) b.className = kl; leiste.appendChild(b); return b; };
+  knopf('Alle', -1).addEventListener('click', () => { stopBau(); waehle(-1); });
+  SCHRITTE.forEach((s, i) => knopf(String(i + 1), i).addEventListener('click', () => { stopBau(); waehle(i); }));
+  bauPlay = knopf('▶ Abspielen', undefined, 'play');
+  bauPlay.addEventListener('click', () => {
+    if (bauLauf) return stopBau();
+    bauPlay.textContent = '❚❚ Anhalten';
+    waehle(aktiv >= SCHRITTE.length - 1 ? 0 : aktiv + 1);
+    bauLauf = setInterval(() => { if (aktiv >= SCHRITTE.length - 1) { stopBau(); waehle(-1); } else waehle(aktiv + 1); }, 5000);
+  });
+  $('schrittListe').innerHTML = SCHRITTE.map((s) => `<li><b>${s.t}</b> ${werHtml(s)}<br>${s.text}<br><i>Prüfen:</i> ${s.pruef}</li>`).join('');
+  waehle(-1);
+})();
+
 </script>
 </body></html>
