@@ -1827,11 +1827,14 @@ $('frageTest').onclick = () => {
 // Wer die Firmware aus dem Playground flasht und keine App hat, packt dieses ZIP auf eine microSD (FAT32): Menü,
 // Widgets, Hilfe, Strichschrift und Karussell. Gebaut aus einem LEEREN Profil – nur Standardinhalte, nichts
 // Persönliches (kein Home mit Visitenkarte, keine Zettel, kein Bordbuch). stand.txt je Ordner wie beim Abgleich.
-const GRUND_FW = '0.31.6';
-function grundausstattung() {
-  const s = { g: { id: '__grund', profil: '__grund', name: 'Grundausstattung' }, z: { geraet: { fw: GRUND_FW } } };
-  // Karussell nur mit Seiten, die ohne App etwas zeigen (Notiz, Bordbuch und Zettel kommen erst mit der App)
-  try { localStorage.setItem('sticky.p.__grund.karussell', 'Home, Timer, Wecker, Weltzeit, Waage, Lineal, Kritzel, Schrift, Rechner, Umrechner, Einstellungen'); } catch { /* egal */ }
+// Wiederholbar bauen: `node tools/grundausstattung.mjs` (frischer Headless-Browser, also garantiert leeres Profil).
+const GRUND_FW = '0.39.2';
+function grundausstattung({ fw = GRUND_FW, en = true } = {}) {
+  const s = { g: { id: '__grund', profil: '__grund', name: 'Grundausstattung' }, z: { geraet: { fw, en } } };
+  // Karussell nur mit Seiten, die ohne App etwas zeigen (Notiz, Handbuch, Spickzettel und Zettel kommen erst mit der
+  // App). Recorder (Karte), Tippen (Puffer) und Spiel (Burgduell lokal ab FW 0.39.0) gehen ohne Handy.
+  try { localStorage.setItem('sticky.p.__grund.karussell', 'Home, Timer, Wecker, Weltzeit, Waage, Lineal, Recorder, Tippen, Kritzel, Schrift, Rechner, Umrechner, Spiel, Einstellungen'); } catch { /* egal */ }
+  const zeit = new TextEncoder().encode(`format 24\neinheiten metrisch\nsprache ${en ? 'en' : 'de'}\n`);   // am Sticky umstellbar
   return baue(s, () => {
     const enc = new TextEncoder(), dateien = [];
     const ordner = (pfad, liste) => {
@@ -1839,16 +1842,23 @@ function grundausstattung() {
       const stand = liste.map((d) => `${d.n} ${crc32(d.daten).toString(16).padStart(8, '0')}`).join('\n') + '\n';
       dateien.push({ p: `soll/${pfad}/stand.txt`, daten: enc.encode(stand) });
     };
-    ordner('einstellungen', [{ n: 'karussell.txt', daten: enc.encode(karussellText()) }, { n: 'lage.txt', daten: enc.encode(lageText()) }]);
+    ordner('einstellungen', [{ n: 'karussell.txt', daten: enc.encode(karussellText()) }, { n: 'lage.txt', daten: enc.encode(lageText()) }, { n: 'zeit.txt', daten: zeit }]);
     ordner('hilfe', hilfeDateien());
     ordner('schrift', [{ n: 'zeichen.bin', daten: glyphenBlatt() }, { n: 'bild.bin', daten: schriftHintergrund() }, { n: 'alphabet.txt', daten: alphabetDatei() }]);
     for (const [name, bauen] of Object.entries(widgetBauer())) ordner(`widgets/${name}`, bauen());
-    dateien.push({ p: 'LIESMICH.txt', daten: enc.encode('EDC Sticky – Grundausstattung (Firmware ' + GRUND_FW + ')\n\n'
-      + 'Den Ordner "soll" auf eine microSD-Karte (FAT32) kopieren, Karte in den Sticky, neu starten.\n'
-      + 'Danach gibt es Menue (KI kurz auf Home), Timer, Wecker, Weltzeit, Wasserwaage, Lineal, Rechner,\n'
-      + 'Umrechner, Strichschrift und Einstellungen - ohne Handy. Mit der App kommen Home, Zettel und Notizen dazu.\n\n'
-      + 'Copy the "soll" folder to a FAT32 microSD card, insert it, restart the Sticky. You get the menu\n'
-      + '(KI short on Home) and all widgets without a phone. The app adds Home, notes and cards.\n') });
+    dateien.push({ p: en ? 'README.txt' : 'LIESMICH.txt', daten: enc.encode(en
+      ? `EDC Sticky - microSD base kit (firmware ${fw}, English)\n\n`
+        + 'Copy the "soll" folder to a FAT32 microSD card, insert it, restart the Sticky.\n'
+        + 'AI key short on Home opens the menu with groups: Time (timer, alarm, world time), Measure (level, ruler),\n'
+        + 'Capture (recorder, keyboard, doodle, handwriting), Calculate (calculator, converter), plus game and settings.\n'
+        + 'Up/Down = pages, Up+Down = help. Language, 12/24 h and units can be changed on the settings page.\n'
+        + 'The Android app adds Home with weather, notes, manuals and cheat sheets, and keeps everything in sync.\n'
+      : `EDC Sticky - Grundausstattung fuer die microSD (Firmware ${fw}, Deutsch)\n\n`
+        + 'Den Ordner "soll" auf eine microSD-Karte (FAT32) kopieren, Karte in den Sticky, neu starten.\n'
+        + 'KI kurz auf Home oeffnet das Menue mit Gruppen: Zeit (Timer, Wecker, Weltzeit), Messen (Waage, Lineal),\n'
+        + 'Notieren (Recorder, Tippen, Kritzel, Strichschrift), Rechnen (Rechner, Umrechner), dazu Spiel und Einstellungen.\n'
+        + 'Hoch/Runter = Seiten, beide = Hilfe. Sprache, 12/24 h und Einheiten auf der Einstellungsseite.\n'
+        + 'Die Android-App bringt Home mit Wetter, Notizen, Handbuch und Spickzettel dazu und haelt alles abgeglichen.\n') });
     return dateien;
   });
 }
@@ -1893,7 +1903,7 @@ window.__sticky.maschinenDuell = async () => {
   eintrag(`${T('Burgduell', 'Castle duel')}: ${spiel.text}`);
   return spiel.text;
 };   // zum Prüfen per WebView-Fernsteuerung (adb)
-window.__sticky.grundZip = () => zipBauen(grundausstattung());
+window.__sticky.grundZip = (opt) => zipBauen(grundausstattung(opt));
 
 tabsEinrichten();
 muster();
