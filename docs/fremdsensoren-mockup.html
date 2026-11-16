@@ -63,6 +63,9 @@ canvas.vergleich{background:var(--paper);image-rendering:auto;margin-bottom:6px}
 .legende i{display:inline-block;width:22px;height:0;border-top:3px solid #111;vertical-align:4px;margin-right:6px}
 .legende i.zp{border-color:var(--tom)}.legende i.sw{border-top:2px dashed #888}
 @media (max-width:760px){.wege{grid-template-columns:1fr}}
+svg.oszi{display:block;width:100%;height:auto;border-radius:6px;margin:0 0 6px}
+svg.oszi text{font-family:Consolas,Menlo,monospace}
+.vorsicht{border-left:6px solid var(--tom);background:var(--paper);border-radius:6px;padding:10px 14px;font-size:14px;margin:0 0 14px}
 @media (max-width:620px){.zwei{grid-template-columns:1fr}.regler{grid-template-columns:auto 1fr}.regler output{grid-column:2;text-align:left;margin-top:-6px}table{font-size:12.5px}th,td{padding:6px 6px}td:first-child{min-width:90px}}
 </style></head><body><main>
 
@@ -388,7 +391,47 @@ Laptop  ── USB ── XIAO-Brücke ~~ ESP-NOW ~~ Board   (Sticky kann parall
 <canvas class="vergleich" id="vergleich" width="800" height="300"></canvas>
 <div class="legende"><span><i></i>PID (Bastel-Board)</span><span><i class="zp"></i>Zweipunkt (mechanisch)</span><span><i class="sw"></i>Soll</span><span id="schwankung"></span></div>
 
-<h2>9 · Mit Tom klären</h2>
+<h2>9 · Aus Markus' Werkstatt</h2>
+<p>Ein kleines FNIRSI-Labornetzteil und ein FNIRSI-Taschenoszi sind schon da. Beide passen in den Bauplan, vor allem in Schritt 4, bei dem noch keine Netzspannung im Spiel ist.</p>
+<div class="wege">
+ <div><h3>Labornetzteil</h3><p class="unter">einstellbare Spannung, Strombegrenzung</p><ul>
+  <li><b>Heizung für Schritt 4:</b> speist den 12-V-Heizwiderstand im Becher. Die Strombegrenzung ist die Sicherung, das Display zeigt die echte Leistung (z. B. 12 V × 1,2 A = 14,4 W).</li>
+  <li><b>Strecke vermessen:</b> feste Leistung einstellen und die Sprungantwort aufnehmen. Daraus Ks, Tt und T für die Startwerte.</li>
+  <li><b>Akku-Laufzeit:</b> den XIAO mit 3,7–4,2 V wie aus einem Akku speisen, Strom im Schlaf und beim Senden ablesen.</li>
+  <li><b>Unterspannung:</b> langsam herunterdrehen, bis der XIAO neu startet. Die Heizung muss dabei aus bleiben.</li>
+ </ul></div>
+ <div><h3>Taschenoszi</h3><p class="unter">Steuersignale, nur Kleinspannung</p><ul>
+  <li><b>Takt an D2:</b> bei 42 % muss der Ausgang 4,2 s an und 5,8 s aus sein. So wird die Firmware ohne Heizung geprüft.</li>
+  <li><b>Reset aufzeichnen:</b> Single-Shot an D2 beim Neustart. Bleibt die Spur flach, wirkt der Pull-down.</li>
+  <li><b>Funk-Latenz:</b> Sender und Empfänger schalten je einen Pin. Mit zwei Kanälen direkt ablesen, mit einem Kanal über zwei Widerstände zusammenführen.</li>
+  <li><b>Energie pro Paket:</b> 1-Ω-Shunt in der Versorgung zeigt die Stromspitze jedes ESP-NOW-Pakets.</li>
+  <li><b>SPI am MAX31865:</b> CLK und CS bei langem Fühlerkabel ansehen.</li>
+ </ul></div>
+ <div><h3>Für fast nichts dazu</h3><p class="unter">ein paar Cent</p><ul>
+  <li><b>Fühler simulieren:</b> Festwiderstände 1000 Ω und 1385 Ω (0,1 %) stehen für 0 °C und 100 °C. Der Messwandler lässt sich so ohne Eiswasser prüfen.</li>
+  <li><b>Shunt 1 Ω</b> für die Strommessung mit dem Oszi.</li>
+  <li><b>Zweiter XIAO</b> als Funk-Brücke oder Gegenstelle für die Latenzmessung.</li>
+ </ul></div>
+</div>
+<svg class="oszi" viewBox="0 0 820 340" role="img" aria-label="Oszi-Bild: oben D2 im 10-Sekunden-Takt mit 42 Prozent Einschaltdauer, unten D2 beim Reset ohne Zucken">
+ <rect width="820" height="340" fill="#10231a"/>
+ <line x1="40" y1="20" x2="40" y2="300" stroke="#2f5a43" stroke-width="1"/><line x1="114" y1="20" x2="114" y2="300" stroke="#2f5a43" stroke-width="1"/><line x1="188" y1="20" x2="188" y2="300" stroke="#2f5a43" stroke-width="1"/><line x1="262" y1="20" x2="262" y2="300" stroke="#2f5a43" stroke-width="1"/><line x1="336" y1="20" x2="336" y2="300" stroke="#2f5a43" stroke-width="1"/><line x1="410" y1="20" x2="410" y2="300" stroke="#2f5a43" stroke-width="1"/><line x1="484" y1="20" x2="484" y2="300" stroke="#2f5a43" stroke-width="1"/><line x1="558" y1="20" x2="558" y2="300" stroke="#2f5a43" stroke-width="1"/><line x1="632" y1="20" x2="632" y2="300" stroke="#2f5a43" stroke-width="1"/><line x1="706" y1="20" x2="706" y2="300" stroke="#2f5a43" stroke-width="1"/><line x1="780" y1="20" x2="780" y2="300" stroke="#2f5a43" stroke-width="1"/><line x1="40" y1="20" x2="780" y2="20" stroke="#2f5a43" stroke-width="1"/><line x1="40" y1="55" x2="780" y2="55" stroke="#2f5a43" stroke-width="1"/><line x1="40" y1="90" x2="780" y2="90" stroke="#2f5a43" stroke-width="1"/><line x1="40" y1="125" x2="780" y2="125" stroke="#2f5a43" stroke-width="1"/><line x1="40" y1="160" x2="780" y2="160" stroke="#2f5a43" stroke-width="1"/><line x1="40" y1="195" x2="780" y2="195" stroke="#2f5a43" stroke-width="1"/><line x1="40" y1="230" x2="780" y2="230" stroke="#2f5a43" stroke-width="1"/><line x1="40" y1="265" x2="780" y2="265" stroke="#2f5a43" stroke-width="1"/><line x1="40" y1="300" x2="780" y2="300" stroke="#2f5a43" stroke-width="1"/>
+ <text x="44" y="38" font-size="13" fill="#9fe0b8">CH1 · D2 bei y = 42 %</text>
+ <path d="M40,130 L40,130 L40,80 L195.4,80 L195.4,130 L410,130 L410,80 L565.4,80 L565.4,130 L780,130" fill="none" stroke="#e8f55a" stroke-width="2.5"/>
+ <text x="117.7" y="72" font-size="12" fill="#e8f55a" text-anchor="middle">4,2 s an</text>
+ <text x="302.7" y="150" font-size="12" fill="#e8f55a" text-anchor="middle">5,8 s aus</text>
+ <text x="44" y="198" font-size="13" fill="#9fe0b8">CH1 · D2 beim Reset (Single-Shot)</text>
+ <path d="M40,280 L484,280 L484,230 L639.4,230 L639.4,280 L780,280" fill="none" stroke="#e8f55a" stroke-width="2.5"/>
+ <line x1="262" y1="190" x2="262" y2="300" stroke="#ff8a5c" stroke-width="2" stroke-dasharray="4 4"/>
+ <text x="268" y="216" font-size="12" fill="#ff8a5c">Reset</text>
+ <text x="373" y="270" font-size="12" fill="#9fe0b8" text-anchor="middle">bleibt flach – kein Zucken</text>
+ <text x="490" y="216" font-size="12" fill="#e8f55a">Regler läuft</text>
+ <text x="776" y="330" font-size="12" fill="#9fe0b8" text-anchor="end">2 s/Teilung · 2 V/Teilung</text>
+</svg>
+<p class="k">So sollte es auf dem Oszi aussehen (gezeichnet, nicht gemessen): oben der Zeitproportional-Takt, unten der Neustart ohne Zucken am Ausgang.</p>
+<div class="vorsicht"><b>Nicht an 230 V:</b> Das Taschenoszi gehört nicht an die Netzseite, also nicht an den Lastausgang des Halbleiterrelais. Messungen dort macht Tom mit Trenntrafo oder Differenztastkopf.</div>
+
+<h2>10 · Mit Tom klären</h2>
 <p>PT1000 oder Thermoelement? SSR oder Relais (Takt, Verschleiß)? Welcher Begrenzer, welcher Grenzwert? Startwerte aus einer Sprungantwort (Tt, T, Ks) nach CHR statt Autotune? Und: welche anderen Messgeräte von Tom könnten per BLE einfach mitlaufen (Multimeter, Stromzange)?</p>
 </main>
 
