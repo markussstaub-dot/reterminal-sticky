@@ -689,6 +689,9 @@ in eine Tagesdatei zum Teilen. Funktioniert, ist aber ein einziger Topf.
 - umgesetzt **Lurch-Stimme am Fold** (16.11.2026): Auswahl „Lurch spricht am“ automatisch / Zenbook / Fold / beiden.
   Automatisch = Ort „Zuhause“ (Ortsliste) → Zenbook, sonst Fold; ohne Ort „Zuhause“ wie bisher das Zenbook. Der
   Hauslurch schickt die Piper-Stimme als WAV mit, die App spielt sie ab (Handy-Lautsprecher oder Ohrhörer)
+- umgesetzt **Lurch satzweise und gemessen** (16.11.2026, nach der ersten Fahrt): erster Satz kommt sofort, weitere
+  holt die App über `/weiter` und spielt sie nacheinander; Zeiten ab Loslassen stehen in der Aufnahme und gehen per
+  `/messung` ins Lurch-Protokoll; die App meldet „unterwegs“, wenn ein Ort „Zuhause“ bekannt ist und sie nicht dort ist
 - geparkt **Weg 2, Sticky als BLE-Taste fürs Handy**: zweites BLE-Profil (HID, Consumer-Taste „Sprachbefehl“ bzw.
   Diktiertaste der Tastatur) neben dem eigenen Dienst. KI halten löst dann am Handy Assistent oder Tastatur-Diktat in
   jeder App aus; gesprochen wird ins Handy-Mikro. Mittlerer Aufwand (Kopplung, zweites Profil, Tastenregel)

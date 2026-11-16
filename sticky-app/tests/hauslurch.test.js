@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { adresseNormal, kurzAntwort, anHauslurch, hauslurchStatus, stimmeZiel } from '../src/hauslurch.js';
+import { adresseNormal, kurzAntwort, anHauslurch, hauslurchStatus, stimmeZiel, weitereSaetze, istUnterwegs } from '../src/hauslurch.js';
 
 test('Adresse: Schema und Standardport ergänzen', () => {
   assert.equal(adresseNormal('192.168.2.61'), 'http://192.168.2.61:8765');
@@ -54,4 +54,18 @@ test('Wunsch „Stimme aufs Fold“ geht mit, Ton kommt zurück', async () => {
   assert.equal(r.ton, 'UklGRg==');
   await anHauslurch('Uhrzeit', { adresse: 'zenbook', schluessel: 'k' }, post);
   assert.deepEqual(daten, { text: 'Uhrzeit' });
+});
+
+test('Folgesätze nacheinander abholen', async () => {
+  const fach = [{ satz: 'Zwei.', ton: 'B', weiter: 'x' }, { satz: 'Drei.', weiter: 'x' }, { fertig: true }];
+  const get = async (url) => { assert.match(url, /\/weiter\?id=x$/); return { status: 200, data: fach.shift() }; };
+  const saetze = [];
+  await weitereSaetze('x', { adresse: 'zenbook', schluessel: 'k' }, get, (s) => saetze.push(s));
+  assert.deepEqual(saetze, [{ satz: 'Zwei.', ton: 'B' }, { satz: 'Drei.' }]);
+});
+
+test('unterwegs nur, wenn „Zuhause“ bekannt ist', () => {
+  assert.equal(istUnterwegs({ orte: [{ name: 'Zuhause' }], aktuellerOrt: null }), true);
+  assert.equal(istUnterwegs({ orte: [{ name: 'Zuhause' }], aktuellerOrt: 'Zuhause' }), false);
+  assert.equal(istUnterwegs({ orte: [], aktuellerOrt: null }), false);
 });

@@ -1,5 +1,5 @@
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
-import { anHauslurch, hauslurchStatus, kurzAntwort, stimmeZiel } from './hauslurch.js';
+import { anHauslurch, hauslurchStatus, kurzAntwort, stimmeZiel, weitereSaetze, istUnterwegs, adresseNormal } from './hauslurch.js';
 import { qrAusBild, deuteQr } from './qrlesen.js';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Clipboard } from '@capacitor/clipboard';
@@ -22,10 +22,23 @@ const lurchWert = (k) => { try { return localStorage.getItem(`sticky.hauslurch${
 const lurchAn = () => lurchWert('') === '1' && !!lurchWert('Adresse');
 const lurchZiel = () => ({ adresse: lurchWert('Adresse'), schluessel: lurchWert('Schluessel'),
   // wo die Lurch-Stimme spricht: automatisch zu Hause Zenbook, unterwegs Fold (Ort „Zuhause“ in Mehr → Orte)
-  stimme: stimmeZiel(lurchWert('Stimme') || 'auto', { orte: orteLesen(orteText()), aktuellerOrt }) });
-/** Lurch-Stimme am Fold abspielen (WAV aus dem Hauslurch, Base64) */
-function lurchSpielen(ton) {
-  try { new Audio(`data:audio/wav;base64,${ton}`).play().catch((e) => eintrag(T(`Lurch-Stimme: ${e.message}`, `Lurch voice: ${e.message}`), true)); } catch { /* egal */ }
+  stimme: stimmeZiel(lurchWert('Stimme') || 'auto', { orte: orteLesen(orteText()), aktuellerOrt }),
+  lage: istUnterwegs({ orte: orteLesen(orteText()), aktuellerOrt }) ? 'unterwegs' : '' });
+/** Lurch-Stimme am Fold: Sätze (WAV, Base64) nacheinander abspielen; `beimStart` meldet den ersten Ton */
+const lurchSchlange = [];
+let lurchSpielt = false;
+function lurchSpielen(ton, beimStart) {
+  lurchSchlange.push({ ton, beimStart });
+  if (!lurchSpielt) lurchNaechster();
+}
+function lurchNaechster() {
+  const n = lurchSchlange.shift();
+  if (!n) { lurchSpielt = false; return; }
+  lurchSpielt = true;
+  const a = new Audio(`data:audio/wav;base64,${n.ton}`);
+  a.onended = a.onerror = () => lurchNaechster();
+  if (n.beimStart) a.addEventListener('playing', n.beimStart, { once: true });
+  a.play().catch((e) => { eintrag(T(`Lurch-Stimme: ${e.message}`, `Lurch voice: ${e.message}`), true); lurchNaechster(); });
 }
 /** HTTP ohne Umweg: in der App nativ (kein CORS, http im Heimnetz erlaubt), im Browser fetch */
 async function http(methode, url, headers, data) {
@@ -309,15 +322,30 @@ async function zeigeAufnahme(a) {
     const anLurch = lurchAn() && r.text && !r.unklar && !spaet;
     let notizDa = Promise.resolve();   // Lurch-Antwort erst nach „✓ Diktat“, sonst überschreibt die Bestätigung sie
     if (anLurch) {
-      anHauslurch(r.text, lurchZiel(), (url, kopf, daten) => http('POST', url, kopf, daten), T)
-        .then((h) => {
+      // Messung (Fahrt 16.11.: „laggy“): ab Loslassen der KI-Taste, geht zurück ins Lurch-Protokoll
+      const ab = () => Math.round(performance.now() - a.tLos);
+      const zeit = { text: ab() };
+      const ziel = lurchZiel();
+      anHauslurch(r.text, ziel, (url, kopf, daten) => http('POST', url, kopf, daten), T)
+        .then(async (h) => {
+          zeit.antwort = ab();
           const zeile = document.createElement('div');
           zeile.className = 'text';
           zeile.textContent = `🏠 ${h.antwort}`;
           text.after(zeile);
-          eintrag(T(`Hauslurch: ${h.antwort}`, `Hauslurch: ${h.antwort}`));
-          if (h.ton) lurchSpielen(h.ton);
+          if (h.ton) lurchSpielen(h.ton, () => { zeit.ton = ab(); });
           notizDa.then(() => lurchMeldung(`Lurch: ${kurzAntwort(h.antwort)}`, a.sitzung));
+          let ganz = h.antwort;
+          await weitereSaetze(h.weiter, ziel, (url, kopf) => http('GET', url, kopf), (s) => {
+            ganz += ` ${s.satz}`;
+            zeile.textContent = `🏠 ${ganz}`;
+            if (s.ton) lurchSpielen(s.ton);
+          });
+          zeit.fertig = ab();
+          eintrag(T(`Hauslurch: ${ganz}`, `Hauslurch: ${ganz}`));
+          werte.textContent += T(` · Lurch: Text ${zeit.text} ms, Antwort ${zeit.antwort} ms, alles ${zeit.fertig} ms`, ` · Lurch: text ${zeit.text} ms, answer ${zeit.antwort} ms, all ${zeit.fertig} ms`);
+          // Ton-Beginn kommt evtl. erst nach dem Abholen; kurz warten, dann ins Lurch-Protokoll
+          setTimeout(() => http('POST', `${adresseNormal(ziel.adresse)}/messung`, { 'Content-Type': 'application/json', 'X-Hauslurch-Schluessel': ziel.schluessel }, zeit).catch(() => {}), 1500);
         })
         .catch((e) => { eintrag(T(`Hauslurch: ${e.message}`, `Hauslurch: ${e.message}`), true); notizDa.then(() => lurchMeldung(T('Lurch nicht erreicht', 'Lurch not reached'), a.sitzung)); });
     }
