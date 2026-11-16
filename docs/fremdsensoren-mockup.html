@@ -57,11 +57,22 @@ button.pille{font:inherit;font-size:14px;background:none;border:2px solid #111;b
  <text x="450" y="86" font-size="12.5" text-anchor="middle">P/I/D, Alarm-Ton, CSV auf SD</text>
  <text x="450" y="101" font-size="11" text-anchor="middle" style="fill:#666">E-Ink 800×480, 1 bpp · regelt nicht</text>
 
+ <!-- Alternative: Toms Laptop -->
+ <g>
+  <rect x="664" y="22" width="140" height="78" rx="6" fill="#f4f2ec" stroke="#111" stroke-width="2" stroke-dasharray="6 4"/>
+  <rect x="652" y="100" width="164" height="8" rx="3" fill="#111"/>
+  <text x="733" y="44" font-size="13" font-weight="bold" text-anchor="middle">oder Toms Laptop</text>
+  <text x="733" y="62" font-size="11.5" text-anchor="middle">Terminal, Python,</text>
+  <text x="733" y="77" font-size="11.5" text-anchor="middle">sein Messprogramm</text>
+  <text x="733" y="92" font-size="10.5" text-anchor="middle" style="fill:#666">gleichwertig zum Sticky</text>
+  <path d="M560,196 L560,150 L733,150 L733,112" fill="none" stroke="#111" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#pf)" marker-start="url(#pf)"/>
+  <text x="572" y="172" font-size="11.5">USB seriell, Funk-Brücke</text><text x="572" y="187" font-size="11.5">oder WLAN/BLE</text>
+ </g>
  <!-- Funk -->
  <path d="M440,190 L440,170 L452,160 L428,146 L440,136 L440,122" fill="none" stroke="#111" stroke-width="2" marker-end="url(#pf)" marker-start="url(#pf)"/>
- <text x="464" y="148" font-size="13" font-weight="bold">ESP-NOW</text>
- <text x="464" y="164" font-size="12">ohne Router, ohne Koppeln · alt. BLE</text>
- <text x="464" y="179" font-size="12" style="fill:#666">↑ 1 Zeile/s · ↓ Sollwert, P/I/D</text>
+ <text x="418" y="148" font-size="13" font-weight="bold" text-anchor="end">ESP-NOW</text>
+ <text x="418" y="164" font-size="12" text-anchor="end">ohne Router, ohne Koppeln · alt. BLE</text>
+ <text x="418" y="180" font-size="12" style="fill:#666" text-anchor="end">↑ 1 Zeile/s · ↓ Sollwert, P/I/D</text>
 
  <!-- Untere Reihe -->
  <g font-size="12.5">
@@ -104,7 +115,7 @@ button.pille{font:inherit;font-size:14px;background:none;border:2px solid #111;b
  <text x="324" y="348" font-size="12.5" text-anchor="end" font-weight="bold">230 V L/N/PE</text>
  <text x="324" y="364" font-size="11.5" text-anchor="end">LS, FI, Zugentlastung</text>
  <text x="790" y="348" font-size="11.5" text-anchor="end" style="fill:#666">N</text>
- <text x="16" y="404" font-size="12" style="fill:#666">Der Sticky ist austauschbar (auch gegen Toms Laptop, s. Abschnitt 5): ohne ihn regelt das Board mit dem letzten Sollwert weiter. Versagt die Software, trennt der Begrenzer.</text>
+ <text x="16" y="404" font-size="12" style="fill:#666">Ohne Sticky oder Laptop regelt das Board mit dem letzten Sollwert weiter. Versagt die Software, trennt der Begrenzer.</text>
 </svg>
 
 <div class="zwei">
