@@ -1,5 +1,6 @@
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { anHauslurch, hauslurchStatus, kurzAntwort } from './hauslurch.js';
+import { qrAusBild, deuteQr } from './qrlesen.js';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Clipboard } from '@capacitor/clipboard';
 import { Spracherkennung, MODELLE, WOERTER_STANDARD, pcmBase64 } from './sprache.js';
@@ -1082,6 +1083,26 @@ $('lurchSchluessel').value = lurchWert('Schluessel');
 for (const [id, k, wert] of [['lurchAn', '', (el) => (el.checked ? '1' : '0')], ['lurchAdresse', 'Adresse', (el) => el.value.trim()], ['lurchSchluessel', 'Schluessel', (el) => el.value.trim()]]) {
   $(id).onchange = () => { try { localStorage.setItem(`sticky.hauslurch${k}`, wert($(id))); } catch { /* egal */ } };
 }
+// QR-Code abfotografieren (Hauslurch-Konsole 8): füllt Adresse und Schlüssel, setzt den Haken, testet gleich
+$('lurchQr').onchange = async () => {
+  const datei = $('lurchQr').files?.[0];
+  $('lurchQr').value = '';   // dasselbe Foto noch mal wählen können
+  if (!datei) return;
+  const aus = $('lurchErgebnis');
+  aus.textContent = T('lese QR-Code …', 'reading QR code …');
+  try {
+    const text = await qrAusBild(datei);
+    if (!text) { aus.textContent = T('✗ kein QR-Code erkannt – näher ran, gerade halten', '✗ no QR code found – get closer, hold straight'); return; }
+    const q = deuteQr(text);
+    if (q.art !== 'hauslurch' || !q.adresse || !q.schluessel) { aus.textContent = T('✗ das ist kein Hauslurch-Code', '✗ not a Hauslurch code'); return; }
+    $('lurchAdresse').value = q.adresse;
+    $('lurchSchluessel').value = q.schluessel;
+    $('lurchAn').checked = true;
+    for (const id of ['lurchAn', 'lurchAdresse', 'lurchSchluessel']) $(id).onchange();
+    eintrag(T(`Hauslurch eingerichtet: ${q.adresse}`, `Hauslurch set up: ${q.adresse}`));
+    $('lurchTest').click();
+  } catch (e) { aus.textContent = `✗ ${e.message}`; }
+};
 $('lurchTest').onclick = async () => {
   const aus = $('lurchErgebnis');
   aus.textContent = T('frage …', 'asking …');

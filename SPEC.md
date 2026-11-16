@@ -681,6 +681,11 @@ in eine Tagesdatei zum Teilen. Funktioniert, ist aber ein einziger Topf.
   Technik: in der APK `CapacitorHttp` (nativ, ohne CORS), im Browser `fetch`; `usesCleartextTraffic` im Manifest,
   weil der Lurch im Heimnetz ohne https läuft. Weg: erst Heimnetz-IP, später Tailscale (Konto legt Markus an).
   Simulator-Ton pulsiert jetzt silbenartig, damit Diktate im Browser nicht als „unklar“ hängen bleiben
+- umgesetzt **QR-Code abfotografieren** (Markus, 16.11.2026, „nie mehr IP-Adressen tippen“): Knopf unter dem
+  Hauslurch-Schalter; die Hauslurch-Konsole (8) zeigt `sticky:hauslurch?adresse=…&schluessel=…`, das Foto füllt
+  Adresse und Schlüssel, setzt den Haken und testet. Technik: Datei-Feld mit `capture` (Kamera-Recht im Manifest),
+  Auswertung offline mit jsQR (`qrlesen.js`, auch hell auf dunkel), das Foto wird nicht gespeichert.
+  Vorschlag: dieselbe Form `sticky:<art>?…` später für Orte, Spickzettel-Karten, Einstellungen fürs zweite Gerät
 - geparkt **Weg 2, Sticky als BLE-Taste fürs Handy**: zweites BLE-Profil (HID, Consumer-Taste „Sprachbefehl“ bzw.
   Diktiertaste der Tastatur) neben dem eigenen Dienst. KI halten löst dann am Handy Assistent oder Tastatur-Diktat in
   jeder App aus; gesprochen wird ins Handy-Mikro. Mittlerer Aufwand (Kopplung, zweites Profil, Tastenregel)

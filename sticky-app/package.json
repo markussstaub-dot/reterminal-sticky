@@ -20,6 +20,7 @@
     "@capacitor/filesystem": "^8.1.5",
     "@capacitor/geolocation": "^8.2.4",
     "@capacitor/share": "^8.0.3",
+    "jsqr": "^1.4.0",
     "pdfjs-dist": "^5.7.284",
     "qrcode-generator": "^1.5.2"
   },

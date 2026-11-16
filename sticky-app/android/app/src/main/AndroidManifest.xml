@@ -56,6 +56,8 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- QR-Code abfotografieren (Hauslurch einrichten): Kamera über das Datei-Feld mit capture -->
+    <uses-permission android:name="android.permission.CAMERA" />
     <!-- Notizen an Bubble Log schicken (Konsole dort). Signatur-Berechtigung: Sticky-App nach Bubble Log installieren -->
     <uses-permission android:name="app.bubblelog.microlino.permission.NOTIZ" />
     <queries><package android:name="app.bubblelog.microlino" /></queries>

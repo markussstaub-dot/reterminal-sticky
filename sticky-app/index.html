@@ -180,7 +180,8 @@
         <label class="lage"><span data-en="Also send dictation to the Hauslurch (Zenbook)">Diktat zusätzlich an den Hauslurch (Zenbook)</span> <input type="checkbox" id="lurchAn"></label>
         <input id="lurchAdresse" placeholder="Adresse, z. B. 192.168.2.61" data-en-placeholder="Address, e.g. 192.168.2.61" spellcheck="false" autocomplete="off">
         <input id="lurchSchluessel" type="password" placeholder="Schlüssel (aus config.json am Zenbook)" data-en-placeholder="Key (from config.json on the Zenbook)" autocomplete="off">
-        <div class="leiste"><button id="lurchTest" data-en="Test connection">Verbindung testen</button> <span id="lurchErgebnis" class="klein"></span></div>
+        <div class="leiste"><label class="dateiwahl"><input type="file" id="lurchQr" accept="image/*" capture="environment" hidden><span data-en="Photograph QR code">QR-Code abfotografieren</span></label><button id="lurchTest" data-en="Test connection">Verbindung testen</button> <span id="lurchErgebnis" class="klein"></span></div>
+        <p class="klein" data-en="QR code: on the Zenbook in the Hauslurch console choose 8, then photograph the screen – address and key are filled in.">QR-Code: am Zenbook in der Hauslurch-Konsole die 8 wählen, dann den Bildschirm abfotografieren – Adresse und Schlüssel sind eingetragen.</p>
         <p class="klein" data-en="Say a command (“set a timer for one minute”, “what's the weather”): only the text goes to the Zenbook at home, it answers aloud and the answer shows on the Sticky. The note is kept too, as a safety net if the Zenbook is off.">Befehl sagen („Stell einen Timer auf eine Minute“, „Wie wird das Wetter?“): nur der Text geht ans Zenbook zu Hause, er antwortet mit Stimme, die Antwort erscheint am Sticky. Die Notiz bleibt trotzdem, als Netz, falls das Zenbook aus ist.</p>
       </section>
       <section>
