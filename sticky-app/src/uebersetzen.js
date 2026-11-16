@@ -26,7 +26,9 @@ export function sprachWahlSetzen(w) {
 const berechne = () => { const w = sprachWahl(); return w === 'auto' ? HANDY_EN : w === 'en'; };
 
 let appEn = berechne();
-let stickyEn = null;          // zuletzt gemeldet; null = unbekannt (dann App-Sprache)
+let stickyEn = (() => {       // zuletzt gemeldet (über App-Neustarts gemerkt, s. stickyEnSetzen); null = unbekannt (dann App-Sprache)
+  try { const g = localStorage.getItem('sticky.spracheGemeldet'); return g === 'en' ? true : g === 'de' ? false : null; } catch { return null; }
+})();
 let stickyTiefe = 0;          // > 0: gerade wird für den Sticky gezeichnet
 let stickyFest = null;        // für ein bestimmtes Gerät (zweiter Sticky gleichzeitig): dessen Sprache
 
