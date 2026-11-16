@@ -1,4 +1,5 @@
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, CapacitorHttp } from '@capacitor/core';
+import { anHauslurch, hauslurchStatus, kurzAntwort } from './hauslurch.js';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Clipboard } from '@capacitor/clipboard';
 import { Spracherkennung, MODELLE, WOERTER_STANDARD, pcmBase64 } from './sprache.js';
@@ -15,6 +16,23 @@ const woerter = () => $('woerter').value.trim();
 const woerterbuch = () => paareLesen(document.getElementById('woerterbuch')?.value ?? WOERTERBUCH_STANDARD);
 /** Erkennung mit Wächter: kurze/leise Aufnahmen und nachgeplapperte Wortliste werden „(unklar)“, der Ton bleibt */
 const pttAblage = () => { try { return localStorage.getItem('sticky.pttAblage') === '1'; } catch { return false; } };
+/** Diktat an den Hauslurch (Zenbook): Schalter, Adresse, Schlüssel – nur auf diesem Handy gespeichert */
+const lurchWert = (k) => { try { return localStorage.getItem(`sticky.hauslurch${k}`) || ''; } catch { return ''; } };
+const lurchAn = () => lurchWert('') === '1' && !!lurchWert('Adresse');
+const lurchZiel = () => ({ adresse: lurchWert('Adresse'), schluessel: lurchWert('Schluessel') });
+/** HTTP ohne Umweg: in der App nativ (kein CORS, http im Heimnetz erlaubt), im Browser fetch */
+async function http(methode, url, headers, data) {
+  if (nativ) {
+    const r = await CapacitorHttp.request({ method: methode, url, headers, ...(data ? { data } : {}), connectTimeout: 4000, readTimeout: 30000 });
+    return { status: r.status, data: r.data };
+  }
+  const ab = new AbortController();
+  const uhr = setTimeout(() => ab.abort(new Error('Zeit abgelaufen')), 30000);
+  try {
+    const r = await fetch(url, { method: methode, headers, ...(data ? { body: JSON.stringify(data) } : {}), signal: ab.signal });
+    return { status: r.status, data: await r.json().catch(() => ({})) };
+  } finally { clearTimeout(uhr); }
+}
 
 async function erkenne(pcm) {
   const p = sprachPruefung(pcm);
@@ -280,7 +298,22 @@ async function zeigeAufnahme(a) {
         });
       return;
     }
-    neueNotiz({ t: a.start, art: 'diktat', text: r.text || '', ...(a.wer ? { geraet: a.wer } : {}), ...((a.sitzung ? a.sitzung.z : zwilling).geraet.fahrt ? { faehrt: true } : {}), ...(r.roh ? { roh: r.roh } : {}), ...(r.unklar ? { unklar: r.unklar } : {}), audio: nativ ? `aufnahmen/${name}` : name, dauerMs: a.dauerMs, ...(spaet ? { offline: true } : {}) },
+    // Hauslurch (SPEC „Push-to-Talk“, Ziel Hauslurch): nur der Text geht ans Zenbook; die Notiz bleibt als Netz
+    const anLurch = lurchAn() && r.text && !r.unklar && !spaet;
+    let notizDa = Promise.resolve();   // Lurch-Antwort erst nach „✓ Diktat“, sonst überschreibt die Bestätigung sie
+    if (anLurch) {
+      anHauslurch(r.text, lurchZiel(), (url, kopf, daten) => http('POST', url, kopf, daten), T)
+        .then((h) => {
+          const zeile = document.createElement('div');
+          zeile.className = 'text';
+          zeile.textContent = `🏠 ${h.antwort}`;
+          text.after(zeile);
+          eintrag(T(`Hauslurch: ${h.antwort}`, `Hauslurch: ${h.antwort}`));
+          notizDa.then(() => lurchMeldung(`Lurch: ${kurzAntwort(h.antwort)}`, a.sitzung));
+        })
+        .catch((e) => { eintrag(T(`Hauslurch: ${e.message}`, `Hauslurch: ${e.message}`), true); notizDa.then(() => lurchMeldung(T('Lurch nicht erreicht', 'Lurch not reached'), a.sitzung)); });
+    }
+    notizDa = neueNotiz({ t: a.start, art: 'diktat', text: r.text || '', ...(anLurch ? { ziel: 'hauslurch' } : {}), ...(a.wer ? { geraet: a.wer } : {}), ...((a.sitzung ? a.sitzung.z : zwilling).geraet.fahrt ? { faehrt: true } : {}), ...(r.roh ? { roh: r.roh } : {}), ...(r.unklar ? { unklar: r.unklar } : {}), audio: nativ ? `aufnahmen/${name}` : name, dauerMs: a.dauerMs, ...(spaet ? { offline: true } : {}) },
       spaet ? null : a.ort, 'Diktat', a.sitzung);
   }).catch((e) => {
     text.className = 'text';
@@ -716,6 +749,14 @@ async function neueNotiz(teile, ortPromise, kurz, s = null) {
     (s?.z ?? zwilling).sendeBild(r.bytes, { bereich: r.bereich }).catch((e) => eintrag(T(`Rückmeldung: ${e.message}`, `Confirmation: ${e.message}`), true));
   }
 }
+/** Antwort des Hauslurchs ins Rückmeldefeld am Sticky (gleicher Platz wie „✓ Diktat“, kommt danach) */
+function lurchMeldung(text, s = null) {
+  const modus = s ? s.modus : stickyModus;
+  if (modus !== 'notiz' && modus !== 'home') return;
+  const r = rueckmeldung(text);
+  if (!s) spiegel.meldung(text);
+  (s?.z ?? zwilling).sendeBild(r.bytes, { bereich: r.bereich }).catch(() => { /* Sticky weg: Antwort steht in der App */ });
+}
 
 function zeigeNotiz(n, neu = false) {
   const li = document.createElement('li');
@@ -1034,6 +1075,21 @@ $('dreh180').onchange = () => {
 
 $('pttAblage').checked = pttAblage();
 $('pttAblage').onchange = () => { try { localStorage.setItem('sticky.pttAblage', $('pttAblage').checked ? '1' : '0'); } catch { /* egal */ } };
+// Hauslurch: Schalter, Adresse, Schlüssel; „Verbindung testen“ fragt GET /status
+$('lurchAn').checked = lurchWert('') === '1';
+$('lurchAdresse').value = lurchWert('Adresse');
+$('lurchSchluessel').value = lurchWert('Schluessel');
+for (const [id, k, wert] of [['lurchAn', '', (el) => (el.checked ? '1' : '0')], ['lurchAdresse', 'Adresse', (el) => el.value.trim()], ['lurchSchluessel', 'Schluessel', (el) => el.value.trim()]]) {
+  $(id).onchange = () => { try { localStorage.setItem(`sticky.hauslurch${k}`, wert($(id))); } catch { /* egal */ } };
+}
+$('lurchTest').onclick = async () => {
+  const aus = $('lurchErgebnis');
+  aus.textContent = T('frage …', 'asking …');
+  try {
+    const d = await hauslurchStatus({ adresse: $('lurchAdresse').value, schluessel: $('lurchSchluessel').value }, (url, kopf) => http('GET', url, kopf), T);
+    aus.textContent = T(`✓ Hauslurch erreicht${d.timer?.length ? `, ${d.timer.length} Timer läuft` : ''}`, `✓ Hauslurch reached${d.timer?.length ? `, ${d.timer.length} timer running` : ''}`);
+  } catch (e) { aus.textContent = `✗ ${e.message}`; }
+};
 
 // Liste nach Gruppen (Häkchen + Pfeile) statt Textfeld; gespeichert wird weiter die Wortliste
 function karussellEintraegeRoh() {   // ohne Firmware-Filter, damit die Liste alles zeigt

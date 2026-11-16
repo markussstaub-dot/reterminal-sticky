@@ -669,6 +669,18 @@ in eine Tagesdatei zum Teilen. Funktioniert, ist aber ein einziger Topf.
 - Ziel: KI am Sticky halten, sprechen, loslassen, und der Text landet dort, wo Markus ihn braucht, nicht nur in der Notiz
 - fest **Weg 1, über die eigene App** (umgesetzt 13.11.2026): Schalter „Diktat zusätzlich in die Zwischenablage“ in
   „Mehr → Push-to-Talk“. Frisch und sicher erkannter Text geht in die Zwischenablage, die Notiz bleibt. Keine Firmware
+- umgesetzt **Ziel Hauslurch** (16.11.2026, App, keine Firmware): Schalter „Diktat zusätzlich an den Hauslurch
+  (Zenbook)“ mit Adresse und Schlüssel unter „Mehr → Push-to-Talk“, dazu „Verbindung testen“. Frisch und sicher
+  erkannter Text (nicht „unklar“, nicht verspätet, nicht fürs Tippen) geht als `POST /befehl {"text"}` an den
+  Hauslurch (`../hauslurch`, Port 8765). Nur Text, nie Ton. Der Lurch führt aus (Timer, Wetter, Qwen …), spricht am
+  Zenbook und schickt die Antwort zurück: sie steht in der Aufnahme-Liste (🏠) und als Rückmeldung „Lurch: …“ am
+  Sticky, nach dem „✓ Diktat“. Nicht erreicht → „Lurch nicht erreicht“.
+  Entscheidung **die Notiz bleibt**: Sie ist das Netz, wenn das Zenbook aus ist oder das Fold nicht zu Hause, und die
+  Notiz-Kette (Sortieren, Eingang, Tagesdatei) bleibt unverändert. Sie bekommt `ziel: "hauslurch"`, damit das
+  Aufräumen reine Befehle („stell einen Timer …“) erkennt und weglassen kann.
+  Technik: in der APK `CapacitorHttp` (nativ, ohne CORS), im Browser `fetch`; `usesCleartextTraffic` im Manifest,
+  weil der Lurch im Heimnetz ohne https läuft. Weg: erst Heimnetz-IP, später Tailscale (Konto legt Markus an).
+  Simulator-Ton pulsiert jetzt silbenartig, damit Diktate im Browser nicht als „unklar“ hängen bleiben
 - geparkt **Weg 2, Sticky als BLE-Taste fürs Handy**: zweites BLE-Profil (HID, Consumer-Taste „Sprachbefehl“ bzw.
   Diktiertaste der Tastatur) neben dem eigenen Dienst. KI halten löst dann am Handy Assistent oder Tastatur-Diktat in
   jeder App aus; gesprochen wird ins Handy-Mikro. Mittlerer Aufwand (Kopplung, zweites Profil, Tastenregel)

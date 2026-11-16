@@ -281,7 +281,8 @@ export class SimVerbindung extends Basis {
     this.sim = setInterval(() => {
       const pcm = Int16Array.from({ length: SAMPLES_JE_PAKET }, (_, i) => {
         const t = (seq * SAMPLES_JE_PAKET + i) / RATE;
-        return Math.round(6000 * Math.sin(2 * Math.PI * (330 + 30 * Math.sin(2 * Math.PI * 5 * t)) * t));
+        const silben = 0.1 + 0.9 * Math.max(0, Math.sin(2 * Math.PI * 3 * t));   // auf und ab wie Sprache, sonst „(unklar)“
+        return Math.round(6000 * silben * Math.sin(2 * Math.PI * (330 + 30 * Math.sin(2 * Math.PI * 5 * t)) * t));
       });
       const p = kodiere(pcm, seq++, z);
       if (Math.random() < 0.01) verworfen++; else this.onAudio(p);

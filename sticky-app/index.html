@@ -177,6 +177,11 @@
         <h2>Push-to-Talk</h2>
         <label class="lage"><span data-en="Also copy dictation to the clipboard">Diktat zusätzlich in die Zwischenablage</span> <input type="checkbox" id="pttAblage"></label>
         <p class="klein" data-en="Hold AI on the Sticky, speak, release: the recognised text is then on the clipboard, ready to paste into any app (WhatsApp, mail, search). The note is kept too.">KI am Sticky halten, sprechen, loslassen: der erkannte Text liegt danach in der Zwischenablage und lässt sich in jeder App einfügen (WhatsApp, Mail, Suche). Die Notiz bleibt trotzdem.</p>
+        <label class="lage"><span data-en="Also send dictation to the Hauslurch (Zenbook)">Diktat zusätzlich an den Hauslurch (Zenbook)</span> <input type="checkbox" id="lurchAn"></label>
+        <input id="lurchAdresse" placeholder="Adresse, z. B. 192.168.2.61" data-en-placeholder="Address, e.g. 192.168.2.61" spellcheck="false" autocomplete="off">
+        <input id="lurchSchluessel" type="password" placeholder="Schlüssel (aus config.json am Zenbook)" data-en-placeholder="Key (from config.json on the Zenbook)" autocomplete="off">
+        <div class="leiste"><button id="lurchTest" data-en="Test connection">Verbindung testen</button> <span id="lurchErgebnis" class="klein"></span></div>
+        <p class="klein" data-en="Say a command (“set a timer for one minute”, “what's the weather”): only the text goes to the Zenbook at home, it answers aloud and the answer shows on the Sticky. The note is kept too, as a safety net if the Zenbook is off.">Befehl sagen („Stell einen Timer auf eine Minute“, „Wie wird das Wetter?“): nur der Text geht ans Zenbook zu Hause, er antwortet mit Stimme, die Antwort erscheint am Sticky. Die Notiz bleibt trotzdem, als Netz, falls das Zenbook aus ist.</p>
       </section>
       <section>
         <h2 data-en="Carousel">Karussell</h2>
