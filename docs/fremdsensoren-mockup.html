@@ -104,7 +104,7 @@ button.pille{font:inherit;font-size:14px;background:none;border:2px solid #111;b
  <text x="324" y="348" font-size="12.5" text-anchor="end" font-weight="bold">230 V L/N/PE</text>
  <text x="324" y="364" font-size="11.5" text-anchor="end">LS, FI, Zugentlastung</text>
  <text x="790" y="348" font-size="11.5" text-anchor="end" style="fill:#666">N</text>
- <text x="16" y="404" font-size="12" style="fill:#666">Der Sticky ist austauschbar: fällt er aus, regelt das Board mit dem letzten Sollwert weiter. Versagt die Software, trennt der Begrenzer.</text>
+ <text x="16" y="404" font-size="12" style="fill:#666">Der Sticky ist austauschbar (auch gegen Toms Laptop, s. Abschnitt 5): ohne ihn regelt das Board mit dem letzten Sollwert weiter. Versagt die Software, trennt der Begrenzer.</text>
 </svg>
 
 <div class="zwei">
@@ -168,7 +168,13 @@ y     42 %                     tn   400
 gut   71.8 C                   tv   30
 stat  ok                       → Board antwortet mit derselben Zeile (Echo)</pre>
 
-<h2>5 · Mit Tom klären</h2>
+<h2>5 · Ohne Sticky: Toms Laptop</h2>
+<p>Mag Tom den Sticky nicht, nimmt er seinen Laptop. Das Board spricht dieselben Textzeilen auch über seine eigene USB-Buchse (nicht die des Sticky), also reicht ein serielles Terminal; für Kurven ein kleines Python-Skript oder sein gewohntes Messprogramm. Ohne Kabel: ein zweiter XIAO am Laptop als ESP-NOW-Brücke, oder das Board stellt eine kleine Webseite ins WLAN bzw. spricht BLE (Web Bluetooth im Browser).</p>
+<pre>Laptop  ── USB (seriell, 115200) ──  Board          ist 93.4 C / soll 95 / y 42 %
+Laptop  ── USB ── XIAO-Brücke ~~ ESP-NOW ~~ Board   (Sticky kann parallel mithören)</pre>
+<p class="k">Sticky und Laptop sind gleichwertige Bedienteile; der Regler und die Sicherheit bleiben auf dem Board und in Toms Hardware. Beide gleichzeitig geht: wer zuletzt den Sollwert ändert, gilt, das Board meldet den neuen Wert an alle.</p>
+
+<h2>6 · Mit Tom klären</h2>
 <p>PT1000 oder Thermoelement? SSR oder Relais (Takt, Verschleiß)? Welcher Begrenzer, welcher Grenzwert? Startwerte aus einer Sprungantwort (Tt, T, Ks) nach CHR statt Autotune? Und: welche anderen Messgeräte von Tom könnten per BLE einfach mitlaufen (Multimeter, Stromzange)?</p>
 </main>
 
