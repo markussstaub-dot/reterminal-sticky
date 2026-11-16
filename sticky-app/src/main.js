@@ -1,5 +1,5 @@
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
-import { anHauslurch, hauslurchStatus, kurzAntwort, stimmeZiel, weitereSaetze, istUnterwegs, adresseNormal, zenbookHoeren } from './hauslurch.js';
+import { anHauslurch, hauslurchStatus, kurzAntwort, stimmeZiel, weitereSaetze, istUnterwegs, adresseNormal, zenbookHoeren, lurchBefehl } from './hauslurch.js';
 import { qrAusBild, deuteQr } from './qrlesen.js';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Clipboard } from '@capacitor/clipboard';
@@ -12,7 +12,7 @@ const p2 = (n, l = 2) => String(n).padStart(l, '0');
 const dateiZeit = (t) => { const d = new Date(t); return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}-${p2(d.getHours())}-${p2(d.getMinutes())}-${p2(d.getSeconds())}-${p2(d.getMilliseconds(), 3)}`; };
 /** GPS nur, wenn das Ereignis frisch ist; was mehr als 60 s zu spät ankommt, bekommt keinen (falschen) Ort */
 const VERSPAETET_MS = 60000;
-const woerter = () => $('woerter').value.trim();
+const woerter = () => { const w = $('woerter').value.trim(); return lurchWert('') === '1' && !/\blurch\b/i.test(w) ? (w ? `${w}, Lurch` : 'Lurch') : w; };
 /** Lernendes Wörterbuch (SPEC „lokales Modell flott machen“): Paare aus „Mehr → Wörterbuch“ */
 const woerterbuch = () => paareLesen(document.getElementById('woerterbuch')?.value ?? WOERTERBUCH_STANDARD);
 /** Erkennung mit Wächter: kurze/leise Aufnahmen und nachgeplapperte Wortliste werden „(unklar)“, der Ton bleibt */
@@ -328,15 +328,18 @@ async function zeigeAufnahme(a) {
         .then((z) => { vz.className = 'text'; vz.textContent = `🖥 ${z.text || T('(nichts)', '(nothing)')}  · ${z.modell}, ${(z.ms / 1000).toFixed(1)} s`; })
         .catch((e) => { vz.className = 'text'; vz.textContent = `🖥 ${e.message}`; });
     }
-    // Hauslurch (SPEC „Push-to-Talk“, Ziel Hauslurch): nur der Text geht ans Zenbook; die Notiz bleibt als Netz
-    const anLurch = lurchAn() && r.text && !r.unklar && !spaet;
-    let notizDa = Promise.resolve();   // Lurch-Antwort erst nach „✓ Diktat“, sonst überschreibt die Bestätigung sie
+    // Hauslurch (Markus, 16.11.2026): nur was mit „Lurch …“ anfängt, ist ein Befehl und geht ans Zenbook (ohne das
+    // Anfangswort); alles andere bleibt Notiz. Erreicht der Befehl den Lurch nicht, wird er doch Notiz (nichts geht verloren)
+    const befehl = lurchAn() && r.text && !r.unklar && !spaet ? lurchBefehl(r.text) : null;
+    const anLurch = !!befehl;
+    const notiz = (extra = {}) => neueNotiz({ t: a.start, art: 'diktat', text: r.text || '', ...extra, ...(a.wer ? { geraet: a.wer } : {}), ...((a.sitzung ? a.sitzung.z : zwilling).geraet.fahrt ? { faehrt: true } : {}), ...(r.roh ? { roh: r.roh } : {}), ...(r.unklar ? { unklar: r.unklar } : {}), audio: nativ ? `aufnahmen/${name}` : name, dauerMs: a.dauerMs, ...(spaet ? { offline: true } : {}) },
+      spaet ? null : a.ort, 'Diktat', a.sitzung);
     if (anLurch) {
       // Messung (Fahrt 16.11.: „laggy“): ab Loslassen der KI-Taste, geht zurück ins Lurch-Protokoll
       const ab = () => Math.round(performance.now() - a.tLos);
       const zeit = { text: ab() };
       const ziel = lurchZiel();
-      anHauslurch(r.text, ziel, (url, kopf, daten) => http('POST', url, kopf, daten), T)
+      anHauslurch(befehl, ziel, (url, kopf, daten) => http('POST', url, kopf, daten), T)
         .then(async (h) => {
           zeit.antwort = ab();
           const zeile = document.createElement('div');
@@ -344,7 +347,7 @@ async function zeigeAufnahme(a) {
           zeile.textContent = `🏠 ${h.antwort}`;
           text.after(zeile);
           if (h.ton) lurchSpielen(h.ton, () => { zeit.ton = ab(); });
-          notizDa.then(() => lurchMeldung(`Lurch: ${kurzAntwort(h.antwort)}`, a.sitzung));
+          lurchMeldung(`Lurch: ${kurzAntwort(h.antwort)}`, a.sitzung);
           let ganz = h.antwort;
           await weitereSaetze(h.weiter, ziel, (url, kopf) => http('GET', url, kopf), (s) => {
             ganz += ` ${s.satz}`;
@@ -357,10 +360,13 @@ async function zeigeAufnahme(a) {
           // Ton-Beginn kommt evtl. erst nach dem Abholen; kurz warten, dann ins Lurch-Protokoll
           setTimeout(() => http('POST', `${adresseNormal(ziel.adresse)}/messung`, { 'Content-Type': 'application/json', 'X-Hauslurch-Schluessel': ziel.schluessel }, zeit).catch(() => {}), 1500);
         })
-        .catch((e) => { eintrag(T(`Hauslurch: ${e.message}`, `Hauslurch: ${e.message}`), true); notizDa.then(() => lurchMeldung(T('Lurch nicht erreicht', 'Lurch not reached'), a.sitzung)); });
+        .catch((e) => {
+          eintrag(T(`Hauslurch: ${e.message} – als Notiz gespeichert`, `Hauslurch: ${e.message} – saved as a note`), true);
+          notiz({ ziel: 'hauslurch' }).then(() => lurchMeldung(T('Lurch nicht erreicht – Notiz', 'Lurch not reached – note'), a.sitzung));
+        });
+      return;
     }
-    notizDa = neueNotiz({ t: a.start, art: 'diktat', text: r.text || '', ...(anLurch ? { ziel: 'hauslurch' } : {}), ...(a.wer ? { geraet: a.wer } : {}), ...((a.sitzung ? a.sitzung.z : zwilling).geraet.fahrt ? { faehrt: true } : {}), ...(r.roh ? { roh: r.roh } : {}), ...(r.unklar ? { unklar: r.unklar } : {}), audio: nativ ? `aufnahmen/${name}` : name, dauerMs: a.dauerMs, ...(spaet ? { offline: true } : {}) },
-      spaet ? null : a.ort, 'Diktat', a.sitzung);
+    notiz();
   }).catch((e) => {
     text.className = 'text';
     text.textContent = T(`Erkennung fehlgeschlagen: ${e.message}`, `Recognition failed: ${e.message}`);

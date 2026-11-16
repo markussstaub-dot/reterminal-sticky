@@ -117,3 +117,15 @@ export async function zenbookHoeren(pcmB64, { fold = '', foldMs = null, hinweis 
   const d = typeof r.data === 'string' ? JSON.parse(r.data) : r.data;
   return { text: String(d?.text ?? ''), ms: Number(d?.ms ?? 0), modell: String(d?.modell ?? '') };
 }
+
+/**
+ * Befehl oder Notiz? (Markus, 16.11.2026) Nur Diktate, die mit „Lurch“ anfangen, sind Befehle. Whisper schreibt das
+ * Wort mal anders („Lurtsch“, „Lourch“), davor darf „Hey“/„He“ stehen. → Befehl ohne Anfangswort, sonst null
+ */
+const LURCH_ANFANG = /^\s*(?:(?:hey|hei|he|hallo|ok|okay)[\s,]+)?(?:lurch|lurtsch|lourch|lurg|lurk|lurche)\b[\s,.:;!?-]*/i;
+export function lurchBefehl(text) {
+  const m = LURCH_ANFANG.exec(String(text || ''));
+  if (!m) return null;
+  const rest = text.slice(m[0].length).trim();
+  return rest ? rest.charAt(0).toUpperCase() + rest.slice(1) : null;
+}

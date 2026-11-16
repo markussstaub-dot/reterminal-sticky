@@ -13,6 +13,8 @@ export const Spracherkennung = registerPlugin('Spracherkennung', {
     async vorladen() { return { ladeMs: 0 }; },
     async erkennen({ modell }) {
       await warte(400);
+      const probe = (() => { try { return localStorage.getItem('sticky.attrappeText'); } catch { return null; } })();
+      if (probe) return { text: probe, ms: 400, ladeMs: 0, modell, threads: 0 };   // Browser-Test: eigener Text
       return { text: T('Das ist eine Attrappe aus dem Browser, die echte Erkennung läuft nur in der APK.', 'This is a browser dummy, real recognition only runs in the APK.'), ms: 400, ladeMs: 0, modell, threads: 0 };
     },
   },

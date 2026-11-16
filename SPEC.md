@@ -695,6 +695,10 @@ in eine Tagesdatei zum Teilen. Funktioniert, ist aber ein einziger Topf.
 - umgesetzt **Vergleich Spracherkennung** (16.11.2026): Schalter „Ton zusätzlich am Zenbook abtippen“; der Ton geht
   (nur zwischen eigenen Geräten) an `/hoeren` des Hauslurchs, der Zenbook-Text steht unter dem Fold-Text (🖥). Vorstufe
   zu Schicht 2 („nachschärfen im Heimnetz“), zum Auswerten sammelt das Zenbook die Textpaare
+- fest **Befehl nur mit Anfangswort „Lurch“** (Markus, 16.11.2026): „Lurch, stell einen Timer …“ geht ohne das Wort an
+  den Hauslurch und wird keine Notiz; alles andere bleibt Notiz und geht nicht ans Zenbook. Nicht erreicht → doch Notiz
+  (`ziel: hauslurch`). Erkannt auch mit „Hey“ davor und Verhörern („Lurtsch“); „Lurch“ steht automatisch in der
+  Wortliste fürs Abtippen. Browser-Test: `localStorage.sticky.attrappeText` ersetzt den Attrappen-Text
 - fest **Hauslurch-Brücke geparkt** (Markus, 16.11.2026): im EDC-Kontext reichen einige Kommandos, für Kompliziertes
   gibt es das Handy. Kein weiterer Ausbau (Spracherkennung am Zenbook, Timer am Fold), bis Bedarf da ist
 - geparkt **Weg 2, Sticky als BLE-Taste fürs Handy**: zweites BLE-Profil (HID, Consumer-Taste „Sprachbefehl“ bzw.

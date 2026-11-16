@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { adresseNormal, kurzAntwort, anHauslurch, hauslurchStatus, stimmeZiel, weitereSaetze, istUnterwegs, zenbookHoeren } from '../src/hauslurch.js';
+import { adresseNormal, kurzAntwort, anHauslurch, hauslurchStatus, stimmeZiel, weitereSaetze, istUnterwegs, zenbookHoeren, lurchBefehl } from '../src/hauslurch.js';
 
 test('Adresse: Schema und Standardport ergänzen', () => {
   assert.equal(adresseNormal('192.168.2.61'), 'http://192.168.2.61:8765');
@@ -78,4 +78,14 @@ test('Vergleich: Ton ans Zenbook, Text zurück', async () => {
   assert.deepEqual(gesendet.d, { pcm: 'AAAA', fold: 'Stell einen Time', fold_ms: 900, hinweis: '' });
   assert.deepEqual(r, { text: 'Stell einen Timer', ms: 2400, modell: 'small' });
   await assert.rejects(zenbookHoeren('A', {}, { adresse: '', schluessel: '' }, post), /nicht eingerichtet/);
+});
+
+test('Anfangswort „Lurch“ macht den Befehl, sonst Notiz', () => {
+  assert.equal(lurchBefehl('Lurch, stell einen Timer auf zehn Minuten.'), 'Stell einen Timer auf zehn Minuten.');
+  assert.equal(lurchBefehl('Hey Lurch wie wird das Wetter?'), 'Wie wird das Wetter?');
+  assert.equal(lurchBefehl('Lurtsch. Wie spät ist es?'), 'Wie spät ist es?');
+  assert.equal(lurchBefehl('Einkauf: Milch und Brot'), null);
+  assert.equal(lurchBefehl('Der Lurch soll morgen …'), null);
+  assert.equal(lurchBefehl('Lurch.'), null);
+  assert.equal(lurchBefehl('Lurchiger Typ'), null);
 });
