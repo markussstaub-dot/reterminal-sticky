@@ -70,3 +70,15 @@ test('Wetter, Zettel, Namenslisten und Spiel folgen der Sprache', () => {
   b.duell(['A', 'B']);
   assert.match(en(() => b.text), /^Duel on two Stickys: A vs B/);
 });
+
+test('Sticky-Sprache: Umstellung während die App zu war, löst nach dem Neustart Neuzeichnen aus', () => {
+  const alt = globalThis.localStorage, speicher = new Map();
+  globalThis.localStorage = { getItem: (k) => speicher.get(k) ?? null, setItem: (k, v) => speicher.set(k, String(v)), removeItem: (k) => speicher.delete(k) };
+  try {
+    stickyEnSetzen(false);                       // zuletzt gemeldet: Deutsch
+    stickyEnSetzen(null);                        // App neu gestartet: im Speicher unbekannt
+    assert.equal(stickyEnSetzen(true), true);    // erste Meldung nach dem Neustart: EN → neu zeichnen
+    stickyEnSetzen(null);
+    assert.equal(stickyEnSetzen(true), false);   // unverändert EN → nichts tun
+  } finally { globalThis.localStorage = alt; stickyEnSetzen(null); }
+});

@@ -35,9 +35,16 @@ export const appIstEn = () => appEn;
 /** Sprache des Sticky (gemeldet, sonst die der App) */
 export const stickyIstEn = () => stickyEn ?? appEn;
 /** vom Zustand des Sticky („en“); liefert true, wenn sie sich gegenüber einer früheren Meldung geändert hat */
+// Zuletzt gemeldete Sticky-Sprache bleibt über App-Neustarts gemerkt: sonst ging eine Umstellung am Sticky verloren,
+// die passierte, während die App zu war oder er nicht verbunden war (erste Meldung = „unbekannt → en“, kein Neuzeichnen;
+// Markus 16.11.2026: „EN in den Einstellungen am Sticky, tut sich nix“).
+const GEMELDET = 'sticky.spracheGemeldet';
 export function stickyEnSetzen(v) {
-  const neu = v == null ? null : !!v, vorher = stickyEn;
+  const neu = v == null ? null : !!v;
+  let vorher = stickyEn;
+  if (vorher == null) { try { const g = localStorage.getItem(GEMELDET); vorher = g === 'en' ? true : g === 'de' ? false : null; } catch { /* egal */ } }
   stickyEn = neu;
+  if (neu != null) { try { localStorage.setItem(GEMELDET, neu ? 'en' : 'de'); } catch { /* egal */ } }
   return vorher != null && neu != null && vorher !== neu;
 }
 /** gerade wirksam: im Sticky-Kontext dessen Sprache, sonst die der App */
