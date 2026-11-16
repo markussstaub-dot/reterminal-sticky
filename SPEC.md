@@ -1142,6 +1142,21 @@ abtippen, sortieren, Ziele). Nimmt die Idee „Gesprächs-/Meeting-Notizen“ au
     die Notiz-Zeile schon abgeräumt ist); Weiterholen ab Byte n wäre der nächste Schritt
   - offen: am Gerät prüfen – Strom, ob 128 KB Ring reichen, ob der Ton beim Teil-Refresh lückenlos bleibt
 
+### Dateien am Sticky im Atari-ST-Stil (Markus, 16.11.2026, Idee, geparkt)
+
+- Idee: ein **Datei-Schreibtisch** am Sticky, angelehnt an den GEM-Desktop des Atari ST (Laufwerks-Symbole, Fenster
+  mit Titelleiste und Dateiliste, Papierkorb). Eigener Look in Schwarz-Weiß, der zu e-Ink und 1 bpp passt wie damals
+  zum SM124, kein Nachbau
+- Laufwerke: **SD** (Karte) und **FLASH** (LittleFS); Ordner wie `/soll`, `/ist`, `/lab`, Aufnahmen, Puffer
+- Vorschlag Bedienung: Tipp wählt (invertiert), Doppeltipp öffnet, ▲/▼ blättert in langen Listen; Datei auf den
+  Papierkorb ziehen = löschen nach Ja/Nein (Baustein aus FW 0.35.0); „Info“ zeigt Größe, Datum, Prüfsumme
+- Vorschlag Ansicht: `.txt` als Textseite, `.bin` (800 × 480, 1 bpp) als Bild, Aufnahmen mit Länge
+- offen: Wozu im Alltag? Kandidaten: Karte prüfen ohne Handy, Speicher aufräumen (Aufnahmen), Diagnose-Logs lesen
+  (passt zur Lab-Station 11 „Pins & Neustarts“)
+- offen: `/soll` gehört der App (Abgleich überschreibt) → dort nur lesen, Löschen nur in `/ist` und bei Aufnahmen?
+- offen: Ziehen auf e-Ink (Teil-Refresh ~0,9 s je Schritt): echtes Ziehen oder „wählen, dann Papierkorb tippen“?
+- offen: erst im Sticky Lab als Station ausprobieren, dann entscheiden (Muster wie bei Burgduell und Tastatur)
+
 ### Eigene Sensoren (laut Schaltplan, Bus MISC_I2C)
 | Baustein | Adresse | heute | Vorschlag |
 |---|---|---|---|
