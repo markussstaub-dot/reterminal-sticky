@@ -695,6 +695,8 @@ in eine Tagesdatei zum Teilen. Funktioniert, ist aber ein einziger Topf.
 - umgesetzt **Vergleich Spracherkennung** (16.11.2026): Schalter „Ton zusätzlich am Zenbook abtippen“; der Ton geht
   (nur zwischen eigenen Geräten) an `/hoeren` des Hauslurchs, der Zenbook-Text steht unter dem Fold-Text (🖥). Vorstufe
   zu Schicht 2 („nachschärfen im Heimnetz“), zum Auswerten sammelt das Zenbook die Textpaare
+- fest **Hauslurch-Brücke geparkt** (Markus, 16.11.2026): im EDC-Kontext reichen einige Kommandos, für Kompliziertes
+  gibt es das Handy. Kein weiterer Ausbau (Spracherkennung am Zenbook, Timer am Fold), bis Bedarf da ist
 - geparkt **Weg 2, Sticky als BLE-Taste fürs Handy**: zweites BLE-Profil (HID, Consumer-Taste „Sprachbefehl“ bzw.
   Diktiertaste der Tastatur) neben dem eigenen Dienst. KI halten löst dann am Handy Assistent oder Tastatur-Diktat in
   jeder App aus; gesprochen wird ins Handy-Mikro. Mittlerer Aufwand (Kopplung, zweites Profil, Tastenregel)
