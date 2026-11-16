@@ -98,3 +98,22 @@ export async function hauslurchStatus({ adresse, schluessel }, get, T = (de) => 
   }
   return typeof r.data === 'string' ? JSON.parse(r.data) : r.data;
 }
+
+/**
+ * Vergleich der Spracherkennung: denselben Ton (PCM 16 kHz, Base64) zusätzlich am Zenbook abtippen lassen.
+ * Bleibt in den eigenen vier Wänden (Tailscale), das Zenbook speichert nur die Texte. → { text, ms, modell }
+ */
+export async function zenbookHoeren(pcmB64, { fold = '', foldMs = null, hinweis = '' }, { adresse, schluessel }, post, T = (de) => de) {
+  const basis = adresseNormal(adresse);
+  if (!basis || !schluessel) throw new Error(T('Hauslurch nicht eingerichtet', 'Hauslurch not set up'));
+  let r;
+  try {
+    r = await post(`${basis}/hoeren`, { 'Content-Type': 'application/json', 'X-Hauslurch-Schluessel': schluessel }, { pcm: pcmB64, fold, fold_ms: foldMs, hinweis });
+  } catch (e) { throw new Error(T(`nicht erreichbar (${e.message})`, `not reachable (${e.message})`)); }
+  if (r.status !== 200) {
+    const [de, en] = FEHLER[r.status] || [`Fehler ${r.status}`, `error ${r.status}`];
+    throw new Error(T(de, en));
+  }
+  const d = typeof r.data === 'string' ? JSON.parse(r.data) : r.data;
+  return { text: String(d?.text ?? ''), ms: Number(d?.ms ?? 0), modell: String(d?.modell ?? '') };
+}

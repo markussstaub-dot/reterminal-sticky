@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { adresseNormal, kurzAntwort, anHauslurch, hauslurchStatus, stimmeZiel, weitereSaetze, istUnterwegs } from '../src/hauslurch.js';
+import { adresseNormal, kurzAntwort, anHauslurch, hauslurchStatus, stimmeZiel, weitereSaetze, istUnterwegs, zenbookHoeren } from '../src/hauslurch.js';
 
 test('Adresse: Schema und Standardport ergänzen', () => {
   assert.equal(adresseNormal('192.168.2.61'), 'http://192.168.2.61:8765');
@@ -68,4 +68,14 @@ test('unterwegs nur, wenn „Zuhause“ bekannt ist', () => {
   assert.equal(istUnterwegs({ orte: [{ name: 'Zuhause' }], aktuellerOrt: null }), true);
   assert.equal(istUnterwegs({ orte: [{ name: 'Zuhause' }], aktuellerOrt: 'Zuhause' }), false);
   assert.equal(istUnterwegs({ orte: [], aktuellerOrt: null }), false);
+});
+
+test('Vergleich: Ton ans Zenbook, Text zurück', async () => {
+  let gesendet;
+  const post = async (url, kopf, d) => { gesendet = { url, d }; return { status: 200, data: { text: 'Stell einen Timer', ms: 2400, modell: 'small' } }; };
+  const r = await zenbookHoeren('AAAA', { fold: 'Stell einen Time', foldMs: 900 }, { adresse: 'zenbook', schluessel: 'k' }, post);
+  assert.equal(gesendet.url, 'http://zenbook:8765/hoeren');
+  assert.deepEqual(gesendet.d, { pcm: 'AAAA', fold: 'Stell einen Time', fold_ms: 900, hinweis: '' });
+  assert.deepEqual(r, { text: 'Stell einen Timer', ms: 2400, modell: 'small' });
+  await assert.rejects(zenbookHoeren('A', {}, { adresse: '', schluessel: '' }, post), /nicht eingerichtet/);
 });

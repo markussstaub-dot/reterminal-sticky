@@ -1,5 +1,5 @@
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
-import { anHauslurch, hauslurchStatus, kurzAntwort, stimmeZiel, weitereSaetze, istUnterwegs, adresseNormal } from './hauslurch.js';
+import { anHauslurch, hauslurchStatus, kurzAntwort, stimmeZiel, weitereSaetze, istUnterwegs, adresseNormal, zenbookHoeren } from './hauslurch.js';
 import { qrAusBild, deuteQr } from './qrlesen.js';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Clipboard } from '@capacitor/clipboard';
@@ -317,6 +317,16 @@ async function zeigeAufnahme(a) {
           neueNotiz({ t: a.start, art: 'diktat', text: r.text, audio: nativ ? `aufnahmen/${name}` : name, dauerMs: a.dauerMs }, a.ort, 'Diktat', a.sitzung);
         });
       return;
+    }
+    // Vergleich (Markus, 16.11.2026): denselben Ton zusätzlich am Zenbook abtippen lassen, beide Texte nebeneinander
+    if (lurchWert('Vergleich') === '1' && !spaet && a.pcm?.length) {
+      const vz = document.createElement('div');
+      vz.className = 'text warte';
+      vz.textContent = T('🖥 Zenbook hört mit …', '🖥 Zenbook listening …');
+      text.after(vz);
+      zenbookHoeren(pcmBase64(angehoben(a.pcm)), { fold: r.text || '', foldMs: r.ms ?? null, hinweis: woerter() }, lurchZiel(), (url, kopf, d) => http('POST', url, kopf, d), T)
+        .then((z) => { vz.className = 'text'; vz.textContent = `🖥 ${z.text || T('(nichts)', '(nothing)')}  · ${z.modell}, ${(z.ms / 1000).toFixed(1)} s`; })
+        .catch((e) => { vz.className = 'text'; vz.textContent = `🖥 ${e.message}`; });
     }
     // Hauslurch (SPEC „Push-to-Talk“, Ziel Hauslurch): nur der Text geht ans Zenbook; die Notiz bleibt als Netz
     const anLurch = lurchAn() && r.text && !r.unklar && !spaet;
@@ -1116,6 +1126,8 @@ $('lurchAn').checked = lurchWert('') === '1';
 $('lurchAdresse').value = lurchWert('Adresse');
 $('lurchSchluessel').value = lurchWert('Schluessel');
 $('lurchStimme').value = lurchWert('Stimme') || 'auto';
+$('lurchVergleich').checked = lurchWert('Vergleich') === '1';
+$('lurchVergleich').onchange = () => { try { localStorage.setItem('sticky.hauslurchVergleich', $('lurchVergleich').checked ? '1' : '0'); } catch { /* egal */ } };
 $('lurchStimme').onchange = () => { try { localStorage.setItem('sticky.hauslurchStimme', $('lurchStimme').value); } catch { /* egal */ } };
 for (const [id, k, wert] of [['lurchAn', '', (el) => (el.checked ? '1' : '0')], ['lurchAdresse', 'Adresse', (el) => el.value.trim()], ['lurchSchluessel', 'Schluessel', (el) => el.value.trim()]]) {
   $(id).onchange = () => { try { localStorage.setItem(`sticky.hauslurch${k}`, wert($(id))); } catch { /* egal */ } };
