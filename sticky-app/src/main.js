@@ -979,11 +979,14 @@ async function abgleichKern() {
 }
 
 // ---- Karussell (SPEC „Bedienung und Oberfläche“): Reihe, durch die ▲/▼ am Sticky blättern -------------------------
-const KARUSSELL_STANDARD_DE = 'Home, Timer, Wecker, Weltzeit, Waage, Lineal, Recorder, Tippen, Kritzel, Schrift, Rechner, Umrechner, Handbuch, Spickzettel, Zettel, Spiel, Einstellungen';
-const KARUSSELL_STANDARD_EN = 'Home, Timer, Alarm, World clock, Spirit level, Ruler, Recorder, Type, Doodle, Writing, Calculator, Converter, Manual, Cheat sheets, Lists, Game, Settings';
+// Notfallblatt (SPEC „Bugout-Sticky“, FW 0.40.0): Bild und Felder spielt das Zenbook per USB auf; die App zeigt die
+// Menü-Kachel nur, wenn beides auf der Karte liegt (geprüft in karussellAufspielen)
+let notfallAufKarte = false;
+const KARUSSELL_STANDARD_DE = 'Home, Timer, Wecker, Weltzeit, Waage, Lineal, Recorder, Tippen, Kritzel, Schrift, Rechner, Umrechner, Handbuch, Spickzettel, Zettel, Spiel, Einstellungen, Notfall';
+const KARUSSELL_STANDARD_EN = 'Home, Timer, Alarm, World clock, Spirit level, Ruler, Recorder, Type, Doodle, Writing, Calculator, Converter, Manual, Cheat sheets, Lists, Game, Settings, Emergency';
 /** Standard der App-Sprache (beide Fassungen lösen über KARUSSELL_WOERTER gleich auf) */
 const karussellStandard = () => (appIstEn() ? KARUSSELL_STANDARD_EN : KARUSSELL_STANDARD_DE);
-const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'handbuch', handbuch: 'handbuch', spickzettel: 'spickzettel', spick: 'spickzettel', zettel: 'zettel', bestellzettel: 'zettel', kritzel: 'kritzel', kritzelblock: 'kritzel', schrift: 'schrift', strichschrift: 'schrift', app: 'app', spiel: 'app', burgduell: 'app', rechner: 'app', umrechner: 'app', timer: 'widget timer', waage: 'widget waage', wasserwaage: 'widget waage', lineal: 'widget lineal', wecker: 'widget wecker', weltzeit: 'widget weltzeit', einstellungen: 'widget einstellungen', recorder: 'widget recorder', tippen: 'widget tippen', type: 'widget tippen', tastatur: 'widget tippen', keyboard: 'widget tippen',
+const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'handbuch', handbuch: 'handbuch', spickzettel: 'spickzettel', spick: 'spickzettel', zettel: 'zettel', bestellzettel: 'zettel', kritzel: 'kritzel', kritzelblock: 'kritzel', schrift: 'schrift', strichschrift: 'schrift', app: 'app', spiel: 'app', burgduell: 'app', rechner: 'app', umrechner: 'app', timer: 'widget timer', waage: 'widget waage', wasserwaage: 'widget waage', lineal: 'widget lineal', wecker: 'widget wecker', weltzeit: 'widget weltzeit', einstellungen: 'widget einstellungen', recorder: 'widget recorder', tippen: 'widget tippen', notfall: 'widget notfall', emergency: 'widget notfall', type: 'widget tippen', tastatur: 'widget tippen', keyboard: 'widget tippen',
   // englische Eingaben (Anzeige Englisch), intern dieselben deutschen Wörter
   alarm: 'widget wecker', 'world clock': 'widget weltzeit', worldclock: 'widget weltzeit', level: 'widget waage', ruler: 'widget lineal', note: 'notiz', notes: 'notiz', scribble: 'kritzel', doodle: 'kritzel', 'spirit level': 'widget waage', handwriting: 'schrift', writing: 'schrift',
   calculator: 'app', converter: 'app', logbook: 'handbuch', manual: 'handbuch', manuals: 'handbuch', 'cheat sheets': 'spickzettel', 'cheat sheet': 'spickzettel', list: 'zettel', lists: 'zettel', game: 'app', settings: 'widget einstellungen' };
@@ -995,6 +998,7 @@ function karussellText() {
   const roh = (localStorage.getItem(schluessel('karussell')) || karussellStandard()).split(/[,;\n]/).map((w) => wort(w.trim().toLowerCase())).filter(Boolean)
     .filter((e) => e !== 'widget recorder' || fwAb('0.34.0'))   // Recorder erst ab FW 0.34.0
     .filter((e) => e !== 'widget tippen' || fwAb('0.37.0'))     // Tippen erst ab FW 0.37.0
+    .filter((e) => e !== 'widget notfall' || notfallAufKarte)   // Notfallblatt kommt vom Zenbook (FW 0.40.0): nur, wenn es auf der Karte liegt
     .flatMap((e) => (fwAb('0.38.0') || !['handbuch', 'spickzettel'].includes(e) ? [e] : e === 'handbuch' ? ['bordbuch'] : []));   // vorher: Bordbuch
   return [...new Set(roh)].join('\n') + '\n';
 }
@@ -1028,6 +1032,7 @@ function einstellungenAufspielen(s = null) {
 }
 
 async function karussellAufspielen() {
+  if (fwAb('0.40.0')) notfallAufKarte = (await zwilling.liste('/soll/widgets/notfall').catch(() => [])).some((d) => d.n === 'bild.bin');
   const n = await einstellungenAufspielen();
   if (n) eintrag(`${T('Karussell', 'Carousel')}: ${karussellText().trim().split('\n').join(' → ')}`);
   // Menü-Kacheln folgen dem Karussell (FW ≥ 0.19.0) und dem anderen Firmware-Platz (Kachel „Sticky Lab“, FW ≥ 0.33.0)
@@ -1196,6 +1201,18 @@ function karussellEintraegeRoh() {   // ohne Firmware-Filter, damit die Liste al
     if (w.some((x) => ['tippen', 'type', 'tastatur', 'keyboard'].includes(x.toLowerCase()))) return;
     const nach = w.findIndex((x) => x.toLowerCase() === 'recorder');
     w.splice(nach >= 0 ? nach + 1 : w.length, 0, appIstEn() ? 'Type' : 'Tippen');
+    localStorage.setItem(k, w.join(', '));
+  } catch { /* egal */ }
+})();
+// Einmalig (Notfall, 17.11.2026): eigene Listen bekommen „Notfall“ ans Ende; die Kachel erscheint nur mit Blatt auf der Karte
+(function notfallNachtragen() {
+  try {
+    const k = schluessel('karussell'), merk = schluessel('karussellNotfall'), alt = localStorage.getItem(k);
+    if (!alt || localStorage.getItem(merk)) return;
+    localStorage.setItem(merk, '1');
+    const w = alt.split(/[,;\n]/).map((x) => x.trim()).filter(Boolean);
+    if (w.some((x) => ['notfall', 'emergency'].includes(x.toLowerCase()))) return;
+    w.push(appIstEn() ? 'Emergency' : 'Notfall');
     localStorage.setItem(k, w.join(', '));
   } catch { /* egal */ }
 })();

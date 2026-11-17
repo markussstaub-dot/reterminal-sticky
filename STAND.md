@@ -413,7 +413,9 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   Klima/Stundenfenster, Blatt steht vor jedem Schlaf). Akku ≤ 3 % oder < 3450 mV: Sparmodus an und Blatt zeigen.
   Geflasht 17.11.2026 über COM10 (CH343; der Empfang läuft über UART0/`Serial0`, nicht über `Serial`), Probeblatt mit
   Platzhaltern per USB aufgespielt (beide Dateien „DATEI OK“, 48 KB in ~5 s), am Gerät angesehen: passt. Papierkarte
-  (Scheckkarte zum Falten, PDF neben der privaten Datei) entsteht bei jedem Lauf mit. Gesamtbauplan: SPEC-Tabelle
+  (Scheckkarte zum Falten, PDF neben der privaten Datei) entsteht bei jedem Lauf mit. Gesamtbauplan: SPEC-Tabelle.
+  App (1c): Menü-Kachel „Notfall“ nur, wenn das Blatt auf der Karte liegt (Tests 90/90, APK nicht gebaut).
+  Playground-Fassung (1d): Reiter „Notfall“ in der Sticky-Console (`sticky-lab/console/notfall.js`), ohne Python
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

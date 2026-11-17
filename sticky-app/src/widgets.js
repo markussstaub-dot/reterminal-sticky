@@ -157,7 +157,7 @@ const NAMEN = { home: ['Home', 'Home'], notiz: ['Notiz', 'Note'], bordbuch: ['Bo
   handbuch: ['Handbuch', 'Manual'], spickzettel: ['Spickzettel', 'Cheat sheets'],
   kritzel: ['Kritzel', 'Doodle'], schrift: ['Schrift', 'Writing'], app: ['Spiel', 'Game'] };
 const WIDGET_EN = { timer: 'Timer', wecker: 'Alarm', weltzeit: 'World clock', waage: 'Level', lineal: 'Ruler', rechner: 'Calculator',
-  umrechner: 'Converter', einstellungen: 'Settings', recorder: 'Recorder', tippen: 'Type' };
+  umrechner: 'Converter', einstellungen: 'Settings', recorder: 'Recorder', tippen: 'Type', notfall: 'Emergency' };
 export function kachelName(e) {
   if (e.startsWith('widget ')) { const w = e.slice(7); return T(w.replace(/^./, (b) => b.toUpperCase()), WIDGET_EN[w] ?? w.replace(/^./, (b) => b.toUpperCase())); }
   return NAMEN[e] ? T(...NAMEN[e]) : e;
