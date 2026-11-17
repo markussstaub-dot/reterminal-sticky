@@ -1264,7 +1264,7 @@ abtippen, sortieren, Ziele). Nimmt die Idee „Gesprächs-/Meeting-Notizen“ au
 - Idee **Bugout-Box** (Markus, 17.11.2026): kleine gedruckte Box (Bambu X1C, PETG/ASA) für Sticky, Powerbank und
   Kleinzeug, Weiterentwicklung des Sticky-Sleeve. Vorschlag: Passform-Fach für den Sticky, **Fenster im Deckel** (das
   Notfallblatt ist ohne Öffnen lesbar), Dichtring, Powerbank mit kurzem USB-C-Kabel (lädt in der Box), Größe einer
-  dicken Brotdose für die Jacke. Kleinzeug: Papier-Notfallkarte als Ersatz, LED-Lampe, Pfeife, Feuerstahl,
+  dicken Brotdose für die Jacke. Kleinzeug: Papier-Notfallkarte als Ersatz, Ersatz-Lesebrille, LED-Lampe, Pfeife, Feuerstahl,
   Rettungsdecke, Pflaster, Wasserentkeimung, Bithalter/Victorinox, Kabelbinder, Panzerband am Bleistift, Bargeld,
   Kabel. Reihenfolge: Sticky vermessen → Probedruck ohne Dichtung → Fenster und Dichtung. Stand 17.11.: Konzept
   steht, **CAD erst mit Maßen** (To-do Bambu X1C in `TODO-Kohlenstoffeinheit.md`); das gefaltete Solarpanel liegt mit
@@ -1323,6 +1323,18 @@ laden, SOS testen, Batterien prüfen; alle 12 Monate Daten durchsehen und neu au
   (BBK, NINA/Katwarn, ERC-Leitlinien, Erste-Hilfe-Kurse DRK/Malteser/Johanniter, FM 21-76), dazu Vorlagen mit
   Platzhaltern. Eigene Erste-Hilfe-Karten werden **nicht** veröffentlicht (Fehler wären bei anderen ein Risiko);
   Hinweis „ersetzt keinen Erste-Hilfe-Kurs und keine amtliche Warnung“. Bauanleitung als eigener kleiner Schritt nach 2
+- fest **Karten (Kartentest 17.11.2026, Markus):** „Nah klar“ und „Übersicht“ gewinnen, „mit Häusern“ fällt weg. Zoom als
+  Kette ohne Firmware (Handbuch-Tippfelder): Übersicht 1:100.000 → Mitte tippen → Nah 1:25.000 → Viertel tippen → Lupe
+  1:12.500 (neu gezeichnet, mit Straßennamen) → tippen = zurück; ▲/▼ blättert linear
+- ~~Zwei Lesemodi~~ → fest **ein Lesemodus „mit Brille“** (Markus, 17.11.2026: „ohne Brille fällt's insgesamt schwer,
+  Lesebrille brauch ich eh“): kein Umschalter. Statt dessen **Ersatz-Lesebrille in die Box** (Packliste) und für „ohne
+  Brille“ die **Papier-Notfallkarte**. Das Notfallblatt bleibt groß (mind. 22 px, liest meist ein Helfer), Karten mind. 22 px
+- Vorschlag **DAU-Block** (Markus „immer an den DAU denken“, 17.11.2026, nach dem Kartentest auf Katjas Gerät):
+  1) Aufspielen heißt erreichbar: per USB Aufgespieltes öffnet sich bzw. hängt sich selbst ein (Sprung umgesetzt FW 0.41.1;
+  Handbuch automatisch ins Karussell, sobald Dokumente da sind, wie das Notfallblatt). 2) Keine versteckten Gesten:
+  Notfall und Handbuch als Menü-Kachel, Grund-Menü auch ohne App. 3) Wer hängt am Kabel: USB-Zeile `WER` → Name, MAC-Ende,
+  FW; die Skripte zeigen das vor dem Schreiben und fragen bei fremden Notfalldaten nach (heute ging 0.40/0.41 versehentlich
+  auf Katjas Gerät)
 - Vorschlag **Jahres-Erinnerung**: Das Blatt trägt sein Stand-Datum; ist es älter als 12 Monate, zeigt der Sticky
   „Notfalldaten prüfen“ (Statuszeile oder Meldung auf Home). Wenig Aufwand, eigener kleiner Schritt nach 2
 

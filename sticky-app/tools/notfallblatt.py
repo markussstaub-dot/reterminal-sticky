@@ -65,60 +65,73 @@ def umbrechen(g, text, f, breite):
     return zeilen
 
 
+GROSS = 22                    # Lesemodus „Groß“ (ohne Brille, Markus 17.11.2026): kleinste Schrift auf Notfallseiten
+
+
 def zeichnen(d, doku=False):
+    """Notfallblatt 800 × 480 im Lesemodus „Groß“ (nichts unter 22 px)"""
     bild = Image.new('L', (W, H), 255)
     g = ImageDraw.Draw(bild)
     S, Wt = 0, 255
+    G = GROSS
     # Kopf: schwarzer Balken, rechts oben bleibt Platz für die Statuszeile
     g.rectangle([0, 0, W, 56], fill=S)
     g.text((20, 28), 'NOTFALL', font=schrift(30, True), fill=Wt, anchor='lm')
-    g.text((200, 30), 'Stand ' + datetime.date.today().strftime('%d.%m.%Y'), font=schrift(15), fill=Wt, anchor='lm')
+    g.text((190, 30), 'Stand ' + datetime.date.today().strftime('%d.%m.%Y'), font=schrift(G), fill=Wt, anchor='lm')
     links, mitte, rechts = 20, 420, 436
-    y = 74
-    klein = schrift(14)
+    unten = 404                                   # darunter der Fuß mit den Knöpfen
+    y = 66
 
     def marke(x, y, text):
-        g.text((x, y), text.upper(), font=klein, fill=S)
+        g.text((x, y), text, font=schrift(G), fill=S)
 
     if d.get('Name'):
-        marke(links, y, 'Name'); y += 20
-        g.text((links, y), d['Name'], font=passend(g, d['Name'], 32, mitte - links, True), fill=S); y += 40
-        if d.get('Zusatz'):
-            g.text((links, y), d['Zusatz'], font=passend(g, d['Zusatz'], 16, mitte - links), fill=S); y += 24
+        g.text((links, y), d['Name'], font=passend(g, d['Name'], 34, mitte - links, True, G), fill=S); y += 42
+        if d.get('Zusatz'):                       # bei Bedarf zwei Zeilen statt kleiner Schrift
+            for z in umbrechen(g, d['Zusatz'], schrift(G), mitte - links - 10)[:2]:
+                g.text((links, y), z, font=schrift(G), fill=S); y += 28
         g.line([links, y + 4, mitte - 10, y + 4], fill=S, width=2); y += 14
     if d['Kontakt']:
-        marke(links, y, 'Im Notfall anrufen'); y += 24
-        for i, k in enumerate(d['Kontakt'][:3], 1):
+        marke(links, y, 'Im Notfall anrufen'); y += 30
+        anzahl = 2 if d.get('Treffpunkt') else 3   # Platz: mit Treffpunkt zwei Kontakte
+        for i, k in enumerate(d['Kontakt'][:anzahl], 1):
             wer, _, nr = (s.strip() for s in k.partition('|'))
-            g.ellipse([links, y + 4, links + 30, y + 34], fill=S)
-            g.text((links + 15, y + 19), str(i), font=schrift(17, True), fill=Wt, anchor='mm')
-            g.text((links + 44, y), wer, font=passend(g, wer, 18, mitte - links - 54), fill=S)
-            g.text((links + 44, y + 21), nr, font=passend(g, nr, 22, mitte - links - 54, True), fill=S)
-            y += 54
+            g.ellipse([links, y + 8, links + 34, y + 42], fill=S)
+            g.text((links + 17, y + 25), str(i), font=schrift(G, True), fill=Wt, anchor='mm')
+            g.text((links + 46, y), wer, font=passend(g, wer, G, mitte - links - 56, False, G), fill=S)
+            g.text((links + 46, y + 25), nr, font=passend(g, nr, 28, mitte - links - 56, True, G), fill=S)
+            y += 62
         g.line([links, y, mitte - 10, y], fill=S, width=2); y += 10
     if d.get('Treffpunkt'):
-        marke(links, y, 'Treffpunkt'); y += 22
-        for z in umbrechen(g, d['Treffpunkt'], schrift(19), mitte - links - 10)[:2]:
-            g.text((links, y), z, font=schrift(19), fill=S); y += 24
+        marke(links, y, 'Treffpunkt'); y += 28
+        for z in umbrechen(g, d['Treffpunkt'], schrift(G, True), mitte - links - 10):
+            if y + G > unten:
+                break
+            g.text((links, y), z, font=schrift(G, True), fill=S); y += 28
 
     # rechts: Medizin im Doppelring (Braun „haupt“), darunter die Box
-    y = 74
+    y = 66
     if d['Medizin']:
-        hoehe = 56 + 30 * min(len(d['Medizin']), 5)
+        n = min(len(d['Medizin']), 4)
+        hoehe = 60 + 32 * n
         g.rounded_rectangle([rechts, y, W - 16, y + hoehe], radius=18, outline=S, width=6, fill=Wt)
         g.rounded_rectangle([rechts + 10, y + 10, W - 26, y + hoehe - 10], radius=10, outline=S, width=2)
-        g.text((rechts + 24, y + 20), 'MEDIZIN · KURZ', font=klein, fill=S)
-        yy = y + 42
-        for i, m in enumerate(d['Medizin'][:5]):
-            f = passend(g, m, 21, W - 26 - rechts - 34, i == 0)
-            g.text((rechts + 24, yy), m, font=f, fill=S); yy += 30
-        y += hoehe + 18
-    if d.get('Box'):
-        marke(rechts, y, 'In der Box'); y += 22
-        for z in umbrechen(g, d['Box'], schrift(16), W - 16 - rechts)[:5]:
-            g.text((rechts, y), z, font=schrift(16), fill=S); y += 21
-    if d.get('Hinweis'):
-        g.text((rechts, min(y + 6, 392)), d['Hinweis'], font=passend(g, d['Hinweis'], 15, W - 16 - rechts), fill=S)
+        g.text((rechts + 24, y + 18), 'Medizin', font=schrift(G), fill=S)
+        yy = y + 46
+        for i, m in enumerate(d['Medizin'][:n]):
+            g.text((rechts + 24, yy), m, font=passend(g, m, 24, W - 26 - rechts - 34, i == 0, G), fill=S); yy += 32
+        y += hoehe + 12
+    platz = (unten - y) // 27                     # Zeilen, die rechts noch passen
+    hinweis = umbrechen(g, d['Hinweis'], schrift(G), W - 16 - rechts) if d.get('Hinweis') else []
+    box = (['In der Box'] + umbrechen(g, d['Box'], schrift(G), W - 16 - rechts)) if d.get('Box') else []
+    if len(box) + len(hinweis) > platz:           # zu lang: Hinweis nur ganz oder gar nicht, die Box-Liste kürzen
+        if len(hinweis) > platz // 2:
+            hinweis = []
+        box = box[:max(0, platz - len(hinweis))]
+        if box and len(box) > 1:
+            box[-1] = box[-1].rstrip(',') + ' …'
+    for z in box + hinweis:
+        g.text((rechts, y), z, font=schrift(G), fill=S); y += 27
 
     # Fuß: Knöpfe (wirken nur mit Strom)
     g.line([0, 416, W, 416], fill=S, width=2)
@@ -128,12 +141,12 @@ def zeichnen(d, doku=False):
     for x0, y0, x1, y1, t, a in knoepfe:
         if a == 'sos':
             g.rounded_rectangle([x0, y0, x1, y1], radius=22, fill=S)
-            g.text(((x0 + x1) / 2, (y0 + y1) / 2), t, font=schrift(20, True), fill=Wt, anchor='mm')
+            g.text(((x0 + x1) / 2, (y0 + y1) / 2), t, font=schrift(26, True), fill=Wt, anchor='mm')
         else:
             g.rounded_rectangle([x0 + 1, y0 + 1, x1 - 1, y1 - 1], radius=21, outline=S, width=2)
-            g.text(((x0 + x1) / 2, (y0 + y1) / 2), t, font=schrift(18), fill=S, anchor='mm')
+            g.text(((x0 + x1) / 2, (y0 + y1) / 2), t, font=schrift(G), fill=S, anchor='mm')
     if not doku:
-        g.text((W - 16, 450), 'Akku leer: Bild bleibt stehen', font=schrift(14), fill=S, anchor='rm')
+        g.text((W - 16, 450), 'Akku leer: bleibt stehen', font=schrift(G), fill=S, anchor='rm')
     # Felder: Knöpfe mit etwas Rand (Finger)
     felder = 'typ notfall\n' + ''.join(f'knopf {x0 - 8} {y0 - 8} {x1 + 8} {min(H, y1 + 8)} {a}\n' for x0, y0, x1, y1, _, a in knoepfe)
     return bild.point(lambda v: 255 if v >= 128 else 0).convert('1'), felder
@@ -251,13 +264,17 @@ def aufspielen(port, dateien):
             else:
                 s.write(f'DATEI {rel} {len(daten)}\n'.encode())
                 s.flush()
-                ende = time.time() + 3            # Handschlag ab FW 0.41.0 („DATEI BEREIT“); ältere legen gleich los
+                ende = time.time() + 20           # Handschlag ab FW 0.41.0: erst nach „DATEI BEREIT“ senden (der Sticky
+                bereit = False                    # verwirft, was vorher kommt; nach Dokumenten zeichnet er bis zu einigen s)
                 while time.time() < ende:
                     z = s.readline().decode('utf-8', 'replace').strip()
                     if z.startswith('DATEI BEREIT'):
+                        bereit = True
                         break
                     if z.startswith('DATEI FEHLER'):
                         return z
+                if not bereit:
+                    return 'DATEI FEHLER kein „bereit“ (Firmware ≥ 0.41.0 nötig)'
                 for o in range(0, len(daten), 4096):
                     s.write(daten[o:o + 4096])
                 kennung = 'DATEI '
@@ -265,7 +282,7 @@ def aufspielen(port, dateien):
             ende = time.time() + 15
             while time.time() < ende:
                 z = s.readline().decode('utf-8', 'replace').strip()
-                if z.startswith(kennung):
+                if z.startswith(kennung) and not z.startswith('DATEI BEREIT'):
                     return z
             return ''
         for i, (rel, daten) in enumerate(dateien):

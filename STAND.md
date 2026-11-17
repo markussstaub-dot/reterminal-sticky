@@ -424,6 +424,16 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   `privat\notfall-doku` (PDF/JPG/PNG), Schlüssel `privat\notfall-schluessel.bin`, PIN am Zenbook beim ersten Mal bzw.
   `--neue-pin`, nur geänderte Seiten werden neu geschickt. Geflasht über COM10, Testdokument (Ausweis + Plan, 8 Seiten)
   mit Test-PIN 1234 aufgespielt, alle 15 Dateien „OK“; am Gerät geprüft (Markus 17.11.): Entsperren, Inhalt, Blättern klappt
+- **FW 0.41.1 (17.11.2026):** USB-Dateien lösen dieselben Folgen aus wie ein Bluetooth-Abgleich (`sollGeaendert`:
+  Dokumente, Sprung, Lage, Karussell). Kartentest (`sticky-app/tools/notfallkarten.py --test`, Tübingen, 4 Seiten:
+  Zeichen, 1:25.000 klar, mit Häusern, 1:100.000) als Handbuch „kartentest“ auf Katjas Gerät, per Sprung geöffnet
+- **Karten und Lesbarkeit (17.11.2026, Markus am Gerät):** „Nah klar“ + „Übersicht“ gewinnen, Häuser fallen weg. Zoom-Kette
+  ohne Firmware über Handbuch-Tippfelder: Übersicht 1:100.000 → Nah 1:25.000 → 4 Lupen 1:12.500 mit Straßennamen.
+  Schrift mind. 22 px. Kein zweiter Lesemodus: Standard „mit Brille“, Ersatz-Lesebrille in die Box, Notfallblatt
+  (Python + Console) neu gesetzt mit mind. 22 px. Handschlag: Skript/Console warten bis 20 s auf „DATEI BEREIT“
+- **Achtung Geräte (17.11.2026):** Die Flash-Läufe von 0.40.0/0.41.0 über COM10 gingen auf **Katjas Gerät**
+  (MAC …:56:94, bisher Sticky Lab). Es trägt jetzt EDC 0.41.0 mit Markus' Notfallblatt, Testdokument (Test-PIN 1234) und
+  „dreh 180“ (per USB in `einstellungen/lage.txt`); Markus: „passt so“. Markus' eigener Sticky (…:55:9C, COM7) hat noch 0.39.2
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

@@ -10,5 +10,5 @@ Medizin: Blutgruppe A+
 Medizin: Penicillin-Allergie
 Medizin: nimmt Blutverdünner
 Treffpunkt: „Plan B“ – Familie weiß Bescheid
-Box: Powerbank, Solarpanel, Lampe, Pfeife, Feuerstahl, Rettungsdecke, Pflaster, Entkeimung, Bargeld, Papierkarte
+Box: Powerbank, Solarpanel, Lesebrille, Lampe, Pfeife, Feuerstahl, Rettungsdecke, Pflaster, Entkeimung, Bargeld, Papierkarte
 Hinweis: Details auf der Papierkarte in der Box

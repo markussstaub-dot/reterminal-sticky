@@ -214,6 +214,7 @@ static void serielleDatei() {
         if (!ok) { Serial0.printf("DATEI FEHLER %u von %ld Byte\n", (unsigned)got, len); continue; }
         protokoll("USB: %s (%ld Byte)", rel, len);
         Serial0.printf("DATEI OK %s\n", rel);
+        sollGeaendert(rel);                         // wie nach einem Bluetooth-Abgleich: Dokumente, Sprung, Lage, Karussell …
         if (!strncmp(rel, "widgets/", 8)) {
             karussellLaden();
             if (modus == M_WIDGET) neuZeichnen = true;
