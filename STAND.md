@@ -431,7 +431,7 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   Kreis mit N oben und Sonnenstrahl („drehen, bis der Strahl zur Sonne zeigt“), alle 5 min neu (im Sparmodus nur beim
   Öffnen). Ort aus `/soll/notfall/ort.txt` (schreibt `notfallkarten.py` mit dem ersten Ort), sonst Mitte Deutschlands.
   Seite „sonne“ legt der Sticky selbst an; vierter Knopf „Sonne“ auf dem Notfallblatt (Python und Console). Formel am
-  Zenbook geprüft (Bexbach 17.11.: Untergang 16:47 MEZ, Mittag 21,5° in Süd). Geflasht auf Katjas Gerät, Blatt und Ort
+  Zenbook geprüft (eigener Ort, 17.11.: Untergang und Mittagshöhe stimmen mit Tabellen überein). Geflasht auf Katjas Gerät, Blatt und Ort
   aufgespielt, am Gerät angesehen (Markus: passt). Bauanleitung `docs/NOTFALL.md` (Technik, Schritte, Quellen nur als Links, EN)
 - **Eigene Kartenorte und OpenFreeMap (17.11.2026):** `notfallkarten.py` ohne `--test` liest `privat\notfall-karten.txt`
   (Koordinaten oder Adresse → Nominatim), baut Dokument „karten“ (Inhalt mit Kachel je Ort → Übersicht → Nah → 4 Lupen,
