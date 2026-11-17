@@ -1249,9 +1249,9 @@ abtippen, sortieren, Ziele). Nimmt die Idee „Gesprächs-/Meeting-Notizen“ au
     in der App: später (heute nur über ▲/▼ erreichbar)
   - fest **PIN-Schutz: Schlüssel im Sticky + PIN.** Zufälliger AES-Schlüssel liegt im Sticky (NVS), die PIN
     (gemeinsames Ziffernfeld) gibt ihn frei; nach 10 Fehlversuchen löscht der Sticky den Schlüssel. Die Karte allein
-    ist wertlos; Originale und Schlüssel-Backup bleiben am Zenbook. Vorschlag Ablauf: Zenbook erzeugt Schlüssel und
-    verschlüsselt, legt ihn einmal als `/soll/notfall/schluessel.neu` ab, der Sticky übernimmt ihn mit PIN und löscht
-    die Datei. offen: Grenze ehrlich benennen (ohne Flash-Verschlüsselung ist NVS mit Werkzeug auslesbar; gegen Finder
+    ist wertlos; Originale und Schlüssel-Backup bleiben am Zenbook. Vorschlag Ablauf (17.11., seit es den USB-Weg gibt): Zenbook
+    erzeugt den Schlüssel und verschlüsselt; der Schlüssel geht einmal **per USB-Zeile direkt ins NVS**, nie als Datei
+    auf die Karte. offen: Grenze ehrlich benennen (ohne Flash-Verschlüsselung ist NVS mit Werkzeug auslesbar; gegen Finder
     reicht es, gegen Labor nicht)
   - fest **Kartengebiete:** Zuhause, Arbeit, Fluchtziel, je Übersicht (~1:100 000) und Nahblatt (~1:25 000). Orte
     stehen nur in der privaten Datei am Zenbook
@@ -1276,6 +1276,29 @@ abtippen, sortieren, Ziele). Nimmt die Idee „Gesprächs-/Meeting-Notizen“ au
 - Vorschlag **Notfall-Sparmodus** (Firmware): BLE ganz aus, kein minütlicher Uhr-Refresh (Uhr nur auf Tastendruck
   oder stündlich), Sensoren aus, Refresh nur bei Bedienung; Notfallblatt beim Eintritt und bei leerem Akku. offen:
   Nachtverbrauch erst messen (steht in STAND „wartet“), dann Laufzeit im Sparmodus schätzen
+
+#### Gesamtbauplan Bugout (17.11.2026, Vorschlag; Reihenfolge fest, Inhalt je Schritt Vorschlag)
+Weg für alle Inhalte: private Datei am Zenbook → Skript in `sticky-app/tools/` → USB-Kabel → `/soll/…`. Im Repo nur Skripte.
+
+| # | Schritt | Wer / wo | Aufwand | fertig, wenn |
+|---|---|---|---|---|
+| 1 | Notfallblatt, SOS, Sparmodus | FW 0.40.0 + `notfallblatt.py` | **erledigt** | Probeblatt am Gerät gesehen (17.11.) |
+| 1a | echte Daten eintragen, Laufzeit im Sparmodus messen (Akku-% morgens/abends) | Markus | 10 min + 1 Tag | Blatt mit echten Daten, Laufzeit in STAND |
+| 1b | **Papierkarte** aus derselben Datei: `notfallblatt.py` legt bei jedem Lauf `notfall-karte.pdf` daneben (Scheckkarte 85,6 × 54 mm, vorn Name/Kontakte/Medizin, hinten Treffpunkt/Hinweis/Box, zum Falten, zweimal auf A4, 600 dpi) | Skript | **erledigt 17.11.** | ausgedruckt, laminiert (Markus) |
+| 1c | Menü-Kachel „Notfall“ (App: Eintrag in `SEITEN`/`GRUPPEN`), Knopf „Dokumente“ erst mit Schritt 2 | App | klein | Kachel im Menü |
+| 2 | **Notfalldokumente mit PIN**: `notfalldoku.py` macht aus PDF/Fotos 1-bpp-Seiten, verschlüsselt (AES-256, Schlüssel bleibt privat am Zenbook) → `/soll/notfall/doku/`. Sticky: PIN beim ersten Mal setzen (Ziffernfeld, 6 Stellen), Schlüssel im NVS mit PIN verpackt, 10 Fehlversuche → Schlüssel weg; Anzeige wie Handbuch, entschlüsselt nur im RAM, nach 2 min oder beim Schlafen wieder zu. Medizin-Details landen hier | FW + Skript | groß (2 Sessions) | Ausweis/Impfpass/Medikamentenplan mit PIN lesbar, Karte am PC unlesbar |
+| 3 | **Karten**: erst Lab-Station (Lesbarkeit 1 bpp). Daten über Overpass (OSM-Vektordaten, kleine Gebiete) und eigene Zeichnung in 1 bpp: Straßen, Wege, Wasser, Kliniken, Apotheken; 1-km-Gitter (UTM), Maßstab, Nordpfeil, „© OpenStreetMap-Mitwirkende“. Je Ort Übersicht + Nahblätter, ▲/▼ blättert, Tippen auf ein Feld = Nahblatt | Lab, dann Skript + Doku-Viewer | mittel | 3 Orte × 2 Maßstäbe am Sticky |
+| 3b | **Sonnenkompass**: Sonnenrichtung aus RTC, Datum und Kartenort (NOAA-Formel im Sticky); Seite zeigt „Sonne steht bei 214°, Norden ist …“ mit Skizze | FW | klein | stimmt mit Quarzuhr-Methode überein |
+| 4 | **Notfallwissen** als Handbuch-Dokument (vorhandener Viewer, kaum Firmware): eigene Kurztexte + Wiki-Auszüge (CC BY-SA, Quelle), BBK-Ratgeber nur privat | Skript | klein–mittel | Erste Hilfe, Wasser, Funk, Kälte nachschlagbar |
+| B1 | Sticky vermessen (Schieblehre: B×H×T, Tasten, USB-Lage) | Markus | 10 min | Maße in SPEC |
+| B2 | Box CAD (OpenSCAD, parametrisch) + Probedruck PETG ohne Dichtung | Claude + X1C | mittel | Sticky, Powerbank, Panel passen |
+| B3 | Fenster (Polycarbonat-Scheibe eingeklebt) + Dichtung (TPU-Lippe oder O-Ring-Schnur), Packliste final | Claude + X1C | mittel | Blatt durchs Fenster lesbar, Regen-Test |
+| S | Solarpanel 5–10 W + Powerbank (Pass-Through) besorgen, Kette Panel → Powerbank → Sticky testen | Markus | Einkauf | Sticky lädt im Schatten über die Powerbank |
+| P | **Probe**: ein Wochenende nur mit Box (Sparmodus, Karte, Sonnenkompass) | Markus | 1 Tag | Liste, was fehlt |
+
+- Abhängigkeiten: 2 vor dem Knopf „Dokumente“; 3b braucht einen Ort (aus 3 oder Wetter-Ort); B2 braucht B1; P braucht 1–3 und B3
+- offen: Overpass-Weg (Vorschlag) gegen fertige Kacheln (OSM-Kachelserver verbieten Massen-Download, darum eigene
+  Zeichnung); Flash-Verschlüsselung des ESP32 für Schritt 2 (stärker, aber Flashen wird umständlicher) – Vorschlag: nein
 
 ### Eigene Sensoren (laut Schaltplan, Bus MISC_I2C)
 | Baustein | Adresse | heute | Vorschlag |

@@ -2,7 +2,8 @@
 
 Liest die private Datei (Standard: Desktop\\Claude\\privat\\notfall.md, nie im Repo), zeichnet das Blatt 800×480 1 bpp in
 Braun-Optik und spielt es per USB-Kabel auf die SD-Karte des Sticky (/soll/widgets/notfall/). Ohne Sticky am Kabel bleibt
-es bei der Vorschau (PNG neben der privaten Datei).
+es bei der Vorschau (PNG neben der privaten Datei). Jedes Mal entsteht dazu die Papierkarte (Scheckkarte, Vorder- und
+Rückseite zum Falten, zweimal auf A4) als PDF neben der privaten Datei: für Portemonnaie und Box.
 
 Aufruf:  python sticky-app/tools/notfallblatt.py [datei.md] [--port COM7] [--nur-vorschau]
 Fehlt die private Datei, legt das Skript sie aus der Vorlage an und hört auf (erst ausfüllen).
@@ -133,6 +134,87 @@ def zeichnen(d):
     return bild.point(lambda v: 255 if v >= 128 else 0).convert('1'), felder
 
 
+DPI = 600
+MM = DPI / 25.4
+PT = DPI / 72
+KB, KH = round(85.6 * MM), round(54 * MM)     # Scheckkarte (Portemonnaie, Box)
+
+
+def karte_seiten(d):
+    """Vorder- und Rückseite der Papierkarte (Scheckkarte, 600 dpi, schwarz-weiß wie das Blatt)"""
+    rand = round(3 * MM)
+    vorn, hinten = Image.new('L', (KB, KH), 255), Image.new('L', (KB, KH), 255)
+    breite = KB - 2 * rand
+
+    # Vorderseite: Kopf mit Name, Kontakte, Medizin kurz
+    g = ImageDraw.Draw(vorn)
+    kopf = round(9 * MM)
+    g.rectangle([0, 0, KB, kopf], fill=0)
+    g.text((rand, kopf / 2), 'NOTFALL', font=schrift(round(11 * PT), True), fill=255, anchor='lm')
+    if d.get('Name'):
+        x = rand + g.textlength('NOTFALL', font=schrift(round(11 * PT), True)) + round(3 * MM)
+        g.text((x, kopf / 2), d['Name'], font=passend(g, d['Name'], round(10 * PT), KB - rand - x), fill=255, anchor='lm')
+    y = kopf + round(2 * MM)
+    if d.get('Zusatz'):
+        g.text((rand, y), d['Zusatz'], font=passend(g, d['Zusatz'], round(6.5 * PT), breite), fill=0); y += round(4 * MM)
+    if d['Kontakt']:
+        g.text((rand, y), 'IM NOTFALL ANRUFEN', font=schrift(round(5.5 * PT)), fill=0); y += round(3 * MM)
+        for k in d['Kontakt'][:3]:
+            wer, _, nr = (s.strip() for s in k.partition('|'))
+            f = schrift(round(8 * PT), True)
+            g.text((rand, y), nr, font=f, fill=0)
+            x = rand + g.textlength(nr, font=f) + round(2 * MM)
+            g.text((x, y + round(0.6 * MM)), wer, font=passend(g, wer, round(7 * PT), KB - rand - x), fill=0)
+            y += round(4.2 * MM)
+    if d['Medizin']:
+        y += round(0.8 * MM)
+        unten = KH - rand
+        g.rounded_rectangle([rand, y, KB - rand, unten], radius=round(2 * MM), outline=0, width=round(0.5 * MM))
+        zeilen = d['Medizin'][:5]                    # je Angabe eine Zeile, so groß wie der Platz erlaubt
+        gr = round(8.5 * PT)
+        while len(zeilen) * gr * 1.2 > unten - y - round(5 * MM) and gr > round(5 * PT):
+            gr -= 4
+        yy = y + round(1.5 * MM)
+        g.text((rand + round(2 * MM), yy), 'MEDIZIN', font=schrift(round(5 * PT)), fill=0); yy += round(2.8 * MM)
+        for i, z in enumerate(zeilen):
+            g.text((rand + round(2 * MM), yy), z, font=passend(g, z, gr, breite - round(4 * MM), i == 0), fill=0); yy += round(gr * 1.2)
+
+    # Rückseite: Treffpunkt, Hinweis, Box, Stand
+    g = ImageDraw.Draw(hinten)
+    y = rand
+    for titel, wert, gr in (('TREFFPUNKT', d.get('Treffpunkt'), 8), ('HINWEIS', d.get('Hinweis'), 7), ('IN DER BOX', d.get('Box'), 6.5)):
+        if not wert:
+            continue
+        g.text((rand, y), titel, font=schrift(round(5.5 * PT)), fill=0); y += round(3 * MM)
+        f = schrift(round(gr * PT))
+        for z in umbrechen(g, wert, f, breite)[:4]:
+            g.text((rand, y), z, font=f, fill=0); y += round(f.size * 1.2)
+        y += round(1.5 * MM)
+    g.line([rand, KH - rand - round(4 * MM), KB - rand, KH - rand - round(4 * MM)], fill=0, width=round(0.25 * MM))
+    g.text((rand, KH - rand), 'Stand ' + datetime.date.today().strftime('%d.%m.%Y') + ' · gleiche Daten wie am Sticky (Seite Notfall)',
+           font=schrift(round(5 * PT)), fill=0, anchor='ls')
+    return vorn, hinten
+
+
+def karte_pdf(d, ziel):
+    """A4 mit zwei Karten (Portemonnaie + Box), je Vorder- und Rückseite nebeneinander: ausschneiden, in der Mitte
+    falten (Vorder- und Rückseite hängen an der Falz zusammen), laminieren. Drucken in 100 %."""
+    vorn, hinten = karte_seiten(d)
+    a4 = Image.new('L', (round(210 * MM), round(297 * MM)), 255)
+    g = ImageDraw.Draw(a4)
+    x0 = (a4.width - 2 * KB) // 2
+    for i in range(2):
+        y0 = round((30 + i * 75) * MM)
+        a4.paste(vorn, (x0, y0))
+        a4.paste(hinten, (x0 + KB, y0))
+        g.rectangle([x0, y0, x0 + 2 * KB, y0 + KH], outline=0, width=2)          # Schnittlinie
+        for yy in range(y0, y0 + KH, round(2 * MM)):                              # Falz gestrichelt
+            g.line([x0 + KB, yy, x0 + KB, yy + round(1 * MM)], fill=0, width=2)
+    g.text((x0, round(20 * MM)), 'Notfallkarte – in 100 % drucken, außen ausschneiden, an der gestrichelten Linie falten, laminieren',
+           font=schrift(round(8 * PT)), fill=0)
+    a4.point(lambda v: 255 if v >= 128 else 0).convert('1').save(ziel, resolution=DPI)
+
+
 def bits(bild):
     """1 bpp, MSB zuerst, 1 = schwarz (wie imgBuf im Sticky); PIL packt 1 = weiß, also umdrehen"""
     return bytes(b ^ 0xFF for b in bild.tobytes())
@@ -196,10 +278,14 @@ def main():
         shutil.copy(VORLAGE, a.datei)
         print(f'Neu angelegt: {a.datei}\nBitte ausfüllen und das Skript noch einmal starten.')
         return
-    bild, felder = zeichnen(lesen(a.datei))
+    daten = lesen(a.datei)
+    bild, felder = zeichnen(daten)
     vorschau = os.path.splitext(a.datei)[0] + '-vorschau.png'
     bild.save(vorschau)
     print('Vorschau:', vorschau)
+    karte = os.path.splitext(a.datei)[0] + '-karte.pdf'
+    karte_pdf(daten, karte)
+    print('Papierkarte:', karte)
     if a.nur_vorschau:
         return
     port = a.port or sticky_port()

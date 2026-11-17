@@ -412,7 +412,8 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   SOS (Morse über den Summer) und Sparmodus (Funk aus auch am USB, Schlaf bis zur vollen Stunde, kein Bewegungswecken/
   Klima/Stundenfenster, Blatt steht vor jedem Schlaf). Akku ≤ 3 % oder < 3450 mV: Sparmodus an und Blatt zeigen.
   Geflasht 17.11.2026 über COM10 (CH343; der Empfang läuft über UART0/`Serial0`, nicht über `Serial`), Probeblatt mit
-  Platzhaltern per USB aufgespielt (beide Dateien „DATEI OK“, 48 KB in ~5 s); am Gerät noch nicht angesehen
+  Platzhaltern per USB aufgespielt (beide Dateien „DATEI OK“, 48 KB in ~5 s), am Gerät angesehen: passt. Papierkarte
+  (Scheckkarte zum Falten, PDF neben der privaten Datei) entsteht bei jedem Lauf mit. Gesamtbauplan: SPEC-Tabelle
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik
