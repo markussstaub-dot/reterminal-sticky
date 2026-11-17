@@ -500,6 +500,10 @@ def main():
     dateien = [(f'doku/{dok}/{i:02d}.bin', notfallblatt.bits(s)) for i, s in enumerate(seiten)]
     index = f'seiten={len(seiten)}\ntoc=-1\n' + ''.join(f'f {s} {x0} {y0} {x1} {y1} {z}\n' for s, x0, y0, x1, y1, z in felder)
     dateien.append((f'doku/{dok}/index.txt', index.encode()))
+    if not a.test:                                       # erster Ort für den Sonnenkompass (FW ≥ 0.43.0)
+        n0, la0, lo0 = orte[0]
+        ascii_name = n0.translate(str.maketrans({'ä': 'ae', 'ö': 'oe', 'ü': 'ue', 'Ä': 'Ae', 'Ö': 'Oe', 'Ü': 'Ue', 'ß': 'ss'}))
+        dateien.append(('notfall/ort.txt', f'{la0:.4f} {lo0:.4f} {ascii_name}\n'.encode()))
     dateien.append(('doku/sprung.txt', f'{dok} 0\n'.encode()))   # FW ≥ 0.41.1: öffnet das Dokument gleich
     notfallblatt.aufspielen(port, dateien, None if a.test else os.path.join(PRIVAT, 'notfall-geraet.txt'))
     print(f'Am Sticky: „{dok}“ ist offen (Ort antippen, ▲/▼ blättert).')

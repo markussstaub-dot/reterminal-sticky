@@ -57,6 +57,10 @@ static bool wTippen = false;
 static bool wNotfall = false;
 // Notfalldokumente (FW 0.41.0): typ nfpin (punkte <x> <y>), typ nfdoku (seiten <n>)
 static bool wNfPin = false, wNfDoku = false;
+// Sonnenkompass (sonne.h, FW 0.43.0): typ sonne, die Seite zeichnet der Sticky selbst
+static bool wSonne = false;
+static void sonneZeichnen();
+static void sonneLoop();
 static int wPunkteX = -1, wPunkteY = 0, wSeiten = 0;
 static void nfAktion(const char* a, int wert);
 static void nfPinZeichnen();
@@ -136,7 +140,7 @@ static bool widgetLaden(const char* name) {
     wKnopfAnzahl = 0; wzX = -1; wTaste[0][0] = wTaste[1][0] = 0; wHatUhr = false; wWaage = false; wbR = 0; wW1x = wW2x = -1;
     wzSchrittGesetzt = false;
     wRechner = wUmrechner = false; wTx = -1; wGlyphAnzahl = wTastenAnzahl = 0;
-    wWeltzeit = wWecker = wEinst = wRecorder = wJaNein = wZiffern = wTippen = wNotfall = wNfPin = wNfDoku = false; wPunkteX = -1; wSeiten = 0; wTextAnzahl = 0; wEMax = 6; wESonder[0] = 0; wStadtAnzahl = 0; wMinuteGezeigt = -1;
+    wWeltzeit = wWecker = wEinst = wRecorder = wJaNein = wZiffern = wTippen = wNotfall = wNfPin = wNfDoku = wSonne = false; wPunkteX = -1; wSeiten = 0; wTextAnzahl = 0; wEMax = 6; wESonder[0] = 0; wStadtAnzahl = 0; wMinuteGezeigt = -1;
     if (!wReBereit) { rNeu(wRe); wReBereit = true; }
     if (!wUmBereit) { uNeu(wUm); wUmBereit = true; }
     int altPaar = wUm.paar;
@@ -156,8 +160,8 @@ static bool widgetLaden(const char* name) {
             wWeltzeit = !strcmp(a, "weltzeit"); wWecker = !strcmp(a, "wecker"); wEinst = !strcmp(a, "einstellungen");
             wRecorder = !strcmp(a, "recorder");
             wJaNein = !strcmp(a, "janein"); wZiffern = !strcmp(a, "ziffern"); wTippen = !strcmp(a, "tippen");
-            wNotfall = !strcmp(a, "notfall"); wNfPin = !strcmp(a, "nfpin"); wNfDoku = !strcmp(a, "nfdoku");
-            wHatUhr = strcmp(a, "menue") && !wNotfall && !wNfPin && !wNfDoku && !wWaage && !wRechner && !wUmrechner && !wWeltzeit && !wWecker && !wEinst && !wRecorder && !wJaNein && !wZiffern && !wTippen;
+            wNotfall = !strcmp(a, "notfall"); wNfPin = !strcmp(a, "nfpin"); wNfDoku = !strcmp(a, "nfdoku"); wSonne = !strcmp(a, "sonne");
+            wHatUhr = strcmp(a, "menue") && !wNotfall && !wNfPin && !wNfDoku && !wSonne && !wWaage && !wRechner && !wUmrechner && !wWeltzeit && !wWecker && !wEinst && !wRecorder && !wJaNein && !wZiffern && !wTippen;
         }
         else if (z.startsWith("glyphen ") || z.startsWith("tasten ")) {   // Wortliste (UTF-8), „_“ = Leerzeichen
             bool g = z.startsWith("glyphen ");
@@ -475,6 +479,7 @@ static void widgetZeigen() {
     if (wNotfall) notfallMarkieren();
     if (wNfPin) nfPinZeichnen();
     if (wNfDoku) nfDokuZeichnen();
+    if (wSonne) sonneZeichnen();
     if (wRechner || wUmrechner || wWeltzeit || wWecker || wEinst || wRecorder || wJaNein || wZiffern || wTippen) {
         if (!wHintergrund) wHintergrund = (uint8_t*)ps_malloc(IMG_BYTES);
         if (wHintergrund) memcpy(wHintergrund, imgBuf, IMG_BYTES);
@@ -502,7 +507,12 @@ static void widgetAktion(const char* a, int wert) {
     if (!strcmp(a, "platz")) { if (!platzWechseln()) tone(PIN_BUZZER, 900, 120); return; }   // Menü-Kachel „Sticky Lab“
     if (!strcmp(a, "eingabe")) { eingabeOeffnen(wert); return; }
     if (wNotfall) { notfallAktion(a, wert); return; }
-    if (wNfPin || wNfDoku) { nfAktion(a, wert); return; }   // Ja/Nein, Ziffern (FW 0.35.0)
+    if (wNfPin || wNfDoku) { nfAktion(a, wert); return; }
+    if (wSonne) {                                       // Antippen = zurück aufs Notfallblatt (bzw. Home)
+        if (sollDa("widgets/notfall/felder.txt")) { strlcpy(widgetName, "notfall", sizeof widgetName); neuZeichnen = true; }
+        else modusWunsch = M_HOME;
+        return;
+    }   // Ja/Nein, Ziffern (FW 0.35.0)
     if ((wJaNein || wZiffern) && eingabeAktion(a, wert)) return;
     if (wTippen) { tippenAktion(a, wert); return; }
     if (wRecorder) { if (recAktion(a, wert)) wTextNeu = true; return; }
@@ -647,6 +657,7 @@ static void widgetLoop() {
         bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
         if (statusHoch()) teilZeigen(62, 0, W - 62, H); else teilZeigen(0, 62, W, H - 62);
     }
+    sonneLoop();                              // Sonnenkompass: alle 5 min neu
     tippenLoop();                             // Tippen: Anschläge aus der Touch-Aufgabe, Textzeile gesammelt
     if (modus == M_WIDGET && !hilfeAn && wTextNeu) { wTextNeu = false; wAnzeigeZeigen(); }
     weckerPruefen();

@@ -29,7 +29,7 @@
 #include <driver/rtc_io.h>
 #include <soc/gpio_reg.h>
 
-static const char* FW_VERSION = "0.42.0";
+static const char* FW_VERSION = "0.43.0";
 
 // ---- Sprache (FW 0.32.0, SPEC „Zweisprachig Deutsch/Englisch“): wirksame Sprache der Anzeige, Muster aus dem Sticky Lab.
 // Gesetzt in modus.h (uhrFormatLaden): Standard vom Handy, am Sticky überstimmbar. Nur Anzeige, Logs bleiben deutsch.
@@ -721,6 +721,7 @@ static void bleInit() {
 #include "status.h"
 #include "notfall.h"
 #include "grundmenue.h"
+#include "sonne.h"
 
 // ---- Ablauf ----------------------------------------------------------------------
 void setup() {

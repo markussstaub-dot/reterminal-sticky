@@ -427,6 +427,12 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
 - **FW 0.41.1 (17.11.2026):** USB-Dateien lösen dieselben Folgen aus wie ein Bluetooth-Abgleich (`sollGeaendert`:
   Dokumente, Sprung, Lage, Karussell). Kartentest (`sticky-app/tools/notfallkarten.py --test`, Tübingen, 4 Seiten:
   Zeichen, 1:25.000 klar, mit Häusern, 1:100.000) als Handbuch „kartentest“ auf Katjas Gerät, per Sprung geöffnet
+- **Sonnenkompass (FW 0.43.0, 17.11.2026, Schritt 3b):** `sonne.h`: Sonnenrichtung/-höhe (NOAA-Näherung), Auf-/Untergang,
+  Kreis mit N oben und Sonnenstrahl („drehen, bis der Strahl zur Sonne zeigt“), alle 5 min neu (im Sparmodus nur beim
+  Öffnen). Ort aus `/soll/notfall/ort.txt` (schreibt `notfallkarten.py` mit dem ersten Ort), sonst Mitte Deutschlands.
+  Seite „sonne“ legt der Sticky selbst an; vierter Knopf „Sonne“ auf dem Notfallblatt (Python und Console). Formel am
+  Zenbook geprüft (Bexbach 17.11.: Untergang 16:47 MEZ, Mittag 21,5° in Süd). Geflasht auf Katjas Gerät, Blatt und Ort
+  aufgespielt, am Gerät angesehen (Markus: passt). Bauanleitung `docs/NOTFALL.md` (Technik, Schritte, Quellen nur als Links, EN)
 - **Eigene Kartenorte und OpenFreeMap (17.11.2026):** `notfallkarten.py` ohne `--test` liest `privat\notfall-karten.txt`
   (Koordinaten oder Adresse → Nominatim), baut Dokument „karten“ (Inhalt mit Kachel je Ort → Übersicht → Nah → 4 Lupen,
   Zeichen). Quelle jetzt **OpenFreeMap-Vektorkacheln** (`osmkacheln.py`, eigener MVT-Leser, Cache; Testgebiet in ~10 s

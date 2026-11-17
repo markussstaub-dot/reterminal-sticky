@@ -135,9 +135,10 @@ def zeichnen(d, doku=False):
 
     # Fuß: Knöpfe (wirken nur mit Strom)
     g.line([0, 416, W, 416], fill=S, width=2)
-    knoepfe = [(20, 428, 220, 472, 'SOS', 'sos'), (236, 428, 436, 472, 'Sparmodus', 'spar')]
-    if doku:
-        knoepfe.append((452, 428, 652, 472, 'Dokumente', 'doku'))
+    # SOS · Sparmodus · (Dokumente) · Sonne (Sonnenkompass, FW ≥ 0.43.0)
+    namen = [('SOS', 'sos'), ('Sparmodus', 'spar')] + ([('Dokumente', 'doku')] if doku else []) + [('Sonne', 'sonne')]
+    breite = 180 if len(namen) == 4 else 200
+    knoepfe = [(16 + i * (breite + 12), 428, 16 + i * (breite + 12) + breite, 472, t, a) for i, (t, a) in enumerate(namen)]
     for x0, y0, x1, y1, t, a in knoepfe:
         if a == 'sos':
             g.rounded_rectangle([x0, y0, x1, y1], radius=22, fill=S)
@@ -145,8 +146,6 @@ def zeichnen(d, doku=False):
         else:
             g.rounded_rectangle([x0 + 1, y0 + 1, x1 - 1, y1 - 1], radius=21, outline=S, width=2)
             g.text(((x0 + x1) / 2, (y0 + y1) / 2), t, font=schrift(G), fill=S, anchor='mm')
-    if not doku:
-        g.text((W - 16, 450), 'Akku leer: bleibt stehen', font=schrift(G), fill=S, anchor='rm')
     # Felder: Knöpfe mit etwas Rand (Finger)
     felder = 'typ notfall\n' + ''.join(f'knopf {x0 - 8} {y0 - 8} {x1 + 8} {min(H, y1 + 8)} {a}\n' for x0, y0, x1, y1, _, a in knoepfe)
     return bild.point(lambda v: 255 if v >= 128 else 0).convert('1'), felder

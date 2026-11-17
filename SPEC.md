@@ -1346,6 +1346,25 @@ laden, SOS testen, Batterien prüfen; alle 12 Monate Daten durchsehen und neu au
   epub-to-xtc-converter mit CREngine, deutsche Trennung, 800×480, Literata 26–28 px) → kleines Skript zerlegt in NN.bin +
   index.txt; Rückfall Calibre `ebook-convert` → PDF 800×480 → bestehende PDF-Strecke. Wikipedia nur ausgewählte Artikel
   (Kiwix-ZIM bzw. API → EPUB → dieselbe Kette; CC BY-SA mit Quelle je Artikel)
+- Idee **Wildnis-Profil / 7-Tage-Probe** (Markus, 17.11.2026, Gedankenspiel „7 Tage Wildnis, 7 Gegenstände, einer ist
+  der Sticky“): Er macht kein Feuer, kein Wasser, keinen Unterschlupf – den Platz verdient er nur mit Licht-Planung,
+  Orientierung, Wissen und Laufzeit. Vorschlag in dieser Reihenfolge: 1) **7 Tage Laufzeit nachweisen** (Sparmodus-
+  Messung, bisher offen), 2) **Tagezähler auf Home** („Tag 4 · noch 5 h Licht · Untergang 16:47“, Sonnenrechnung aus
+  `sonne.h`), 3) **Kälte-/Taupunkt-Hinweis** aus dem Klimasensor (Frost, klamm; Akku unter 0 °C nicht laden),
+  4) Spickzettel `#wildnis` (Knoten, Unterschlupf, Feuerplatz, Wasser finden – keine essbaren Pflanzen),
+  5) **ein Schalter „Wildnis“**: Funk aus, Sparmodus, Home zeigt Tag/Licht/Kompass. Probe P dann als 7 Tage statt Wochenende
+- Idee **Unterwasser-Gehäuse mit fetten Tasten** (Markus ist Taucher, 17.11.2026): e-Ink ist unter Wasser gut lesbar
+  und hält das Bild ohne Strom. Touch geht unter Wasser nicht (kapazitiv) → nur KI/▲/▼ über große Stößel (Handschuhe),
+  Bedienung muss mit drei Tasten gehen. Einsatz: Tauchtafel (Spickzettel: Handzeichen, Plan, Briefing, Fischbestimmung),
+  Tauchgangsplan, Logbuch, Uhr/Timer – **kein Tauchcomputer, keine Deko-Angaben** (misst weder Druck noch Tiefe).
+  Gehäuse: Druck mit X1C möglich, aber FDM ist porös → viel Füllung, Beschichtung, O-Ring-Nut, Stößel mit eigenen
+  O-Ringen, **Drucktopf-Test** (z. B. 4 bar ≈ 30 m) vor dem ersten Tauchgang; Alternative gekauftes Kleingehäuse mit
+  Tastendurchführung. Gemeinsame Basis mit der Bugout-Box (Vermessen, Fenster, Dichtung) prüfen. Erst nach B1 (Maße)
+  - Idee **Tauch-Daten aus der App** (Markus, 17.11.2026): mit Handy-Verbindung rendert die App, der Sticky zeigt offline:
+    **Gezeitenplan** (Hoch-/Niedrigwasser der nächsten Tage am Ort; Quellen prüfen: BSH für deutsche Küsten, WorldTides
+    weltweit mit Freikontingent, Open-Meteo Marine für Wellen/Wassertemperatur), **Tauchbasen und Tauchplätze** aus OSM
+    (Tauchshops/-zentren, Tauchplätze; Name, Telefon, Öffnungszeiten) als Liste und Kartensymbol, dazu Wind/Wetter und
+    Sonnenauf-/-untergang für Nachttauchgänge (aus `sonne.h`)
 - ~~Zwei Lesemodi~~ → fest **ein Lesemodus „mit Brille“** (Markus, 17.11.2026: „ohne Brille fällt's insgesamt schwer,
   Lesebrille brauch ich eh“): kein Umschalter. Statt dessen **Ersatz-Lesebrille in die Box** (Packliste) und für „ohne
   Brille“ die **Papier-Notfallkarte**. Das Notfallblatt bleibt groß (mind. 22 px, liest meist ein Helfer), Karten mind. 22 px

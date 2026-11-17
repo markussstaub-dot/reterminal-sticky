@@ -700,6 +700,7 @@ static uint32_t kBesuchZaehler = 0;
 static void karussellBesucht(int i) { if (i >= 0 && i < 16) kBesucht[i] = ++kBesuchZaehler; }
 
 static void grundmenueBauen();
+static void sonneAnlegen();
 static bool karussellDaI(int i);
 static void karussellLaden() {
     kAnzahl = 0;
@@ -746,6 +747,7 @@ static void karussellLaden() {
     }
     Serial.printf("Karussell: %d Einträge\n", kAnzahl);
     grundmenueBauen();                     // ohne Menü der App: eigenes Grund-Menü (grundmenue.h)
+    sonneAnlegen();                        // Seite des Sonnenkompasses (sonne.h), falls sie fehlt
 }
 
 static bool karussellDa(Modus m) {

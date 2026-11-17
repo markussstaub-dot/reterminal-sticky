@@ -106,6 +106,11 @@ static void sosStart() {
 static bool notfallAktion(const char* a, int wert) {
     (void)wert;
     if (!strcmp(a, "sos")) { if (sosAn) sosStopp(); else sosStart(); return true; }
+    if (!strcmp(a, "sonne")) {                     // Sonnenkompass (sonne.h)
+        strlcpy(widgetName, "sonne", sizeof widgetName);
+        neuZeichnen = true;
+        return true;
+    }
     if (!strcmp(a, "doku")) {                      // Notfalldokumente: PIN bzw. gleich der Betrachter
         if (!nfBlobDa() || !sollDa("widgets/nf-pin/felder.txt")) { tone(PIN_BUZZER, 900, 200); protokoll("Notfall-Dokumente: kein Schlüssel bzw. keine PIN-Seite"); return true; }
         nfPin[0] = 0; nfSeite = 0;
@@ -185,6 +190,7 @@ static void notfallLoop() {
 // Zeile „DATEI <pfad unter /soll> <länge>\n“, danach genau <länge> Byte. Antwort „DATEI OK <pfad>“ bzw. „DATEI FEHLER <grund>“.
 // Über UART0 (Serial0): der USB-Stecker hängt am CH343-Wandler, nicht am USB des ESP32. Nur unter /soll, kein „..“, höchstens 1 MB. Danach Karussell neu laden (das Notfallblatt hängt sich selbst an).
 static void nfSchluesselZeile(const char* hex);
+static void soOrtNeu();
 static void serielleDatei() {
     static char zeile[200];
     static int n = 0;
@@ -222,6 +228,7 @@ static void serielleDatei() {
         protokoll("USB: %s (%ld Byte)", rel, len);
         Serial0.printf("DATEI OK %s\n", rel);
         sollGeaendert(rel);                         // wie nach einem Bluetooth-Abgleich: Dokumente, Sprung, Lage, Karussell …
+        if (!strcmp(rel, "notfall/ort.txt")) soOrtNeu();   // Sonnenkompass: neuer Ort
         if (!strncmp(rel, "widgets/", 8) || (!strncmp(rel, "doku/", 5) && strstr(rel, "/index.txt"))) {
             karussellLaden();                       // Notfall bzw. Handbuch hängen sich an, Grund-Menü folgt
             if (modus == M_WIDGET && strncmp(rel, "doku/", 5)) neuZeichnen = true;
