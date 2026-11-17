@@ -1388,7 +1388,8 @@ laden, SOS testen, Batterien prüfen; alle 12 Monate Daten durchsehen und neu au
   **Briefkasten-Melder** (Reed, Tiefschlaf), Wassermelder, Fenster offen, Waschmaschine fertig (Vibration),
   **Filament-Trockenbox** an der X1C (Feuchte), Lagerwächter (PIR) für Zelt/Rad, Microlino (Innentemperatur geparkt,
   Funkknopf), Bodenfeuchte im Garten. Zu klären: Sticky schläft meist → C3 melden zur vollen Stunde oder piepen mit
-  Vorrang; je C3 ein kleiner LiPo und ein gedrucktes Gehäuse (Baukasten); alles am Netz ist Toms Teil
+  Vorrang; je C3 ein kleiner LiPo und ein gedrucktes Gehäuse (Baukasten); alles am Netz ist Toms Teil. Erster Versuch
+  und Vorschlag **Relais** (C3 als ESP-NOW-Verstärker) stehen in der Sticky-Lab-SPEC unter Station 12
 - ~~Zwei Lesemodi~~ → fest **ein Lesemodus „mit Brille“** (Markus, 17.11.2026: „ohne Brille fällt's insgesamt schwer,
   Lesebrille brauch ich eh“): kein Umschalter. Statt dessen **Ersatz-Lesebrille in die Box** (Packliste) und für „ohne
   Brille“ die **Papier-Notfallkarte**. Das Notfallblatt bleibt groß (mind. 22 px, liest meist ein Helfer), Karten mind. 22 px
