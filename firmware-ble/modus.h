@@ -699,6 +699,8 @@ static uint32_t kBesucht[16] = {0};
 static uint32_t kBesuchZaehler = 0;
 static void karussellBesucht(int i) { if (i >= 0 && i < 16) kBesucht[i] = ++kBesuchZaehler; }
 
+static void grundmenueBauen();
+static bool karussellDaI(int i);
 static void karussellLaden() {
     kAnzahl = 0;
     String t;
@@ -728,6 +730,10 @@ static void karussellLaden() {
     bool notDrin = false;
     for (int i = 0; i < kAnzahl; i++) notDrin |= karussell[i] == M_WIDGET && !strcmp(kWidget[i], "notfall");
     if (!notDrin && kAnzahl > 0 && kAnzahl < 16 && notfallDa()) { strlcpy(kWidget[kAnzahl], "notfall", 16); karussell[kAnzahl++] = M_WIDGET; }
+    // Handbuch: liegen Dokumente auf der Karte, hängt es sich ebenso selbst an (DAU-Block, FW 0.42.0)
+    bool hbDrin = false;
+    for (int i = 0; i < kAnzahl; i++) hbDrin |= karussell[i] == M_HANDBUCH;
+    if (!hbDrin && kAnzahl > 0 && kAnzahl < 16 && dokN > 0) karussell[kAnzahl++] = M_HANDBUCH;
     if (kAnzahl == 0) {
         const Modus std[] = {M_HOME, M_NOTIZ, M_HANDBUCH, M_SPICK, M_BESTELL};
         for (auto m : std) karussell[kAnzahl++] = m;
@@ -739,6 +745,7 @@ static void karussellLaden() {
         karussell[0] = M_HOME; kAnzahl++;
     }
     Serial.printf("Karussell: %d Einträge\n", kAnzahl);
+    grundmenueBauen();                     // ohne Menü der App: eigenes Grund-Menü (grundmenue.h)
 }
 
 static bool karussellDa(Modus m) {
@@ -971,6 +978,7 @@ static void kiSerieLoop() {
     kiTipps = 0;
     if (modus != M_HOME) modusWunsch = M_HOME;   // kurz: immer nach Home
     else if (sollDa("widgets/menue/felder.txt")) { strlcpy(widgetName, "menue", sizeof widgetName); modusWunsch = M_WIDGET; }   // auf Home: Menü
+    else if (sollDa("widgets/grundmenue/felder.txt")) { strlcpy(widgetName, "grundmenue", sizeof widgetName); modusWunsch = M_WIDGET; }   // ohne App: Grund-Menü
 }
 
 /** Gegenseitig suchen: Piepen, solange gesucht wird; Handy-Klingeln senden, sobald die App da ist */

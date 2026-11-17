@@ -246,7 +246,43 @@ def sticky_port():
     return None
 
 
-def aufspielen(port, dateien):
+def wer(s):
+    """„Wer hängt am Kabel?“ (FW ≥ 0.42.0): → dict mit name, mac, fw, notfall, schluessel – oder None bei älterer Firmware"""
+    s.reset_input_buffer()
+    s.write(b'WER\n')
+    s.flush()
+    ende = time.time() + 3
+    while time.time() < ende:
+        z = s.readline().decode('utf-8', 'replace').strip()
+        if z.startswith('WER '):
+            t = z.split()
+            return {'name': t[1], 'mac': t[2], 'fw': t[4], 'notfall': t[6] == '1', 'schluessel': t[8] == '1'}
+    return None
+
+
+def geraet_pruefen(s, merken):
+    """Zeigt, welcher Sticky dranhängt. Mit merken (Pfad): beim ersten Mal still merken, bei einem anderen Gerät fragen."""
+    g = wer(s)
+    if not g:
+        print('  Sticky: Firmware vor 0.42.0 (kennt „WER“ nicht)')
+        return
+    print(f"  Sticky: {g['name']} · FW {g['fw']}" + (' · hat schon ein Notfallblatt' if g['notfall'] else ''))
+    if not merken:
+        return
+    bisher = open(merken, encoding='utf-8').read().split() if os.path.exists(merken) else []
+    if not bisher:
+        open(merken, 'w', encoding='utf-8').write(f"{g['mac']} {g['name']}\n")
+        return
+    if bisher[0] != g['mac']:
+        antwort = input(f"  Achtung: Das ist nicht dein Sticky ({bisher[1] if len(bisher) > 1 else bisher[0]}), sondern {g['name']}. "
+                        'Trotzdem deine Notfalldaten aufspielen? [j/N] ').strip().lower()
+        if antwort not in ('j', 'ja', 'y', 'yes'):
+            sys.exit('Abgebrochen, nichts geschrieben.')
+        if input('  Soll das ab jetzt dein Sticky sein? [j/N] ').strip().lower() in ('j', 'ja', 'y', 'yes'):
+            open(merken, 'w', encoding='utf-8').write(f"{g['mac']} {g['name']}\n")
+
+
+def aufspielen(port, dateien, merken=None):
     import serial
     s = serial.Serial()
     s.port, s.baudrate, s.timeout = port, 115200, 0.2
@@ -256,6 +292,7 @@ def aufspielen(port, dateien):
     time.sleep(0.3)
     s.reset_input_buffer()
     try:
+        geraet_pruefen(s, merken)
         def senden(rel, daten):
             s.reset_input_buffer()
             if rel == 'SCHLUESSEL':                 # verpackter Schlüssel der Notfalldokumente (FW ≥ 0.41.0)
@@ -338,7 +375,7 @@ def main():
         doku_dateien, schluessel, kacheln, (standpfad, stand) = doku
         print('Dokumente:', ', '.join(f'{n} ({k} S.)' for n, _, k in kacheln))
         dateien += doku_dateien + ([('SCHLUESSEL', schluessel)] if schluessel else [])
-    aufspielen(port, dateien)
+    aufspielen(port, dateien, os.path.join(privat, 'notfall-geraet.txt'))   # merkt sich dein Gerät
     if doku:
         import json
         json.dump(stand, open(standpfad, 'w'))

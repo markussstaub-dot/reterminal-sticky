@@ -196,6 +196,13 @@ static void serielleDatei() {
         zeile[n] = 0;
         n = 0;
         if (!strncmp(zeile, "SCHLUESSEL ", 11)) { nfSchluesselZeile(zeile + 11); continue; }
+        if (!strcmp(zeile, "WER")) {                // „Wer hängt am Kabel?“ (DAU-Block, FW 0.42.0)
+            uint8_t mac[6];
+            esp_read_mac(mac, ESP_MAC_BT);
+            Serial0.printf("WER Sticky-%02X%02X %02x:%02x:%02x:%02x:%02x:%02x FW %s notfall %d schluessel %d\n", mac[4], mac[5],
+                           mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], FW_VERSION, notfallDa() ? 1 : 0, nfBlobDa() ? 1 : 0);
+            continue;
+        }
         char rel[64];
         long len = 0;
         if (sscanf(zeile, "DATEI %63s %ld", rel, &len) != 2) continue;
@@ -215,9 +222,9 @@ static void serielleDatei() {
         protokoll("USB: %s (%ld Byte)", rel, len);
         Serial0.printf("DATEI OK %s\n", rel);
         sollGeaendert(rel);                         // wie nach einem Bluetooth-Abgleich: Dokumente, Sprung, Lage, Karussell …
-        if (!strncmp(rel, "widgets/", 8)) {
-            karussellLaden();
-            if (modus == M_WIDGET) neuZeichnen = true;
+        if (!strncmp(rel, "widgets/", 8) || (!strncmp(rel, "doku/", 5) && strstr(rel, "/index.txt"))) {
+            karussellLaden();                       // Notfall bzw. Handbuch hängen sich an, Grund-Menü folgt
+            if (modus == M_WIDGET && strncmp(rel, "doku/", 5)) neuZeichnen = true;
         }
     }
 }

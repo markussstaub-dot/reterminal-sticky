@@ -427,6 +427,12 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
 - **FW 0.41.1 (17.11.2026):** USB-Dateien lösen dieselben Folgen aus wie ein Bluetooth-Abgleich (`sollGeaendert`:
   Dokumente, Sprung, Lage, Karussell). Kartentest (`sticky-app/tools/notfallkarten.py --test`, Tübingen, 4 Seiten:
   Zeichen, 1:25.000 klar, mit Häusern, 1:100.000) als Handbuch „kartentest“ auf Katjas Gerät, per Sprung geöffnet
+- **DAU-Block (FW 0.42.0, 17.11.2026):** Handbuch hängt sich ans Karussell, sobald Dokumente da sind (wie Notfall);
+  nach USB-Uploads lädt der Sticky die Reihe neu. **Grund-Menü** `grundmenue.h`: ohne Menü der App baut der Sticky
+  `/soll/widgets/grundmenue` selbst (Kachel je Seite, Notfall schwarz, KI kurz auf Home öffnet es; nur neu bei geänderter
+  Reihe). USB `WER` → Name, MAC, FW, Notfall/Schlüssel; `notfallblatt.py` merkt sich das eigene Gerät
+  (`privat\notfall-geraet.txt`) und fragt bei einem anderen nach, die Console ebenso (localStorage). Geflasht auf
+  Katjas Gerät, `WER` geprüft (Sticky-5695); Grund-Menü dort nicht zu sehen, weil ihr App-Menü existiert – ungetestet
 - **Karten und Lesbarkeit (17.11.2026, Markus am Gerät):** „Nah klar“ + „Übersicht“ gewinnen, Häuser fallen weg. Zoom-Kette
   ohne Firmware über Handbuch-Tippfelder: Übersicht 1:100.000 → Nah 1:25.000 → 4 Lupen 1:12.500 mit Straßennamen.
   Schrift mind. 22 px. Kein zweiter Lesemodus: Standard „mit Brille“, Ersatz-Lesebrille in die Box, Notfallblatt

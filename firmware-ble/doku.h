@@ -211,7 +211,7 @@ static bool hbLaden(const char* name) {
 // ---- Zeichnen ------------------------------------------------------------------------------------------------
 static void bildRechteck(int x, int y, int w, int h, bool schwarz);
 /** ASCII-Text in imgBuf schreiben (Feld in Display-Koordinaten; die Bibliothek kann kein 1-bpp-Sprite, darum 8 bpp) */
-static void textInsBild(const char* text, int x0, int y0, int x1, int y1, bool schwarzerGrund) {
+static void textInsBild(const char* text, int x0, int y0, int x1, int y1, bool schwarzerGrund, const GFXfont* schrift = &FreeSans12pt7b) {
     static Seeed_Sprite spr;
     const int w = min(x1 - x0, 400), h = min(y1 - y0, 56);
     if (w <= 0 || h <= 0) return;
@@ -223,7 +223,8 @@ static void textInsBild(const char* text, int x0, int y0, int x1, int y1, bool s
     spr.fillScreen(schwarzerGrund ? TFT_BLACK : TFT_WHITE);
     spr.setTextColor(schwarzerGrund ? TFT_WHITE : TFT_BLACK);
     spr.setTextDatum(MC_DATUM);
-    spr.setFreeFont(&FreeSans12pt7b);
+    spr.setFreeFont(schrift);
+    if (schrift != &FreeSans12pt7b && spr.textWidth(text) > w - 8) spr.setFreeFont(&FreeSans12pt7b);   // zu breit: kleiner
     spr.drawString(text, w / 2, h / 2);
     spr.setFreeFont(nullptr);
     for (int y = 0; y < h; y++)

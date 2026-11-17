@@ -1329,7 +1329,7 @@ laden, SOS testen, Batterien prüfen; alle 12 Monate Daten durchsehen und neu au
 - ~~Zwei Lesemodi~~ → fest **ein Lesemodus „mit Brille“** (Markus, 17.11.2026: „ohne Brille fällt's insgesamt schwer,
   Lesebrille brauch ich eh“): kein Umschalter. Statt dessen **Ersatz-Lesebrille in die Box** (Packliste) und für „ohne
   Brille“ die **Papier-Notfallkarte**. Das Notfallblatt bleibt groß (mind. 22 px, liest meist ein Helfer), Karten mind. 22 px
-- Vorschlag **DAU-Block** (Markus „immer an den DAU denken“, 17.11.2026, nach dem Kartentest auf Katjas Gerät):
+- **umgesetzt FW 0.42.0 (17.11.2026)** – Vorschlag **DAU-Block** (Markus „immer an den DAU denken“, 17.11.2026, nach dem Kartentest auf Katjas Gerät):
   1) Aufspielen heißt erreichbar: per USB Aufgespieltes öffnet sich bzw. hängt sich selbst ein (Sprung umgesetzt FW 0.41.1;
   Handbuch automatisch ins Karussell, sobald Dokumente da sind, wie das Notfallblatt). 2) Keine versteckten Gesten:
   Notfall und Handbuch als Menü-Kachel, Grund-Menü auch ohne App. 3) Wer hängt am Kabel: USB-Zeile `WER` → Name, MAC-Ende,
