@@ -4,10 +4,12 @@ Holt OSM-Vektordaten über Overpass (kleine Gebiete), zeichnet sie selbst in 1 b
 mit 1-km-UTM-Gitter, Maßstab, Nordpfeil und „© OpenStreetMap-Mitwirkende“. Kein GPS am Sticky: Karte zum Orientieren.
 Die Abfragen werden zwischengespeichert (OSM-Server schonen, offline weiterzeichnen).
 
-Aufruf (Test mit neutralem Gebiet, Tübingen Altstadt):
-  python sticky-app/tools/notfallkarten.py --test [--port COM7]
-→ Varianten als PNG in den Ordner --aus (Standard: privat\\karten-test) und, mit Sticky am USB, als Handbuch
-  „kartentest“ nach /soll/doku/kartentest/ (danach startet der Sticky neu, damit er das Dokument findet).
+Aufruf:
+  python sticky-app/tools/notfallkarten.py              eigene Orte aus privat\\notfall-karten.txt → Handbuch „karten“
+  python sticky-app/tools/notfallkarten.py --test       neutrales Testgebiet (Tübingen) → Handbuch „kartentest“
+Fehlt die Ortsdatei, legt das Skript eine Vorlage an. Vorschau-PNGs in privat\\karten(-test); mit Sticky am USB wird
+aufgespielt und das Dokument gleich geöffnet. Abfragen an Overpass sind auf ein 0,05°-Raster gerundet (verrät den
+genauen Ort nicht); Adressen statt Koordinaten gehen an Nominatim (OpenStreetMap).
 """
 import argparse, json, math, os, sys, time, urllib.parse, urllib.request
 from PIL import Image, ImageDraw
@@ -17,8 +19,9 @@ PRIVAT = os.path.normpath(os.path.join(HIER, '..', '..', '..', '..', 'privat'))
 W, H, KOPF = 800, 480, 36
 MIN = 22                         # kleinste Schrift: ohne Lesebrille auf Armlänge (Markus, 17.11.2026)
 PX_MM = 9.25                     # 3,97″ bei 800 × 480
-OVERPASS_SERVER = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter',
-                   'https://overpass.private.coffee/api/interpreter']
+# wie Bubble Log (SPEC-tempolimit.md „Cache aus Overpass“): kumi.systems gibt es nicht mehr; bei Überlast 10/30/60 s warten
+OVERPASS_SERVER = ['https://overpass-api.de/api/interpreter', 'https://overpass.private.coffee/api/interpreter']
+OVERPASS_WARTEN = [10, 30, 60]
 TEST = ('Tübingen', 48.5203, 9.0536)
 
 
@@ -50,8 +53,14 @@ def utm(lat, lon, zone=None):
 
 
 # ---- Daten --------------------------------------------------------------------------------------------------------------
+QUELLE = 'openfreemap'            # Standard seit 17.11.2026 (wie Bubble Log); 'overpass' als Rückfall (--quelle)
+RASTER = 0.05                    # Abfragen auf 0,05° runden: der Server sieht ein Rechteck, nicht den Ort in der Mitte
+
+
 def overpass(sued, west, nord, ost, cache_ordner, gebaeude):
     os.makedirs(cache_ordner, exist_ok=True)
+    sued, west = math.floor(sued / RASTER) * RASTER, math.floor(west / RASTER) * RASTER
+    nord, ost = math.ceil(nord / RASTER) * RASTER, math.ceil(ost / RASTER) * RASTER
     name = f'osm_{sued:.4f}_{west:.4f}_{nord:.4f}_{ost:.4f}_{int(gebaeude)}.json'
     pfad = os.path.join(cache_ordner, name)
     if os.path.exists(pfad):
@@ -86,7 +95,7 @@ out geom;"""
                 print(f'    {e}', flush=True)
         if daten is not None:
             break
-        time.sleep(10 * (versuch + 1))
+        time.sleep(OVERPASS_WARTEN[versuch])
     if daten is None:
         sys.exit(f'Overpass nicht erreichbar: {fehler}')
     json.dump(daten, open(pfad, 'w', encoding='utf-8'))
@@ -128,8 +137,12 @@ def blatt(name, lat, lon, massstab, variante, cache_ordner, daten=None, zusatz='
     dlat = hoehe_m / 2 / 111320 * 1.15
     dlon = breite_m / 2 / (111320 * math.cos(math.radians(lat))) * 1.15
     if daten is None:                                    # Lupe: nimmt die Daten des Nahblatts (größeres Gebiet)
-        daten = overpass(round(lat - dlat, 4), round(lon - dlon, 4), round(lat + dlat, 4), round(lon + dlon, 4),
-                         cache_ordner, variante == 'haeuser')
+        if QUELLE == 'openfreemap':
+            import osmkacheln
+            daten = osmkacheln.holen(lat - dlat, lon - dlon, lat + dlat, lon + dlon, cache_ordner)
+        else:
+            daten = overpass(round(lat - dlat, 4), round(lon - dlon, 4), round(lat + dlat, 4), round(lon + dlon, 4),
+                             cache_ordner, variante == 'haeuser')
     staerke = 25000 / massstab                           # Linien im Übersichtsblatt dünner
 
     def xy(pt):
@@ -264,8 +277,18 @@ def blatt(name, lat, lon, massstab, variante, cache_ordner, daten=None, zusatz='
             pts = [xy(p) for p in el['geometry']]
             symbol(sum(p[0] for p in pts) / len(pts), sum(p[1] for p in pts) / len(pts), t['amenity'])
 
-    # Straßennamen (Lupe: ab Wohnstraße, Nahblatt: nur Hauptstraßen), waagrecht mit weißem Rand, ohne Überlappung
+    # Ortsnamen mit weißem Rand
+    groesse = {'city': 32, 'town': 30, 'village': 26, 'suburb': 24, 'hamlet': MIN, 'neighbourhood': MIN}
+    zeigen = {'uebersicht': ('city', 'town', 'village', 'hamlet'), 'klar': ('city', 'town', 'village', 'suburb', 'hamlet', 'neighbourhood'),
+              'haeuser': ('city', 'town', 'village', 'suburb', 'hamlet', 'neighbourhood')}[variante]
+    # Straßennamen (Lupe: ab Wohnstraße, Nahblatt: nur Hauptstraßen), waagrecht mit weißem Rand, ohne Überlappung;
+    # Ortsnamen haben Vorrang (ihre Kästen sind vorab belegt)
     belegt = []
+    for el in elemente:
+        t = el.get('tags', {})
+        if el['type'] == 'node' and t.get('place') in zeigen and t.get('name'):
+            x, y = xy(el)
+            belegt.append(g.textbbox((x, y), t['name'], font=schrift(groesse[t['place']], True), anchor='mm', stroke_width=4))
     def frei(box):
         return all(box[2] < b[0] or box[0] > b[2] or box[3] < b[1] or box[1] > b[3] for b in belegt)
     namen_ab = {'primary', 'secondary', 'tertiary', 'trunk'} if massstab >= 20000 else set(STRASSE) - {'service', 'motorway_link', 'trunk_link', 'primary_link', 'secondary_link'}
@@ -291,10 +314,6 @@ def blatt(name, lat, lon, massstab, variante, cache_ordner, daten=None, zusatz='
             belegt.append(b)
             gesehen.add(n)
 
-    # Ortsnamen mit weißem Rand
-    groesse = {'city': 32, 'town': 30, 'village': 26, 'suburb': 24, 'hamlet': MIN, 'neighbourhood': MIN}
-    zeigen = {'uebersicht': ('city', 'town', 'village', 'hamlet'), 'klar': ('city', 'town', 'village', 'suburb', 'hamlet', 'neighbourhood'),
-              'haeuser': ('city', 'town', 'village', 'suburb', 'hamlet', 'neighbourhood')}[variante]
     for el in elemente:
         t = el.get('tags', {})
         if el['type'] == 'node' and t.get('place') in zeigen and t.get('name'):
@@ -342,30 +361,91 @@ def legende():
               'Doppellinie Hauptstraße · gestrichelt Weg',
               'Querstriche Bahn · Netz 1 km (Zahlen am Rand)',
               'Kreis in der Mitte = Bezugspunkt · kein GPS',
-              'Tippen = näher ran · ▲/▼ blättern']
+              'Auf der Karte tippen = näher ran · ▲/▼ blättern']
     for i, z in enumerate(zeilen):
         g.text((24, 70 + i * 56), z, font=s(26, i == 6), fill=0, anchor='lm')
     return bild.point(lambda v: 255 if v >= 128 else 0).convert('1')
 
 
-def kette(name, lat, lon, cache):
+def kette(name, lat, lon, cache, basis=0):
     """Zoom-Kette (Markus 17.11.: „einstellbarer Zoom?“): Zeichen · Übersicht 1:100.000 · Nah 1:25.000 · 4 Lupen
     1:12.500. Tippfelder (Handbuch-Index „f s x0 y0 x1 y1 ziel“): Übersicht Mitte → Nah, Nah-Viertel → Lupe, Lupe → Nah.
     „mit Häusern“ fiel im Vergleich durch."""
     nah = blatt(name, lat, lon, 25000, 'klar', cache)
-    seiten = [legende(), blatt(name, lat, lon, 100000, 'uebersicht', cache), nah]
+    seiten = [blatt(name, lat, lon, 100000, 'uebersicht', cache), nah]   # basis = Index der Übersicht im Dokument
     hb = H - KOPF
     m25 = 25000 / 1000 / PX_MM
-    felder = [(1, W * 3 // 8, KOPF + hb * 3 // 8, W * 5 // 8, KOPF + hb * 5 // 8, 2)]   # Übersicht: Nah-Gebiet
+    U, N = basis, basis + 1
+    felder = [(U, W * 3 // 8, KOPF + hb * 3 // 8, W * 5 // 8, KOPF + hb * 5 // 8, N)]   # Übersicht: Nah-Gebiet
     for i, (sx, sy, kurz) in enumerate([(-1, -1, 'NW'), (1, -1, 'NO'), (-1, 1, 'SW'), (1, 1, 'SO')]):
         dx, dy = sx * W / 4 * m25, sy * hb / 4 * m25          # Viertelmitte in Metern (y nach Süden positiv)
         la = lat - dy / 111320
         lo = lon + dx / (111320 * math.cos(math.radians(lat)))
         seiten.append(blatt(name, la, lo, 12500, 'klar', cache, daten=nah.daten, zusatz=f' · Lupe {kurz}'))
         x0, y0 = (0 if sx < 0 else W // 2), (KOPF if sy < 0 else KOPF + hb // 2)
-        felder.append((2, x0, y0, x0 + W // 2, y0 + hb // 2, 3 + i))          # Nah: Viertel → Lupe
-        felder.append((3 + i, 0, KOPF, W, H, 2))                              # Lupe: zurück zum Nahblatt
+        felder.append((N, x0, y0, x0 + W // 2, y0 + hb // 2, N + 1 + i))     # Nah: Viertel → Lupe
+        felder.append((N + 1 + i, 0, KOPF, W, H, N))                          # Lupe: zurück zum Nahblatt
     return seiten, felder
+
+
+ORTE_VORLAGE = """# Kartenorte für den Sticky (privat, nie ins Repo). Je Zeile „Name: Breite, Länge“ –
+# z. B. in Google Maps lange auf den Ort drücken und die Zahlen kopieren – oder „Name: Adresse“
+# (die Adresse wird dann bei OpenStreetMap/Nominatim nachgeschlagen und geht dabei an diesen Dienst).
+# Zeilen mit # werden übersprungen. Mehr als 6 Orte werden nicht gezeichnet.
+Zuhause:
+Arbeit:
+Fluchtziel:
+"""
+
+
+def orte_lesen(pfad):
+    """→ [(name, lat, lon)]; Adressen über Nominatim (1 Abfrage je Ort, mit Pause)"""
+    orte = []
+    for z in open(pfad, encoding='utf-8'):
+        z = z.strip()
+        if not z or z.startswith('#') or ':' not in z:
+            continue
+        name, wert = (t.strip() for t in z.split(':', 1))
+        if not wert:
+            continue
+        try:
+            lat, lon = (float(t) for t in wert.replace(';', ',').split(',')[:2])
+        except ValueError:
+            url = 'https://nominatim.openstreetmap.org/search?' + urllib.parse.urlencode({'q': wert, 'format': 'json', 'limit': 1})
+            anfrage = urllib.request.Request(url, headers={'User-Agent': 'sticky-notfallkarten/0.1 (personal offline map)'})
+            with urllib.request.urlopen(anfrage, timeout=30) as r:
+                treffer = json.loads(r.read().decode('utf-8'))
+            time.sleep(1.1)
+            if not treffer:
+                print(f'  {name}: Adresse nicht gefunden, übersprungen')
+                continue
+            lat, lon = float(treffer[0]['lat']), float(treffer[0]['lon'])
+            print(f'  {name}: Adresse gefunden ({lat:.5f}, {lon:.5f}) – gern so in die Datei schreiben')
+        orte.append((name, lat, lon))
+    return orte[:6]
+
+
+def ortsinhalt(orte, erste):
+    """Seite 0 des Dokuments „karten“: eine Kachel je Ort (→ dessen Übersicht) und „Zeichen“ (→ Erklärung)"""
+    from notfallblatt import schrift as s
+    bild = Image.new('L', (W, H), 255)
+    g = ImageDraw.Draw(bild)
+    g.rectangle([0, 0, W, 56], fill=0)
+    g.text((20, 28), 'KARTEN', font=s(30, True), fill=255, anchor='lm')
+    felder = []
+    kacheln = [(n, erste[i]) for i, (n, _, _) in enumerate(orte)] + [('Zeichen', 1)]
+    for i, (name, ziel) in enumerate(kacheln):
+        sp, ze = i % 2, i // 2
+        x0, y0 = 20 + sp * 390, 72 + ze * 84
+        x1, y1 = x0 + 370, y0 + 72
+        if name == 'Zeichen':
+            g.rounded_rectangle([x0 + 1, y0 + 1, x1 - 1, y1 - 1], radius=34, outline=0, width=2)
+        else:
+            g.rounded_rectangle([x0, y0, x1, y1], radius=34, fill=0)
+        g.text(((x0 + x1) / 2, (y0 + y1) / 2), name, font=s(30, name != 'Zeichen'), fill=255 if name != 'Zeichen' else 0, anchor='mm')
+        felder.append((0, x0, y0, x1, y1, ziel))
+    g.text((20, 456), 'Ort antippen · ▲/▼ blättert · auf Karten tippen = näher', font=s(MIN), fill=0, anchor='lm')
+    return bild.point(lambda v: 255 if v >= 128 else 0).convert('1'), felder
 
 
 def main():
@@ -375,19 +455,41 @@ def main():
         pass
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('--test', action='store_true', help='Vergleichsblätter für ein neutrales Gebiet (Tübingen)')
-    ap.add_argument('--aus', default=os.path.join(PRIVAT, 'karten-test'))
+    ap.add_argument('--aus')
+    ap.add_argument('--quelle', choices=['openfreemap', 'overpass'], default=QUELLE)
     ap.add_argument('--port')
     ap.add_argument('--nur-vorschau', action='store_true')
     a = ap.parse_args()
-    if not a.test:
-        sys.exit('Bisher nur --test (Lab-Station). Eigene Orte kommen nach der Auswahl der Variante.')
-    name, lat, lon = TEST
-    cache = os.path.join(a.aus, 'cache')
-    os.makedirs(a.aus, exist_ok=True)
-    seiten, felder = kette(name, lat, lon, cache)
+    globals()['QUELLE'] = a.quelle
+    if a.test:
+        dok, orte = 'kartentest', [TEST]
+        aus = a.aus or os.path.join(PRIVAT, 'karten-test')
+    else:
+        dok, aus = 'karten', a.aus or os.path.join(PRIVAT, 'karten')
+        pfad = os.path.join(PRIVAT, 'notfall-karten.txt')
+        if not os.path.exists(pfad):
+            os.makedirs(PRIVAT, exist_ok=True)
+            open(pfad, 'w', encoding='utf-8').write(ORTE_VORLAGE)
+            print(f'Neu angelegt: {pfad}\nBitte Orte eintragen und das Skript noch einmal starten.')
+            return
+        orte = orte_lesen(pfad)
+        if not orte:
+            sys.exit(f'Keine Orte in {pfad} eingetragen.')
+    cache = os.path.join(aus, 'cache')
+    os.makedirs(aus, exist_ok=True)
+    # Dokument: 0 Inhalt (Orte), 1 Zeichen, dann je Ort Übersicht · Nah · 4 Lupen
+    seiten, felder, erste = [None, legende()], [], []
+    for name, lat, lon in orte:
+        print(f'{name} …', flush=True)
+        erste.append(len(seiten))
+        s_, f_ = kette(name, lat, lon, cache, len(seiten))
+        seiten += s_
+        felder += f_
+    seiten[0], f0 = ortsinhalt([(n, 0, 0) for n, _, _ in orte], erste)
+    felder = f0 + felder
     for i, s in enumerate(seiten):
-        s.save(os.path.join(a.aus, f'karte-{i}.png'))
-    print('Vorschau:', a.aus)
+        s.save(os.path.join(aus, f'karte-{i:02d}.png'))
+    print('Vorschau:', aus)
     if a.nur_vorschau:
         return
     import notfallblatt
@@ -395,12 +497,12 @@ def main():
     if not port:
         print('Kein Sticky am USB – nur die Vorschau.')
         return
-    dateien = [(f'doku/kartentest/{i:02d}.bin', notfallblatt.bits(s)) for i, s in enumerate(seiten)]
+    dateien = [(f'doku/{dok}/{i:02d}.bin', notfallblatt.bits(s)) for i, s in enumerate(seiten)]
     index = f'seiten={len(seiten)}\ntoc=-1\n' + ''.join(f'f {s} {x0} {y0} {x1} {y1} {z}\n' for s, x0, y0, x1, y1, z in felder)
-    dateien.append(('doku/kartentest/index.txt', index.encode()))
-    dateien.append(('doku/sprung.txt', b'kartentest 0\n'))   # FW ≥ 0.41.1: öffnet das Dokument gleich
-    notfallblatt.aufspielen(port, dateien)
-    print('Am Sticky: „kartentest“ ist offen (▲/▼ blättert).')
+    dateien.append((f'doku/{dok}/index.txt', index.encode()))
+    dateien.append(('doku/sprung.txt', f'{dok} 0\n'.encode()))   # FW ≥ 0.41.1: öffnet das Dokument gleich
+    notfallblatt.aufspielen(port, dateien, None if a.test else os.path.join(PRIVAT, 'notfall-geraet.txt'))
+    print(f'Am Sticky: „{dok}“ ist offen (Ort antippen, ▲/▼ blättert).')
 
 
 if __name__ == '__main__':

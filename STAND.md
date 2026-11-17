@@ -427,6 +427,11 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
 - **FW 0.41.1 (17.11.2026):** USB-Dateien lösen dieselben Folgen aus wie ein Bluetooth-Abgleich (`sollGeaendert`:
   Dokumente, Sprung, Lage, Karussell). Kartentest (`sticky-app/tools/notfallkarten.py --test`, Tübingen, 4 Seiten:
   Zeichen, 1:25.000 klar, mit Häusern, 1:100.000) als Handbuch „kartentest“ auf Katjas Gerät, per Sprung geöffnet
+- **Eigene Kartenorte und OpenFreeMap (17.11.2026):** `notfallkarten.py` ohne `--test` liest `privat\notfall-karten.txt`
+  (Koordinaten oder Adresse → Nominatim), baut Dokument „karten“ (Inhalt mit Kachel je Ort → Übersicht → Nah → 4 Lupen,
+  Zeichen). Quelle jetzt **OpenFreeMap-Vektorkacheln** (`osmkacheln.py`, eigener MVT-Leser, Cache; Testgebiet in ~10 s
+  statt Minuten), Overpass als `--quelle overpass` (auf 0,05° gerundet). Ortsnamen haben Vorrang vor Straßennamen.
+  Erster Ort „Zuhause“ auf Katjas Gerät aufgespielt (Gerätefrage griff: dort nur aufgespielt, nicht als Markus' Gerät gemerkt)
 - **DAU-Block (FW 0.42.0, 17.11.2026):** Handbuch hängt sich ans Karussell, sobald Dokumente da sind (wie Notfall);
   nach USB-Uploads lädt der Sticky die Reihe neu. **Grund-Menü** `grundmenue.h`: ohne Menü der App baut der Sticky
   `/soll/widgets/grundmenue` selbst (Kachel je Seite, Notfall schwarz, KI kurz auf Home öffnet es; nur neu bei geänderter

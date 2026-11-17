@@ -1326,6 +1326,26 @@ laden, SOS testen, Batterien prüfen; alle 12 Monate Daten durchsehen und neu au
 - fest **Karten (Kartentest 17.11.2026, Markus):** „Nah klar“ und „Übersicht“ gewinnen, „mit Häusern“ fällt weg. Zoom als
   Kette ohne Firmware (Handbuch-Tippfelder): Übersicht 1:100.000 → Mitte tippen → Nah 1:25.000 → Viertel tippen → Lupe
   1:12.500 (neu gezeichnet, mit Straßennamen) → tippen = zurück; ▲/▼ blättert linear
+- Vorschlag **Karten aus OpenFreeMap im Browser** (Markus, 17.11.2026, Synergie mit Bubble Log): Bubble Log holt für
+  die Sim-Welt fertige OSM-Vektorkacheln von OpenFreeMap (`bubble-log-app/tools/simwelt.mjs`, OpenMapTiles-Schema, z14).
+  Damit könnte die Sticky-Console Kartenketten im Browser zeichnen (Playground-Nutzer ohne Python, kein Overpass-Stau,
+  gemeinsames JS-Stück für beide Projekte). Vorher prüfen, ob Trinkwasser/Schutzhütte/Apotheke in den Kacheln stecken,
+  sonst nur die Symbole per kleiner Overpass-Abfrage. Eigener Schritt nach den eigenen Kartenorten. Übernommen schon:
+  Overpass-Server und Wartezeiten wie Bubble Log (kumi.systems gibt es nicht mehr)
+- fest **Kartenorte privat** (17.11.2026): `privat\notfall-karten.txt`, je Zeile „Name: Breite, Länge“ oder „Name: Adresse“
+  (Adresse geht dann an Nominatim). Abfragen an Overpass auf ein 0,05°-Raster gerundet, damit sie den genauen Ort nicht
+  verraten (Gedanke wie die Zuhause-Unschärfe in Bubble Log). Dokument „karten“: Inhalt (Kachel je Ort) → je Ort Übersicht →
+  Nah → 4 Lupen, dazu die Zeichen
+- Vorschlag **Bibliothek / „intellectual survival“** (Markus, 17.11.2026): Bücher, Survival-Handbücher und Notfallwissen
+  als Handbuch-Dokumente (Zenbook rendert EPUB/PDF in Bildschirmseiten mit Inhaltsverzeichnis, der Sticky blättert;
+  32 GB ≈ 600 000 Seiten). Keine fremde Reader-Firmware (anderes Display/Touch, kein freier Platz: app0 EDC, app1 Lab,
+  Notfall und Lesen gehören zusammen). fest: **große Mengen per SD-Kartenleser am Zenbook** („macht man ja nicht
+  täglich“), das Kabel bleibt für Kleines. Recherche (17.11.2026, Nebensession, nicht selbst geprüft): **CrossPoint
+  Reader** (MIT) unterstützt den Sticky offiziell (`env:sticky`, Release 2.0.0), bringt aber eine eigene Partitionstabelle
+  und würde EDC in app0 überschreiben → nur als Codequelle. Vorschlag Werkzeugkette: EPUB → **XTC** (fertige 1-bpp-Seiten,
+  epub-to-xtc-converter mit CREngine, deutsche Trennung, 800×480, Literata 26–28 px) → kleines Skript zerlegt in NN.bin +
+  index.txt; Rückfall Calibre `ebook-convert` → PDF 800×480 → bestehende PDF-Strecke. Wikipedia nur ausgewählte Artikel
+  (Kiwix-ZIM bzw. API → EPUB → dieselbe Kette; CC BY-SA mit Quelle je Artikel)
 - ~~Zwei Lesemodi~~ → fest **ein Lesemodus „mit Brille“** (Markus, 17.11.2026: „ohne Brille fällt's insgesamt schwer,
   Lesebrille brauch ich eh“): kein Umschalter. Statt dessen **Ersatz-Lesebrille in die Box** (Packliste) und für „ohne
   Brille“ die **Papier-Notfallkarte**. Das Notfallblatt bleibt groß (mind. 22 px, liest meist ein Helfer), Karten mind. 22 px
