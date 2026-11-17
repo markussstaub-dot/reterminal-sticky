@@ -3,7 +3,7 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.39.2 + APK 2026.11.16-1742 (16.11.2026, auf meinem Sticky) – EDC-Sticky, allein nützlich: Gruppen im Menü (Zeit, Messen, Notieren, Rechnen, Nachschlagen); Recorder, Tippen (Tastatur, Num-Pad), Ja/Nein; Uhr/Wecker/Weltzeit, Rechner/Umrechner, Strichschrift, Waage, Lineal, Zettel mit QR; Dokumente (Handbuch auf SD, Spickzettel getrennt); Burgduell auch ohne Handy; DE/EN, Braun-Optik; Umschalten EDC ↔ Sticky Lab (app0/app1). App: Hauslurch-Brücke („Lurch, …“ = Befehl, sonst Notiz; geparkt), Meldungen auf Home, Parkplatz-Rückfrage, Orte. MIT, Repo öffentlich; Release v0.39.2, Playground-Update-PR #131 offen. FW 0.40.0 (Notfallblatt, SOS, Notfall-Sparmodus) seit 17.11. auf meinem Sticky
+version: FW 0.39.2 + APK 2026.11.16-1742 (16.11.2026, auf meinem Sticky) – EDC-Sticky, allein nützlich: Gruppen im Menü (Zeit, Messen, Notieren, Rechnen, Nachschlagen); Recorder, Tippen (Tastatur, Num-Pad), Ja/Nein; Uhr/Wecker/Weltzeit, Rechner/Umrechner, Strichschrift, Waage, Lineal, Zettel mit QR; Dokumente (Handbuch auf SD, Spickzettel getrennt); Burgduell auch ohne Handy; DE/EN, Braun-Optik; Umschalten EDC ↔ Sticky Lab (app0/app1). App: Hauslurch-Brücke („Lurch, …“ = Befehl, sonst Notiz; geparkt), Meldungen auf Home, Parkplatz-Rückfrage, Orte. MIT, Repo öffentlich; Release v0.39.2, Playground-Update-PR #131 offen. FW 0.41.0 (Notfallblatt, SOS, Notfall-Sparmodus, Notfalldokumente mit PIN) seit 17.11. auf meinem Sticky
 wartet: Markus: Notfall-Seite (Probeblatt mit Platzhaltern ist drauf) mit ▲/▼ ansehen, SOS und Sparmodus prüfen; dann `Desktop\Claude\privat\notfall.md` ausfüllen und `python sticky-app/tools/notfallblatt.py` mit Sticky am USB laufen lassen; am Gerät (0.39.2 ist drauf): Burgduell ohne Handy, Handbuch, Spickzettel, Dokumente-Reiter, Hilfeseiten, Tippen, Gruppen, Recorder, Num-Pad ausprobieren; Positivliste und erste Orte eintragen, auf Englisch die Seiten auf Überläufe prüfen; Lineal nachmessen, Einfügen in WhatsApp probieren; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.), Spickzettel-Konsole ausprobieren (Karte am Zenbook → Zwischenablage → Fold → Aufspielen); Nachtverbrauch messen; Hauslurch bei Lust: Ort „Zuhause“ anlegen, „Stell einen Timer auf eine Minute“ sagen. Seeed: Playground-PR #131 (0.39.2); Sticky-Lab-Update dort erst mit Diagnose (Platz-2-Hinweis setzt Lab ≥ 0.8.1 voraus)
 ---
 
@@ -416,6 +416,14 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   (Scheckkarte zum Falten, PDF neben der privaten Datei) entsteht bei jedem Lauf mit. Gesamtbauplan: SPEC-Tabelle.
   App (1c): Menü-Kachel „Notfall“ nur, wenn das Blatt auf der Karte liegt (Tests 90/90, APK nicht gebaut).
   Playground-Fassung (1d): Reiter „Notfall“ in der Sticky-Console (`sticky-lab/console/notfall.js`), ohne Python
+- **Notfalldokumente mit PIN (FW 0.41.0, 17.11.2026, Schritt 2):** `notfall.h`: Schlüssel verpackt im NVS
+  (PBKDF2-SHA256 10 000 + AES-256-GCM), PIN-Seite `nf-pin` (Ziffernfeld, Kästchen), Betrachter `nf-doku` (s000 =
+  Inhalt, ▲/▼ blättert, Kachel springt), 10 falsche PINs löschen den Schlüssel, ab dem 3. Fehler Wartezeit; sperrt beim
+  Verlassen, vor dem Schlaf und nach 2 min. USB: `SCHLUESSEL <hex>` / `SCHLUESSEL LOESCHEN`, Dateien mit Handschlag
+  `DATEI BEREIT` (vorher lief der Puffer über). Zenbook: `notfalldoku.py` (über `notfallblatt.py`): Ordner
+  `privat\notfall-doku` (PDF/JPG/PNG), Schlüssel `privat\notfall-schluessel.bin`, PIN am Zenbook beim ersten Mal bzw.
+  `--neue-pin`, nur geänderte Seiten werden neu geschickt. Geflasht über COM10, Testdokument (Ausweis + Plan, 8 Seiten)
+  mit Test-PIN 1234 aufgespielt, alle 15 Dateien „OK“; am Gerät geprüft (Markus 17.11.): Entsperren, Inhalt, Blättern klappt
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik

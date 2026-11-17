@@ -5,8 +5,10 @@ Braun-Optik und spielt es per USB-Kabel auf die SD-Karte des Sticky (/soll/widge
 es bei der Vorschau (PNG neben der privaten Datei). Jedes Mal entsteht dazu die Papierkarte (Scheckkarte, Vorder- und
 Rückseite zum Falten, zweimal auf A4) als PDF neben der privaten Datei: für Portemonnaie und Box.
 
-Aufruf:  python sticky-app/tools/notfallblatt.py [datei.md] [--port COM7] [--nur-vorschau]
+Aufruf:  python sticky-app/tools/notfallblatt.py [datei.md] [--port COM7] [--nur-vorschau] [--neue-pin]
 Fehlt die private Datei, legt das Skript sie aus der Vorlage an und hört auf (erst ausfüllen).
+Liegen Dateien in privat\notfall-doku, kommen sie verschlüsselt mit (notfalldoku.py, FW ≥ 0.41.0) und das Blatt bekommt
+den Knopf „Dokumente“. Die PIN fragt das Skript beim ersten Mal und mit --neue-pin.
 """
 import argparse, datetime, os, shutil, sys, time
 from PIL import Image, ImageDraw, ImageFont
@@ -63,7 +65,7 @@ def umbrechen(g, text, f, breite):
     return zeilen
 
 
-def zeichnen(d):
+def zeichnen(d, doku=False):
     bild = Image.new('L', (W, H), 255)
     g = ImageDraw.Draw(bild)
     S, Wt = 0, 255
@@ -121,6 +123,8 @@ def zeichnen(d):
     # Fuß: Knöpfe (wirken nur mit Strom)
     g.line([0, 416, W, 416], fill=S, width=2)
     knoepfe = [(20, 428, 220, 472, 'SOS', 'sos'), (236, 428, 436, 472, 'Sparmodus', 'spar')]
+    if doku:
+        knoepfe.append((452, 428, 652, 472, 'Dokumente', 'doku'))
     for x0, y0, x1, y1, t, a in knoepfe:
         if a == 'sos':
             g.rounded_rectangle([x0, y0, x1, y1], radius=22, fill=S)
@@ -128,7 +132,8 @@ def zeichnen(d):
         else:
             g.rounded_rectangle([x0 + 1, y0 + 1, x1 - 1, y1 - 1], radius=21, outline=S, width=2)
             g.text(((x0 + x1) / 2, (y0 + y1) / 2), t, font=schrift(18), fill=S, anchor='mm')
-    g.text((W - 16, 450), 'Akku leer: Bild bleibt stehen', font=schrift(14), fill=S, anchor='rm')
+    if not doku:
+        g.text((W - 16, 450), 'Akku leer: Bild bleibt stehen', font=schrift(14), fill=S, anchor='rm')
     # Felder: Knöpfe mit etwas Rand (Finger)
     felder = 'typ notfall\n' + ''.join(f'knopf {x0 - 8} {y0 - 8} {x1 + 8} {min(H, y1 + 8)} {a}\n' for x0, y0, x1, y1, _, a in knoepfe)
     return bild.point(lambda v: 255 if v >= 128 else 0).convert('1'), felder
@@ -240,15 +245,27 @@ def aufspielen(port, dateien):
     try:
         def senden(rel, daten):
             s.reset_input_buffer()
-            s.write(f'DATEI {rel} {len(daten)}\n'.encode())
-            s.flush()
-            for o in range(0, len(daten), 4096):
-                s.write(daten[o:o + 4096])
+            if rel == 'SCHLUESSEL':                 # verpackter Schlüssel der Notfalldokumente (FW ≥ 0.41.0)
+                s.write(f'SCHLUESSEL {daten}\n'.encode())
+                kennung = 'SCHLUESSEL '
+            else:
+                s.write(f'DATEI {rel} {len(daten)}\n'.encode())
+                s.flush()
+                ende = time.time() + 3            # Handschlag ab FW 0.41.0 („DATEI BEREIT“); ältere legen gleich los
+                while time.time() < ende:
+                    z = s.readline().decode('utf-8', 'replace').strip()
+                    if z.startswith('DATEI BEREIT'):
+                        break
+                    if z.startswith('DATEI FEHLER'):
+                        return z
+                for o in range(0, len(daten), 4096):
+                    s.write(daten[o:o + 4096])
+                kennung = 'DATEI '
             s.flush()
             ende = time.time() + 15
             while time.time() < ende:
                 z = s.readline().decode('utf-8', 'replace').strip()
-                if z.startswith('DATEI '):
+                if z.startswith(kennung):
                     return z
             return ''
         for i, (rel, daten) in enumerate(dateien):
@@ -256,9 +273,9 @@ def aufspielen(port, dateien):
             if not antwort and i == 0:   # Sticky beim Öffnen neu gestartet? Kurz warten, noch einmal
                 time.sleep(6)
                 antwort = senden(rel, daten)
-            if not antwort.startswith('DATEI OK'):
+            if ' OK' not in antwort[:16]:
                 sys.exit(f'Aufspielen von {rel} fehlgeschlagen: {antwort or "keine Antwort (Firmware ≥ 0.40.0? Karte drin?)"}')
-            print('  ' + antwort)
+            print(f'  [{i + 1}/{len(dateien)}] ' + antwort)
     finally:
         s.close()
 
@@ -272,6 +289,7 @@ def main():
     ap.add_argument('datei', nargs='?', default=PRIVAT)
     ap.add_argument('--port')
     ap.add_argument('--nur-vorschau', action='store_true')
+    ap.add_argument('--neue-pin', action='store_true', help='PIN der Notfalldokumente neu setzen (Sticky am USB)')
     a = ap.parse_args()
     if not os.path.exists(a.datei):
         os.makedirs(os.path.dirname(a.datei), exist_ok=True)
@@ -279,7 +297,12 @@ def main():
         print(f'Neu angelegt: {a.datei}\nBitte ausfüllen und das Skript noch einmal starten.')
         return
     daten = lesen(a.datei)
-    bild, felder = zeichnen(daten)
+    privat = os.path.dirname(os.path.abspath(a.datei))
+    doku = None
+    if not a.nur_vorschau:
+        import notfalldoku
+        doku = notfalldoku.paket(privat, a.neue_pin, bits)
+    bild, felder = zeichnen(daten, doku is not None)
     vorschau = os.path.splitext(a.datei)[0] + '-vorschau.png'
     bild.save(vorschau)
     print('Vorschau:', vorschau)
@@ -293,7 +316,15 @@ def main():
         print('Kein Sticky am USB gefunden – nur die Vorschau. (Sticky anstecken oder --port COMx angeben.)')
         return
     print('Aufspielen über', port)
-    aufspielen(port, [('widgets/notfall/bild.bin', bits(bild)), ('widgets/notfall/felder.txt', felder.encode())])
+    dateien = [('widgets/notfall/bild.bin', bits(bild)), ('widgets/notfall/felder.txt', felder.encode())]
+    if doku:
+        doku_dateien, schluessel, kacheln, (standpfad, stand) = doku
+        print('Dokumente:', ', '.join(f'{n} ({k} S.)' for n, _, k in kacheln))
+        dateien += doku_dateien + ([('SCHLUESSEL', schluessel)] if schluessel else [])
+    aufspielen(port, dateien)
+    if doku:
+        import json
+        json.dump(stand, open(standpfad, 'w'))
     print('Fertig. Am Sticky mit ▲/▼ zur Seite „Notfall“ blättern.')
 
 

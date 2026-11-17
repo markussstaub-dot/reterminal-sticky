@@ -55,6 +55,12 @@ static bool wJaNein = false, wZiffern = false;
 static bool wTippen = false;
 // Notfall (notfall.h, FW 0.40.0): typ notfall, Aktionen sos, spar
 static bool wNotfall = false;
+// Notfalldokumente (FW 0.41.0): typ nfpin (punkte <x> <y>), typ nfdoku (seiten <n>)
+static bool wNfPin = false, wNfDoku = false;
+static int wPunkteX = -1, wPunkteY = 0, wSeiten = 0;
+static void nfAktion(const char* a, int wert);
+static void nfPinZeichnen();
+static void nfDokuZeichnen();
 static bool notfallAktion(const char* a, int wert);
 static void notfallMarkieren();
 static int tipArt = 0;                           // 0 Tasten, 1 Ziffern, 3 Sprache (Strich ist die Strichschrift-Seite)
@@ -130,7 +136,7 @@ static bool widgetLaden(const char* name) {
     wKnopfAnzahl = 0; wzX = -1; wTaste[0][0] = wTaste[1][0] = 0; wHatUhr = false; wWaage = false; wbR = 0; wW1x = wW2x = -1;
     wzSchrittGesetzt = false;
     wRechner = wUmrechner = false; wTx = -1; wGlyphAnzahl = wTastenAnzahl = 0;
-    wWeltzeit = wWecker = wEinst = wRecorder = wJaNein = wZiffern = wTippen = wNotfall = false; wTextAnzahl = 0; wEMax = 6; wESonder[0] = 0; wStadtAnzahl = 0; wMinuteGezeigt = -1;
+    wWeltzeit = wWecker = wEinst = wRecorder = wJaNein = wZiffern = wTippen = wNotfall = wNfPin = wNfDoku = false; wPunkteX = -1; wSeiten = 0; wTextAnzahl = 0; wEMax = 6; wESonder[0] = 0; wStadtAnzahl = 0; wMinuteGezeigt = -1;
     if (!wReBereit) { rNeu(wRe); wReBereit = true; }
     if (!wUmBereit) { uNeu(wUm); wUmBereit = true; }
     int altPaar = wUm.paar;
@@ -150,8 +156,8 @@ static bool widgetLaden(const char* name) {
             wWeltzeit = !strcmp(a, "weltzeit"); wWecker = !strcmp(a, "wecker"); wEinst = !strcmp(a, "einstellungen");
             wRecorder = !strcmp(a, "recorder");
             wJaNein = !strcmp(a, "janein"); wZiffern = !strcmp(a, "ziffern"); wTippen = !strcmp(a, "tippen");
-            wNotfall = !strcmp(a, "notfall");
-            wHatUhr = strcmp(a, "menue") && !wNotfall && !wWaage && !wRechner && !wUmrechner && !wWeltzeit && !wWecker && !wEinst && !wRecorder && !wJaNein && !wZiffern && !wTippen;
+            wNotfall = !strcmp(a, "notfall"); wNfPin = !strcmp(a, "nfpin"); wNfDoku = !strcmp(a, "nfdoku");
+            wHatUhr = strcmp(a, "menue") && !wNotfall && !wNfPin && !wNfDoku && !wWaage && !wRechner && !wUmrechner && !wWeltzeit && !wWecker && !wEinst && !wRecorder && !wJaNein && !wZiffern && !wTippen;
         }
         else if (z.startsWith("glyphen ") || z.startsWith("tasten ")) {   // Wortliste (UTF-8), „_“ = Leerzeichen
             bool g = z.startsWith("glyphen ");
@@ -169,6 +175,8 @@ static bool widgetLaden(const char* name) {
             if (wTextAnzahl < 8) { wTxA[wTextAnzahl] = v[0] & ~7; wTyA[wTextAnzahl] = v[1]; wTnA[wTextAnzahl++] = v[2]; }
             if (wTextAnzahl == 1) { wTx = v[0] & ~7; wTy = v[1]; wTn = v[2]; }
         }
+        else if (sscanf(z.c_str(), "punkte %d %d", &v[0], &v[1]) == 2) { wPunkteX = v[0]; wPunkteY = v[1]; }
+        else if (sscanf(z.c_str(), "seiten %d", &v[0]) == 1) wSeiten = v[0];
         else if (sscanf(z.c_str(), "stadt %d", &v[0]) == 1 && wStadtAnzahl < 6) wStadtOff[wStadtAnzahl++] = v[0];
         else if (sscanf(z.c_str(), "max %d", &v[0]) == 1) wEMax = constrain(v[0], 1, 20);
         else if (z.startsWith("sonder ")) strlcpy(wESonder, z.substring(7).c_str(), sizeof wESonder);
@@ -465,6 +473,8 @@ static void widgetZeigen() {
     }
     if (wRecorder) recSeiteNeu();
     if (wNotfall) notfallMarkieren();
+    if (wNfPin) nfPinZeichnen();
+    if (wNfDoku) nfDokuZeichnen();
     if (wRechner || wUmrechner || wWeltzeit || wWecker || wEinst || wRecorder || wJaNein || wZiffern || wTippen) {
         if (!wHintergrund) wHintergrund = (uint8_t*)ps_malloc(IMG_BYTES);
         if (wHintergrund) memcpy(wHintergrund, imgBuf, IMG_BYTES);
@@ -491,7 +501,8 @@ static void widgetAktion(const char* a, int wert) {
     if (!strcmp(a, "gruppe")) { karussellGruppe((uint32_t)wert); return; }   // Menü-Kachel einer Gruppe (FW 0.36.0)
     if (!strcmp(a, "platz")) { if (!platzWechseln()) tone(PIN_BUZZER, 900, 120); return; }   // Menü-Kachel „Sticky Lab“
     if (!strcmp(a, "eingabe")) { eingabeOeffnen(wert); return; }
-    if (wNotfall) { notfallAktion(a, wert); return; }   // Ja/Nein, Ziffern (FW 0.35.0)
+    if (wNotfall) { notfallAktion(a, wert); return; }
+    if (wNfPin || wNfDoku) { nfAktion(a, wert); return; }   // Ja/Nein, Ziffern (FW 0.35.0)
     if ((wJaNein || wZiffern) && eingabeAktion(a, wert)) return;
     if (wTippen) { tippenAktion(a, wert); return; }
     if (wRecorder) { if (recAktion(a, wert)) wTextNeu = true; return; }

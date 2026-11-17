@@ -10,6 +10,7 @@
 static bool notfallSpar();
 static uint64_t notfallSchlafMs(uint64_t standard);
 static void notfallZeigen(bool leise);
+static void notfallVorSchlaf();
 
 static const uint32_t SCHLAF_NACH = 60000;       // ms ohne Bedienung bzw. ohne Befehle der App (15.11.2026: 2 min → 1 min)
 static const uint32_t STUNDEN_FENSTER = 30000;   // so lange ist der Funk zur vollen Stunde an, wenn niemand kommt (15.11.2026: 1 min → 30 s)
@@ -114,6 +115,7 @@ static void schlafPruefen() {
         funkAus();
     }
     if (touchAn) touchAus();
+    notfallVorSchlaf();                            // nie ein entschlüsseltes Dokument stehen lassen
     if (spar) notfallZeigen(true);                 // Sparmodus: vor dem Schlaf steht immer das Notfallblatt da
     statusPruefen(true, false);                    // Zzz in die Statuszeile, bevor das Bild stehen bleibt
     protokollSchreiben();

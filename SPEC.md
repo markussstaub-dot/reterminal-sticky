@@ -1287,7 +1287,7 @@ Weg für alle Inhalte: private Datei am Zenbook → Skript in `sticky-app/tools/
 | 1b | **Papierkarte** aus derselben Datei: `notfallblatt.py` legt bei jedem Lauf `notfall-karte.pdf` daneben (Scheckkarte 85,6 × 54 mm, vorn Name/Kontakte/Medizin, hinten Treffpunkt/Hinweis/Box, zum Falten, zweimal auf A4, 600 dpi) | Skript | **erledigt 17.11.** | ausgedruckt, laminiert (Markus) |
 | 1c | Menü-Kachel „Notfall“: App kennt „Notfall/Emergency“ (Karussell-Wort, Standardliste, einmalig ans Ende eigener Listen), schreibt `widget notfall` aber nur, wenn `/soll/widgets/notfall/bild.bin` auf der Karte liegt (FW ≥ 0.40.0). Knopf „Dokumente“ erst mit Schritt 2 | App | **gebaut 17.11.**, Tests 90/90, APK offen | Kachel im Menü |
 | 1d | **Allgemeine Fassung für Playground-Nutzer** (ohne Zenbook, ohne Python), fest Markus 17.11.: **Webseite + USB**. Reiter „Notfall“ in der öffentlichen Sticky-Console (`sticky-lab/console/notfall.js`): Textfeld im selben Format wie `notfall.md` (Datei öffnen/speichern), Vorschau 1 bpp, „Per USB aufspielen“ (Web Serial bzw. WebUSB am Android, gleicher `DATEI`-Befehl), „Für SD-Karte laden“ (bild.bin + felder.txt nach `/soll/widgets/notfall/`), „Papierkarte drucken“. Daten nur im Browser (localStorage), DE/EN | Console | **gebaut 17.11.**, im Browser geprüft, USB-Weg aus dem Browser noch nicht am Gerät | Playground-Nutzer kommen ohne Python zum Blatt |
-| 2 | **Notfalldokumente mit PIN**: `notfalldoku.py` macht aus PDF/Fotos 1-bpp-Seiten, verschlüsselt (AES-256, Schlüssel bleibt privat am Zenbook) → `/soll/notfall/doku/`. Sticky: PIN beim ersten Mal setzen (Ziffernfeld, 6 Stellen), Schlüssel im NVS mit PIN verpackt, 10 Fehlversuche → Schlüssel weg; Anzeige wie Handbuch, entschlüsselt nur im RAM, nach 2 min oder beim Schlafen wieder zu. Medizin-Details landen hier | FW + Skript | groß (2 Sessions) | Ausweis/Impfpass/Medikamentenplan mit PIN lesbar, Karte am PC unlesbar |
+| 2 | **gebaut FW 0.41.0 (17.11.)** – **Notfalldokumente mit PIN**: `notfalldoku.py` macht aus PDF/Fotos 1-bpp-Seiten, verschlüsselt (AES-256, Schlüssel bleibt privat am Zenbook) → `/soll/notfall/doku/`. Sticky: PIN beim ersten Mal setzen (Ziffernfeld, 6 Stellen), Schlüssel im NVS mit PIN verpackt, 10 Fehlversuche → Schlüssel weg; Anzeige wie Handbuch, entschlüsselt nur im RAM, nach 2 min oder beim Schlafen wieder zu. Medizin-Details landen hier | FW + Skript | groß (2 Sessions) | Ausweis/Impfpass/Medikamentenplan mit PIN lesbar, Karte am PC unlesbar |
 | 3 | **Karten**: erst Lab-Station (Lesbarkeit 1 bpp). Daten über Overpass (OSM-Vektordaten, kleine Gebiete) und eigene Zeichnung in 1 bpp: Straßen, Wege, Wasser, Kliniken, Apotheken; 1-km-Gitter (UTM), Maßstab, Nordpfeil, „© OpenStreetMap-Mitwirkende“. Je Ort Übersicht + Nahblätter, ▲/▼ blättert, Tippen auf ein Feld = Nahblatt | Lab, dann Skript + Doku-Viewer | mittel | 3 Orte × 2 Maßstäbe am Sticky |
 | 3b | **Sonnenkompass**: Sonnenrichtung aus RTC, Datum und Kartenort (NOAA-Formel im Sticky); Seite zeigt „Sonne steht bei 214°, Norden ist …“ mit Skizze | FW | klein | stimmt mit Quarzuhr-Methode überein |
 | 4 | **Notfallwissen** als Handbuch-Dokument (vorhandener Viewer, kaum Firmware): eigene Kurztexte + Wiki-Auszüge (CC BY-SA, Quelle), BBK-Ratgeber nur privat | Skript | klein–mittel | Erste Hilfe, Wasser, Funk, Kälte nachschlagbar |
@@ -1300,6 +1300,31 @@ Weg für alle Inhalte: private Datei am Zenbook → Skript in `sticky-app/tools/
 - Abhängigkeiten: 2 vor dem Knopf „Dokumente“; 3b braucht einen Ort (aus 3 oder Wetter-Ort); B2 braucht B1; P braucht 1–3 und B3
 - offen: Overpass-Weg (Vorschlag) gegen fertige Kacheln (OSM-Kachelserver verbieten Massen-Download, darum eigene
   Zeichnung); Flash-Verschlüsselung des ESP32 für Schritt 2 (stärker, aber Flashen wird umständlicher) – Vorschlag: nein
+
+#### User Story: der Sticky im Notfall (Markus, 17.11.2026)
+Kein Handy-Ersatz (kein Netz, kein GPS), sondern das Gerät, das **ohne Strom, Netz und Handy noch etwas zeigt**.
+
+| Szene | Was der Sticky tut | fehlt noch |
+|---|---|---|
+| Stromausfall daheim, Netz weg (wahrscheinlichste) | Sparmodus, Uhr/Wecker/Timer, Spickzettel und Handbücher ohne Handy | Laufzeit messen (1a), Notfallwissen (4) |
+| Schnell raus (Bugout) | Box greifen, Blatt durchs Deckelfenster; Karten Zuhause/Arbeit/Fluchtziel, Sonnenkompass, Treffpunkt; Panel → Powerbank → Sticky | Karten, Sonnenkompass (3), Box (B1–B3) |
+| Mir passiert etwas | Helfer liest Name, 2 Nummern, Medizin kurz (auch bei leerem Akku, auch auf der Papierkarte); Details hinter PIN | echte Daten (Merker) |
+| Eingeschlossen | SOS über den Summer, bis jemand kommt | Hörweite ehrlich prüfen |
+
+**Zuhause vorbereiten** – einmal (~1 h am Zenbook): `notfall.md` ausfüllen (Treffpunkt mit der Familie absprechen) ·
+Dokumente nach `privat\notfall-doku` (Ausweis, Krankenkassenkarte, Impfpass, Medikamentenplan, Versicherungen, Nummernliste) ·
+Skript laufen lassen, PIN festlegen, `notfall-schluessel.bin` zusätzlich sichern (USB-Stick bei den Papieren) ·
+Papierkarte 2× drucken und laminieren · Kartenorte festlegen · Box packen. Regelmäßig: alle 3 Monate Sticky und Powerbank
+laden, SOS testen, Batterien prüfen; alle 12 Monate Daten durchsehen und neu aufspielen; einmal im Jahr die Probe (P).
+- fest **Inhalte und Quellen** (Markus, 17.11.2026): **Für Markus** privat und auf ihn und Deutschland zugeschnitten
+  (Nummern, Medikamente, Orte, Regionalsender, Sirenen, NINA/Katwarn); eigene Spickzettel `#notfall` plus Handbücher
+  (z. B. BBK-Ratgeber) nur auf der Karte, nie im Repo. **Für andere** liefert das Repo Technik (Firmware, Skripte,
+  Console), eine **Bauanleitung** `docs/NOTFALL.md` (Blatt, Dokumente, Box, Pflege) und **Quellen nur als Links**
+  (BBK, NINA/Katwarn, ERC-Leitlinien, Erste-Hilfe-Kurse DRK/Malteser/Johanniter, FM 21-76), dazu Vorlagen mit
+  Platzhaltern. Eigene Erste-Hilfe-Karten werden **nicht** veröffentlicht (Fehler wären bei anderen ein Risiko);
+  Hinweis „ersetzt keinen Erste-Hilfe-Kurs und keine amtliche Warnung“. Bauanleitung als eigener kleiner Schritt nach 2
+- Vorschlag **Jahres-Erinnerung**: Das Blatt trägt sein Stand-Datum; ist es älter als 12 Monate, zeigt der Sticky
+  „Notfalldaten prüfen“ (Statuszeile oder Meldung auf Home). Wenig Aufwand, eigener kleiner Schritt nach 2
 
 ### Eigene Sensoren (laut Schaltplan, Bus MISC_I2C)
 | Baustein | Adresse | heute | Vorschlag |
