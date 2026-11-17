@@ -1380,6 +1380,15 @@ laden, SOS testen, Batterien prüfen; alle 12 Monate Daten durchsehen und neu au
     weltweit mit Freikontingent, Open-Meteo Marine für Wellen/Wassertemperatur), **Tauchbasen und Tauchplätze** aus OSM
     (Tauchshops/-zentren, Tauchplätze; Name, Telefon, Öffnungszeiten) als Liste und Kartensymbol, dazu Wind/Wetter und
     Sonnenauf-/-untergang für Nachttauchgänge (aus `sonne.h`)
+- Ideensammlung **Sticky + XIAO ESP32-C3** (Markus hat zwei C3, 17.11.2026, „rumspinnen mit so einer Kombo“): Sticky =
+  Anzeige und Bedienteil, C3 = Fühler/Schalter, Funk per **ESP-NOW** (ohne Router, ohne Handy). Unterbau = Sticky-Lab-
+  Station 12 „Fremdsensoren“ (C3 schickt kurze Zeilen wie `kuehltruhe -18.2 °C`, der Sticky zeigt jeden Kanal als
+  Braun-Instrument). Ideen: **Kein-Netz-Pager** Sticky↔Sticky mit C3 als Relais am Fenster (Familie im Blackout),
+  **Kühltruhen-Wächter** bei Stromausfall (Temperaturverlauf), **Bugout-Box-Wächter** (Feuchte, Temperatur, Powerbank),
+  **Briefkasten-Melder** (Reed, Tiefschlaf), Wassermelder, Fenster offen, Waschmaschine fertig (Vibration),
+  **Filament-Trockenbox** an der X1C (Feuchte), Lagerwächter (PIR) für Zelt/Rad, Microlino (Innentemperatur geparkt,
+  Funkknopf), Bodenfeuchte im Garten. Zu klären: Sticky schläft meist → C3 melden zur vollen Stunde oder piepen mit
+  Vorrang; je C3 ein kleiner LiPo und ein gedrucktes Gehäuse (Baukasten); alles am Netz ist Toms Teil
 - ~~Zwei Lesemodi~~ → fest **ein Lesemodus „mit Brille“** (Markus, 17.11.2026: „ohne Brille fällt's insgesamt schwer,
   Lesebrille brauch ich eh“): kein Umschalter. Statt dessen **Ersatz-Lesebrille in die Box** (Packliste) und für „ohne
   Brille“ die **Papier-Notfallkarte**. Das Notfallblatt bleibt groß (mind. 22 px, liest meist ein Helfer), Karten mind. 22 px
