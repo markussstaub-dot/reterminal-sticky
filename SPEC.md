@@ -1399,6 +1399,16 @@ laden, SOS testen, Batterien prüfen; alle 12 Monate Daten durchsehen und neu au
   Notfall und Handbuch als Menü-Kachel, Grund-Menü auch ohne App. 3) Wer hängt am Kabel: USB-Zeile `WER` → Name, MAC-Ende,
   FW; die Skripte zeigen das vor dem Schreiben und fragen bei fremden Notfalldaten nach (heute ging 0.40/0.41 versehentlich
   auf Katjas Gerät)
+- Vorschlag **LoRa / Meshtastic: Kontakt ohne Netz** (Markus, 17.11.2026, „Seeed hat vielerlei Leckereien“): die
+  Lücke im Notfall-Konzept, wenn Mobilfunk weg ist. ESP-NOW reicht Meter bis wenige hundert Meter, LoRa Kilometer.
+  Kandidaten von Seeed (Web-Recherche 17.11.2026, Preise/Lieferbarkeit vor dem Kauf prüfen):
+  **XIAO ESP32-S3 + Wio-SX1262 Kit** (daumengroß, ab Werk mit Meshtastic, um 10 $; Tests: ~0,5–2,5 km in der Stadt,
+  frei deutlich mehr) und **SenseCAP Card Tracker T1000-E** (Kreditkartenformat, IP65, GPS, Meshtastic, ~2 km Stadt).
+  Bild: Meshtastic-Knoten in der Box bzw. am Rucksack, Bedienung über die Meshtastic-App am Fold; der Sticky zeigt
+  eingehende Nachrichten und Positionen (Kopplung per BLE/USB-Seriell, Meshtastic hat eine serielle Schnittstelle) –
+  „Familie im Blackout“ ohne Handynetz, auch zwischen zwei Bugout-Boxen. Rechtliches: 868 MHz, Region EU_868 einstellen.
+  Reihenfolge: nach Box und Akku-Messung; erst zwei Kits kaufen und die Reichweite im Gelände
+  testen, dann Sticky-Anbindung. Seeed-Ideenliste für die Fühler steht in der Sticky-Lab-SPEC unter Station 12
 - Vorschlag **Jahres-Erinnerung**: Das Blatt trägt sein Stand-Datum; ist es älter als 12 Monate, zeigt der Sticky
   „Notfalldaten prüfen“ (Statuszeile oder Meldung auf Home). Wenig Aufwand, eigener kleiner Schritt nach 2
 
