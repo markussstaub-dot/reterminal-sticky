@@ -607,6 +607,14 @@ static void kzBlattNeu() {
     display.update();
 }
 
+// Notfall (notfall.h, FW 0.40.0)
+static bool notfallTaste(bool gedrueckt);
+static bool notfallSpar();
+static bool notfallDa();
+static bool notfallSichtbar();
+static bool notfallLeise();
+static void notfallZeigen(bool leise);
+
 static void setzeModus(Modus m) {
     Modus vorher = modus;
     lageSofort();
@@ -624,9 +632,11 @@ static void setzeModus(Modus m) {
     if (m == M_APP && vorher != M_APP) spielLokal = !appDa();   // beim Betreten entschieden, bleibt bis zum Verlassen
     modus = m;
     letzteBedienung = millis();
-    tone(PIN_BUZZER, 3300, 25);   // heller Doppelklick: Wechsel angenommen, das Bild kommt gleich
-    delay(60);
-    tone(PIN_BUZZER, 3300, 25);
+    if (!notfallLeise()) {           // vor dem Einschlafen im Notfall-Sparmodus still
+        tone(PIN_BUZZER, 3300, 25);   // heller Doppelklick: Wechsel angenommen, das Bild kommt gleich
+        delay(60);
+        tone(PIN_BUZZER, 3300, 25);
+    }
     if (m == M_BESTELL && homeLaden(3 + bestellAktuell, imgBuf)) {
         statusPruefen(false, true);
         bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
@@ -714,7 +724,15 @@ static void karussellLaden() {
     }
     bool homeDrin = false;
     for (int i = 0; i < kAnzahl; i++) homeDrin |= karussell[i] == M_HOME;
-    if (kAnzahl == 0) { const Modus std[] = {M_HOME, M_NOTIZ, M_HANDBUCH, M_SPICK, M_BESTELL}; for (auto m : std) karussell[kAnzahl++] = m; }
+    // Notfallblatt auf der Karte (vom Zenbook per USB): hängt sich selbst hinten an, die App muss es nicht kennen (FW 0.40.0)
+    bool notDrin = false;
+    for (int i = 0; i < kAnzahl; i++) notDrin |= karussell[i] == M_WIDGET && !strcmp(kWidget[i], "notfall");
+    if (!notDrin && kAnzahl > 0 && kAnzahl < 16 && notfallDa()) { strlcpy(kWidget[kAnzahl], "notfall", 16); karussell[kAnzahl++] = M_WIDGET; }
+    if (kAnzahl == 0) {
+        const Modus std[] = {M_HOME, M_NOTIZ, M_HANDBUCH, M_SPICK, M_BESTELL};
+        for (auto m : std) karussell[kAnzahl++] = m;
+        if (notfallDa()) { strlcpy(kWidget[kAnzahl], "notfall", 16); karussell[kAnzahl++] = M_WIDGET; }
+    }
     else if (!homeDrin && kAnzahl < 16) {
         memmove(karussell + 1, karussell, kAnzahl * sizeof(Modus));
         memmove(kWidget + 1, kWidget, kAnzahl * sizeof kWidget[0]);
@@ -870,6 +888,7 @@ static void hilfeZeigen(const char* pfad) {
 
 static void tasteAktion(const char* name, bool gedrueckt) {
     letzteBedienung = millis();
+    if (notfallTaste(gedrueckt)) return;         // SOS läuft: jede Taste beendet es
     if (suchenBis && gedrueckt) {                 // gefunden bzw. Wecker aus: irgendeine Taste beendet das Piepen
         suchenBis = 0;
         if (!suchenStill) sendEvt("{\"t\":\"suche\",\"a\":\"gefunden\"}");
@@ -1013,7 +1032,9 @@ static void modusLoop() {
         if (m != modus || m == M_NOTIZ || m == M_BESTELL) setzeModus(m);
     }
     dokuLoop();
-    if (modus != M_HOME && !audioLaeuft && millis() - letzteBedienung > ZURUECK_MS) setzeModus(M_HOME);
+    if (modus != M_HOME && !audioLaeuft && millis() - letzteBedienung > ZURUECK_MS && !notfallSichtbar()) {
+        if (notfallSpar() && notfallDa()) notfallZeigen(false); else setzeModus(M_HOME);   // im Sparmodus zurück aufs Notfallblatt
+    }
     if (modus == M_APP && !spielLokal && !appDa()) { protokoll("App weg, Burgduell lokal"); spielLokal = true; setzeModus(M_APP); }
     if (modus == M_HOME && homeDa && !audioLaeuft && !hilfeAn && uhrZeichnen()) uhrAuffrischen(uhrMinute == 0);
     static uint32_t akkuZuletzt = 0;

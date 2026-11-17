@@ -30,6 +30,8 @@
  *       Aktionen rec (Start/Stopp), merker, wahl <i> (Zeile i, mit Handy = abspielen/Pause), hoch, runter (▲/▼)
  *     typ tippen (FW 0.37.0, tippen.h): Textzeile + Tastatur bzw. Ziffernfeld; Aktionen zeichen <i>, leer, shift, weg,
  *       ok, art <0–3>; Unterseiten tippen-zf (Ziffern) und tippen-sp (Sprache) unter demselben widgetName
+ *     typ notfall (FW 0.40.0, notfall.h): Notfallblatt vom Zenbook; Aktionen sos (Morse über den Summer), spar
+ *       (Notfall-Sparmodus an/aus, gewählt = dicker Rahmen)
  * Karussell-Eintrag „widget <name>“. Ein Uhrwerk für alle Widgets: der Timer läuft weiter, wenn man die Seite verlässt;
  * beim Ablauf weckt er den Sticky (leichtSchlaf), piept und holt die Timer-Seite nach vorn.
  */
@@ -51,6 +53,10 @@ static bool wWeltzeit = false, wWecker = false, wEinst = false, wRecorder = fals
 static bool wJaNein = false, wZiffern = false;
 // Tippen (tippen.h, FW 0.37.0)
 static bool wTippen = false;
+// Notfall (notfall.h, FW 0.40.0): typ notfall, Aktionen sos, spar
+static bool wNotfall = false;
+static bool notfallAktion(const char* a, int wert);
+static void notfallMarkieren();
 static int tipArt = 0;                           // 0 Tasten, 1 Ziffern, 3 Sprache (Strich ist die Strichschrift-Seite)
 static bool tippenAktion(const char* a, int wert);
 static void tipZeichnen();
@@ -124,7 +130,7 @@ static bool widgetLaden(const char* name) {
     wKnopfAnzahl = 0; wzX = -1; wTaste[0][0] = wTaste[1][0] = 0; wHatUhr = false; wWaage = false; wbR = 0; wW1x = wW2x = -1;
     wzSchrittGesetzt = false;
     wRechner = wUmrechner = false; wTx = -1; wGlyphAnzahl = wTastenAnzahl = 0;
-    wWeltzeit = wWecker = wEinst = wRecorder = wJaNein = wZiffern = wTippen = false; wTextAnzahl = 0; wEMax = 6; wESonder[0] = 0; wStadtAnzahl = 0; wMinuteGezeigt = -1;
+    wWeltzeit = wWecker = wEinst = wRecorder = wJaNein = wZiffern = wTippen = wNotfall = false; wTextAnzahl = 0; wEMax = 6; wESonder[0] = 0; wStadtAnzahl = 0; wMinuteGezeigt = -1;
     if (!wReBereit) { rNeu(wRe); wReBereit = true; }
     if (!wUmBereit) { uNeu(wUm); wUmBereit = true; }
     int altPaar = wUm.paar;
@@ -144,7 +150,8 @@ static bool widgetLaden(const char* name) {
             wWeltzeit = !strcmp(a, "weltzeit"); wWecker = !strcmp(a, "wecker"); wEinst = !strcmp(a, "einstellungen");
             wRecorder = !strcmp(a, "recorder");
             wJaNein = !strcmp(a, "janein"); wZiffern = !strcmp(a, "ziffern"); wTippen = !strcmp(a, "tippen");
-            wHatUhr = strcmp(a, "menue") && !wWaage && !wRechner && !wUmrechner && !wWeltzeit && !wWecker && !wEinst && !wRecorder && !wJaNein && !wZiffern && !wTippen;
+            wNotfall = !strcmp(a, "notfall");
+            wHatUhr = strcmp(a, "menue") && !wNotfall && !wWaage && !wRechner && !wUmrechner && !wWeltzeit && !wWecker && !wEinst && !wRecorder && !wJaNein && !wZiffern && !wTippen;
         }
         else if (z.startsWith("glyphen ") || z.startsWith("tasten ")) {   // Wortliste (UTF-8), „_“ = Leerzeichen
             bool g = z.startsWith("glyphen ");
@@ -457,6 +464,7 @@ static void widgetZeigen() {
         tone(PIN_BUZZER, 900, 120);           // Widget noch nicht aufgespielt
     }
     if (wRecorder) recSeiteNeu();
+    if (wNotfall) notfallMarkieren();
     if (wRechner || wUmrechner || wWeltzeit || wWecker || wEinst || wRecorder || wJaNein || wZiffern || wTippen) {
         if (!wHintergrund) wHintergrund = (uint8_t*)ps_malloc(IMG_BYTES);
         if (wHintergrund) memcpy(wHintergrund, imgBuf, IMG_BYTES);
@@ -482,7 +490,8 @@ static void widgetAktion(const char* a, int wert) {
     if (!strcmp(a, "gehe")) { karussellGehe(wert); return; }
     if (!strcmp(a, "gruppe")) { karussellGruppe((uint32_t)wert); return; }   // Menü-Kachel einer Gruppe (FW 0.36.0)
     if (!strcmp(a, "platz")) { if (!platzWechseln()) tone(PIN_BUZZER, 900, 120); return; }   // Menü-Kachel „Sticky Lab“
-    if (!strcmp(a, "eingabe")) { eingabeOeffnen(wert); return; }   // Ja/Nein, Ziffern (FW 0.35.0)
+    if (!strcmp(a, "eingabe")) { eingabeOeffnen(wert); return; }
+    if (wNotfall) { notfallAktion(a, wert); return; }   // Ja/Nein, Ziffern (FW 0.35.0)
     if ((wJaNein || wZiffern) && eingabeAktion(a, wert)) return;
     if (wTippen) { tippenAktion(a, wert); return; }
     if (wRecorder) { if (recAktion(a, wert)) wTextNeu = true; return; }

@@ -1189,6 +1189,94 @@ abtippen, sortieren, Ziele). Nimmt die Idee „Gesprächs-/Meeting-Notizen“ au
 - offen: Ziehen auf e-Ink (Teil-Refresh ~0,9 s je Schritt): echtes Ziehen oder „wählen, dann Papierkorb tippen“?
 - offen: erst im Sticky Lab als Station ausprobieren, dann entscheiden (Muster wie bei Burgduell und Tastatur)
 
+### Notizen und Markup-Editor verheiraten (Markus, 17.11.2026, Merker)
+
+- fest: **zuerst Konzept**, dann bauen
+- Idee: Notizen (Diktat, Knopf, Tippen, Kritzel, Eingang/Sortieren) und der Markup-Editor sollen zusammenwachsen statt
+  nebeneinander zu stehen
+- Markus: Markups und Notizen sind **artverwandt** (beides kurze Vermerke zu etwas). Naheliegend: ein gemeinsames
+  Grundformat (Zeit, Ort, Quelle, Inhalt), die Markierung hat zusätzlich einen Bezug (Bild, Seite, Stelle)
+- Markus (17.11.): gemeint sind auch **.md-Dateien**, die er vielleicht offline am Sticky bearbeitet und dann fürs
+  Bauen nutzt (Specs, Merker); „vielleicht denk ich zu kompliziert“
+- Vorschlag (einfacher Weg): Der Sticky **fängt ein**, bearbeitet wird woanders. Notizen landen als Markdown-Zeilen
+  in einer Tagesdatei bzw. als Anhang an eine gewählte .md (z. B. „Merker → SPEC Sticky“), die beim Abgleich am
+  Zenbook im Projektordner ankommt. Längere Texte bearbeiten am Fold oder Zenbook. Am Sticky höchstens: .md lesen
+  (wie Handbuch) und eine Zeile anhängen. Ein echter Editor auf 3,97″ e-Ink mit Touch-Tastatur wäre viel Aufwand für
+  wenig Nutzen
+- Vorschlag (Markus, 17.11.): **Anfangswort „Notiz für Claude, …“** wie bei „Lurch, …“: Diktat geht ohne das
+  Stichwort als Markdown-Zeile in eine Eingangsdatei, die Claude-Sessions lesen (z. B. `Desktop\Claude\EINGANG.md`,
+  Zeit + Ort + Text); „Notiz für Claude, Sticky: …“ könnte gleich das Projekt treffen. offen: Ort der Datei, wer räumt ab
+- offen: Welcher Editor ist gemeint und wo läuft er (App, Spickzettel-Konsole am Zenbook, Sticky)? Was heißt
+  „verheiraten“: eine Notiz wird zum Markup-Dokument, Markup als Format aller Notizen, oder ein gemeinsamer Ort?
+- offen: Bezug zum Konsolen-Konzept (`design/konsolen/SPEC.md`) und zum Notizen-Format von Bubble Log klären
+
+### SD-Karte als Bibliothek und Bugout-Sticky (Markus, 17.11.2026, Konzept geklärt, Bau wartet auf Ja)
+
+- Idee: Die 32-GB-Karte trägt viel mehr als das Bordbuch. Muster bleibt: Zenbook/App bereiten vor, Karte trägt,
+  Sticky zeigt. Kein eigener Firmware-Platz (app1 gehört dem Lab), sondern Gruppe **„Notfall“** im EDC-Menü
+- fest: **Sonnenkompass reicht** (Markus): kein Magnetometer nachrüsten; im Notfall ist ohnehin eine Quarzuhr dabei
+- Vorschlag Inhalte:
+  - **Notfallblatt bei leerem Akku:** kurz vor Schluss zeigt der Sticky Kontakte, Blutgruppe, Medikamente,
+    Treffpunkt; e-Ink hält das ohne Strom
+  - **Notfalldokumente** (Ausweis-, Versicherungs-, Impfpass-Kopien) **verschlüsselt** auf der SD, Öffnen per PIN
+    (AES im ESP32)
+  - **Umgebungskarten** als vorgerenderte 1-bpp-Blätter aus OSM mit Gitternetz, Wasserstellen, Kliniken; kein GPS,
+    also Karte zum Orientieren, nicht Navi
+  - **Sonnenkompass:** aus Uhrzeit (RTC), Datum und ungefährem Ort die Sonnenrichtung, Schatten auf die Markierung
+  - **Notfallwissen** aus offen lizenzierten Quellen (Erste Hilfe, Wasser, Funkfrequenzen), Wiki-Ausschnitt als Text
+  - **SOS** per Summer (Morse)
+  - **.md lesen** und „Notiz für Claude, …“ (siehe Notizen und Markup-Editor)
+- Vorschlag: Wiki/Karten erst als Lab-Station ausprobieren (Reihenfolge siehe unten, fest)
+- **Geklärt mit Markus (17.11.2026, Gespräch):**
+  - fest **Notfallblatt** (offen lesbar, auch für Finder und durchs Box-Fenster): Name (+ Geburtsdatum, Sprachen),
+    **2 ICE-Kontakte**, **Medizin kurz** (nur Lebenswichtiges: Blutgruppe, Allergie, Blutverdünner o. Ä.),
+    **Treffpunkt** (gern als Codewort), **Inhalt der Box**, Stand-Datum. Unten Knöpfe SOS · Dokumente · Karten · Sonne
+    (wirken nur mit Strom). Mockup 800×480 quer, Braun-Optik, im Gespräch gezeigt
+  - fest **Medizin zweistufig:** kurz offen aufs Blatt, Details (Diagnosen, Medikamentenplan) hinter PIN bei den
+    Notfalldokumenten
+  - fest **Pflege als Textdatei am Zenbook**, außerhalb des Repos (Vorschlag `Desktop\Claude\privat\notfall.md`), ein
+    Skript rendert das Blatt als 1-bpp-Bild. Keine App-Maske
+  - **umgesetzt FW 0.40.0** (17.11.2026, gebaut, nicht geflasht): Widget-Art `notfall` (`firmware-ble/notfall.h`) mit
+    `/soll/widgets/notfall/bild.bin` + `felder.txt` (Knöpfe SOS, Sparmodus). Liegt das Blatt auf der Karte, hängt sich
+    „widget notfall“ selbst hinten ans Karussell (▲/▼), die App bleibt unverändert. **Weg aufs Gerät: USB-Kabel**:
+    `python sticky-app/tools/notfallblatt.py` liest `Desktop\Claude\privat\notfall.md` (legt sie beim ersten Mal aus
+    `sticky-app/tools/notfall-vorlage.md` an), zeichnet, legt eine Vorschau-PNG daneben und schickt beide Dateien über die
+    serielle Schnittstelle (neue Zeile `DATEI <pfad unter /soll> <länge>` + Bytes, Antwort `DATEI OK …`; nur `/soll`,
+    ≤ 1 MB). **Sparmodus** (Knopf, gespeichert in `/ist/notfall.txt`): Funk aus (auch am USB), kein Bewegungswecken,
+    kein Klima, kein Stundenfenster, Schlaf nach 15 s bis zur vollen Stunde (bzw. Wecker/Timer), vor dem Schlaf und
+    nach 5 min ohne Bedienung steht das Notfallblatt. **Akku fast leer** (≤ 3 % oder < 3450 mV, ohne USB): Sparmodus
+    an, Blatt zeigen. **SOS**: Morse über den Summer (2,7 kHz), bis eine Taste oder SOS erneut. Menü-Kachel „Notfall“
+    in der App: später (heute nur über ▲/▼ erreichbar)
+  - fest **PIN-Schutz: Schlüssel im Sticky + PIN.** Zufälliger AES-Schlüssel liegt im Sticky (NVS), die PIN
+    (gemeinsames Ziffernfeld) gibt ihn frei; nach 10 Fehlversuchen löscht der Sticky den Schlüssel. Die Karte allein
+    ist wertlos; Originale und Schlüssel-Backup bleiben am Zenbook. Vorschlag Ablauf: Zenbook erzeugt Schlüssel und
+    verschlüsselt, legt ihn einmal als `/soll/notfall/schluessel.neu` ab, der Sticky übernimmt ihn mit PIN und löscht
+    die Datei. offen: Grenze ehrlich benennen (ohne Flash-Verschlüsselung ist NVS mit Werkzeug auslesbar; gegen Finder
+    reicht es, gegen Labor nicht)
+  - fest **Kartengebiete:** Zuhause, Arbeit, Fluchtziel, je Übersicht (~1:100 000) und Nahblatt (~1:25 000). Orte
+    stehen nur in der privaten Datei am Zenbook
+  - fest **Reihenfolge:** 1) Notfallblatt + Notfall-Sparmodus + SOS-Summer, 2) verschlüsselte Dokumente mit PIN,
+    3) Karten + Sonnenkompass, 4) Notfallwissen. Box parallel, sobald der Sticky vermessen ist
+  - fest **Lizenzen (Regel):** Im Repo liegen nur Skripte, nie Inhalte. Karten aus OSM (ODbL) tragen auf jedem Blatt
+    „© OpenStreetMap-Mitwirkende“; Wiki-Texte (CC BY-SA) mit Quelle; amtliche Ratgeber (z. B. BBK) nur privat auf
+    die Karte, nicht weitergeben
+- Achtung öffentliches Repo: eigene Dokumente, Kontakte und Orte nie ins Repo, nur auf die Karte
+- Idee **Bugout-Box** (Markus, 17.11.2026): kleine gedruckte Box (Bambu X1C, PETG/ASA) für Sticky, Powerbank und
+  Kleinzeug, Weiterentwicklung des Sticky-Sleeve. Vorschlag: Passform-Fach für den Sticky, **Fenster im Deckel** (das
+  Notfallblatt ist ohne Öffnen lesbar), Dichtring, Powerbank mit kurzem USB-C-Kabel (lädt in der Box), Größe einer
+  dicken Brotdose für die Jacke. Kleinzeug: Papier-Notfallkarte als Ersatz, LED-Lampe, Pfeife, Feuerstahl,
+  Rettungsdecke, Pflaster, Wasserentkeimung, Bithalter/Victorinox, Kabelbinder, Panzerband am Bleistift, Bargeld,
+  Kabel. Reihenfolge: Sticky vermessen → Probedruck ohne Dichtung → Fenster und Dichtung. Stand 17.11.: Konzept
+  steht, **CAD erst mit Maßen** (To-do Bambu X1C in `TODO-Kohlenstoffeinheit.md`); das gefaltete Solarpanel liegt mit
+  in der Box (Fach unter dem Deckel), die Inhaltsliste der Box steht auf dem Notfallblatt
+- Vorschlag **Solar** (17.11.2026): faltbares USB-Panel 5–10 W **beilegen, nicht einbauen** (1–2 W im Deckel wäre
+  Deko). Kette Panel → Powerbank → Sticky, nie Panel direkt an den Sticky (schwankender Strom). Powerbank mit
+  Pass-Through oder nacheinander laden. Achtung: Sticky-Akku lädt nur bei 0–45 °C (NTC laut Schaltplan), also nicht
+  im Frost und nicht in praller Sonne hinter dem Box-Fenster; im Schatten oder in der Jacke laden
+- Vorschlag **Notfall-Sparmodus** (Firmware): BLE ganz aus, kein minütlicher Uhr-Refresh (Uhr nur auf Tastendruck
+  oder stündlich), Sensoren aus, Refresh nur bei Bedienung; Notfallblatt beim Eintritt und bei leerem Akku. offen:
+  Nachtverbrauch erst messen (steht in STAND „wartet“), dann Laufzeit im Sparmodus schätzen
+
 ### Eigene Sensoren (laut Schaltplan, Bus MISC_I2C)
 | Baustein | Adresse | heute | Vorschlag |
 |---|---|---|---|

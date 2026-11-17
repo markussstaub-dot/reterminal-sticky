@@ -3,8 +3,8 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.39.2 + APK 2026.11.16-1742 (16.11.2026, auf meinem Sticky) – EDC-Sticky, allein nützlich: Gruppen im Menü (Zeit, Messen, Notieren, Rechnen, Nachschlagen); Recorder, Tippen (Tastatur, Num-Pad), Ja/Nein; Uhr/Wecker/Weltzeit, Rechner/Umrechner, Strichschrift, Waage, Lineal, Zettel mit QR; Dokumente (Handbuch auf SD, Spickzettel getrennt); Burgduell auch ohne Handy; DE/EN, Braun-Optik; Umschalten EDC ↔ Sticky Lab (app0/app1). App: Hauslurch-Brücke („Lurch, …“ = Befehl, sonst Notiz; geparkt), Meldungen auf Home, Parkplatz-Rückfrage, Orte. MIT, Repo öffentlich; Release v0.39.2, Playground-Update-PR #131 offen
-wartet: Markus am Gerät (0.39.2 ist drauf): Burgduell ohne Handy, Handbuch, Spickzettel, Dokumente-Reiter, Hilfeseiten, Tippen, Gruppen, Recorder, Num-Pad ausprobieren; Positivliste und erste Orte eintragen, auf Englisch die Seiten auf Überläufe prüfen; Lineal nachmessen, Einfügen in WhatsApp probieren; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.), Spickzettel-Konsole ausprobieren (Karte am Zenbook → Zwischenablage → Fold → Aufspielen); Nachtverbrauch messen; Hauslurch bei Lust: Ort „Zuhause“ anlegen, „Stell einen Timer auf eine Minute“ sagen. Seeed: Playground-PR #131 (0.39.2); Sticky-Lab-Update dort erst mit Diagnose (Platz-2-Hinweis setzt Lab ≥ 0.8.1 voraus)
+version: FW 0.39.2 + APK 2026.11.16-1742 (16.11.2026, auf meinem Sticky) – EDC-Sticky, allein nützlich: Gruppen im Menü (Zeit, Messen, Notieren, Rechnen, Nachschlagen); Recorder, Tippen (Tastatur, Num-Pad), Ja/Nein; Uhr/Wecker/Weltzeit, Rechner/Umrechner, Strichschrift, Waage, Lineal, Zettel mit QR; Dokumente (Handbuch auf SD, Spickzettel getrennt); Burgduell auch ohne Handy; DE/EN, Braun-Optik; Umschalten EDC ↔ Sticky Lab (app0/app1). App: Hauslurch-Brücke („Lurch, …“ = Befehl, sonst Notiz; geparkt), Meldungen auf Home, Parkplatz-Rückfrage, Orte. MIT, Repo öffentlich; Release v0.39.2, Playground-Update-PR #131 offen. FW 0.40.0 (Notfallblatt, SOS, Notfall-Sparmodus) seit 17.11. auf meinem Sticky
+wartet: Markus: Notfall-Seite (Probeblatt mit Platzhaltern ist drauf) mit ▲/▼ ansehen, SOS und Sparmodus prüfen; dann `Desktop\Claude\privat\notfall.md` ausfüllen und `python sticky-app/tools/notfallblatt.py` mit Sticky am USB laufen lassen; am Gerät (0.39.2 ist drauf): Burgduell ohne Handy, Handbuch, Spickzettel, Dokumente-Reiter, Hilfeseiten, Tippen, Gruppen, Recorder, Num-Pad ausprobieren; Positivliste und erste Orte eintragen, auf Englisch die Seiten auf Überläufe prüfen; Lineal nachmessen, Einfügen in WhatsApp probieren; Spickzettel prüfen (Felgen, Pannenhilfe-Nr.), Spickzettel-Konsole ausprobieren (Karte am Zenbook → Zwischenablage → Fold → Aufspielen); Nachtverbrauch messen; Hauslurch bei Lust: Ort „Zuhause“ anlegen, „Stell einen Timer auf eine Minute“ sagen. Seeed: Playground-PR #131 (0.39.2); Sticky-Lab-Update dort erst mit Diagnose (Platz-2-Hinweis setzt Lab ≥ 0.8.1 voraus)
 ---
 
 Repo: github.com/markussstaub-dot/reterminal-sticky (öffentlich seit 15.11.2026, Geschichte vorher gesäubert: Name und Hinweis auf Angehörige, MAC; Sicherung der alten Geschichte lokal unter `%LOCALAPPDATA%\sticky-backup`). `backup/`, Modelle und
@@ -405,6 +405,14 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   Handgriffe einmalig als Karten. Gruppe Nachschlagen = Handbuch · Spickzettel · Zettel, eigene Karussell-Listen einmalig
   umgestellt. Verrutschte Seiten benennt der Sticky um (`umbenennen.txt`) statt sie neu zu bekommen. Kompiliert
   (1 045 139 Byte), Tests 77/77, vite build ok, im Simulator geprüft; nicht geflasht, APK nicht gebaut
+- **Notfall, Schritt 1 (FW 0.40.0, 17.11.2026, SPEC „SD-Karte als Bibliothek und Bugout-Sticky“):** Widget-Art `notfall`
+  (`firmware-ble/notfall.h`): Notfallblatt vom Zenbook (`sticky-app/tools/notfallblatt.py`, private Daten in
+  `Desktop\Claude\privat\notfall.md`, Vorlage im Repo nur mit Platzhaltern), aufgespielt per USB-Kabel (neue serielle
+  Zeile `DATEI <pfad> <länge>`, nur unter `/soll`). Hängt sich selbst ans Karussell (▲/▼), keine App-Änderung. Knöpfe
+  SOS (Morse über den Summer) und Sparmodus (Funk aus auch am USB, Schlaf bis zur vollen Stunde, kein Bewegungswecken/
+  Klima/Stundenfenster, Blatt steht vor jedem Schlaf). Akku ≤ 3 % oder < 3450 mV: Sparmodus an und Blatt zeigen.
+  Geflasht 17.11.2026 über COM10 (CH343; der Empfang läuft über UART0/`Serial0`, nicht über `Serial`), Probeblatt mit
+  Platzhaltern per USB aufgespielt (beide Dateien „DATEI OK“, 48 KB in ~5 s); am Gerät noch nicht angesehen
 - Akkustrom `ma` aus Register 0x0C wirkt unplausibel (mehrere A beim Laden), noch nicht geprüft
 
 ## Technik
@@ -424,7 +432,7 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
 - GT911 bringt eine eigene Konfiguration mit (ab Werk 0x41). Die Firmware schreibt die Seeed-Konfiguration nur,
   wenn keine da ist (Blob aus `backup/`, Offset 0xE1B18, Version 0x63). Bei einem frühen Test ist 0x63 im Chip
   gelandet, Touch geht damit
-- ESP32-S3, 32 MB Flash, 8 MB Octal-PSRAM; USB über CH343 → COM7
+- ESP32-S3, 32 MB Flash, 8 MB Octal-PSRAM; USB über CH343 → COM7 (17.11.2026: COM10)
 - Werks-Firmware: `reterminal_template` v1.2.0, ESP-IDF 5.4, OTA-Partitionen app0/app1 (je 6 MB);
   zurück mit `esptool --port COM7 -b 460800 write-flash 0 backup/werksfirmware-32MB_c49e7e19559c.bin`
 

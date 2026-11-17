@@ -6,6 +6,10 @@
 // Touch weckt nicht (Controller stromlos) – eine Taste weckt alles.
 #include <esp_sleep.h>
 #include <driver/gpio.h>
+// Notfall-Sparmodus (notfall.h, FW 0.40.0): Funk aus, nur zur vollen Stunde wach, vor dem Schlaf das Notfallblatt
+static bool notfallSpar();
+static uint64_t notfallSchlafMs(uint64_t standard);
+static void notfallZeigen(bool leise);
 
 static const uint32_t SCHLAF_NACH = 60000;       // ms ohne Bedienung bzw. ohne Befehle der App (15.11.2026: 2 min → 1 min)
 static const uint32_t STUNDEN_FENSTER = 30000;   // so lange ist der Funk zur vollen Stunde an, wenn niemand kommt (15.11.2026: 1 min → 30 s)
@@ -56,14 +60,14 @@ static Weckgrund leichtSchlaf() {
     time_t jetzt = time(nullptr);
     struct tm t;
     localtime_r(&jetzt, &t);
-    uint64_t ms = t.tm_year > 120 ? (60 - t.tm_sec) * 1000ULL + 300 : 60000ULL;
+    uint64_t ms = notfallSchlafMs(t.tm_year > 120 ? (60 - t.tm_sec) * 1000ULL + 300 : 60000ULL);
     uint32_t timer = widgetWeckenInMs();          // laufender Countdown: rechtzeitig zum Ablauf wach sein
     if (timer && timer + 20 < ms) ms = timer + 20;
     for (auto& x : tasten) {
         detachInterrupt(digitalPinToInterrupt(x.pin));
         gpio_wakeup_enable((gpio_num_t)x.pin, x.ruhe == HIGH ? GPIO_INTR_LOW_LEVEL : GPIO_INTR_HIGH_LEVEL);
     }
-    bool bewegungWeckt = bewegungWecktGleich();
+    bool bewegungWeckt = !notfallSpar() && bewegungWecktGleich();
     if (bewegungWeckt) gpio_wakeup_enable((gpio_num_t)PIN_6D_INT, GPIO_INTR_LOW_LEVEL);
     esp_sleep_enable_gpio_wakeup();
     esp_sleep_enable_timer_wakeup(ms * 1000ULL);
@@ -93,14 +97,16 @@ static Weckgrund leichtSchlaf() {
 
 /** Am Ende von loop(): schlummern, wenn nichts los ist; nach dem Aufwachen Funk/Touch nach Bedarf */
 static void schlafPruefen() {
-    if (usbDa()) {                                 // Strom da: alles an, nie schlafen
-        if (!funkAn) funkEin(false);
+    bool spar = notfallSpar();
+    if (usbDa()) {                                 // Strom da: alles an, nie schlafen (im Sparmodus bleibt der Funk aus)
+        if (spar && funkAn) funkAus();
+        if (!funkAn && !spar) funkEin(false);
         if (!touchAn) touchEin();
         return;
     }
     // Touch erst nach der Taste einschalten (touchInit braucht ~½ s, der Klick soll sofort kommen)
-    if (!touchAn && funkAn && millis() - letzteTaste < 5000) touchEin();
-    if (millis() - letzteAktivitaet < SCHLAF_NACH) return;
+    if (!touchAn && (funkAn || spar) && millis() - letzteTaste < 5000) touchEin();
+    if (millis() - letzteAktivitaet < (spar ? 15000UL : SCHLAF_NACH)) return;
     if (audioLaeuft || imgActive || imgReady || schrAktiv || tasteGedrueckt()) return;
     if (funkAn) {
         Serial.println("Schlummern: Funk und Touch aus");
@@ -108,6 +114,7 @@ static void schlafPruefen() {
         funkAus();
     }
     if (touchAn) touchAus();
+    if (spar) notfallZeigen(true);                 // Sparmodus: vor dem Schlaf steht immer das Notfallblatt da
     statusPruefen(true, false);                    // Zzz in die Statuszeile, bevor das Bild stehen bleibt
     protokollSchreiben();
     sdAus();                                       // Karte stromlos, pfs() bindet sie beim nächsten Zugriff ein
@@ -117,14 +124,14 @@ static void schlafPruefen() {
         if (!bewegungPruefen(3000, &streu)) { fehlalarme++; return; }   // Stoß/Tippen: weiterschlafen
         protokoll("wach durch Bewegung (nach %lu Schlafminuten, Streuung %.0f mg)", (unsigned long)schlafZaehler, streu * 1000);
         schlafZaehler = 0;
-        funkEin(true);
+        if (!spar) funkEin(true);
         aktiv();
         return;
     }
     if (grund == W_TASTE) {                        // Taste: ganz wach (Touch folgt nach dem Tastendruck, s. o.)
         protokoll("wach durch Taste (nach %lu Schlafminuten)", (unsigned long)schlafZaehler);
         schlafZaehler = 0;
-        funkEin(true);
+        if (!spar) funkEin(true);
         aktiv();
         letzteTaste = millis();
         return;
@@ -133,6 +140,7 @@ static void schlafPruefen() {
     time_t jetzt = time(nullptr);
     struct tm t;
     localtime_r(&jetzt, &t);
+    if (spar) return;                              // Sparmodus: kein Klima, kein Stundenfenster
     if (t.tm_year > 120 && t.tm_min % 15 == 0) klimaMessen();   // Klima alle 15 min auch im Schlummern
     // volle Stunde: kurz erreichbar für den Abgleich; nachts 1–5 Uhr nicht (15.11.2026, Strom sparen),
     // Mitternacht bleibt: da schickt die App die Home-Karte mit dem neuen Datum

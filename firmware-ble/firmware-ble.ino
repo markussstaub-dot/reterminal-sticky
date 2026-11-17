@@ -29,7 +29,7 @@
 #include <driver/rtc_io.h>
 #include <soc/gpio_reg.h>
 
-static const char* FW_VERSION = "0.39.2";
+static const char* FW_VERSION = "0.40.0";
 
 // ---- Sprache (FW 0.32.0, SPEC „Zweisprachig Deutsch/Englisch“): wirksame Sprache der Anzeige, Muster aus dem Sticky Lab.
 // Gesetzt in modus.h (uhrFormatLaden): Standard vom Handy, am Sticky überstimmbar. Nur Anzeige, Logs bleiben deutsch.
@@ -719,6 +719,7 @@ static void bleInit() {
 
 #include "schlaf.h"
 #include "status.h"
+#include "notfall.h"
 
 // ---- Ablauf ----------------------------------------------------------------------
 void setup() {
@@ -728,6 +729,8 @@ void setup() {
     pinMode(PIN_PWR_LOCK, OUTPUT);
     digitalWrite(PIN_PWR_LOCK, HIGH);          // zweiter Haltepin, wie Seeeds demo_board_init()
     Serial.begin(115200);
+    Serial0.setRxBufferSize(4096);
+    Serial0.begin(115200);                     // UART0 = CH343 am USB-Stecker: Dateien vom Zenbook (notfall.h)
     delay(300);
     Serial.printf("\nSticky BLE-Durchstich %s\n", FW_VERSION);
     platzNotausgang(PIN_BTN_UP);               // ▲ beim Einschalten halten = anderer Firmware-Platz (Sticky Lab)
@@ -860,6 +863,8 @@ void loop() {
     abgleichLoop();
     protokollLoop();
     sensorenLoop();
+    notfallLoop();
+    serielleDatei();
     static uint32_t lastTp = 0;
     if (touchAn && millis() - lastTp > 25) { lastTp = millis(); touchPoll(); }
     schlafPruefen();
