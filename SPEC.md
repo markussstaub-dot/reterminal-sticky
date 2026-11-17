@@ -1269,6 +1269,10 @@ abtippen, sortieren, Ziele). Nimmt die Idee „Gesprächs-/Meeting-Notizen“ au
   Kabel. Reihenfolge: Sticky vermessen → Probedruck ohne Dichtung → Fenster und Dichtung. Stand 17.11.: Konzept
   steht, **CAD erst mit Maßen** (To-do Bambu X1C in `TODO-Kohlenstoffeinheit.md`); das gefaltete Solarpanel liegt mit
   in der Box (Fach unter dem Deckel), die Inhaltsliste der Box steht auf dem Notfallblatt
+  - **Maße:** stehen schon unter „Sleeve vom X1C“ (Lanyard Case, 65,5 × 106,0 × 7,3 mm, Tasten, SD, USB-C). Gegenprobe
+    17.11.2026 aus Seeeds „Sticky Case Simple“ (STL vom Seeed-Wiki, Playground
+    „3D Printables“): Hülle außen 70,6 × 110,6 × 9,6 mm, innen **67,0 × 107,0 mm**, Wand 1,8 mm, Lippe oben; Sticky also
+    etwa 67 × 107 × 7,5 mm inkl. Spiel – passt. Printables-Modell (Hendra Kusumah) nur noch zur Gegenprobe. Dateien nur lokal in `Desktop\Claude\privat\sticky-cad\`
 - Vorschlag **Solar** (17.11.2026): faltbares USB-Panel 5–10 W **beilegen, nicht einbauen** (1–2 W im Deckel wäre
   Deko). Kette Panel → Powerbank → Sticky, nie Panel direkt an den Sticky (schwankender Strom). Powerbank mit
   Pass-Through oder nacheinander laden. Achtung: Sticky-Akku lädt nur bei 0–45 °C (NTC laut Schaltplan), also nicht
@@ -1360,6 +1364,17 @@ laden, SOS testen, Batterien prüfen; alle 12 Monate Daten durchsehen und neu au
   Gehäuse: Druck mit X1C möglich, aber FDM ist porös → viel Füllung, Beschichtung, O-Ring-Nut, Stößel mit eigenen
   O-Ringen, **Drucktopf-Test** (z. B. 4 bar ≈ 30 m) vor dem ersten Tauchgang; Alternative gekauftes Kleingehäuse mit
   Tastendurchführung. Gemeinsame Basis mit der Bugout-Box (Vermessen, Fenster, Dichtung) prüfen. Erst nach B1 (Maße)
+  - **Tauch-Companion vertieft** (Markus, 17.11.2026): fest **Sporttauchen bis 40 m** („für tiefer gibt's Profis“).
+    Vorschlag Auslegung: Prüfdruck **6 bar** (≈ 60 m); Körper **POM gefräst** (6–8 mm Wand, flach dichtender O-Ring,
+    Edelstahlschrauben oder Klemme, Silicagel), Fenster **PC/Acryl ~8 mm** (Überschlag für ~100 × 60 mm, vor dem Bau
+    nachrechnen); 3D-Druck nur für Prototypen. **Tastenstößel:** Wasserdruck schiebt sie hinein (8 mm ≈ 25 N bei 40 m)
+    → dünne Stößel (4 mm ≈ 6 N) mit kräftiger Feder oder Anschlag mit Abstand zur Taste, sonst Geisterklicks.
+    Kälte: e-Ink-Refresh bei ~8 °C mit Lab-Station 14 prüfen. Kompass unter Wasser nur mit nachgerüstetem
+    Magnetometer (I2C, später). fest: **erste Teile über einen Online-Fräsdienst**, eigene CNC später
+  - Vorschlag **Baukasten mit zwei Varianten** (Markus, 17.11.2026): **Sticky-Sleeve** (Alltag/EDC/Bugout, X1C-Druck,
+    Touch frei, Extras wie Bithalter, Victorinox-Teile, Stylus, Magnet) und **Sticky-Sleeve-Dive** (40 m, POM gefräst,
+    Fenster, 3 Stößel, Handschlaufe, Silicagel). Gemeinsames Grundmodell = Innenkontur mit Tasten-, USB- und SD-Lage;
+    die Bugout-Box nimmt einen Sleeve auf statt eigener Passform
   - Idee **Tauch-Daten aus der App** (Markus, 17.11.2026): mit Handy-Verbindung rendert die App, der Sticky zeigt offline:
     **Gezeitenplan** (Hoch-/Niedrigwasser der nächsten Tage am Ort; Quellen prüfen: BSH für deutsche Küsten, WorldTides
     weltweit mit Freikontingent, Open-Meteo Marine für Wellen/Wassertemperatur), **Tauchbasen und Tauchplätze** aus OSM
