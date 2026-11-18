@@ -807,6 +807,15 @@ einer Scanner-App auslesen und abtippen. Mockup: `docs/zettel-mockup.html`.
 - fest **Abhaken am Sticky** (Firmware): Tippen auf eine Zeile hakt ab, der Sticky schreibt `/ist/zettel/`, die App
   holt es beim Abgleich und übernimmt die Häkchen
 - fest englischer Reitername **„Cards“** (statt „Lists“)
+- **gebaut 18.11.2026 (FW 0.44.0), selbst entschieden:** „auf dem Sticky“ steht im Text als Zeile `sticky: aus`
+  (fehlt sie, ist der Zettel drauf; alte Texte laufen so unverändert). Bei mehr als 6 Eingeschalteten nimmt der
+  Sticky die ersten 6, der Schalter lässt keinen 7. zu. Strichcode-Zeile `strich: EAN13 …` / `strich: CODE128 …`
+  (ohne Format: 13 Ziffern mit Prüfziffer = EAN-13). Listen: Zeilen ohne Kästchen gelten als offene Punkte, am
+  Sticky bis 20 Punkte (ab 9 in zwei Spalten). Abgehakt = Kästchen schwarz + Strich durch, beides XOR, damit die
+  Firmware genau dieselben Rechtecke umkehren kann (Felder in `/soll/home/zettel.txt`, PROTOKOLL.md). Strichcodes liest
+  ein eigener kleiner Leser (EAN-13, Code128) statt ZXing; gibt es die Android-Barcode-Erkennung, nimmt die App die.
+  „Bei Ort nach vorn“ in der Karte zeigt nur an, welcher Ort darauf zeigt (eingestellt wird unter Orte); benennt man
+  einen Zettel um, ziehen die Orte mit. Titel sind eindeutig („Einkauf 2“), weil Orte und Häkchen am Namen hängen
 
 ### Hilfe je App-Reiter (Markus, 18.11.2026, fest)
 Anlass (Markus): „Analog Sticky sollte auch jeder Tab der App eine Hilfeseite haben.“
@@ -817,6 +826,9 @@ Anlass (Markus): „Analog Sticky sollte auch jeder Tab der App eine Hilfeseite 
   `src/hilfe-app.js` neben `hilfe.js`
 - Vorschlag **lange Erklärtexte wandern in die Hilfe**: die grauen Kleingedruckt-Absätze in den Reitern (Zettel-Syntax,
   Dokumente-Schalter, Mehr-Erklärungen) werden kürzer, Einzelheiten stehen im „?“
+- **gebaut 18.11.2026:** ein „?“ in der Kopfzeile (immer oben rechts sichtbar) öffnet die Hilfe des offenen Reiters
+  bzw. der offenen Mehr-Unterseite; Mehr-Menü selbst hat eine kurze Übersicht. Blatt in `src/blatt.js` (auch für die
+  Zettel-Karten), Texte in `src/hilfe-app.js`; Test prüft, dass jeder Reiter/jede Unterseite eine Hilfe hat (DE = EN)
 
 ### Spickzettel-Konsole: Karten am Zenbook pflegen (Markus, 15.11.2026, abgenommen)
 Anlass: Karten am Fold abzutippen ist mühsam (heute: `sticky-lab/SPICKZETTEL-EDC.md` → App, Bordbuch-Tab → Spickzettel).

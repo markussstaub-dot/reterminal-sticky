@@ -192,3 +192,41 @@ details.info summary { cursor: pointer; }
 .kartezeile { background: var(--flaeche); border-radius: 8px; padding: 8px 10px; }
 .kartezeile.aus { opacity: .45; }
 #szenen button { min-height: 36px; padding: 4px 12px; }
+
+/* Hilfe-Knopf oben rechts und Blätter (18.11.2026, SPEC „Hilfe je App-Reiter“) */
+header #status { margin-left: auto; }
+.hilfeknopf { min-height: 36px; min-width: 36px; padding: 0; border-radius: 50%; font-weight: 600; font-size: 17px; flex: none; }
+body.blattoffen { overflow: hidden; }
+.blatthuelle { position: fixed; inset: 0; z-index: 30; background: rgba(0, 0, 0, .6); display: flex; align-items: flex-end; justify-content: center; }
+.blatt { background: var(--grund); border: 1px solid var(--linie); border-bottom: 0; border-radius: 18px 18px 0 0; width: 100%; max-width: 760px;
+  max-height: 92vh; display: flex; flex-direction: column; padding-bottom: env(safe-area-inset-bottom); box-shadow: 0 -6px 24px rgba(0, 0, 0, .6); }
+.blattkopf { display: flex; align-items: center; gap: 10px; padding: 12px 16px 6px; }
+.blattkopf h3 { flex: 1; margin: 0; font-size: 19px; font-weight: 500; }
+.blattzu { min-height: 40px; min-width: 40px; padding: 0; border-radius: 50%; }
+.blattinhalt { overflow: auto; padding: 4px 16px 18px; display: grid; gap: 8px; }
+.blattinhalt input[type=text], .blattinhalt select { width: 100%; }
+.hilfe p { margin: 0; line-height: 1.45; }
+.hilfe p.fett { margin-top: 8px; font-weight: 600; color: var(--akzent); }
+
+/* Zettel als Karten (18.11.2026) */
+.zettelliste { display: grid; gap: 8px; }
+.zettelzeile { display: flex; align-items: center; gap: 10px; background: var(--flaeche); border: 1px solid var(--linie); border-radius: 12px; padding: 10px 12px; cursor: pointer; }
+.zettelzeile .t { flex: 1; min-width: 0; display: grid; }
+.zettelzeile .t b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zettelzeile .t .klein { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zettelzeile .sym { width: 32px; height: 32px; border-radius: 8px; background: var(--linie); display: grid; place-items: center; font-size: 17px; flex: none; }
+.zettelzeile .griff { color: var(--leise); font-size: 20px; padding: 6px 4px; touch-action: none; cursor: grab; user-select: none; flex: none; }
+.zettelzeile.aus .t, .zettelzeile.aus .sym { opacity: .5; }
+.zettelzeile.zieht { border-color: var(--akzent); box-shadow: 0 4px 14px rgba(0, 0, 0, .6); position: relative; z-index: 2; }
+.zettelzeile.wahl { cursor: pointer; }
+.zettelzeile .schalter input { width: 24px; height: 24px; }
+.vorschaurahmen { background: #111; padding: 8px; border-radius: 12px; border: 1px solid var(--linie); }
+.zettelvorschau { display: block; width: 100%; height: auto; border-radius: 4px; background: var(--papier); }
+.punkte { display: grid; gap: 6px; }
+.punkt { display: flex; align-items: center; gap: 8px; }
+.punkt input[type=checkbox] { width: 24px; height: 24px; accent-color: var(--akzent); flex: none; }
+.punkt input[type=text] { flex: 1; }
+.punkt button { min-height: 40px; min-width: 40px; padding: 0; border-radius: 50%; }
+.meldung2:empty { display: none; }
+.blattinhalt textarea { min-height: 4.6em; margin: 0; }
+.blatt .zettelzeile .t .klein { white-space: normal; }

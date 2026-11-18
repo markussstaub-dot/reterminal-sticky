@@ -53,16 +53,46 @@ const ZIELE = [
   [/^(notiz|note|fahrt)$/i, () => ({ modus: 2 })],
   [/^(zettel|list)\s*(\d)?$/i, (m) => ({ modus: 3, seite: Math.max(0, Number(m[2] ?? 1) - 1) })],
 ];
-export function zielLesen(wort) {
-  for (const [re, f] of ZIELE) { const m = String(wort ?? '').trim().match(re); if (m) return f(m); }
+/** Ziel-Wort → { modus, seite? } bzw. { modus: 3, name } für einen Zettel-Namen (seit 18.11.2026; namen = alle Zettel-Titel) */
+export function zielLesen(wort, namen = []) {
+  const w = String(wort ?? '').trim();
+  const zettel = namen.find((n) => n.toLowerCase() === w.toLowerCase());
+  if (zettel) return { modus: 3, name: zettel };
+  for (const [re, f] of ZIELE) { const m = w.match(re); if (m) return f(m); }
   return { modus: 0 };
+}
+
+/** Zeilen der Orte einzeln anfassen: f(teile) → teile (Kommentare und kaputte Zeilen bleiben, wie sie sind) */
+function orteZeilenMap(text, f) {
+  return String(text ?? '').split('\n').map((zeile) => {
+    const m = zeile.match(/^([^#]*)(#.*)?$/);
+    const teile = m[1].split(';');
+    if (teile.length < 3) return zeile;
+    const neu = f(teile.map((s) => s.trim()));
+    if (!neu) return zeile;
+    return neu.join('; ') + (m[2] ? ` ${m[2]}` : '');
+  }).join('\n');
+}
+
+/** Einmaliger Umzug: Ziel „Zettel n“/„List n“ → Name des n-ten Zettels am Sticky (titelAmSticky in Sticky-Reihenfolge) */
+export function orteZettelUmzug(text, titelAmSticky) {
+  return orteZeilenMap(text, (t) => {
+    const m = t[2].match(/^(zettel|list)\s*(\d)?$/i);
+    const titel = m && titelAmSticky[Number(m[2] ?? 1) - 1];
+    return titel ? [t[0], t[1], titel, ...t.slice(3)] : null;
+  });
+}
+
+/** Zettel umbenannt: Orte ziehen mit */
+export function orteUmbenennen(text, alt, neu) {
+  return orteZeilenMap(text, (t) => (t[2].toLowerCase() === String(alt).toLowerCase() ? [t[0], t[1], neu, ...t.slice(3)] : null));
 }
 
 /**
  * Orte lesen, je Zeile „Name; Breite, Länge; Ziel[; Umkreis m]“, z. B. „Supermarkt; 47.1, 8.2; Zettel 1“.
  * → [{ name, lat, lon, ziel: { modus, seite? }, umkreis }]
  */
-export function orteLesen(text) {
+export function orteLesen(text, zettelNamen = []) {
   const orte = [];
   for (const zeile of String(text ?? '').split('\n')) {
     const z = zeile.replace(/#.*/, '').trim();
@@ -71,7 +101,7 @@ export function orteLesen(text) {
     const m = (koord ?? '').match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
     if (!name || !m) continue;
     const u = Number(String(umkreis ?? '').replace(/\s*m$/i, ''));
-    orte.push({ name, lat: Number(m[1]), lon: Number(m[2]), ziel: zielLesen(ziel), umkreis: u > 0 ? u : UMKREIS_M });
+    orte.push({ name, lat: Number(m[1]), lon: Number(m[2]), ziel: zielLesen(ziel, zettelNamen), umkreis: u > 0 ? u : UMKREIS_M });
   }
   return orte;
 }

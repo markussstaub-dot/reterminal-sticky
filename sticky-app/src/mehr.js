@@ -16,7 +16,8 @@ export function mehrEinrichten() {
   };
   for (const k of menue.querySelectorAll('[data-seite]')) k.addEventListener('click', () => zeige(k.dataset.seite));
   for (const k of document.querySelectorAll('.mehrseite .zurueck')) k.addEventListener('click', () => (offen ? history.back() : zeige(null)));
-  window.addEventListener('popstate', () => { if (offen) zeige(null, false); });
+  // Zurück aus einem Blatt (Hilfe) landet wieder auf dieser Unterseite: dann offen lassen
+  window.addEventListener('popstate', (e) => { if (offen && e.state?.mehr !== offen) zeige(null, false); });
   // Tipp auf den Mehr-Tab zeigt immer das Menü
   document.querySelector('#tabs [data-ziel="mehr"]')?.addEventListener('click', () => { if (offen) zeige(null, false); });
   zeige(null, false);

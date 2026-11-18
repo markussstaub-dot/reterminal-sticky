@@ -62,3 +62,14 @@ test('Home-Zeilen: Ort, Parkplatz, Meldungen', () => {
   assert.deepEqual(z, ['Ort: Daheim', 'Geparkt um U5', 'U7  DHL · Paket']);
   assert.deepEqual(homeZeilen({ parkplatz: { t: 0 } }, { jetzt: 25 * 3600 * 1000 }), []);
 });
+
+test('Orte zeigen auf Zettel-Namen (18.11.2026), Umzug und Umbenennen', async () => {
+  const { orteZettelUmzug, orteUmbenennen } = await import('../src/kontext.js');
+  assert.deepEqual(zielLesen('lidl plus', ['Einkauf', 'Lidl Plus']), { modus: 3, name: 'Lidl Plus' });
+  assert.deepEqual(zielLesen('Home', ['Einkauf']), { modus: 0 });
+  const alt = 'Lidl; 47.1, 8.2; Zettel 2; 200 m # Bexbach\nDaheim; 47.2, 8.3; Home\nMarkt; 47.3, 8.4; List\nX; 1, 2; Zettel 9';
+  const neu = orteZettelUmzug(alt, ['Einkauf', 'Lidl Plus']);
+  assert.equal(neu, 'Lidl; 47.1, 8.2; Lidl Plus; 200 m # Bexbach\nDaheim; 47.2, 8.3; Home\nMarkt; 47.3, 8.4; Einkauf\nX; 1, 2; Zettel 9');
+  assert.equal(orteLesen(neu, ['Einkauf', 'Lidl Plus'])[0].ziel.name, 'Lidl Plus');
+  assert.equal(orteUmbenennen(neu, 'Lidl Plus', 'Lidl'), neu.replace('Lidl Plus', 'Lidl'));
+});

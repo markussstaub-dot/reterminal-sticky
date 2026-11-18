@@ -173,6 +173,10 @@ static void widgetZeigen();
 static bool widgetTaste(int i);
 // Spiel (burgduell.h, FW 0.39.0): ohne Handy beim Betreten läuft das Burgduell lokal, mit Handy zeigt M_APP die App-Seite
 static bool spielLokal = false;
+// Abhaken am Sticky (zettel.h, FW 0.44.0)
+static bool zettelFelderLaden();
+static void zettelUeberlagern();
+static void zettelLoop();
 static void spielBetreten();
 static bool spielTaste(int i);
 static void spielLoop();
@@ -219,6 +223,7 @@ static void homeLesen() {
     File f = sollOeffnen("home/version.txt");
     if (f) { size_t n = f.readBytes(homeVersion, sizeof homeVersion - 1); homeVersion[n] = 0; f.close(); }
     bestellZaehlen();
+    if (zettelFelderLaden() && modus == M_BESTELL) modusWunsch = M_BESTELL;   // gezeigte Liste hat sich geändert: neu zeichnen
     statusLaden();
 }
 
@@ -638,6 +643,7 @@ static void setzeModus(Modus m) {
         tone(PIN_BUZZER, 3300, 25);
     }
     if (m == M_BESTELL && homeLaden(3 + bestellAktuell, imgBuf)) {
+        zettelUeberlagern();             // am Sticky abgehakt, aber noch nicht neu gezeichnet
         statusPruefen(false, true);
         bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
         display.update();
@@ -1023,6 +1029,7 @@ static void modusLoop() {
         bestellWunsch = -1;
     }
     rahmenLoop();
+    zettelLoop();
     kritzelLoop();
     widgetLoop();
     spielLoop();

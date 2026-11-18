@@ -217,12 +217,12 @@ function seiten() {
           '!Back', 'any key']),
     },
     zettel: {
-      titel: T('Hilfe · Zettel', 'Help · Lists'),
+      titel: T('Hilfe · Zettel', 'Help · Cards'),
       zeilen: T(
-        ['!Tasten', '▲ ▼ kurz   Zettel zurück / vor', '▲ 1 s halten   erster Zettel', '▼ 1 s halten   nächster Eintrag im Karussell',
-          'KI kurz   Home · KI halten   Diktat', '!Zettel ändern', 'in der App unter „Zettel“'],
-        ['!Keys', '▲ ▼ short   list back / forward', '▲ hold 1 s   first list', '▼ hold 1 s   next carousel entry',
-          'AI short   Home · AI hold   dictate', '!Change lists', 'in the app under “Lists”']).concat(ZURUECK()),
+        ['!Tippen', 'auf eine Listenzeile = abhaken (noch mal = zurück)', '!Tasten', '▲ ▼ kurz   Zettel zurück / vor', '▲ 1 s halten   erster Zettel',
+          '▼ 1 s halten   nächster Eintrag im Karussell', 'KI kurz   Home · KI halten   Diktat', '!Zettel ändern', 'in der App unter „Zettel“'],
+        ['!Tap', 'a list line = tick it (again = untick)', '!Keys', '▲ ▼ short   card back / forward', '▲ hold 1 s   first card',
+          '▼ hold 1 s   next carousel entry', 'AI short   Home · AI hold   dictate', '!Change cards', 'in the app under “Cards”']).concat(ZURUECK()),
     },
   };
   // Lineal in Zoll: dieselbe Hilfe wie das Lineal

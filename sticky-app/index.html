@@ -11,6 +11,7 @@
   <header>
     <h1>Sticky</h1>
     <span id="status" class="pille aus" role="button" tabindex="0" data-en="disconnected">getrennt</span>
+    <button id="hilfeKnopf" class="hilfeknopf" aria-label="Hilfe" data-en-title="Help" title="Hilfe">?</button>
   </header>
 
   <main>
@@ -69,7 +70,7 @@
         <div id="dokListe"></div>
         <div class="leiste">
           <label class="dateiwahl"><input type="file" id="pdfDatei" accept="application/pdf" hidden><span>+ PDF</span></label>
-          <span class="klein" data-en="Switch = document goes to the Sticky. Tap a manual: search, contents, rename, delete.">Schalter = Dokument kommt auf den Sticky. Tippen auf ein Handbuch: Suche, Inhaltsverzeichnis, umbenennen, löschen.</span>
+          <span class="klein" data-en="Switch = to the Sticky, tap = open.">Schalter = auf den Sticky, Tippen = öffnen.</span>
         </div>
         <p id="dokPlatz" class="klein"></p>
         <h2 data-en="Cheat sheets">Spickzettel</h2>
@@ -81,7 +82,7 @@
           <textarea id="spickzettel" rows="18" spellcheck="false"></textarea>
           <button id="spickStandard" data-en="Restore default">Standard wiederherstellen</button>
         </details>
-        <p class="klein" data-en="Easiest to edit on the laptop (cheat sheet console), look and fix small things here.">Pflegen am bequemsten am Zenbook (Spickzettel-Konsole), hier ansehen und kleine Korrekturen.</p>
+
         <div class="leiste">
           <button id="dokAufspielen" class="haupt" disabled data-en="To the Sticky">Auf den Sticky</button>
         </div>
@@ -89,16 +90,21 @@
       </section>
     </div>
 
-    <!-- ======================= Bestellen ======================= -->
+    <!-- ======================= Zettel (EN Cards; bis 18.11.2026 ein Textfeld) ======================= -->
     <div class="tab" data-tab="bestellen" hidden>
       <section>
-        <p class="klein" data-en="On the Sticky: menu → Look up → Lists, or ▲/▼ through the carousel.">Am Sticky: Menü → Nachschlagen → Zettel, oder mit ▲/▼ durchs Karussell.</p>
-        <h2 data-en="Lists (up to 6, “## Title” starts one)">Zettel (bis zu 6, „## Titel“ beginnt einen)</h2>
-        <p class="klein"><span data-en="Same order on the Sticky as here. With one of these lines a list becomes a QR code:">Reihenfolge am Sticky wie hier. Mit einer dieser Zeilen wird der Zettel ein QR-Code:</span>
-          <code>wlan: Name | <span data-en="Password">Passwort</span></code> <span data-en="(guest Wi-Fi),">(Gast-WLAN),</span> <code>link: https://…</code>, <code>qr: <span data-en="content">Inhalt</span></code>
-          <span data-en="(e.g. a loyalty card; read the content once with a scanner app). Stays in the app and on the Sticky only.">(z. B. Kundenkarte, Inhalt einmal mit einer Scanner-App auslesen). Bleibt nur in der App und im Sticky.</span></p>
-        <textarea id="zettelText" rows="18" spellcheck="false"></textarea>
-        <button id="zettelStandard" class="werkzeug" data-en="Restore example">Beispiel wiederherstellen</button>
+        <h2 data-en="Cards">Zettel</h2>
+        <div id="zettelListe" class="zettelliste"></div>
+        <p id="zettelZahl" class="klein"></p>
+        <div class="leiste">
+          <button id="zettelNeu" class="haupt" data-en="+ Card">+ Zettel</button>
+          <button id="zettelAlsText" data-en="Edit as text">Als Text bearbeiten</button>
+        </div>
+        <div id="zettelTextBox" hidden>
+          <p class="klein" data-en="“## Title” starts a card. Details under “?”.">„## Titel“ beginnt einen Zettel. Einzelheiten unter „?“.</p>
+          <textarea id="zettelText" rows="18" spellcheck="false"></textarea>
+          <button id="zettelStandard" class="werkzeug" data-en="Restore example">Beispiel wiederherstellen</button>
+        </div>
       </section>
     </div>
 
@@ -119,7 +125,7 @@
         <button class="zurueck" data-en="‹ More">‹ Mehr</button>
         <section>
           <h2>Stickys</h2>
-          <p class="klein" data-en="One Sticky is active (preview, remote, logbook). Others with “runs along” stay connected in the background. The profile sets carousel, orientation, lists, cheat sheets and dictionary – devices with the same profile share them.">Einer ist aktiv (Vorschau, Fernbedienung, Handbuch). Weitere mit „läuft mit“ bleiben im Hintergrund verbunden. Das Profil bestimmt Karussell, Lage, Zettel, Spickzettel und Wörterbuch – Geräte mit demselben Profil teilen sie.</p>
+          <p class="klein" data-en="One is active, others with “runs along” stay connected in the background. More under “?”.">Einer ist aktiv, weitere mit „läuft mit“ bleiben im Hintergrund verbunden. Mehr unter „?“.</p>
           <ul id="geraeteListe" class="geraete"></ul>
           <div class="leiste"><button id="geraetNeu" data-en="Add Sticky">Sticky hinzufügen</button></div>
         </section>
@@ -135,7 +141,7 @@
         <button class="zurueck" data-en="‹ More">‹ Mehr</button>
         <section>
           <h2><span data-en="Carousel">Karussell</span> <span class="schild" data-en="Profile">Profil</span></h2>
-          <p class="klein" data-en="Tick what belongs on the Sticky; arrows set the order. Groups are one tile in the menu (tap = last used tool) and tabs on the page; ▲/▼ still flips through every page.">Häkchen = kommt auf den Sticky, Pfeile = Reihenfolge. Eine Gruppe ist im Menü eine Kachel (Tippen = zuletzt benutztes Werkzeug) und auf der Seite ein Reiter; ▲/▼ blättert weiter durch jede Seite einzeln.</p>
+          <p class="klein" data-en="Tick = to the Sticky, arrows = order.">Häkchen = kommt auf den Sticky, Pfeile = Reihenfolge.</p>
           <div id="karussellListe" class="kliste"></div>
           <details>
             <summary class="klein" data-en="Buttons of the old note page (only if “Note” is ticked)">Knöpfe der alten Notiz-Seite (nur wenn „Notiz“ angehakt ist)</summary>
@@ -176,13 +182,13 @@
         </section>
         <section>
           <h2><span data-en="Dictionary">Wörterbuch</span> <span class="schild" data-en="Profile">Profil</span></h2>
-          <p class="klein" data-en="Applied after every recognition, one “wrong → right” per line. Correct a note (tap it) and it learns by itself.">Wird nach jeder Erkennung angewandt, je Zeile „falsch → richtig“. Korrigierst du eine Notiz (antippen), lernt es von selbst dazu.</p>
+          <p class="klein" data-en="One “wrong → right” per line.">Je Zeile „falsch → richtig“.</p>
           <textarea id="woerterbuch" rows="6" spellcheck="false"></textarea>
         </section>
         <section>
           <h2>Push-to-Talk <span class="schild">App</span></h2>
           <label class="lage"><span data-en="Also copy dictation to the clipboard">Diktat zusätzlich in die Zwischenablage</span> <input type="checkbox" id="pttAblage"></label>
-          <p class="klein" data-en="Hold AI on the Sticky, speak, release: the recognised text is then on the clipboard, ready to paste into any app (WhatsApp, mail, search). The note is kept too.">KI am Sticky halten, sprechen, loslassen: der erkannte Text liegt danach in der Zwischenablage und lässt sich in jeder App einfügen (WhatsApp, Mail, Suche). Die Notiz bleibt trotzdem.</p>
+
         </section>
       </div>
 
@@ -194,19 +200,13 @@
           <textarea id="meldeListe" rows="3" spellcheck="false"></textarea>
           <p class="klein" id="meldeStatus" data-en="Access: checking …">Zugriff: wird geprüft …</p>
           <div class="leiste"><button id="meldeZugriff" data-en="Grant access …">Zugriff freigeben …</button><button id="meldeTest" data-en="Test notification">Test-Meldung</button></div>
-          <details class="info">
-            <summary class="klein" data-en="ⓘ How it works">ⓘ So funktioniert's</summary>
-            <p class="klein" data-en="Sparing: only apps from this list (one package name per line; “package: name, name” = only when one of them is in the title) show briefly at the bottom of the Sticky. The last three stay on the Home card as “App · title” until you dismiss them on the phone (at the latest after 12 h). You grant access once yourself in the Android settings.">Sparsam: nur Apps aus dieser Liste (je Zeile ein Paketname; „paket: Name, Name“ = nur, wenn einer davon im Titel steht) erscheinen kurz unten am Sticky. Die letzten drei bleiben als „App · Titel“ auf der Home-Karte stehen, bis du sie am Handy wegwischst (spätestens nach 12 h). Den Zugriff gibst du einmal selbst in den Android-Einstellungen frei.</p>
-          </details>
+          <p class="klein" data-en="Only apps from the list, one package name per line. More under “?”.">Nur Apps aus der Liste, je Zeile ein Paketname. Mehr unter „?“.</p>
         </section>
         <section>
           <h2><span data-en="Places">Orte</span> <span class="schild">App</span></h2>
-          <textarea id="orte" rows="3" spellcheck="false" placeholder="Supermarkt; 47.12345, 8.12345; Zettel 1" data-en-placeholder="Supermarket; 47.12345, 8.12345; List 1"></textarea>
+          <textarea id="orte" rows="3" spellcheck="false" placeholder="Supermarkt; 47.12345, 8.12345; Einkauf" data-en-placeholder="Supermarket; 47.12345, 8.12345; Shopping"></textarea>
           <div class="leiste"><button id="ortMerken" data-en="Remember this place">Hier merken</button><button id="frageTest" data-en="Test question">Test-Rückfrage</button></div>
-          <details class="info">
-            <summary class="klein" data-en="ⓘ How it works">ⓘ So funktioniert's</summary>
-            <p class="klein" data-en="One place per line: “name; latitude, longitude; target[; radius m]”. Target: Home, Note, List 1–6, Manual or Cheat sheets. On arrival the Sticky jumps there once, but only from Home; Home shows the place. After a ride it asks “Remember parking spot?”.">Je Zeile ein Ort: „Name; Breite, Länge; Ziel[; Umkreis m]“. Ziel: Home, Notiz, Zettel 1–6, Handbuch oder Spickzettel. Bei Ankunft springt der Sticky einmal dorthin, aber nur aus Home; Home zeigt den Ort. Nach der Fahrt fragt er „Parkplatz merken?“.</p>
-          </details>
+          <p class="klein" data-en="One per line: name; latitude, longitude; target[; radius m]. Target: Home, Note, Manual, Cheat sheets or a card name.">Je Zeile: Name; Breite, Länge; Ziel[; Umkreis m]. Ziel: Home, Notiz, Handbuch, Spickzettel oder ein Zettel-Name.</p>
         </section>
         <section>
           <h2>Hauslurch <span class="schild">App</span></h2>
@@ -220,13 +220,7 @@
             <option value="beide" data-en="both">beiden</option></select></label>
           <label class="lage"><span data-en="Compare: also send the audio to the Zenbook for recognition">Vergleich: Ton zusätzlich am Zenbook abtippen</span> <input type="checkbox" id="lurchVergleich"></label>
           <div class="leiste"><label class="dateiwahl"><input type="file" id="lurchQr" accept="image/*" capture="environment" hidden><span data-en="Photograph QR code">QR-Code abfotografieren</span></label><button id="lurchTest" data-en="Test connection">Verbindung testen</button> <span id="lurchErgebnis" class="klein"></span></div>
-          <details class="info">
-            <summary class="klein" data-en="ⓘ How it works">ⓘ So funktioniert's</summary>
-            <p class="klein" data-en="Start with “Lurch”: “Lurch, set a timer for one minute”, “Lurch, what's the weather?”. Only the text goes to the Zenbook, it answers aloud and the answer shows on the Sticky. Everything else stays a note. If the Zenbook can't be reached, the command is saved as a note.">Mit „Lurch“ anfangen: „Lurch, stell einen Timer auf eine Minute“, „Lurch, wie wird das Wetter?“. Nur der Text geht ans Zenbook, er antwortet mit Stimme, die Antwort erscheint am Sticky. Alles andere bleibt Notiz. Ist das Zenbook nicht erreichbar, wird der Befehl als Notiz gespeichert.</p>
-            <p class="klein" data-en="QR code: on the Zenbook in the Hauslurch console choose 8, then photograph the screen – address and key are filled in.">QR-Code: am Zenbook in der Hauslurch-Konsole die 8 wählen, dann den Bildschirm abfotografieren – Adresse und Schlüssel sind eingetragen.</p>
-            <p class="klein" data-en="Automatic needs a place called “Home” under Places (stand at home, “Remember this place”, name it Home). Without it the Zenbook speaks.">Automatisch braucht unter „Orte“ einen Ort „Zuhause“ (daheim „Hier merken“ und so nennen). Ohne ihn spricht das Zenbook.</p>
-            <p class="klein" data-en="Compare shows the Zenbook's text under the Fold's (🖥). The audio stays within your own devices (Tailscale); the Zenbook only keeps the texts for comparison.">Vergleich zeigt unter dem Fold-Text auch den des Zenbooks (🖥). Der Ton bleibt bei deinen eigenen Geräten (Tailscale); das Zenbook hebt nur die Texte zum Vergleichen auf.</p>
-          </details>
+          <p class="klein" data-en="Start with “Lurch”: “Lurch, what's the weather?”. More under “?”.">Mit „Lurch“ anfangen: „Lurch, wie wird das Wetter?“. Mehr unter „?“.</p>
         </section>
       </div>
 
@@ -287,7 +281,7 @@
     <button data-ziel="sticky" class="an"><span>◧</span><span>Sticky</span></button>
     <button data-ziel="notizen"><span>✎</span><span data-en="Notes">Notizen</span></button>
     <button data-ziel="dokumente"><span>☰</span><span data-en="Docs">Dokumente</span></button>
-    <button data-ziel="bestellen"><span>▤</span><span data-en="Lists">Zettel</span></button>
+    <button data-ziel="bestellen"><span>▤</span><span data-en="Cards">Zettel</span></button>
     <button data-ziel="mehr"><span>⋯</span><span data-en="More">Mehr</span></button>
   </nav>
   <script type="module" src="./src/main.js"></script>

@@ -1,4 +1,4 @@
-# Sticky-BLE v1 (seit 11.11.2026, Stand FW 0.37)
+# Sticky-BLE v1 (seit 11.11.2026, Stand FW 0.44)
 
 Ein GATT-Dienst, fünf Kennlinien. Gerät = dünnes Terminal (Peripheral), App = Zwilling (Central).
 Gedacht auch für den Microlino-Knopf: gleiche Rahmen, nur andere Bildgröße im START-Rahmen.
@@ -86,6 +86,15 @@ Dokumente (ab FW 0.38.0, `firmware-ble/doku.h`, nur auf der Karte):
 - `/ist/doku.txt` (schreibt nur der Sticky): `<name> <bildschirm> <lesezeichen>` je Handbuch, `zuletzt <name>`, `spick <karte>`
 - Zustand zusätzlich `"sdmb"` (Kartengröße in MB), `"dok"` (Handbücher auf der Karte), `"spick"` (Karten)
 - Umzug beim ersten Start: `/soll/bordbuch` wird `/soll/doku/microlino`
+
+Zettel abhaken (ab FW 0.44.0, `firmware-ble/zettel.h`):
+- `/soll/home/zettel.txt` (schreibt die App mit den Home-Bildern, vor `version.txt`): `z <platz> <punkte> <titel>` je
+  Listen-Zettel (platz 0–5 = `home/3.bin` …), `h <platz> <i> <ab> x0 y0 x1 y1 bx0 by0 bx1 by1 sx0 sy0 sx1 sy1` je Punkt:
+  Tippfläche, Innenfläche des Kästchens, Band durch den Text (Display-Koordinaten), `ab` = so gezeichnet. Abgehakt =
+  beide Rechtecke umgekehrt (XOR); der Sticky kehrt beim Tippen genau diese um
+- `/ist/zettel/<platz>.txt` (schreibt nur der Sticky): Titel, dann je Punkt `0`/`1` in einer Zeile. Die App übernimmt
+  die Häkchen über den Titel, spielt neu auf und löscht die Datei (quittieren). Passt Titel oder Anzahl nicht, gilt sie nicht
+- Ereignis `{"t":"zettel","platz","i","ab"}` nach jedem Tippen; die App gleicht wenige Sekunden später ab
 
 ## Zustand (JSON)
 `{"fw","modus","bb":Bordbuch-Seite,"zettel":Bestellzettel,"usb","seite":"karte|bild","bat":%,"mv","ma","chg","mtu","phy","itvl":×1,25 ms,"tp":"BxH","fahrtv":CRC des Layouts,"offen":Notizen im Puffer,"uhr":bool, …, "us":0|1, "en":0|1, "w", "lh"}` (w und lh wie beim Ereignis modus, ab FW 0.31.2; `us` = US-Einheiten, `en` = wirksame Sprache Englisch, ab FW 0.32.0) – bei Verbindung,

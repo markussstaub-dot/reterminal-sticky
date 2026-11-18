@@ -66,7 +66,10 @@ import { zeichneFahrt, trefferKnopf, rueckmeldung, layoutText, STANDARD_KNOEPFE 
 import { zeichneHome, zeichneZiffern, statusGlyphen, setzeEinheitUs, KARTE } from './homeseite.js';
 import { holeWetter, letztesWetter } from './wetter.js';
 import { BESTELL_STANDARD, zeichneZettel } from './bestellung.js';
-import { zettelListe, zettelUmzug } from './zettel.js';
+import { zettelListe, zettelUmzug, zettelKarten, haekchenUebernehmen } from './zettel.js';
+import { zeichneZettelSeite, zettelFelder } from './zettelBild.js';
+import { zettelSeiteEinrichten } from './zettelSeite.js';
+import { hilfeAppEinrichten } from './hilfe-app.js';
 import { uhrzeit, zeitDatei, HANDY_US } from './zeit.js';
 import { T, fuerSticky, sprachWahl, sprachWahlSetzen, stickyEnSetzen, appIstEn, lang } from './uebersetzen.js';
 let letzteEinheitUs = null;
@@ -92,7 +95,7 @@ import { spiegelEinrichten } from './spiegel.js';
 import { BREITE, HOEHE, rgbaZu1bpp, crc32, rueckDatei } from './protokoll.js';
 import { BleVerbindung, SimVerbindung } from './verbindung.js';
 import { Zwilling } from './zwilling.js';
-import { MELDE_STANDARD, meldeRegeln, meldePakete, meldungErlaubt, meldungDazu, meldungWeg, orteLesen, ortFinden, ortZeile, fahrtSchritt, homeZeilen } from './kontext.js';
+import { MELDE_STANDARD, meldeRegeln, meldePakete, meldungErlaubt, meldungDazu, meldungWeg, orteLesen, ortFinden, ortZeile, fahrtSchritt, homeZeilen, orteZettelUmzug, orteUmbenennen } from './kontext.js';
 import { FRAGE_DAUER_MS } from './rueckfrage.js';
 import { schluessel, schluesselFuer, mitGeraet, karteFuer, kurz, geraete, aktivesGeraet, aktivSetzen, geraetAendern, geraetVergessen, PROFILE, profilName } from './geraete.js';
 
@@ -428,9 +431,10 @@ zwilling.beobachte((art, d) => {
     else if (d.t === 'puffer' && d.a === 'neu') pufferAbholen().catch((e) => eintrag(T(`Notizen: ${e.message}`, `Notes: ${e.message}`), true));   // getippt (FW ≥ 0.37.0)
     else if (d.t === 'suche') eintrag(d.a === 'gefunden' ? T('Sticky gefunden', 'Sticky found') : T('Sticky piept', 'Sticky is beeping'));
     else if (d.t === 'schlaf') stickySchlaeft = true;
-    else if (d.t === 'modus') { spiegelSetze({ modus: d.m, w: d.w ?? '', lh: d.lh ?? 0, ...(d.zettel != null ? { zettel: d.zettel } : {}), verbunden: true }); stickyModus = d.m; if (d.m !== 'app' && appSeite.frage) { appSeite.frage = null; eintrag(T('Rückfrage: nicht jetzt', 'Question: not now')); } fotoAnstossen(); eintrag(T('Modus: ', 'Mode: ') + ({ home: 'Home', notiz: T('Notiz', 'Note'), bordbuch: T('Bordbuch', 'Logbook'), handbuch: T('Handbuch', 'Manual'), spick: T('Spickzettel', 'Cheat sheets'), kritzel: T('Kritzel', 'Doodle'), schrift: T('Schrift', 'Writing'), app: T('Spiel', 'Game'), spiel: T('Burgduell (Sticky rechnet)', 'Castle duel (Sticky computes)'), widget: 'Widget', bestell: `${T('Zettel', 'List')} ${(d.zettel ?? 0) + 1}` }[d.m] ?? d.m)); if (d.m === 'app') { if (d.hoch != null) appSeite.hoch = !!d.hoch; } duellPruefen(); if (d.m === 'app' && !imDuell()) appSeite.zeigen().catch((e) => eintrag(T(`Spiel: ${e.message}`, `Game: ${e.message}`), true)); }
+    else if (d.t === 'modus') { spiegelSetze({ modus: d.m, w: d.w ?? '', lh: d.lh ?? 0, ...(d.zettel != null ? { zettel: d.zettel } : {}), verbunden: true }); stickyModus = d.m; if (d.m !== 'app' && appSeite.frage) { appSeite.frage = null; eintrag(T('Rückfrage: nicht jetzt', 'Question: not now')); } fotoAnstossen(); eintrag(T('Modus: ', 'Mode: ') + ({ home: 'Home', notiz: T('Notiz', 'Note'), bordbuch: T('Bordbuch', 'Logbook'), handbuch: T('Handbuch', 'Manual'), spick: T('Spickzettel', 'Cheat sheets'), kritzel: T('Kritzel', 'Doodle'), schrift: T('Schrift', 'Writing'), app: T('Spiel', 'Game'), spiel: T('Burgduell (Sticky rechnet)', 'Castle duel (Sticky computes)'), widget: 'Widget', bestell: `${T('Zettel', 'Card')} ${(d.zettel ?? 0) + 1}` }[d.m] ?? d.m)); if (d.m === 'app') { if (d.hoch != null) appSeite.hoch = !!d.hoch; } duellPruefen(); if (d.m === 'app' && !imDuell()) appSeite.zeigen().catch((e) => eintrag(T(`Spiel: ${e.message}`, `Game: ${e.message}`), true)); }
     else if (d.t === 'seite') { spiegelSetze({ bb: d.n }); dokumente.seiteGemeldet(d); }   // Handbuch (FW ≥ 0.38.0: d = Dokument, bib)
     else if (d.t === 'spick') spiegelSetze({ bb: d.n });
+    else if (d.t === 'zettel') { fotoAnstossen(); clearTimeout(zettelAbgleichUhr); zettelAbgleichUhr = setTimeout(() => abgleich().catch((e) => eintrag(e.message, true)), 4000); }   // am Sticky abgehakt (FW ≥ 0.44.0): kurz danach übernehmen
     else if (d.t === 'audio' && (d.a === 'start' || d.a === 'stop')) spiegelSetze({ aufnahme: d.a === 'start' });
     else if (d.t === 'audio' && d.a === 'fehler') { eintrag(T(`Aufnahme nicht möglich: ${d.err}`, `Recording not possible: ${d.err}`), true); $('aufnahmeStatus').hidden = true; }
   }
@@ -549,8 +553,8 @@ function kopfZeigen() {
   for (const g of liste) {
     const istAktiv = g.id === aktiv?.id, s = sitzungen.get(g.id);
     const [zeichen, wort] = istAktiv ? (an ? ['●', T('verbunden', 'connected')] : stickySchlaeft ? ['◐', T('schläft', 'napping')] : ['○', T('nicht verbunden', 'not connected')])
-      : !s ? ['–', T('läuft nicht mit', 'not running along')]
-      : s.z.verbunden ? ['●', T('läuft mit', 'running along')] : s.schlaeft ? ['◐', T('schläft', 'napping')] : ['○', T('nicht erreichbar', 'not reachable')];
+      : !s ? ['–', T('läuft nicht mit', "doesn't run along")]
+      : s.z.verbunden ? ['●', T('läuft mit', 'runs along')] : s.schlaeft ? ['◐', T('schläft', 'napping')] : ['○', T('nicht erreichbar', 'not reachable')];
     const span = Object.assign(document.createElement('span'), { className: `g${istAktiv ? ' aktiv' : ''}${!s && !istAktiv ? ' ruht' : ''}`, textContent: `${zeichen} ${kurz(g)}` });
     el.append(span);
     titel.push(`${g.name}${istAktiv ? T(' (aktiv)', ' (active)') : ''}: ${wort}`);
@@ -605,10 +609,10 @@ function geraeteZeigen() {
     const hg = sitzungen.get(g.id);
     const fw = (hg ? hg.z : istAktiv ? zwilling : null)?.geraet?.fw;
     if (fw) mac.textContent += ` · FW ${fw}`;
-    if (hg) mac.textContent += hg.z.verbunden ? `${T(' · läuft mit', ' · running along')}${hg.z.geraet.bat != null ? ` · ${T('Akku', 'Battery')} ${hg.z.geraet.bat} %` : ''}`
+    if (hg) mac.textContent += hg.z.verbunden ? `${T(' · läuft mit', ' · runs along')}${hg.z.geraet.bat != null ? ` · ${T('Akku', 'Battery')} ${hg.z.geraet.bat} %` : ''}`
       : `${hg.schlaeft ? T(' · schläft', ' · napping') : T(' · nicht erreichbar', ' · not reachable')}${hg.zuletzt ? ` · ${T('zuletzt', 'last')} ${uhrzeit(new Date(hg.zuletzt))}` : ''}`;
     else if (istAktiv && zwilling.verbunden && zwilling.geraet.bat != null) mac.textContent += ` · ${T('Akku', 'Battery')} ${zwilling.geraet.bat} %`;
-    else if (!istAktiv && g.mitlaufen === false) mac.textContent += T(' · läuft nicht mit', ' · not running along');
+    else if (!istAktiv && g.mitlaufen === false) mac.textContent += T(' · läuft nicht mit', " · doesn't run along");
     // „läuft mit“: weitere Stickys im Hintergrund verbunden halten (aus = nur per „Wechseln“); der aktive läuft immer
     const mit = Object.assign(document.createElement('label'), { className: 'mit' });
     const mitBox = Object.assign(document.createElement('input'), { type: 'checkbox', checked: istAktiv || g.mitlaufen !== false, disabled: istAktiv });
@@ -636,7 +640,7 @@ function geraeteZeigen() {
       const z = istAktiv ? zwilling : sitzungen.get(g.id)?.z;
       const kannLeeren = z?.verbunden && baue(istAktiv ? null : sitzungen.get(g.id), () => fwAb('0.31.6'));
       if (kannLeeren && confirm(T(`Auch ${g.name} selbst leeren? Notizen, Zettel, Handbücher, Visitenkarte und alles auf der Karte werden dort gelöscht – zum Weitergeben. Danach startet er neu und ist leer.`,
-        `Also wipe ${g.name} itself? Notes, lists, logbook, business card and everything on the card are deleted there – for passing it on. It then restarts empty.`))) {
+        `Also wipe ${g.name} itself? Notes, cards, logbook, business card and everything on the card are deleted there – for passing it on. It then restarts empty.`))) {
         try {
           const r = await z.leeren();
           eintrag(T(`${g.name} geleert (${r.dateien} Dateien auf der Karte${r.ok ? ', interner Speicher formatiert' : ', interner Speicher NICHT formatiert'})`,
@@ -824,18 +828,67 @@ function zettelLaden() {
   } catch { return BESTELL_STANDARD; }
 }
 $('zettelText').value = zettelLaden();
-$('zettelText').onchange = () => {
+// Geänderte Zettel aufspielen: gesammelt, damit mehrere Häkchen oder Schalter hintereinander nur einen Abgleich auslösen
+let zettelAbgleichUhr = null;
+function zettelGeaendert() {
   try { localStorage.setItem(schluessel('zettel'), $('zettelText').value); } catch { /* egal */ }
-  const bloecke = ($('zettelText').value.match(/^## /gm) ?? []).length;
-  if (bloecke > 6) eintrag(T(`Zettel: ${bloecke} eingetragen, der Sticky zeigt nur die ersten 6`, `Lists: ${bloecke} entered, the Sticky only shows the first 6`), true);
-  if (zwilling.verbunden) abgleich().catch((e) => eintrag(e.message, true));   // geänderte Zettel gleich aufspielen
-};
+  clearTimeout(zettelAbgleichUhr);
+  zettelAbgleichUhr = setTimeout(() => { if (zwilling.verbunden) abgleich().catch((e) => eintrag(e.message, true)); }, 1200);
+}
+$('zettelText').onchange = () => { zettelGeaendert(); zettelSeite?.zeigen(); };
 $('zettelStandard').onclick = () => { $('zettelText').value = BESTELL_STANDARD; $('zettelText').onchange(); };
-/** Alle Zettel in der Reihenfolge am Sticky (höchstens 6): mit QR eine Karte, sonst ein Bestellzettel */
+/** Alle Zettel in der Reihenfolge am Sticky (höchstens 6, nur „auf dem Sticky“): zeichne(g) → Zeilen-Geometrie der Listen */
 function alleZettel() {
   const l = zettelListe(bauZ ? zettelLaden() : $('zettelText').value);
-  return l.map((x, i) => ({ zeichne: (g) => (x.qr ? zeichneKarte(g, x, i + 1, l.length) : zeichneZettel(g, x, i + 1, l.length)) }));
+  return l.map((x, i) => ({ titel: x.titel, art: x.art, zeichne: (g) => zeichneZettelSeite(g, x, i + 1, l.length) }));
 }
+/** Titel aller Zettel (auch die nur in der App) – Ziele der Orte */
+const zettelTitel = () => zettelKarten(bauZ ? zettelLaden() : $('zettelText').value).karten.map((k) => k.titel);
+/** Zettel-Bilder fürs Home-Abgleichen und die Feld-Datei fürs Abhaken am Sticky (FW ≥ 0.44.0) */
+function zettelTeile(h, bytes) {
+  const listen = [];
+  const bilder = alleZettel().map((x, platz) => {
+    const felder = x.zeichne(h);
+    if (x.art === 'liste' && felder.length) listen.push({ platz, titel: x.titel, felder });
+    return bytes();
+  });
+  return { bilder, felder: fwAb('0.44.0') ? [{ n: 'zettel.txt', daten: new TextEncoder().encode(zettelFelder(listen)) }] : [] };
+}
+/**
+ * Häkchen vom Sticky (FW ≥ 0.44.0): /ist/zettel/<platz>.txt = Titel + „0110“. In den Text des Profils übernehmen;
+ * → Pfade zum Quittieren (erst nach dem Aufspielen löschen, damit der Sticky bis dahin seinen Stand behält)
+ */
+async function haekchenHolen(s = null) {
+  const z = s?.z ?? zwilling;
+  if (!fwAbZ(s, '0.44.0')) return [];
+  const liste = (await z.liste('/ist/zettel').catch(() => [])).filter((d) => !d.ordner && d.n.endsWith('.txt'));
+  const erledigt = [];
+  for (const d of liste) {
+    const pfad = `/ist/zettel/${d.n}`;
+    const inhalt = new TextDecoder().decode(await z.holen(pfad, d.b, 0));
+    const schl = s ? schluesselFuer(s.g, 'zettel') : schluessel('zettel');
+    const vorn = schl === schluessel('zettel');   // dasselbe Profil wie die App gerade zeigt
+    const alt = vorn ? $('zettelText').value : (localStorage.getItem(schl) ?? '');
+    const neu = haekchenUebernehmen(alt, inhalt);
+    if (neu !== alt) {
+      try { localStorage.setItem(schl, neu); } catch { /* egal */ }
+      if (vorn) { $('zettelText').value = neu; zettelSeite?.zeigen(); }
+      eintrag(T(`Häkchen vom Sticky übernommen: ${inhalt.split('\n')[0]}`, `Ticks taken over from the Sticky: ${inhalt.split('\n')[0]}`));
+    }
+    erledigt.push(pfad);
+  }
+  return erledigt;
+}
+const zettelSeite = zettelSeiteEinrichten({
+  $, eintrag,
+  speichern: (text) => { $('zettelText').value = text; zettelGeaendert(); },
+  orteText: () => $('orte').value,
+  orteUmbenennen: (alt, neu) => {
+    const t = orteUmbenennen($('orte').value, alt, neu);
+    if (t !== $('orte').value) { $('orte').value = t; $('orte').onchange?.(); eintrag(T(`Orte zeigen jetzt auf „${neu}“`, `Places now point to “${neu}”`)); }
+  },
+});
+hilfeAppEinrichten($('hilfeKnopf'));
 
 async function fahrtTouch(x, y, ms) {
   if (!fahrtAktiv()) return;
@@ -971,15 +1024,16 @@ async function abgleichKern() {
   const notiz = bildBytes();
   zeichneZiffern(g);
   const ziffern = bildBytes();
-  // Bestellzettel und Karten in einer Reihe (▼ auf Home): erst die Zettel, dann die Karten
-  const zettelBilder = alleZettel().map((z) => { z.zeichne(g); return bildBytes(); });
+  // Zettel in einer Reihe (▼ auf Home); vorher die Häkchen vom Sticky übernehmen
+  const haekchen = await haekchenHolen().catch((e) => { eintrag(T(`Häkchen: ${e.message}`, `Ticks: ${e.message}`), true); return []; });
+  const { bilder: zettelBilder, felder: zettelFelderDatei } = zettelTeile(g, bildBytes);
   const alle = [home, notiz, ziffern, ...zettelBilder];
   const homeV = crc32(new Uint8Array(alle.flatMap((b) => [...b]))).toString(16).padStart(8, '0') + ';' + zettelBilder.length;
   if (zwilling.geraet.homev !== homeV && fwAb('0.11.0')) {
     // Datei-Abgleich: nur geänderte Bilder (Bestandsliste auf der Karte), version.txt zuletzt löst das Neuladen aus
     const st = statusGlyphen();
     const dateien = alle.map((b, i) => ({ n: `${i}.bin`, daten: b }))
-      .concat([{ n: 'status-quer.bin', daten: st.quer }, { n: 'status-hoch.bin', daten: st.hoch }, { n: 'version.txt', daten: new TextEncoder().encode(homeV) }]);
+      .concat([{ n: 'status-quer.bin', daten: st.quer }, { n: 'status-hoch.bin', daten: st.hoch }, ...zettelFelderDatei, { n: 'version.txt', daten: new TextEncoder().encode(homeV) }]);
     const n = await zwilling.sollAbgleich('home', dateien);
     eintrag(T(`Home: ${n} Dateien aufgespielt`, `Home: ${n} files uploaded`));
   } else if (zwilling.geraet.homev !== homeV) {
@@ -991,8 +1045,9 @@ async function abgleichKern() {
     for (let i = 0; i < alle.length; i++) if (vollstaendig || alt.crcs[i] !== crcs[i]) await zwilling.sendeBild(alle[i], { home: i });
     await zwilling.homeVersion(homeV);
     try { localStorage.setItem(schluessel('homecrcs'), JSON.stringify({ version: homeV, crcs })); } catch { /* egal */ }
-    eintrag(T(`Home-Karte, Notiz-Seite, Uhr und ${zettelBilder.length} Zettel/Karten aufgespielt`, `Home card, note page, clock and ${zettelBilder.length} lists/cards uploaded`));
+    eintrag(T(`Home-Karte, Notiz-Seite, Uhr und ${zettelBilder.length} Zettel/Karten aufgespielt`, `Home card, note page, clock and ${zettelBilder.length} cards uploaded`));
   }
+  for (const p of haekchen) await zwilling.loeschen(p).catch(() => {});   // übernommen und aufgespielt: quittieren
   zeichneHome(g, karteFuer(aktivesGeraet(), KARTE), uhrzeit(new Date()), wetter, homeHinweise());
   pruefeAbgleich();
   if (zwilling.geraet.modus) stickyModus = zwilling.geraet.modus;
@@ -1043,13 +1098,13 @@ async function abgleichKern() {
 // Menü-Kachel nur, wenn beides auf der Karte liegt (geprüft in karussellAufspielen)
 let notfallAufKarte = false;
 const KARUSSELL_STANDARD_DE = 'Home, Timer, Wecker, Weltzeit, Waage, Lineal, Recorder, Tippen, Kritzel, Schrift, Rechner, Umrechner, Handbuch, Spickzettel, Zettel, Spiel, Einstellungen, Notfall';
-const KARUSSELL_STANDARD_EN = 'Home, Timer, Alarm, World clock, Spirit level, Ruler, Recorder, Type, Doodle, Writing, Calculator, Converter, Manual, Cheat sheets, Lists, Game, Settings, Emergency';
+const KARUSSELL_STANDARD_EN = 'Home, Timer, Alarm, World clock, Spirit level, Ruler, Recorder, Type, Doodle, Writing, Calculator, Converter, Manual, Cheat sheets, Cards, Game, Settings, Emergency';
 /** Standard der App-Sprache (beide Fassungen lösen über KARUSSELL_WOERTER gleich auf) */
 const karussellStandard = () => (appIstEn() ? KARUSSELL_STANDARD_EN : KARUSSELL_STANDARD_DE);
 const KARUSSELL_WOERTER = { home: 'home', notiz: 'notiz', bordbuch: 'handbuch', handbuch: 'handbuch', spickzettel: 'spickzettel', spick: 'spickzettel', zettel: 'zettel', bestellzettel: 'zettel', kritzel: 'kritzel', kritzelblock: 'kritzel', schrift: 'schrift', strichschrift: 'schrift', app: 'app', spiel: 'app', burgduell: 'app', rechner: 'app', umrechner: 'app', timer: 'widget timer', waage: 'widget waage', wasserwaage: 'widget waage', lineal: 'widget lineal', wecker: 'widget wecker', weltzeit: 'widget weltzeit', einstellungen: 'widget einstellungen', recorder: 'widget recorder', tippen: 'widget tippen', notfall: 'widget notfall', emergency: 'widget notfall', type: 'widget tippen', tastatur: 'widget tippen', keyboard: 'widget tippen',
   // englische Eingaben (Anzeige Englisch), intern dieselben deutschen Wörter
   alarm: 'widget wecker', 'world clock': 'widget weltzeit', worldclock: 'widget weltzeit', level: 'widget waage', ruler: 'widget lineal', note: 'notiz', notes: 'notiz', scribble: 'kritzel', doodle: 'kritzel', 'spirit level': 'widget waage', handwriting: 'schrift', writing: 'schrift',
-  calculator: 'app', converter: 'app', logbook: 'handbuch', manual: 'handbuch', manuals: 'handbuch', 'cheat sheets': 'spickzettel', 'cheat sheet': 'spickzettel', list: 'zettel', lists: 'zettel', game: 'app', settings: 'widget einstellungen' };
+  calculator: 'app', converter: 'app', logbook: 'handbuch', manual: 'handbuch', manuals: 'handbuch', 'cheat sheets': 'spickzettel', 'cheat sheet': 'spickzettel', list: 'zettel', lists: 'zettel', card: 'zettel', cards: 'zettel', game: 'app', settings: 'widget einstellungen' };
 /** englische Wörter, die ab FW 0.28.0 zu eigenen Widgets werden (wie rechner/umrechner) */
 const KARUSSELL_LOKAL = { rechner: 'rechner', umrechner: 'umrechner', calculator: 'rechner', converter: 'umrechner' };
 function karussellText() {
@@ -1872,18 +1927,19 @@ async function hgAbgleichKern(s) {
   {
     await z.zeitSetzen();
     const wetter = (await holeWetter(await notizen.standort())) ?? letztesWetter();
+    const haekchen = await haekchenHolen(s).catch(() => []);
     // Seiten aus seinem Profil bauen (synchron, damit der Bau-Kontext nicht in den Vordergrund leckt)
     const teile = baue(s, () => {
       const h = hgLeinwand;
       zeichneHome(h, karteFuer(s.g, KARTE), null, wetter); const home = hgBytes();
       zeichneFahrt(h, knoepfe()); const notiz = hgBytes();
       zeichneZiffern(h); const ziffern = hgBytes();
-      const zettel = alleZettel().map((x) => { x.zeichne(h); return hgBytes(); });
+      const { bilder: zettel, felder: zettelFelderDatei } = zettelTeile(h, hgBytes);
       const alle = [home, notiz, ziffern, ...zettel];
       const homeV = crc32(new Uint8Array(alle.flatMap((b) => [...b]))).toString(16).padStart(8, '0') + ';' + zettel.length;
       const st = statusGlyphen();
       const homeDateien = alle.map((b, i) => ({ n: `${i}.bin`, daten: b }))
-        .concat([{ n: 'status-quer.bin', daten: st.quer }, { n: 'status-hoch.bin', daten: st.hoch }, { n: 'version.txt', daten: new TextEncoder().encode(homeV) }]);
+        .concat([{ n: 'status-quer.bin', daten: st.quer }, { n: 'status-hoch.bin', daten: st.hoch }, ...zettelFelderDatei, { n: 'version.txt', daten: new TextEncoder().encode(homeV) }]);
       const k = knoepfe();
       const text = layoutText(k);
       const version = crc32(new TextEncoder().encode(text)).toString(16).padStart(8, '0');
@@ -1895,6 +1951,7 @@ async function hgAbgleichKern(s) {
       return { homeV, homeDateien, version, notizDateien, schrift, widgets, spr: T('de', 'en') };
     });
     if (z.geraet.homev !== teile.homeV) { const n = await z.sollAbgleich('home', teile.homeDateien); if (n) eintrag(`${s.g.name}: Home (${n} ${T('Dateien', 'files')})`); }
+    for (const p of haekchen) await z.loeschen(p).catch(() => {});
     const sprSchl = schluesselFuer(s.g, 'notizEn'), sprAnders = (() => { try { return (localStorage.getItem(sprSchl) ?? 'de') !== teile.spr; } catch { return false; } })();
     if (z.geraet.fahrtv !== teile.version || sprAnders) { await z.sollAbgleich('notiz', teile.notizDateien); try { localStorage.setItem(sprSchl, teile.spr); } catch { /* egal */ } }
     await pufferAbholen(s);
@@ -2019,18 +2076,29 @@ function kontextSchritt(o, v) {
   }
   if (ende) parkplatzFragen(o);
   if (zustand.faehrt) return;   // unterwegs keine Ortswechsel
-  const orte = orteLesen(orteText());
+  const orte = orteLesen(orteText(), zettelTitel());
   const neu = ortFinden(orte, o, aktuellerOrt);
   if (neu === aktuellerOrt) return;
   aktuellerOrt = neu;
   eintrag(neu ? T(`Ort: ${neu}`, `Place: ${neu}`) : T('Ort verlassen', 'Left the place'));
   const ziel = neu && orte.find((x) => x.name === neu)?.ziel;
   // nur aus Home und einmal je Ankunft; wer weiterblättert, bleibt, wo er ist
-  if (ziel && ziel.modus !== 0 && stickyModus === 'home') zwilling.modusSetzen(ziel.modus, ziel.seite ?? null).catch(() => {});
+  // Zettel per Namen (18.11.2026): sein Platz am Sticky; liegt er gerade nicht drauf, bleibt der Sticky, wo er ist
+  const seite = ziel?.name != null ? alleZettel().findIndex((x) => x.titel === ziel.name) : (ziel?.seite ?? null);
+  if (ziel && ziel.modus !== 0 && stickyModus === 'home' && seite !== -1) zwilling.modusSetzen(ziel.modus, seite).catch(() => {});
   homeAuffrischen();
 }
 const orteText = () => (bauZ ? '' : $('orte').value);
 try { $('orte').value = localStorage.getItem(schluessel('orte')) ?? ''; } catch { /* egal */ }
+// Einmalig (18.11.2026): Ziel „Zettel n“ wird der Name des n-ten Zettels, damit Umsortieren nichts kaputt macht
+try {
+  const merk = schluessel('orteZettelNamen');
+  if (!localStorage.getItem(merk)) {
+    const neu = orteZettelUmzug($('orte').value, alleZettel().map((x) => x.titel));
+    if (neu !== $('orte').value) { $('orte').value = neu; localStorage.setItem(schluessel('orte'), neu); }
+    localStorage.setItem(merk, '1');
+  }
+} catch { /* egal */ }
 $('orte').onchange = () => { try { localStorage.setItem(schluessel('orte'), $('orte').value); } catch { /* egal */ } aktuellerOrt = null; };
 $('ortMerken').onclick = async () => {
   const o = await notizen.standort();

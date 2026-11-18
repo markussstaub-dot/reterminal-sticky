@@ -11,7 +11,7 @@ static const char* gmName(int i) {
         case M_NOTIZ: return T("Notiz", "Note");
         case M_HANDBUCH: return T("Handbuch", "Manual");
         case M_SPICK: return T("Spickzettel", "Cheat sheets");
-        case M_BESTELL: return T("Zettel", "Lists");
+        case M_BESTELL: return T("Zettel", "Cards");
         case M_KRITZEL: return T("Kritzel", "Doodle");
         case M_SCHRIFT: return T("Schrift", "Writing");
         case M_APP: return T("Spiel", "Game");
