@@ -782,6 +782,33 @@ Mockup: `docs/dokumente-mockup.html`.
   - Hinweis: Dokumente brauchen FW ≥ 0.38.0; mit älterer Firmware bleibt im Karussell „Bordbuch“ stehen, der Reiter sagt,
     dass er die neue Firmware braucht. Vorschau (Spiegel) zeigt Handbuch und Spickzettel als Bildschirmfoto
 
+### Zettel überarbeiten: Karten statt Textfeld, QR und Strichcode abfotografieren (Markus, 18.11.2026, Entwurf)
+Anlass (Markus): „Tab Zettel überarbeiten, hier gehören ja auch QR-Codes als Zettel rein.“ Heute ist der Reiter ein
+großes Textfeld mit „## Titel“ und Sonderzeilen (`qr:`, `wlan:`, `link:`), Kundenkarten-Inhalt muss man vorher mit
+einer Scanner-App auslesen und abtippen. Mockup: `docs/zettel-mockup.html`.
+- fest (Bestand): Die App zeichnet die Zettel, der Sticky zeigt sie ohne Handy (Gruppe „Nachschlagen“, Karussell).
+  Inhalte bleiben in App und Sticky. Reihenfolge am Sticky = Reihenfolge in der App
+- Vorschlag **Liste aus Karten** wie bei „Dokumente“: je Zettel eine Zeile mit Symbol der Art, Titel, Kurzinfo,
+  Schalter „auf dem Sticky“, ziehen zum Sortieren. Tippen öffnet die Karte (Titel, Vorschau, Inhalt zur Kontrolle,
+  neu abfotografieren, löschen)
+- Vorschlag **Arten**: Liste (abhakbar), Text (Bestellung zum Vorzeigen), QR, Strichcode, WLAN, Link. Die Arten sind
+  nur Eingabehilfen; gespeichert wird weiter im heutigen Textformat (`## Titel` + Zeilen, neu `strich: EAN13 …`,
+  `[ ]`/`[x]` für Listen), damit Zenbook-Konsole und Copy-Paste weiter gehen
+- Vorschlag **„+ Zettel“ fragt zuerst die Art**; bei QR und Strichcode öffnet gleich die Kamera (Baustein
+  `qrlesen.js` wie beim Hauslurch, offline, Foto wird nicht gespeichert), Titel wird vorgeschlagen
+- Vorschlag **„Als Text bearbeiten“** bleibt als Knopf: das heutige Textfeld für alle, die tippen wollen
+- Vorschlag **Orte verweisen auf den Zettel-Namen** statt auf „Zettel n“, damit Umsortieren nichts kaputt macht;
+  in der Karte zeigt „Bei Ort nach vorn“, welcher Ort darauf zeigt
+- Vorschlag **Sticky-Seiten**: QR groß und mittig mit Rand (Kassenscanner), Strichcode quer über die Breite mit Nummer
+  darunter, Liste mit großen Zeilen und Kästchen. Alles zeichnet die App, keine neue Firmware nötig (außer Abhaken)
+- offen **mehr als 6 Zettel**: heute sind es höchstens 6 Bilder neben Home; mit Schalter „auf dem Sticky“ reichen 6
+  vielleicht, sonst Firmware-Grenze anheben
+- offen **Strichcodes lesen**: jsQR kann nur QR. Für EAN/Code128 eine zweite kleine Bibliothek (z. B. ZXing) oder
+  die Barcode-Erkennung von Android; Zeichnen in der App ist einfach
+- offen **Abhaken am Sticky** (Firmware): Tippen auf eine Zeile hakt ab, der Sticky schreibt `/ist/zettel/`, die App
+  holt es beim Abgleich. Ohne das: abhaken nur in der App
+- offen englischer Reitername: bleibt „Lists“ oder wird „Cards“
+
 ### Spickzettel-Konsole: Karten am Zenbook pflegen (Markus, 15.11.2026, abgenommen)
 Anlass: Karten am Fold abzutippen ist mühsam (heute: `sticky-lab/SPICKZETTEL-EDC.md` → App, Bordbuch-Tab → Spickzettel).
 Am Zenbook mit Tastatur schreiben, in Sticky-Größe ansehen, dann rüber.
