@@ -146,6 +146,30 @@ label.lage { display: flex; justify-content: space-between; align-items: center;
 .geraete li.aktiv input { font-weight: 600; }
 .geraete input { flex: 1 1 8em; min-width: 8em; }
 .geraete .klein { flex-basis: 100%; opacity: .7; }
+.geraete label.mit { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+
+/* Mehr-Tab: Menü und Unterseiten (18.11.2026) */
+.mehrmenue { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.mehrmenue[hidden] { display: none; }
+.mehrmenue button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 12px 14px; min-height: 56px; }
+.mehrmenue button::after { content: '›'; position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--leise); font-size: 22px; }
+.mehrmenue button { position: relative; padding-right: 36px; }
+.mehrmenue .titel { font-size: 16px; }
+.mehrseite .zurueck { margin: 8px 0 0; }
+.schild { display: inline-block; font-size: 11px; line-height: 1.4; padding: 0 6px; margin-left: 6px; border: 1px solid var(--linie); border-radius: 6px; color: var(--leise); text-transform: none; letter-spacing: 0; vertical-align: 1px; }
+details.info summary { cursor: pointer; }
+.mehrseite footer { padding: 12px 0; }
+
+/* letzte Meldung am Sticky-Tab */
+.meldung { margin: 0; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meldung.fehler { color: var(--schlecht); }
+
+/* Kopfzeile: alle Stickys mit Zustand (18.11.2026) – ● verbunden, ◐ schläft, ○ nicht erreichbar, – läuft nicht mit */
+#status { cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70vw; }
+#status.kopf::before { display: none; }
+#status .g + .g { margin-left: 10px; }
+#status .g.aktiv { color: var(--text); font-weight: 600; }
+#status .g.ruht { opacity: .5; }
 
 /* Karussell als Liste nach Gruppen (Mehr → Karussell) */
 .kliste { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }

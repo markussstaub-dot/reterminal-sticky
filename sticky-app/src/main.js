@@ -87,6 +87,7 @@ import { LAGE_STANDARD, LAGE_NAMEN, vomDisplay } from './lage.js';
 import { WOERTERBUCH_STANDARD, paareLesen, paareText, korrigiere, lernen, einpflegen } from './woerterbuch.js';
 import * as bb from './bordbuch.js';
 import { tabsEinrichten } from './tabs.js';
+import { mehrEinrichten } from './mehr.js';
 import { spiegelEinrichten } from './spiegel.js';
 import { BREITE, HOEHE, rgbaZu1bpp, crc32, rueckDatei } from './protokoll.js';
 import { BleVerbindung, SimVerbindung } from './verbindung.js';
@@ -231,6 +232,11 @@ function eintrag(text, fehler = false) {
   li.append(zeit, text);
   $('ereignisse').prepend(li);
   while ($('ereignisse').children.length > 60) $('ereignisse').lastChild.remove();
+  // dieselbe Meldung als eine Zeile am Sticky-Tab (18.11.2026), Fehler rot
+  const m = $('letzteMeldung');
+  m.textContent = `${zeit.textContent} ${text}`;
+  m.classList.toggle('fehler', fehler);
+  m.hidden = false;
 }
 
 let markeTimer = null;
@@ -431,11 +437,14 @@ zwilling.beobachte((art, d) => {
 });
 
 function zeigeZustand(z) {
-  const teile = [];
+  const teile = [], technik = [];
   if (z.bat >= 0) teile.push(`${T('Akku', 'Battery')} ${z.bat} %${z.chg ? ' ⚡' : ''}`);
-  if (z.mtu) teile.push(`MTU ${z.mtu}`);
-  if (z.phy) teile.push(z.phy === 2 ? '2M' : '1M');
-  if (z.itvl) teile.push(`${(z.itvl * 1.25).toFixed(1)} ms`);
+  // Funkwerte nur noch unter Mehr → Diagnose (18.11.2026)
+  if (z.mtu) technik.push(`MTU ${z.mtu}`);
+  if (z.phy) technik.push(z.phy === 2 ? 'PHY 2M' : 'PHY 1M');
+  if (z.itvl) technik.push(`${T('Intervall', 'interval')} ${(z.itvl * 1.25).toFixed(1)} ms`);
+  if (z.usbmv != null) technik.push(`USB ${z.usbmv} mV${z.usb ? T(' (Strom da)', ' (powered)') : ''}`);   // FW ≥ 0.43.1
+  if (technik.length) $('technik').textContent = `${verbindung.name}: ${technik.join(' · ')}`;
   if (z.fw) teile.push(`FW ${z.fw}`);
   if (z.temp > -99) teile.push(`${T(z.temp.toFixed(1).replace('.', ','), z.temp.toFixed(1))} °C, ${Math.round(z.rf)} %${z.temp - z.taupunkt < 2 ? T(' · beschlägt', ' · fogging up') : ''}`);
   if (z.fahrt) teile.push(T('fährt', 'driving'));
@@ -446,15 +455,14 @@ function zeigeZustand(z) {
 function zeigeVerbindung() {
   geraeteZeigen();
   const an = zwilling.verbunden;
-  $('status').textContent = an ? verbindung.name : T('getrennt', 'disconnected');
-  $('status').className = `pille ${an ? 'ein' : 'aus'}`;
+  kopfZeigen();
   $('verbinden').textContent = an ? T('Trennen', 'Disconnect') : wiederTimer ? T('Wiederverbinden stoppen', 'Stop reconnecting') : T('Verbinden', 'Connect');
   $('verbinden').classList.toggle('haupt', !an);
   $('senden').disabled = !an;
   $('stickySuchen').disabled = !an;
   dokumente?.zeigeVerbindung();
   $('simTasten').hidden = !(an && verbindung instanceof SimVerbindung);
-  if (!an) $('geraet').textContent = '';
+  if (!an) { $('geraet').textContent = ''; $('technik').textContent = T('nicht verbunden', 'not connected'); }
 }
 
 // ---- Bedienung ----------------------------------------------------------------------
@@ -464,7 +472,10 @@ let autoVerbinden = false;
 let wiederTimer = 0;
 /** Bluetooth-Adresse des gemerkten Sticky für den nativen Wecker (StickyDienst) */
 function stickyAdresse() {
-  return geraete().map((x) => x.id).join(',') || null;   // Stufe 2: Wecker für alle bekannten Stickys
+  // Stufe 2: Wecker für den aktiven und alle, die mitlaufen (18.11.2026: nicht mehr für jeden bekannten – der Wecker
+  // hält per autoConnect selbst eine Verbindung offen)
+  const aktiv = aktivesGeraet()?.id;
+  return geraete().filter((x) => x.id === aktiv || x.mitlaufen !== false).map((x) => x.id).join(',') || null;
 }
 
 // Wecker: Der Dienst merkt per autoConnect, dass der Sticky wieder funkt, und weckt die App (12.11.2026: im Doze
@@ -472,7 +483,7 @@ function stickyAdresse() {
 Promise.resolve().then(() => Hintergrund.addListener('sticky', (e) => {
   if (!e.da || !autoVerbinden) return;
   const s = e.adresse && sitzungen.get(e.adresse);
-  if (s) { if (!s.z.verbunden) { clearTimeout(s.timer); hgVerbinden(s); } return; }   // ein Hintergrund-Sticky
+  if (s) { if (!s.z.verbunden) { clearTimeout(s.timer); s.fehl = 0; hgVerbinden(s); } return; }   // ein Hintergrund-Sticky: funkt wieder, Pause zurücksetzen
   if (zwilling.verbunden) return;
   console.info('[sticky] Wecker: Sticky funkt wieder');
   clearTimeout(wiederTimer);
@@ -527,10 +538,39 @@ async function wechselnZu(id, grund) {
   try { sessionStorage.setItem('sticky.grund', grund); } catch { /* egal */ }
   location.reload();
 }
+/** Kopfzeile (18.11.2026): bei mehreren Stickys jeder mit Zustand, der aktive fett; sonst wie bisher Name bzw. „getrennt“ */
+function kopfZeigen() {
+  const el = $('status'), an = zwilling.verbunden, liste = geraete(), aktiv = aktivesGeraet();
+  el.className = `pille ${an ? 'ein' : 'aus'}`;
+  if (liste.length < 2 || verbindung instanceof SimVerbindung) { el.textContent = an ? verbindung.name : T('getrennt', 'disconnected'); el.title = ''; return; }
+  el.classList.add('kopf');
+  el.textContent = '';
+  const titel = [];
+  for (const g of liste) {
+    const istAktiv = g.id === aktiv?.id, s = sitzungen.get(g.id);
+    const [zeichen, wort] = istAktiv ? (an ? ['●', T('verbunden', 'connected')] : stickySchlaeft ? ['◐', T('schläft', 'napping')] : ['○', T('nicht verbunden', 'not connected')])
+      : !s ? ['–', T('läuft nicht mit', 'not running along')]
+      : s.z.verbunden ? ['●', T('läuft mit', 'running along')] : s.schlaeft ? ['◐', T('schläft', 'napping')] : ['○', T('nicht erreichbar', 'not reachable')];
+    const span = Object.assign(document.createElement('span'), { className: `g${istAktiv ? ' aktiv' : ''}${!s && !istAktiv ? ' ruht' : ''}`, textContent: `${zeichen} ${kurz(g)}` });
+    el.append(span);
+    titel.push(`${g.name}${istAktiv ? T(' (aktiv)', ' (active)') : ''}: ${wort}`);
+  }
+  el.title = titel.join('\n');
+}
+const mehrSeite = mehrEinrichten();
+/** Tab „Mehr“ und dort eine Unterseite öffnen */
+function mehrOeffnen(seite) {
+  document.querySelector('#tabs [data-ziel="mehr"]')?.click();
+  mehrSeite(seite);
+}
+$('status').onclick = () => mehrOeffnen('stickys');   // Tippen auf die Kopfzeile → Geräteliste
+$('letzteMeldung').onclick = () => mehrOeffnen('diagnose');   // Tippen auf die Meldung → alle Ereignisse
+
 function geraeteZeigen() {
   const ul = $('geraeteListe');
   ul.textContent = '';
   const liste = geraete(), aktiv = aktivesGeraet();
+  kopfZeigen();
   if (!liste.length) { ul.innerHTML = T('<li class="klein">Noch kein Sticky – auf dem Sticky-Tab „Verbinden“ tippen.</li>', '<li class="klein">No Sticky yet – tap “Connect” on the Sticky tab.</li>'); return; }
   for (const g of liste) {
     const istAktiv = g.id === aktiv?.id;
@@ -563,9 +603,29 @@ function geraeteZeigen() {
     };
     const mac = Object.assign(document.createElement('span'), { className: 'klein', textContent: g.id });
     const hg = sitzungen.get(g.id);
-    if (hg) mac.textContent += hg.z.verbunden ? `${T(' · im Hintergrund verbunden', ' · connected in background')}${hg.z.geraet.bat != null ? ` · ${T('Akku', 'Battery')} ${hg.z.geraet.bat} %` : ''}`
-      : hg.zuletzt ? ` · ${T('zuletzt', 'last')} ${uhrzeit(new Date(hg.zuletzt))}` : T(' · wartet auf den Sticky', ' · waiting for the Sticky');
+    const fw = (hg ? hg.z : istAktiv ? zwilling : null)?.geraet?.fw;
+    if (fw) mac.textContent += ` · FW ${fw}`;
+    if (hg) mac.textContent += hg.z.verbunden ? `${T(' · läuft mit', ' · running along')}${hg.z.geraet.bat != null ? ` · ${T('Akku', 'Battery')} ${hg.z.geraet.bat} %` : ''}`
+      : `${hg.schlaeft ? T(' · schläft', ' · napping') : T(' · nicht erreichbar', ' · not reachable')}${hg.zuletzt ? ` · ${T('zuletzt', 'last')} ${uhrzeit(new Date(hg.zuletzt))}` : ''}`;
     else if (istAktiv && zwilling.verbunden && zwilling.geraet.bat != null) mac.textContent += ` · ${T('Akku', 'Battery')} ${zwilling.geraet.bat} %`;
+    else if (!istAktiv && g.mitlaufen === false) mac.textContent += T(' · läuft nicht mit', ' · not running along');
+    // „läuft mit“: weitere Stickys im Hintergrund verbunden halten (aus = nur per „Wechseln“); der aktive läuft immer
+    const mit = Object.assign(document.createElement('label'), { className: 'mit' });
+    const mitBox = Object.assign(document.createElement('input'), { type: 'checkbox', checked: istAktiv || g.mitlaufen !== false, disabled: istAktiv });
+    mit.append(mitBox, document.createTextNode(T('läuft mit', 'runs along')));
+    mit.title = istAktiv ? T('Der aktive Sticky ist immer verbunden', 'The active Sticky is always connected') : T('Im Hintergrund verbunden halten', 'Keep connected in the background');
+    mitBox.onchange = async () => {
+      geraetAendern(g.id, { mitlaufen: mitBox.checked });
+      if (!mitBox.checked) {
+        const s = sitzungen.get(g.id);
+        if (s) { s.weg = true; clearTimeout(s.timer); await s.v.trennen().catch(() => {}); sitzungen.delete(g.id); }
+      }
+      if (autoVerbinden) {
+        Hintergrund.start({ text: T('Notizen und Diktate kommen an', 'Notes and dictations arrive'), adresse: stickyAdresse() }).catch(() => {});   // Wecker-Liste anpassen
+        if (mitBox.checked) hintergrundStarten();
+      }
+      geraeteZeigen();
+    };
     const knopf = Object.assign(document.createElement('button'), { textContent: istAktiv ? (zwilling.verbunden ? T('● verbunden', '● connected') : T('● aktiv', '● active')) : T('Wechseln', 'Switch') });
     knopf.disabled = istAktiv;
     knopf.onclick = () => wechselnZu(g.id, T(`Gewechselt zu ${g.name}`, `Switched to ${g.name}`));
@@ -588,7 +648,7 @@ function geraeteZeigen() {
       geraetVergessen(g.id);
       if (istAktiv) wechselnZu(null, T(`${g.name} vergessen`, `${g.name} forgotten`)); else geraeteZeigen();
     };
-    li.append(name, profil, link, mac, knopf, weg);
+    li.append(name, profil, link, mac, mit, knopf, weg);
     ul.append(li);
   }
 }
@@ -1702,7 +1762,7 @@ function hintergrundStarten() {
   if (!nativ) return;   // im Browser gibt es nur eine Web-Bluetooth-Verbindung
   const aktiv = aktivesGeraet();
   for (const g of geraete()) {
-    if (g.id === aktiv?.id || sitzungen.has(g.id)) continue;
+    if (g.id === aktiv?.id || sitzungen.has(g.id) || g.mitlaufen === false) continue;
     const v = new BleVerbindung();
     v.bescheiden = true;
     const z = new Zwilling();
@@ -1724,6 +1784,7 @@ async function hintergrundStoppen() {
   sitzungen.clear();
 }
 
+const HG_PAUSE_MAX_MS = 5 * 60 * 1000;
 function hgPlanen(s, ms) {
   clearTimeout(s.timer);
   if (!s.weg && autoVerbinden) s.timer = setTimeout(() => hgVerbinden(s), ms);
@@ -1738,11 +1799,17 @@ async function hgVerbinden(s) {
       throw e;
     });
     s.zuletzt = Date.now();
+    s.fehl = 0;
+    s.schlaeft = false;
     eintrag(T(`Im Hintergrund verbunden: ${s.g.name}`, `Connected in background: ${s.g.name}`));
     geraeteZeigen();
     hintergrundAbgleich(s).catch((e) => eintrag(`${s.g.name}: ${e.message}`, true));
   } catch {
-    hgPlanen(s, 15000);   // der Wecker im Dienst meldet sich zusätzlich, sobald er wieder funkt
+    // 18.11.2026: wachsende Pause 15 s → 30 s → 1 min → … höchstens 5 min (vorher stur alle 15 s mit 8-s-Versuch);
+    // der Wecker im Dienst meldet sich zusätzlich, sobald er wieder funkt, und setzt die Pause zurück
+    s.fehl = (s.fehl ?? 0) + 1;
+    hgPlanen(s, Math.min(15000 * 2 ** (s.fehl - 1), HG_PAUSE_MAX_MS));
+    geraeteZeigen();
   } finally {
     s.verbindet = false;
   }
@@ -1755,9 +1822,15 @@ function hgEreignis(s, art, d) {
   else if (art === 'getrennt') {
     s.zuletzt = Date.now();
     geraeteZeigen();
-    if (!s.weg) hgPlanen(s, 3000);
+    // schläft er (Ereignis „schlaf“ kam vorher), nicht nachbohren: der Wecker meldet, wenn er wieder funkt (Taste,
+    // Stundenfenster); nur zur Sicherheit nach 5 min ein Versuch
+    if (!s.weg) hgPlanen(s, s.schlaeft ? HG_PAUSE_MAX_MS : 3000);
   } else if (art === 'ereignis') {
-    if (d.t === 'modus') {
+    if (d.t === 'schlaf') {
+      s.schlaeft = true;
+      eintrag(T(`${s.g.name} schlummert – meldet sich bei Tastendruck oder zur vollen Stunde`, `${s.g.name} is napping – checks in on a key press or on the hour`));
+    }
+    else if (d.t === 'modus') {
       s.modus = d.m;
       if (d.m === 'app') { appSeiteHg.sitzung = s; appSeiteHg.hoch = appSeite.hoch; }
       duellPruefen();

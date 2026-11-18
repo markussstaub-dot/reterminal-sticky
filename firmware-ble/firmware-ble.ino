@@ -29,7 +29,7 @@
 #include <driver/rtc_io.h>
 #include <soc/gpio_reg.h>
 
-static const char* FW_VERSION = "0.43.0";
+static const char* FW_VERSION = "0.43.1";
 
 // ---- Sprache (FW 0.32.0, SPEC „Zweisprachig Deutsch/Englisch“): wirksame Sprache der Anzeige, Muster aus dem Sticky Lab.
 // Gesetzt in modus.h (uhrFormatLaden): Standard vom Handy, am Sticky überstimmbar. Nur Anzeige, Logs bleiben deutsch.
@@ -56,7 +56,10 @@ static const int PIN_BUZZER = 48;
 // PWR_IN_VOLT = VIN_5V über Teiler 5,1k/5,1k, also ~2,5 V bei USB. Digital lag das genau an der Schwelle des ESP32-S3
 // (0,75 × 3,3 V = 2,48 V) und las am PC-Port LOW. Darum per ADC (12.11.2026).
 static const int PIN_USB = 9;
-static bool usbDa() { return analogReadMilliVolts(PIN_USB) > 1500; }
+static uint32_t usbMv() { return analogReadMilliVolts(PIN_USB); }
+// „Strom da“: USB-Spannung ODER der Lader meldet „lädt“ (STAT LOW) – vorsorglich, falls die ADC-Schwelle an einem
+// Kabel/Netzteil nicht reicht (18.11.2026). usbmv steht im Zustand zum Nachsehen.
+static bool usbDa() { return usbMv() > 1500 || digitalRead(PIN_CHG_STATE) == LOW; }
 // EN_BAT_CHGn → /CE des Laders BQ25616 (100k nach GND = lädt). GPIO39 ist aber MTCK mit internem Pull-up, das hob /CE
 // an und der Akku lud nie (Markus, 12.11.2026: „lädt nicht“, 0 mA am Kabel). Darum aktiv LOW treiben, auch im Schlaf.
 static const int PIN_CHG_EN_N = 39;
@@ -496,13 +499,13 @@ static void sendState() {
     readBattery();
     char j[600];
     snprintf(j, sizeof j,
-             "{\"fw\":\"%s\",\"seite\":\"%s\",\"bat\":%d,\"mv\":%d,\"ma\":%d,\"chg\":%s,\"mtu\":%u,\"phy\":%u,\"itvl\":%u,\"tp\":\"%ux%u\",\"fahrtv\":\"%08lx\",\"offen\":%d,\"uhr\":%s,\"modus\":\"%s\",\"homev\":\"%s\",\"usb\":%s,\"bb\":%d,\"zettel\":%d,\"temp\":%.1f,\"rf\":%.0f,\"taupunkt\":%.1f,\"fahrt\":%s,\"sensoren\":\"%s%s\",\"us\":%d,\"en\":%d,\"w\":\"%s\",\"lh\":%d,\"platz\":%d,\"anders\":\"%s\",\"sdmb\":%lu,\"dok\":%d,\"spick\":%d}",
+             "{\"fw\":\"%s\",\"seite\":\"%s\",\"bat\":%d,\"mv\":%d,\"ma\":%d,\"chg\":%s,\"mtu\":%u,\"phy\":%u,\"itvl\":%u,\"tp\":\"%ux%u\",\"fahrtv\":\"%08lx\",\"offen\":%d,\"uhr\":%s,\"modus\":\"%s\",\"homev\":\"%s\",\"usb\":%s,\"bb\":%d,\"zettel\":%d,\"temp\":%.1f,\"rf\":%.0f,\"taupunkt\":%.1f,\"fahrt\":%s,\"sensoren\":\"%s%s\",\"us\":%d,\"en\":%d,\"w\":\"%s\",\"lh\":%d,\"platz\":%d,\"anders\":\"%s\",\"sdmb\":%lu,\"dok\":%d,\"spick\":%d,\"usbmv\":%lu}",
              FW_VERSION, seite, batPct, batMv, batMa, laedt ? "true" : "false", mtu, phy, connItvl, tpResX, tpResY,
              (unsigned long)fahrtVersion, offeneNotizen, rtcDa ? "true" : "false",
              modusName(), homeVersion, usbDa() ? "true" : "false", hb.aktuell, bestellAktuell,
              isnan(klimaT) ? -99.0f : klimaT, isnan(klimaRf) ? -1.0f : klimaRf, isnan(klimaTp) ? -99.0f : klimaTp,
              fahrt ? "true" : "false", lsmDa ? "b" : "", shtDa ? "k" : "", einhUs ? 1 : 0, EN ? 1 : 0, modus == M_WIDGET ? widgetName : "", seiteHoch() ? 1 : 0,
-             platzNummer(), platzAndererName(), sdEingebunden ? (unsigned long)(SD.totalBytes() >> 20) : 0UL, dokN, sp.seiten);
+             platzNummer(), platzAndererName(), sdEingebunden ? (unsigned long)(SD.totalBytes() >> 20) : 0UL, dokN, sp.seiten, (unsigned long)usbMv());
     if (connected && chState) {
         chState->setValue((const uint8_t*)j, strlen(j));
         chState->notify();
@@ -519,6 +522,7 @@ class ServerCb : public NimBLEServerCallbacks {
         connItvl = ci.getConnInterval();
         Serial.printf("Verbunden mit %s, Intervall %u\n", ci.getAddress().toString().c_str(), connItvl);
         protokoll("verbunden");
+        aktiv();   // 18.11.2026: Verbinden zählt als Aktivität, sonst schlief ein lange unbedienter Sticky gleich nach STATE ein
         s->updatePhy(connHandle, BLE_GAP_LE_PHY_2M_MASK, BLE_GAP_LE_PHY_2M_MASK, 0);
         s->setDataLen(connHandle, 251);
         // gleich nach dem Verbinden fragt die App nach Zustand/Dienst → kurz schnell, dann träge

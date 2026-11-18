@@ -145,8 +145,11 @@ static void schlafPruefen() {
     if (spar) return;                              // Sparmodus: kein Klima, kein Stundenfenster
     if (t.tm_year > 120 && t.tm_min % 15 == 0) klimaMessen();   // Klima alle 15 min auch im Schlummern
     // volle Stunde: kurz erreichbar für den Abgleich; nachts 1–5 Uhr nicht (15.11.2026, Strom sparen),
-    // Mitternacht bleibt: da schickt die App die Home-Karte mit dem neuen Datum
-    if (t.tm_year > 120 && t.tm_min == 0 && (t.tm_hour == 0 || t.tm_hour >= 6)) {
+    // Mitternacht bleibt: da schickt die App die Home-Karte mit dem neuen Datum.
+    // Ohne gestellte Uhr (18.11.2026): alle 60 Schlafminuten, sonst wäre er nur per Taste erreichbar und bekäme nie Zeit
+    bool fenster = t.tm_year > 120 ? t.tm_min == 0 && (t.tm_hour == 0 || t.tm_hour >= 6)
+                                   : schlafZaehler % 60 == 0;
+    if (fenster) {
         funkEin(true);
         protokoll("Stundenfenster: Funk %lu s an (Akku %d %%, %lu Fehlalarme Bewegung)", (unsigned long)(STUNDEN_FENSTER / 1000), batPct, (unsigned long)fehlalarme);
         fehlalarme = 0;

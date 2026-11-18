@@ -54,7 +54,9 @@ export function geraetMerken({ id, name }) {
   // Der Scan liefert den Namen nicht immer; die Firmware wirbt als „Sticky-“ + letzte zwei MAC-Bytes
   if (!name || name === 'Sticky') name = /^([0-9A-F]{2}:){5}[0-9A-F]{2}$/i.test(id) ? `Sticky-${id.slice(-5).replace(':', '')}` : 'Sticky';
   if (!g) {
-    g = { id, name, profil: 'edc', seit: Date.now() };
+    // mitlaufen (18.11.2026): neue Stickys laufen nicht automatisch im Hintergrund mit (Schalter in der Liste);
+    // ältere Einträge ohne das Feld laufen weiter mit wie bisher
+    g = { id, name, profil: 'edc', seit: Date.now(), mitlaufen: false };
     liste.push(g);
   } else if (name && !g.eigenerName) g.name = name;
   schreiben(LISTE, liste);
