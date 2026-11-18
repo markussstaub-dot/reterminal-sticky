@@ -3,8 +3,8 @@ name: reTerminal Sticky
 tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.43.1 + APK 2026.11.18-1140 auf den Geräten (gepusht 18.11.; Release v0.43.0 im Playground-Registry); lokal gebaut FW 0.44.0 + App mit Zettel-Karten und Hilfe je Reiter (noch nicht geflasht/installiert/gepusht) – EDC-Sticky allein nützlich (Gruppen-Menü, Zeit, Messen, Notieren, Rechnen, Nachschlagen, Burgduell, DE/EN, Braun-Optik), mit App schlauer; neu als Erweiterung **Notfall**: Blatt bleibt bei leerem Akku stehen, SOS, Sparmodus, Dokumente mit PIN, Offline-Karten (OpenFreeMap, Zoom bis 1:12.500), Sonnenkompass, Papierkarte, Grund-Menü ohne App; Console-Reiter „Notfall“ ohne Python, Bauanleitung docs/NOTFALL.md; Gehäuse-Baukasten (OpenSCAD, Sleeve v1). MIT, Repo öffentlich
-wartet: Markus' Ja für FW 0.44.0 flashen (COM7, COM10), APK installieren und pushen; Katjas Sticky steht im Notfall-Sparmodus (am Blatt „spar“ tippen); restliche Punkte in VORSCHLAEGE-2026-11-18.md (v. a. Nr. 0: Notfall-Sparmodus sichtbar machen). Seeed: Playground-Seite auf 0.43.0 (PR #136 gemergt 18.11.). Markus: Sleeve drucken (Bambu Studio installiert), echte Notfalldaten, Laufzeit Sparmodus messen, Spickzettel #notfall gegenlesen, FB-Post, sobald die Playground-Seite 0.43.0 zeigt; Powerbank: Pass-Through/Kleinstrom prüfen. Nächstes: zwei XIAO ESP32-C3 per ESP-NOW (Station 12), Tauch-Gehäuse, Bibliothek
+version: FW 0.44.0 auf Markus' Sticky (Sticky-559D, COM7) + APK 2026.11.18-1254 auf dem Fold (18.11.); Katjas Sticky noch 0.43.1; nicht gepusht (Release v0.43.0 im Playground-Registry) – EDC-Sticky allein nützlich (Gruppen-Menü, Zeit, Messen, Notieren, Rechnen, Nachschlagen, Burgduell, DE/EN, Braun-Optik), mit App schlauer; neu als Erweiterung **Notfall**: Blatt bleibt bei leerem Akku stehen, SOS, Sparmodus, Dokumente mit PIN, Offline-Karten (OpenFreeMap, Zoom bis 1:12.500), Sonnenkompass, Papierkarte, Grund-Menü ohne App; Console-Reiter „Notfall“ ohne Python, Bauanleitung docs/NOTFALL.md; Gehäuse-Baukasten (OpenSCAD, Sleeve v1). MIT, Repo öffentlich
+wartet: Abhaken am Sticky am Gerät ausprobieren; Katjas Sticky (nicht angesteckt) auf 0.44.0; Push auf Markus' Ja; Katjas Sticky steht im Notfall-Sparmodus (am Blatt „spar“ tippen); restliche Punkte in VORSCHLAEGE-2026-11-18.md (v. a. Nr. 0: Notfall-Sparmodus sichtbar machen). Seeed: Playground-Seite auf 0.43.0 (PR #136 gemergt 18.11.). Markus: Sleeve drucken (Bambu Studio installiert), echte Notfalldaten, Laufzeit Sparmodus messen, Spickzettel #notfall gegenlesen, FB-Post, sobald die Playground-Seite 0.43.0 zeigt; Powerbank: Pass-Through/Kleinstrom prüfen. Nächstes: zwei XIAO ESP32-C3 per ESP-NOW (Station 12), Tauch-Gehäuse, Bibliothek
 ---
 
 Repo: github.com/markussstaub-dot/reterminal-sticky (öffentlich seit 15.11.2026, Geschichte vorher gesäubert: Name und Hinweis auf Angehörige, MAC; Sicherung der alten Geschichte lokal unter `%LOCALAPPDATA%\sticky-backup`). `backup/`, Modelle und
@@ -427,7 +427,7 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
 - **FW 0.41.1 (17.11.2026):** USB-Dateien lösen dieselben Folgen aus wie ein Bluetooth-Abgleich (`sollGeaendert`:
   Dokumente, Sprung, Lage, Karussell). Kartentest (`sticky-app/tools/notfallkarten.py --test`, Tübingen, 4 Seiten:
   Zeichen, 1:25.000 klar, mit Häusern, 1:100.000) als Handbuch „kartentest“ auf Katjas Gerät, per Sprung geöffnet
-- **Zettel als Karten + Hilfe je App-Reiter (FW 0.44.0, 18.11.2026, gebaut, nicht geflasht):** Reiter „Zettel“ (EN „Cards“)
+- **Zettel als Karten + Hilfe je App-Reiter (FW 0.44.0, 18.11.2026):** Reiter „Zettel“ (EN „Cards“)
   ist eine Kartenliste (`src/zettelSeite.js`): Symbol je Art, Schalter „auf dem Sticky“ (höchstens 6, beliebig viele in der
   App, Zeile `sticky: aus`), ⋮⋮ ziehen = Reihenfolge, Karte mit Vorschau, Inhalt, löschen. „+ Zettel“ fragt die Art;
   QR und Strichcode abfotografieren (`qrlesen.js` `codeAusBild`: Android-Barcode-Erkennung, sonst jsQR bzw. eigener
@@ -439,7 +439,7 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   Zettel-Namen (einmaliger Umzug „Zettel n“ → Name, Umbenennen zieht mit). Hilfe: „?“ oben rechts → Blatt je Reiter bzw.
   Mehr-Unterseite (`src/hilfe-app.js`, `src/blatt.js`), lange Kleingedruckt-Texte dorthin verlegt. „läuft mit“ EN einheitlich
   „runs along“. Tests 104 grün, Build grün, FW kompiliert, im Browser-Simulator geprüft (Liste, Strichcode-Rundweg,
-  Ziehen, Hilfe, Englisch). **Offen:** Abhaken am echten Gerät prüfen (Flashen + APK wartet auf Markus' Ja)
+  Ziehen, Hilfe, Englisch). Geflasht auf Markus' Sticky (WER: FW 0.44.0), APK 2026.11.18-1254 installiert. **Offen:** Abhaken am Gerät ausprobieren, Katjas Sticky
 - **Knöpfe vereinheitlicht (18.11.2026, Markus: „manche sind gelb, andre dunkel kaum erkennbar“):** Stufen in
   `src/stil.css`: gelb = Hauptaktion, normal = Grau mit hellem Rand, Braun = Werkzeug, Grün = eingeschaltet,
   `.gefahr` = rot umrandet (Löschen bei Handbuch und Zettel, Vergessen, Leeren). In der Vorschau alle 110 Knöpfe aller
