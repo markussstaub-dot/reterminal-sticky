@@ -268,7 +268,7 @@ export function dokumenteEinrichten(dep) {
       const titel = el('input', { type: 'text', value: d.titel });
       const umb = el('button', { textContent: T('Umbenennen', 'Rename') });
       umb.onclick = () => { const t = titel.value.trim(); if (t) { d.titel = t; sichern(); zeigen(); } };
-      const weg = el('button', { textContent: T('Löschen', 'Delete') });
+      const weg = el('button', { className: 'gefahr', textContent: T('Löschen', 'Delete') });
       weg.onclick = async () => {
         if (!confirm(T(`„${d.titel}“ aus der App löschen? Auf dem Sticky verschwindet es beim nächsten Aufspielen.`, `Delete “${d.titel}” from the app? It leaves the Sticky with the next upload.`))) return;
         liste = liste.filter((x) => x.id !== d.id);

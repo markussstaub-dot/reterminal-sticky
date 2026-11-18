@@ -440,6 +440,10 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   Mehr-Unterseite (`src/hilfe-app.js`, `src/blatt.js`), lange Kleingedruckt-Texte dorthin verlegt. „läuft mit“ EN einheitlich
   „runs along“. Tests 104 grün, Build grün, FW kompiliert, im Browser-Simulator geprüft (Liste, Strichcode-Rundweg,
   Ziehen, Hilfe, Englisch). **Offen:** Abhaken am echten Gerät prüfen (Flashen + APK wartet auf Markus' Ja)
+- **Knöpfe vereinheitlicht (18.11.2026, Markus: „manche sind gelb, andre dunkel kaum erkennbar“):** Stufen in
+  `src/stil.css`: gelb = Hauptaktion, normal = Grau mit hellem Rand, Braun = Werkzeug, Grün = eingeschaltet,
+  `.gefahr` = rot umrandet (Löschen bei Handbuch und Zettel, Vergessen, Leeren). In der Vorschau alle 110 Knöpfe aller
+  Reiter und Mehr-Unterseiten gemessen: Text ≥ 6,9:1, Rand ≥ 3,9:1 zum Grund. Ausgegraute Knöpfe: gestrichelt, halb durchsichtig
 - **Sonnenkompass (FW 0.43.0, 17.11.2026, Schritt 3b):** `sonne.h`: Sonnenrichtung/-höhe (NOAA-Näherung), Auf-/Untergang,
   Kreis mit N oben und Sonnenstrahl („drehen, bis der Strahl zur Sonne zeigt“), alle 5 min neu (im Sparmodus nur beim
   Öffnen). Ort aus `/soll/notfall/ort.txt` (schreibt `notfallkarten.py` mit dem ersten Ort), sonst Mitte Deutschlands.

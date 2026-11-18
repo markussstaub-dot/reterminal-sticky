@@ -633,7 +633,7 @@ function geraeteZeigen() {
     const knopf = Object.assign(document.createElement('button'), { textContent: istAktiv ? (zwilling.verbunden ? T('● verbunden', '● connected') : T('● aktiv', '● active')) : T('Wechseln', 'Switch') });
     knopf.disabled = istAktiv;
     knopf.onclick = () => wechselnZu(g.id, T(`Gewechselt zu ${g.name}`, `Switched to ${g.name}`));
-    const weg = Object.assign(document.createElement('button'), { textContent: T('Vergessen', 'Forget') });
+    const weg = Object.assign(document.createElement('button'), { className: 'gefahr', textContent: T('Vergessen', 'Forget') });
     weg.onclick = async () => {
       if (!confirm(T(`${g.name} vergessen? Sein Abgleich-Stand in der App wird gelöscht; das Profil bleibt.`, `Forget ${g.name}? Its sync state in the app is deleted; the profile stays.`))) return;
       // Vor der Weitergabe: auch auf dem Sticky alles Persönliche löschen (Karte /soll und /ist, interner Speicher)

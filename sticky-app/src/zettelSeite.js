@@ -289,7 +289,7 @@ export function zettelSeiteEinrichten(dep) {
         eintrag(T('Neu abfotografiert', 'Photographed again'));
       }, meldung), el('span', { textContent: T('Neu abfotografieren', 'Photograph again') })));
     }
-    const loeschen = el('button', { textContent: T('Löschen', 'Delete') });
+    const loeschen = el('button', { className: 'gefahr', textContent: T('Löschen', 'Delete') });
     loeschen.onclick = () => {
       if (!confirm(T(`Zettel „${k.titel}“ löschen?`, `Delete card “${k.titel}”?`))) return;
       d = lesen();

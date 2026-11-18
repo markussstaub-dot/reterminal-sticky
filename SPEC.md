@@ -830,6 +830,12 @@ Anlass (Markus): „Analog Sticky sollte auch jeder Tab der App eine Hilfeseite 
   bzw. der offenen Mehr-Unterseite; Mehr-Menü selbst hat eine kurze Übersicht. Blatt in `src/blatt.js` (auch für die
   Zettel-Karten), Texte in `src/hilfe-app.js`; Test prüft, dass jeder Reiter/jede Unterseite eine Hilfe hat (DE = EN)
 
+### Knöpfe: klare Stufen (Markus, 18.11.2026, gebaut)
+Anlass (Markus): „guck in apk auch auf buttons manche sind gelb andre dunkel kaum erkennbar“.
+- gebaut: **gelb** (`.haupt`) = die eine Hauptaktion · **normal** = Grau `#2c2b29` mit hellem Rand `#77746c` ·
+  **Braun** (`.werkzeug`) mit hellem Rand · **Grün** (`.an`) = eingeschaltet · **Gefahr** (`.gefahr`) = roter Rand,
+  rote Schrift (Löschen, Vergessen, Leeren) · ausgegraut = gestrichelt. Schrift ≥ 4,5:1 zum Knopf, Rand ≥ 3:1 zum Grund
+
 ### Spickzettel-Konsole: Karten am Zenbook pflegen (Markus, 15.11.2026, abgenommen)
 Anlass: Karten am Fold abzutippen ist mühsam (heute: `sticky-lab/SPICKZETTEL-EDC.md` → App, Bordbuch-Tab → Spickzettel).
 Am Zenbook mit Tastatur schreiben, in Sticky-Größe ansehen, dann rüber.
