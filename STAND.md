@@ -4,7 +4,7 @@ tag: reterminal-sticky
 status: aktiv
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
 version: FW 0.44.0 auf beiden Stickys (Sticky-559D COM7, Katjas Sticky-5695 COM10) + APK 2026.11.18-1254 auf dem Fold (18.11., gepusht) (Release v0.43.0 im Playground-Registry) – EDC-Sticky allein nützlich (Gruppen-Menü, Zeit, Messen, Notieren, Rechnen, Nachschlagen, Burgduell, DE/EN, Braun-Optik), mit App schlauer; neu als Erweiterung **Notfall**: Blatt bleibt bei leerem Akku stehen, SOS, Sparmodus, Dokumente mit PIN, Offline-Karten (OpenFreeMap, Zoom bis 1:12.500), Sonnenkompass, Papierkarte, Grund-Menü ohne App; Console-Reiter „Notfall“ ohne Python, Bauanleitung docs/NOTFALL.md; Gehäuse-Baukasten (OpenSCAD, Sleeve v1). MIT, Repo öffentlich
-wartet: Abhaken am Sticky am Gerät ausprobieren; Katjas Sticky steht im Notfall-Sparmodus (am Blatt „spar“ tippen); restliche Punkte in VORSCHLAEGE-2026-11-18.md (v. a. Nr. 0: Notfall-Sparmodus sichtbar machen). Seeed: Playground-Seite auf 0.43.0 (PR #136 gemergt 18.11.). Markus: Sleeve drucken (Bambu Studio installiert), echte Notfalldaten, Laufzeit Sparmodus messen, Spickzettel #notfall gegenlesen, FB-Post, sobald die Playground-Seite 0.43.0 zeigt; Powerbank: Pass-Through/Kleinstrom prüfen. Nächstes: zwei XIAO ESP32-C3 per ESP-NOW (Station 12), Tauch-Gehäuse, Bibliothek
+wartet: Katjas Sticky steht im Notfall-Sparmodus (am Blatt „spar“ tippen); restliche Punkte in VORSCHLAEGE-2026-11-18.md (v. a. Nr. 0: Notfall-Sparmodus sichtbar machen). Seeed: Playground-Seite auf 0.43.0 (PR #136 gemergt 18.11.). Markus: Sleeve drucken (Bambu Studio installiert), echte Notfalldaten, Laufzeit Sparmodus messen, Spickzettel #notfall gegenlesen, FB-Post, sobald die Playground-Seite 0.43.0 zeigt; Powerbank: Pass-Through/Kleinstrom prüfen. Nächstes: zwei XIAO ESP32-C3 per ESP-NOW (Station 12), Tauch-Gehäuse, Bibliothek
 ---
 
 Repo: github.com/markussstaub-dot/reterminal-sticky (öffentlich seit 15.11.2026, Geschichte vorher gesäubert: Name und Hinweis auf Angehörige, MAC; Sicherung der alten Geschichte lokal unter `%LOCALAPPDATA%\sticky-backup`). `backup/`, Modelle und
@@ -439,7 +439,7 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`.
   Zettel-Namen (einmaliger Umzug „Zettel n“ → Name, Umbenennen zieht mit). Hilfe: „?“ oben rechts → Blatt je Reiter bzw.
   Mehr-Unterseite (`src/hilfe-app.js`, `src/blatt.js`), lange Kleingedruckt-Texte dorthin verlegt. „läuft mit“ EN einheitlich
   „runs along“. Tests 104 grün, Build grün, FW kompiliert, im Browser-Simulator geprüft (Liste, Strichcode-Rundweg,
-  Ziehen, Hilfe, Englisch). Geflasht auf Markus' Sticky (WER: FW 0.44.0), APK 2026.11.18-1254 installiert, Katjas Sticky ebenfalls 0.44.0 (WER geprüft, Notfallblatt und Schlüssel noch da). **Offen:** Abhaken am Gerät ausprobieren
+  Ziehen, Hilfe, Englisch). Geflasht auf Markus' Sticky (WER: FW 0.44.0), APK 2026.11.18-1254 installiert, Katjas Sticky ebenfalls 0.44.0 (WER geprüft, Notfallblatt und Schlüssel noch da). Abhaken am Gerät von Markus bestätigt (18.11.: „klappt, prima“)
 - **Knöpfe vereinheitlicht (18.11.2026, Markus: „manche sind gelb, andre dunkel kaum erkennbar“):** Stufen in
   `src/stil.css`: gelb = Hauptaktion, normal = Grau mit hellem Rand, Braun = Werkzeug, Grün = eingeschaltet,
   `.gefahr` = rot umrandet (Löschen bei Handbuch und Zettel, Vergessen, Leeren). In der Vorschau alle 110 Knöpfe aller
