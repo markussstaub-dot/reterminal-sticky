@@ -16,7 +16,7 @@ export const profilName = (k) => T(PROFILE[k] ?? k, PROFILE_EN[k] ?? PROFILE[k] 
 export const PROFIL_SCHLUESSEL = ['karussell', 'lagen', 'zettel', 'bestellung', 'karten', 'spickzettel', 'handgriffe',
   'woerter', 'woerterbuch', 'knoepfe'];
 /** Zustand eines einzelnen Geräts (was auf seiner Karte liegt, seine Kalibrierung) */
-export const GERAET_SCHLUESSEL = ['homecrcs', 'spiegel', 'logStand', 'lineal80', 'bbplan', 'dreh180', 'notizEn'];   // dreh180: wie das Gerät gehalten wird; notizEn: Sprache der Notiz-Rückmeldungen
+export const GERAET_SCHLUESSEL = ['homecrcs', 'spiegel', 'logStand', 'lineal80', 'bbplan', 'dreh180', 'notizEn', 'platz'];   // dreh180: wie das Gerät gehalten wird; notizEn: Sprache der Notiz-Rückmeldungen; platz: für welchen anderen Firmware-Platz das Menü zuletzt gebaut wurde (20.11.2026: war geräteübergreifend, dem zweiten Sticky fehlte die Kachel „Sticky Lab“)
 
 const lesen = (k, sonst) => { try { return JSON.parse(localStorage.getItem(k) ?? 'null') ?? sonst; } catch { return sonst; } };
 const schreiben = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* egal */ } };

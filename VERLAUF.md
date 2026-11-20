@@ -473,3 +473,14 @@ Neue Einträge unten anhängen. Der aktuelle Stand steht in `STAND.md`.
   Ja/Nein, Auswahl, Stufe), erste Frage „Parkplatz merken?“ nach Fahrtende → Notiz + „Geparkt um …“ auf Home. Orte
   (Mehr → Orte, „Hier merken“): bei Ankunft einmal aus Home aufs Ziel (Zettel n, Notiz, Bordbuch), „Ort: …“ auf Home;
   Fahrt erkannt → Notiz-Seite. Logik in `src/kontext.js` (Tests). Offen: Bubble-Log-Werte, Termine, Karussell je Ort
+
+- **20.11.2026 Kachel „→ Sticky Lab“ fehlte auf Katjas Sticky:** Die App merkte sich „Menü für anderen Firmware-Platz
+  gebaut“ unter `sticky.platz` für alle Geräte gemeinsam. Markus' Sticky hatte „Sticky Lab“ schon gemeldet, bei Katjas
+  galt das Menü darum als aktuell und wurde nie neu gebaut. Behoben: `platz` steht jetzt in `GERAET_SCHLUESSEL`
+  (`sticky-app/src/geraete.js`), 104 Tests grün, APK noch nicht gebaut. Katjas Menü per WebView-Fernsteuerung sofort neu
+  aufgespielt (`felder.txt` 284 → 311 Byte). Lehre: Zzz am USB-Kabel heißt Notfall-Sparmodus, nicht Lab-Firmware
+
+- **20.11.2026 Notfallblatt auf Markus' Sticky:** `notfallblatt.py --port COM7` (Blatt aus `privat\notfall.md`, ohne
+  Dokumente), `WER` meldet danach `notfall 1`. Vorher antwortete er am Kabel erst nach einem Neustart über RTS. Er stand
+  im Sparmodus (Funk aus, ohne Blatt kein Knopf zum Ausschalten); nach „spar“ aus und Abgleich mit der App ist die Kachel
+  „Emergency“ im Menü (Markus bestätigt)

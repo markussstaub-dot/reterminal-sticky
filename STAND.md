@@ -27,7 +27,7 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`. Bauverlauf 
 - MIT, Repo öffentlich; Release v0.43.0 im Playground-Registry (PR #136, 18.11.2026)
 
 ## Nächstes
-- Katjas Sticky steht im Notfall-Sparmodus (am Blatt „spar“ tippen)
+- Nächste APK-Runde nimmt den Fix „Lab-Kachel je Gerät“ mit (20.11.2026, `sticky-app/src/geraete.js`, noch nicht gebaut)
 - `VORSCHLAEGE-2026-11-18.md`, v. a. Nr. 0: Notfall-Sparmodus sichtbar machen
 - Spickzettel #notfall gegenlesen; Powerbank: Pass-Through/Kleinstrom prüfen
 - Danach: zwei XIAO ESP32-C3 per ESP-NOW (Station 12), Tauch-Gehäuse, Bibliothek
