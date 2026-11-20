@@ -5,7 +5,7 @@ status: hold
 bereich: werkstatt
 community: GitHub (MIT) · Seeed Playground-Registry (0.43) · FB-Post geplant
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.44.0 auf beiden Stickys, APK 2026.11.18-1254 auf dem Fold; Playground zeigt 0.43
+version: FW 0.44.0 auf beiden Stickys, APK 2026.11.20-1054 auf dem Fold; Playground zeigt 0.43
 wartet: Markus: FB-Post, Sleeve drucken, echte Notfalldaten, Laufzeit im Sparmodus messen; Seeed: 0.44.0 noch nicht im Playground; Rest in VORSCHLAEGE-2026-11-18.md
 ---
 
@@ -27,7 +27,6 @@ Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`. Bauverlauf 
 - MIT, Repo öffentlich; Release v0.43.0 im Playground-Registry (PR #136, 18.11.2026)
 
 ## Nächstes
-- Nächste APK-Runde nimmt den Fix „Lab-Kachel je Gerät“ mit (20.11.2026, `sticky-app/src/geraete.js`, noch nicht gebaut)
 - `VORSCHLAEGE-2026-11-18.md`, v. a. Nr. 0: Notfall-Sparmodus sichtbar machen
 - Spickzettel #notfall gegenlesen; Powerbank: Pass-Through/Kleinstrom prüfen
 - Danach: zwei XIAO ESP32-C3 per ESP-NOW (Station 12), Tauch-Gehäuse, Bibliothek
