@@ -2,6 +2,8 @@
 name: reTerminal Sticky
 tag: reterminal-sticky
 status: hold
+bereich: werkstatt
+community: GitHub (MIT) · Seeed Playground-Registry (0.43) · FB-Post geplant
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
 version: FW 0.44.0 auf beiden Stickys, APK 2026.11.18-1254 auf dem Fold; Playground zeigt 0.43
 wartet: Markus: FB-Post, Sleeve drucken, echte Notfalldaten, Laufzeit im Sparmodus messen; Seeed: 0.44.0 noch nicht im Playground; Rest in VORSCHLAEGE-2026-11-18.md
