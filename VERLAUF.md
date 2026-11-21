@@ -496,3 +496,9 @@ Neue Einträge unten anhängen. Der aktuelle Stand steht in `STAND.md`.
   11:12): „Saturday 21 November“ aus dem Streifen, Wetter mit Stand 11:06. **Lehre:** Ein laufender App-Prozess heißt
   nicht, dass der Abgleich läuft; nach jedem `adb install` die App wirklich öffnen (apk.ps1 tut das) und im Zweifel den
   Fahrtenschreiber ansehen. Was der Sticky ohne Handy zeigt, darf nicht vom Handy abhängen, wenn es mit der Zeit falsch wird
+  Tageswechsel getestet, ohne auf Mitternacht zu warten: Uhr des Stickys über die App im WebView verstellt
+  (`adb forward tcp:9333 localabstract:webview_devtools_remote_<pid>`, dann per CDP `window.__sticky.zwilling.zeitSetzen()`
+  mit vorgestelltem `Date.now` und `bildschirm()` für die Fotos): 23:59 Samstag → 00:00 „Sunday 22 November“, Wetter
+  bleibt; 01:00 Wetterzeile weg; Uhr zurück → alles wie vorher (Übersicht `fotos/tageswechsel-test-2026-11-21.png`).
+  Release v0.45.0 (Firmware-Paket, APK, Basekit DE/EN; deckt 0.43.1 und 0.44.0 mit ab), Playground-PR #153.
+  Basekit-Werkzeug: Merker `orteZettelNamen` zugelassen, Neuladen von Vite beim ersten Start abgefangen
