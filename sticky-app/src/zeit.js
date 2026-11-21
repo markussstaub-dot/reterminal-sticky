@@ -20,3 +20,35 @@ export function uhrzeit(d, mitSekunden = false) {
 
 /** Datei für den Sticky: „format 12|24“, „einheiten us|metrisch“, „sprache de|en“ (Standard; am Sticky überstimmbar) */
 export const zeitDatei = () => new TextEncoder().encode(`format ${HANDY_12H ? 12 : 24}\neinheiten ${HANDY_US ? 'us' : 'metrisch'}\nsprache ${appIstEn() ? 'en' : 'de'}\n`);
+
+// ---- Datum auf Home ohne Handy (SPEC, 21.11.2026, FW 0.45.0) ---------------------------------------------------------
+// Der Sticky setzt das Datum selbst aus vorgerenderten Streifen (home/datum.bin), so wie die Uhr aus dem Ziffernblatt.
+// Fenster: vom Ersten des laufenden Monats bis Ende des übernächsten (mindestens 59 Tage voraus). So ändert sich die
+// Datei nur am Monatswechsel und beim Sprachwechsel, nicht täglich.
+const p2 = (n) => String(n).padStart(2, '0');
+/** JJJJMMTT in Ortszeit */
+export const tagZahl = (d) => { const t = new Date(d); return `${t.getFullYear()}${p2(t.getMonth() + 1)}${p2(t.getDate())}`; };
+
+/** Tage des Fensters als Date (12 Uhr mittags, damit die Sommerzeit nichts verschiebt) */
+export function datumFenster(heute = new Date()) {
+  const j = heute.getFullYear(), m = heute.getMonth();
+  const tage = [];
+  for (let d = new Date(j, m, 1, 12); d < new Date(j, m + 3, 1); d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, 12)) tage.push(d);
+  return tage;
+}
+
+/** Kopf von datum.bin (16 Byte): „DAT1“, Jahr u16, Monat, Tag des ersten Streifens, Anzahl u16, Byte je Streifen u16, 4 frei */
+export function datumKopf(erster, anzahl, groesse) {
+  const k = new Uint8Array(16);
+  k.set([0x44, 0x41, 0x54, 0x31]);
+  const v = new DataView(k.buffer);
+  v.setUint16(4, erster.getFullYear(), true);
+  k[6] = erster.getMonth() + 1;
+  k[7] = erster.getDate();
+  v.setUint16(8, anzahl, true);
+  v.setUint16(10, groesse, true);
+  return k;
+}
+
+/** home/wetter.txt: Tag der Vorhersage auf der Home-Karte („tag JJJJMMTT“, ohne Wetter „tag 0“); ist er vorbei, blendet der Sticky die Wetterzeile aus */
+export const wetterDatei = (wetter) => new TextEncoder().encode(`tag ${wetter?.zeit ? tagZahl(wetter.zeit) : 0}\n`);

@@ -96,6 +96,17 @@ Zettel abhaken (ab FW 0.44.0, `firmware-ble/zettel.h`):
   die Häkchen über den Titel, spielt neu auf und löscht die Datei (quittieren). Passt Titel oder Anzahl nicht, gilt sie nicht
 - Ereignis `{"t":"zettel","platz","i","ab"}` nach jedem Tippen; die App gleicht wenige Sekunden später ab
 
+Datum auf Home (ab FW 0.45.0, `firmware-ble/modus.h`): der Sticky setzt Datum und veraltetes Wetter selbst
+- `/soll/home/datum.bin` (mit den Home-Bildern, vor `version.txt`): Kopf 16 Byte (`DAT1`, Jahr u16 LE, Monat, Tag des
+  ersten Streifens, Anzahl u16 LE, Byte je Streifen u16 LE = 2400, 4 frei), dann je Tag ein Streifen: die Datumszeile
+  hochkant 480 × 40, gedreht wie die Karte (40 × 480, 1 bpp, Bit 1 = schwarz). Die App liefert vom Monatsersten bis
+  Ende des übernächsten Monats. Der Sticky odert den Streifen für heute ins Feld Display x 240–280 (hochkant y 240–280)
+- Liegt `datum.bin` vor, lässt die App das Datum in `0.bin` weg. Ohne gestellte Uhr oder außerhalb der Streifen bleibt
+  das Feld leer
+- `/soll/home/wetter.txt`: `tag JJJJMMTT` = Tag der Vorhersage auf der Karte (`tag 0`: kein Wetter). Ist der Tag vorbei
+  (ab 1 Uhr des Folgetags), macht der Sticky die Wetterzeile weiß (hochkant y 278–352)
+- Home wird um Mitternacht, um 1 Uhr mit altem Wetter und nach dem Stellen der Uhr von selbst neu aufgebaut
+
 ## Zustand (JSON)
 `{"fw","modus","bb":Bordbuch-Seite,"zettel":Bestellzettel,"usb","seite":"karte|bild","bat":%,"mv","ma","chg","mtu","phy","itvl":×1,25 ms,"tp":"BxH","fahrtv":CRC des Layouts,"offen":Notizen im Puffer,"uhr":bool, …, "us":0|1, "en":0|1, "w", "lh"}` (w und lh wie beim Ereignis modus, ab FW 0.31.2; `us` = US-Einheiten, `en` = wirksame Sprache Englisch, ab FW 0.32.0) – bei Verbindung,
 nach jedem Bild und alle 30 s.

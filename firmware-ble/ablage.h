@@ -5,8 +5,8 @@
  *   bordbuch/…  ↔ /bb/…      bis FW 0.37.0; seit 0.38.0 zieht es beim Start nach doku/microlino/ (nur Karte)
  *   doku/…, spick/…          Handbücher und Spickzettel (doku.h), nur auf der Karte
  *   notiz/…     ↔ /fahrt/…   layout.txt, Rückmeldungen rNN.bin
- * Home 0–2 (Karte, Notiz-Seite, Ziffern) spiegelt der Sticky zusätzlich in den Flash, damit Uhr und Karte auch
- * ohne Karte gehen. Nur aus loop() benutzen (SPI mit dem Display).
+ * Home 0–2 (Karte, Notiz-Seite, Ziffern) und seit FW 0.45.0 datum.bin/wetter.txt spiegelt der Sticky zusätzlich in den
+ * Flash, damit Uhr, Datum und Karte auch ohne Karte gehen. Nur aus loop() benutzen (SPI mit dem Display).
  */
 
 static void sollPfad(char* p, size_t n, const char* rel, bool karte) {
@@ -58,7 +58,8 @@ static bool sollSchreiben(const char* rel, const uint8_t* daten, size_t n) {
     bool ok = f.write(daten, n) == n;
     f.close();
     // Home-Karte, Notiz-Seite und Ziffern zusätzlich in den Flash: ohne Karte bleibt der Sticky so benutzbar
-    if (ok && karte && (!strcmp(rel, "home/0.bin") || !strcmp(rel, "home/1.bin") || !strcmp(rel, "home/2.bin") || !strcmp(rel, "home/version.txt"))) {
+    if (ok && karte && (!strcmp(rel, "home/0.bin") || !strcmp(rel, "home/1.bin") || !strcmp(rel, "home/2.bin") || !strcmp(rel, "home/version.txt")
+                       || !strcmp(rel, "home/datum.bin") || !strcmp(rel, "home/wetter.txt"))) {
         sollPfad(p, sizeof p, rel, false);
         File g = LittleFS.open(p, "w");
         if (g) { g.write(daten, n); g.close(); }

@@ -63,14 +63,14 @@ async function erkenne(pcm) {
   return { ...r, text, ...(text !== r.text ? { roh: r.text } : {}), pruefung: p };
 }
 import { zeichneFahrt, trefferKnopf, rueckmeldung, layoutText, STANDARD_KNOEPFE } from './fahrtseite.js';
-import { zeichneHome, zeichneZiffern, statusGlyphen, setzeEinheitUs, KARTE } from './homeseite.js';
+import { zeichneHome, zeichneZiffern, statusGlyphen, setzeEinheitUs, datumDatei, KARTE } from './homeseite.js';
 import { holeWetter, letztesWetter } from './wetter.js';
 import { BESTELL_STANDARD, zeichneZettel } from './bestellung.js';
 import { zettelListe, zettelUmzug, zettelKarten, haekchenUebernehmen } from './zettel.js';
 import { zeichneZettelSeite, zettelFelder } from './zettelBild.js';
 import { zettelSeiteEinrichten } from './zettelSeite.js';
 import { hilfeAppEinrichten } from './hilfe-app.js';
-import { uhrzeit, zeitDatei, HANDY_US } from './zeit.js';
+import { uhrzeit, zeitDatei, wetterDatei, HANDY_US } from './zeit.js';
 import { T, fuerSticky, sprachWahl, sprachWahlSetzen, stickyEnSetzen, appIstEn, lang } from './uebersetzen.js';
 let letzteEinheitUs = null;
 setzeEinheitUs(HANDY_US);   // bis der Sticky seine Einheit meldet
@@ -1009,6 +1009,11 @@ async function alleSeitenNeu() {
     if (stickyModus === 'app') await fuerSticky(() => appSeite.zeigen());
   } while (seitenNeuNochmal);
 }
+/** Datumsstreifen und Wetter-Tag für Home (FW ≥ 0.45.0): Dateien für den Abgleich und ihr Beitrag zur Home-Kennung */
+function datumBeigaben(wetter) {
+  const dateien = [{ n: 'datum.bin', daten: datumDatei() }, { n: 'wetter.txt', daten: wetterDatei(wetter) }];
+  return { dateien, kennung: [...new TextEncoder().encode(dateien.map((d) => crc32(d.daten)).join('|'))] };
+}
 async function abgleichKern() {
   if (!zwilling.geraet.fw || zwilling.geraet.fw === 'sim' || zwilling.geraet.fahrtv == null) return;   // braucht Firmware 0.5
   await zwilling.zeitSetzen();
@@ -1018,7 +1023,8 @@ async function abgleichKern() {
   // Wetter für die Home-Karte (bei Fehler bleibt die letzte Vorhersage)
   const ort = await notizen.standort();
   const wetter = (await holeWetter(ort)) ?? letztesWetter();
-  zeichneHome(g, karteFuer(aktivesGeraet(), KARTE), null, wetter, homeHinweise());
+  const selbstDatum = fwAb('0.45.0');   // der Sticky setzt Datum und veraltetes Wetter selbst (SPEC „Datum auf Home ohne Handy“)
+  zeichneHome(g, karteFuer(aktivesGeraet(), KARTE), null, wetter, homeHinweise(), selbstDatum);
   const home = bildBytes();
   zeichneFahrt(g, knoepfe());
   const notiz = bildBytes();
@@ -1028,12 +1034,13 @@ async function abgleichKern() {
   const haekchen = await haekchenHolen().catch((e) => { eintrag(T(`Häkchen: ${e.message}`, `Ticks: ${e.message}`), true); return []; });
   const { bilder: zettelBilder, felder: zettelFelderDatei } = zettelTeile(g, bildBytes);
   const alle = [home, notiz, ziffern, ...zettelBilder];
-  const homeV = crc32(new Uint8Array(alle.flatMap((b) => [...b]))).toString(16).padStart(8, '0') + ';' + zettelBilder.length;
+  const datum = selbstDatum ? datumBeigaben(wetter) : { dateien: [], kennung: [] };
+  const homeV = crc32(new Uint8Array(alle.flatMap((b) => [...b]).concat(datum.kennung))).toString(16).padStart(8, '0') + ';' + zettelBilder.length;
   if (zwilling.geraet.homev !== homeV && fwAb('0.11.0')) {
     // Datei-Abgleich: nur geänderte Bilder (Bestandsliste auf der Karte), version.txt zuletzt löst das Neuladen aus
     const st = statusGlyphen();
     const dateien = alle.map((b, i) => ({ n: `${i}.bin`, daten: b }))
-      .concat([{ n: 'status-quer.bin', daten: st.quer }, { n: 'status-hoch.bin', daten: st.hoch }, ...zettelFelderDatei, { n: 'version.txt', daten: new TextEncoder().encode(homeV) }]);
+      .concat([{ n: 'status-quer.bin', daten: st.quer }, { n: 'status-hoch.bin', daten: st.hoch }, ...zettelFelderDatei, ...datum.dateien, { n: 'version.txt', daten: new TextEncoder().encode(homeV) }]);
     const n = await zwilling.sollAbgleich('home', dateien);
     eintrag(T(`Home: ${n} Dateien aufgespielt`, `Home: ${n} files uploaded`));
   } else if (zwilling.geraet.homev !== homeV) {
@@ -1931,15 +1938,17 @@ async function hgAbgleichKern(s) {
     // Seiten aus seinem Profil bauen (synchron, damit der Bau-Kontext nicht in den Vordergrund leckt)
     const teile = baue(s, () => {
       const h = hgLeinwand;
-      zeichneHome(h, karteFuer(s.g, KARTE), null, wetter); const home = hgBytes();
+      const selbstDatum = fwAb('0.45.0');
+      zeichneHome(h, karteFuer(s.g, KARTE), null, wetter, [], selbstDatum); const home = hgBytes();
       zeichneFahrt(h, knoepfe()); const notiz = hgBytes();
       zeichneZiffern(h); const ziffern = hgBytes();
       const { bilder: zettel, felder: zettelFelderDatei } = zettelTeile(h, hgBytes);
       const alle = [home, notiz, ziffern, ...zettel];
-      const homeV = crc32(new Uint8Array(alle.flatMap((b) => [...b]))).toString(16).padStart(8, '0') + ';' + zettel.length;
+      const datum = selbstDatum ? datumBeigaben(wetter) : { dateien: [], kennung: [] };
+      const homeV = crc32(new Uint8Array(alle.flatMap((b) => [...b]).concat(datum.kennung))).toString(16).padStart(8, '0') + ';' + zettel.length;
       const st = statusGlyphen();
       const homeDateien = alle.map((b, i) => ({ n: `${i}.bin`, daten: b }))
-        .concat([{ n: 'status-quer.bin', daten: st.quer }, { n: 'status-hoch.bin', daten: st.hoch }, ...zettelFelderDatei, { n: 'version.txt', daten: new TextEncoder().encode(homeV) }]);
+        .concat([{ n: 'status-quer.bin', daten: st.quer }, { n: 'status-hoch.bin', daten: st.hoch }, ...zettelFelderDatei, ...datum.dateien, { n: 'version.txt', daten: new TextEncoder().encode(homeV) }]);
       const k = knoepfe();
       const text = layoutText(k);
       const version = crc32(new TextEncoder().encode(text)).toString(16).padStart(8, '0');

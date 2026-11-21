@@ -19,6 +19,7 @@
  *   0.bin Home-Karte (Uhrfeld leer) · 1.bin Notiz-Seite · 2.bin Ziffernblatt (Ziffern 0–9 und „:“, schon gedreht)
  *   3.bin–8.bin Bestellzettel und Karten (Lidl Plus u. Ä.); ihre Anzahl steht in version.txt hinter „;“
  *   version.txt  Kennung, die die App vergleicht (OP_HOME_VERSION)
+ *   datum.bin    Datumsstreifen je Tag, wetter.txt Tag der Vorhersage (FW 0.45.0, siehe „Datum auf Home“ unten)
  * Uhr: hochkant ab x = 40, y = 352, 5 Felder à 80 × 112 („HH:MM“); auf dem Display x = 352, w = 112, y = 40, h = 400.
  * Jede Minute nur dieses Feld per Teil-Refresh, zur vollen Stunde einmal voll (gegen Geisterbilder).
  */
@@ -198,6 +199,7 @@ static const char* modusName() {
     return modus == M_HOME ? "home" : modus == M_NOTIZ ? "notiz" : modus == M_BESTELL ? "bestell" : modus == M_KRITZEL ? "kritzel" : modus == M_SCHRIFT ? "schrift" : modus == M_APP ? (spielLokal ? "spiel" : "app") : modus == M_WIDGET ? "widget" : modus == M_SPICK ? "spick" : "handbuch";
 }
 
+static void datumLesen();
 static bool homeLaden(int n, uint8_t* ziel) {
     char pfad[20];
     snprintf(pfad, sizeof pfad, "home/%d.bin", n);
@@ -223,6 +225,7 @@ static void homeLesen() {
     File f = sollOeffnen("home/version.txt");
     if (f) { size_t n = f.readBytes(homeVersion, sizeof homeVersion - 1); homeVersion[n] = 0; f.close(); }
     bestellZaehlen();
+    datumLesen();
     if (zettelFelderLaden() && modus == M_BESTELL) modusWunsch = M_BESTELL;   // gezeigte Liste hat sich geändert: neu zeichnen
     statusLaden();
 }
@@ -329,6 +332,93 @@ static void uhrAuffrischen(bool voll) {
     bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
     if (voll) display.update();
     else teilZeigen(UHR_X, UHR_Y, UHR_W, UHR_H);
+}
+
+// ---- Datum auf Home ohne Handy (SPEC, Markus 21.11.2026, FW 0.45.0) --------------------------------------------
+// Bis 0.44 malte die App das Datum fest in die Home-Karte; lief sie nicht (nach einem App-Update, Handy aus), stand
+// tagelang der Vortag da. Jetzt liefert die App home/datum.bin: Kopf (16 Byte: „DAT1“, Jahr u16, Monat, Tag des ersten
+// Streifens, Anzahl u16, Byte je Streifen u16) und je Tag einen fertig gerenderten Streifen (hochkant 480 × 40, gedreht
+// wie die Karte: 40 × 480, 1 bpp). Der Sticky legt den Streifen für heute selbst ins Datumsfeld (hochkant y 240–280),
+// so wie die Uhr aus dem Ziffernblatt entsteht. Schrift, Sprache und Format bleiben Sache der App.
+// Lieber kein Datum als ein falsches: ohne gestellte Uhr oder außerhalb der Streifen bleibt das Feld leer.
+// home/wetter.txt („tag JJJJMMTT“) nennt den Tag der Vorhersage auf der Karte; ist er vorbei, wird die Wetterzeile
+// weiß (hochkant y 278–352). Bis 1 Uhr bleibt sie stehen, weil der Abgleich um Mitternacht meist gleich neue bringt.
+static const int DATUM_X = 240, DATUM_W = 40;                 // Display-Koordinaten des Datumsfelds (ganze Höhe)
+static const int DATUM_BYTES = DATUM_W / 8 * 480;             // ein Streifen
+static bool datumDa = false;        // datum.bin liegt vor: die Karte kommt ohne Datum, der Sticky setzt es
+static long wetterTag = -1;         // Tag der Vorhersage (Tage seit 1970), -1 = unbekannt oder kein Wetter
+static long datumGezeigt = -1;      // was gerade im Bild steht: Tag …
+static bool wetterWegGezeigt = false;   // … und ob die Wetterzeile ausgeblendet ist
+
+/** Tage seit dem 1.1.1970 (gregorianisch) */
+static long tageSeit1970(int j, int m, int t) {
+    j -= m <= 2;
+    long era = (j >= 0 ? j : j - 399) / 400;
+    long yoe = j - era * 400;
+    long doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + t - 1;
+    return era * 146097 + yoe * 365 + yoe / 4 - yoe / 100 + doy - 719468;
+}
+
+static void datumLesen() {
+    datumDa = sollDa("home/datum.bin");
+    wetterTag = -1;
+    String s;
+    int j, m, t;
+    if (sollText("home/wetter.txt", s) && sscanf(s.c_str(), "tag %4d%2d%2d", &j, &m, &t) == 3) wetterTag = tageSeit1970(j, m, t);
+}
+
+/** Heutiger Tag (-1 ohne gestellte Uhr) und ob die Wetterzeile veraltet ist */
+static long datumHeute(bool& wetterWeg) {
+    wetterWeg = false;
+    time_t s = time(nullptr);
+    tm t;
+    localtime_r(&s, &t);
+    if (!zeitGesetzt || t.tm_year <= 120) return -1;
+    long heute = tageSeit1970(t.tm_year + 1900, t.tm_mon + 1, t.tm_mday);
+    wetterWeg = wetterTag >= 0 && (heute > wetterTag + 1 || (heute == wetterTag + 1 && t.tm_hour >= 1) || heute < wetterTag);
+    return heute;
+}
+
+/** Nach dem Laden der Home-Karte: Datum für heute einsetzen, veraltetes Wetter ausblenden */
+static void datumZeichnen() {
+    if (!datumDa) { datumGezeigt = -1; wetterWegGezeigt = false; return; }   // ältere App: Datum steht in der Karte
+    long heute = datumHeute(wetterWegGezeigt);
+    datumGezeigt = heute;
+    hochRechteck(0, 240, 480, 38, false);
+    if (wetterWegGezeigt) hochRechteck(0, 278, 480, 74, false);
+    if (heute < 0) return;
+    File f = sollOeffnen("home/datum.bin");
+    if (!f) return;
+    uint8_t k[16];
+    static uint8_t streifen[DATUM_BYTES];
+    if (f.read(k, 16) == 16 && !memcmp(k, "DAT1", 4)) {
+        long i = heute - tageSeit1970(k[4] | k[5] << 8, k[6], k[7]);
+        int anzahl = k[8] | k[9] << 8, groesse = k[10] | k[11] << 8;
+        if (groesse == DATUM_BYTES && i >= 0 && i < anzahl && f.seek(16 + i * groesse) && f.read(streifen, groesse) == groesse)
+            for (int r = 0; r < H; r++)                      // einodern: der Rand des Wettersymbols ragt 2 px ins Feld
+                for (int b = 0; b < DATUM_W / 8; b++) imgBuf[r * (W / 8) + DATUM_X / 8 + b] |= streifen[r * (DATUM_W / 8) + b];
+    }
+    f.close();
+}
+
+/** true, wenn Home neu aufgebaut werden muss: neuer Tag oder das Wetter ist inzwischen veraltet */
+static bool datumVeraltet() {
+    if (!datumDa) return false;
+    bool weg;
+    long heute = datumHeute(weg);
+    return heute != datumGezeigt || weg != wetterWegGezeigt;
+}
+
+static void statusPruefen(bool teil, bool erzwingen);
+/** Home-Karte frisch aufbauen (ohne Ton): Karte laden, Datum, Uhr, Statuszeile, Voll-Refresh */
+static bool homeAufbauen() {
+    if (!homeDa || !homeLaden(0, imgBuf)) return false;
+    datumZeichnen();
+    uhrMinute = -1;
+    uhrZeichnen();
+    statusPruefen(false, true);   // Statuszeile ins Bild, kommt mit dem Voll-Refresh
+    uhrAuffrischen(true);
+    return true;
 }
 
 static bool kzHoch();
@@ -677,11 +767,7 @@ static void setzeModus(Modus m) {
         bildZeigen(0, 0, imgBuf, W, H, TFT_BLACK, TFT_WHITE);
         display.update();
         seite = "bild";
-    } else if (m == M_HOME && homeDa && homeLaden(0, imgBuf)) {
-        uhrMinute = -1;
-        uhrZeichnen();
-        statusPruefen(false, true);   // Statuszeile ins Bild, kommt mit dem Voll-Refresh
-        uhrAuffrischen(true);
+    } else if (m == M_HOME && homeAufbauen()) {
         seite = "home";
     } else if (m != M_NOTIZ || !notizDa) {
         zeigeKarte();   // Rückfall: eingebaute Visitenkarte (quer, ohne Uhr), solange die App noch nichts geschickt hat
@@ -1053,7 +1139,10 @@ static void modusLoop() {
         if (notfallSpar() && notfallDa()) notfallZeigen(false); else setzeModus(M_HOME);   // im Sparmodus zurück aufs Notfallblatt
     }
     if (modus == M_APP && !spielLokal && !appDa()) { protokoll("App weg, Burgduell lokal"); spielLokal = true; setzeModus(M_APP); }
-    if (modus == M_HOME && homeDa && !audioLaeuft && !hilfeAn && uhrZeichnen()) uhrAuffrischen(uhrMinute == 0);
+    if (modus == M_HOME && homeDa && !audioLaeuft && !hilfeAn) {
+        if (datumVeraltet()) { protokoll("Home: neuer Tag oder Wetter veraltet, Karte neu aufgebaut"); if (!homeAufbauen()) datumGezeigt = datumHeute(wetterWegGezeigt); }   // Mitternacht, 1 Uhr, Uhr gestellt
+        else if (uhrZeichnen()) uhrAuffrischen(uhrMinute == 0);
+    }
     static uint32_t akkuZuletzt = 0;
     (void)akkuZuletzt;
     if (!hilfeAn) statusPruefen(true, false);   // Statuszeile auf jeder Seite (Akku, Uhr, Handy, Notizen, Warnung)

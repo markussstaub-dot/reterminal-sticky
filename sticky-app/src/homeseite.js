@@ -1,7 +1,7 @@
 // Home (Markus, 11.11.2026): Visitenkarte hochkant mit Uhrzeit. Die App rendert Karte und Ziffern einmalig, der Sticky
 // setzt die Uhr jede Minute selbst aus dem Ziffernblatt zusammen (firmware-ble/modus.h) – auch ohne Handy.
 // Gleiche Lage wie die Notiz-Seite: Tasten oben rechts, USB unten.
-import { uhrzeit } from './zeit.js';
+import { uhrzeit, datumFenster, datumKopf } from './zeit.js';
 import qrcode from 'qrcode-generator';
 import { BREITE, HOEHE, rgbaZu1bpp } from './protokoll.js';
 import { drehe, PB, PH } from './fahrtseite.js';
@@ -19,16 +19,57 @@ const ZEICHEN = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', 'PM:']; 
 
 const leinwand = (b, h) => (typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(b, h) : Object.assign(document.createElement('canvas'), { width: b, height: h }));
 
-/** Home-Karte (Uhrfeld bleibt leer) gedreht in den 800×480-Kontext g; mit beispielZeit zur Vorschau gefüllt */
-export function zeichneHome(g, karte = KARTE, beispielZeit = null, wetter = null, zeilen = []) {
-  const c = homeHochkant(karte, beispielZeit, wetter, zeilen);
+// Datumsfeld hochkant: y 240–280 über die ganze Breite (Display x = 240, w = 40). Muss zu firmware-ble/modus.h passen.
+export const DATUM = { y: 240, h: 40 };
+const datumText = (d) => d.toLocaleDateString(lang(), { weekday: 'long', day: 'numeric', month: 'long' });
+function zeichneDatum(p, d, y) {
+  p.fillStyle = '#000';
+  p.textAlign = 'center';
+  p.textBaseline = 'middle';
+  p.font = 'bold 30px system-ui, sans-serif';
+  p.fillText(datumText(d), PB / 2, y);
+}
+
+/**
+ * home/datum.bin (FW ≥ 0.45.0): Kopf + je Tag ein Streifen 480 × 40, gedreht wie die Karte (40 × 480, 1 bpp, 2400 Byte).
+ * Der Sticky legt den Streifen für heute selbst ins Datumsfeld, auch wenn die App tagelang nicht da war.
+ */
+let datumMerker = null;
+export function datumDatei(heute = new Date()) {
+  const tage = datumFenster(heute);
+  const schluessel = `${tage[0].toDateString()}|${tage.length}|${lang()}`;
+  if (datumMerker?.schluessel === schluessel) return datumMerker.daten;
+  const groesse = (DATUM.h / 8) * PB;
+  const daten = new Uint8Array(16 + tage.length * groesse);
+  daten.set(datumKopf(tage[0], tage.length, groesse));
+  const c = leinwand(PB, DATUM.h), p = c.getContext('2d');
+  const d = leinwand(DATUM.h, PB), q = d.getContext('2d', { willReadFrequently: true });
+  tage.forEach((tag, i) => {
+    p.fillStyle = '#fff';
+    p.fillRect(0, 0, PB, DATUM.h);
+    zeichneDatum(p, tag, DATUM.h / 2);
+    q.fillStyle = '#fff';
+    q.fillRect(0, 0, DATUM.h, PB);
+    drehe(c, q, PB, DATUM.h);
+    daten.set(rgbaZu1bpp(q.getImageData(0, 0, DATUM.h, PB).data, DATUM.h, PB), 16 + i * groesse);
+  });
+  datumMerker = { schluessel, daten };
+  return daten;
+}
+
+/**
+ * Home-Karte (Uhrfeld bleibt leer) gedreht in den 800×480-Kontext g; mit beispielZeit zur Vorschau gefüllt.
+ * ohneDatum: Datumsfeld leer lassen, der Sticky setzt es selbst (FW ≥ 0.45.0)
+ */
+export function zeichneHome(g, karte = KARTE, beispielZeit = null, wetter = null, zeilen = [], ohneDatum = false) {
+  const c = homeHochkant(karte, beispielZeit, wetter, zeilen, ohneDatum);
   g.fillStyle = '#fff';
   g.fillRect(0, 0, BREITE, HOEHE);
   drehe(c, g, PB, PH);
 }
 
 /** Home-Karte hochkant (480×800), wie man sie am Sticky sieht – für die Vorschau in der App */
-export function homeHochkant(karte = KARTE, beispielZeit = null, wetter = null, zeilen = []) {
+export function homeHochkant(karte = KARTE, beispielZeit = null, wetter = null, zeilen = [], ohneDatum = false) {
   const c = leinwand(PB, PH);
   const p = c.getContext('2d');
   p.fillStyle = '#fff';
@@ -43,9 +84,9 @@ export function homeHochkant(karte = KARTE, beispielZeit = null, wetter = null, 
   p.font = '22px system-ui, sans-serif';
   p.fillText(T('▲▼ blättern · ▼ lang = weiter', '▲▼ scroll · hold ▼ = next'), PB / 2, 192);
   p.fillText(T('KI = Home · KI halten = Diktat', 'AI = Home · hold AI = dictate'), PB / 2, 220);
-  // Datum (Markus, 12.11.2026); um Mitternacht schickt der Abgleich im Stundenfenster die neue Karte
-  p.font = 'bold 30px system-ui, sans-serif';
-  p.fillText(new Date().toLocaleDateString(lang(), { weekday: 'long', day: 'numeric', month: 'long' }), PB / 2, 260);
+  // Datum (Markus, 12.11.2026). Ab FW 0.45.0 setzt es der Sticky selbst aus datum.bin (21.11.2026: die App lief nicht,
+  // Home zeigte den Vortag); ältere Firmware bekommt es weiter mit der Karte
+  if (!ohneDatum) zeichneDatum(p, new Date(), DATUM.y + DATUM.h / 2);
   // Wetter zwischen Datum und Uhr (Uhrfeld beginnt bei y = 352)
   const zeile = wetterZeile(wetter, einheitUs);
   if (zeile) {

@@ -484,3 +484,15 @@ Neue Einträge unten anhängen. Der aktuelle Stand steht in `STAND.md`.
   Dokumente), `WER` meldet danach `notfall 1`. Vorher antwortete er am Kabel erst nach einem Neustart über RTS. Er stand
   im Sparmodus (Funk aus, ohne Blatt kein Knopf zum Ausschalten); nach „spar“ aus und Abgleich mit der App ist die Kachel
   „Emergency“ im Menü (Markus bestätigt)
+- **21.11.2026 Datum auf Home ohne Handy (FW 0.45.0, APK 2026.11.21-1048):** Samstagmorgen zeigte Home noch
+  „Friday 20 November“ bei richtiger Uhrzeit. Ursache war kein Firmware-Fehler: Das Datum malte die App in die
+  Home-Karte, und die App war seit dem APK-Update am 20.11. um 11:04 beendet. Android hatte um 14:02 nur den Melder
+  (Benachrichtigungs-Zugriff) neu gestartet, der Prozess sah lebendig aus, `StickyDienst` und Oberfläche liefen nicht;
+  der Fahrtenschreiber endete am 20.11. um 11:05. Gefunden per `adb shell dumpsys activity services app.sticky.zwilling`
+  und `run-as app.sticky.zwilling ls files/fahrtenschreiber`. Umbau: Die App liefert `home/datum.bin` (Datumszeile je
+  Tag als Streifen, Monatserster bis Ende des übernächsten Monats, rund 220 kB) und `home/wetter.txt` (Tag der
+  Vorhersage); die Firmware setzt den Streifen für heute selbst ein, baut Home um Mitternacht neu auf und blendet
+  Wetter vom Vortag ab 1 Uhr aus (SPEC „Datum auf Home ohne Handy“, Format in PROTOKOLL.md). Am Gerät gesehen (Foto
+  11:12): „Saturday 21 November“ aus dem Streifen, Wetter mit Stand 11:06. **Lehre:** Ein laufender App-Prozess heißt
+  nicht, dass der Abgleich läuft; nach jedem `adb install` die App wirklich öffnen (apk.ps1 tut das) und im Zweifel den
+  Fahrtenschreiber ansehen. Was der Sticky ohne Handy zeigt, darf nicht vom Handy abhängen, wenn es mit der Zeit falsch wird

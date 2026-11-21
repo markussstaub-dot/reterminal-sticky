@@ -1463,8 +1463,34 @@ laden, SOS testen, Batterien prüfen; alle 12 Monate Daten durchsehen und neu au
   „Familie im Blackout“ ohne Handynetz, auch zwischen zwei Bugout-Boxen. Rechtliches: 868 MHz, Region EU_868 einstellen.
   Reihenfolge: nach Box und Akku-Messung; erst zwei Kits kaufen und die Reichweite im Gelände
   testen, dann Sticky-Anbindung. Seeed-Ideenliste für die Fühler steht in der Sticky-Lab-SPEC unter Station 12
+- Vorschlag **Mesh in EDC** (19.11.2026, nach dem Lab-Durchstich Station 13 mit dem T1000-E): Sticky als Anzeige und
+  Bedienung des Meshtastic-Knotens ohne Handy – abholen statt Dauerverbindung, Mesh-Seite mit Schnellantworten, SOS mit
+  Position, „Du bist hier“ auf den Notfallkarten. Stufen, Energie und offene Fragen: `VORSCHLAG-MESH-2026-11-19.md`
 - Vorschlag **Jahres-Erinnerung**: Das Blatt trägt sein Stand-Datum; ist es älter als 12 Monate, zeigt der Sticky
   „Notfalldaten prüfen“ (Statuszeile oder Meldung auf Home). Wenig Aufwand, eigener kleiner Schritt nach 2
+
+### Datum auf Home ohne Handy (Markus, 21.11.2026, gebaut in FW 0.45.0)
+Anlass: Am Samstag, 21.11., zeigte Home noch „Friday 20 November“ bei richtiger Uhrzeit. Das Datum malte die App fest in
+die Home-Karte, der Sticky setzte nur die Uhrziffern selbst. Die App war seit dem APK-Update am 20.11. um 11:04 beendet
+(Android startete nur den Melder neu, nicht `StickyDienst` und die Oberfläche), also kam um Mitternacht keine neue
+Karte. Dasselbe passiert nach jedem Handy-Neustart, bei leerem Handy-Akku oder wenn das Handy nachts nicht in
+Reichweite ist. Markus: „kein Edge Case, wenn ich zur Sicherheit auf meine Analoguhr schauen muss“.
+
+- fest (Markus, 21.11.2026): Der Sticky schreibt das Datum selbst, wie die Uhr.
+- gebaut **Datumsstreifen** (`home/datum.bin`, Format in PROTOKOLL.md): Die App rendert die Datumszeile je Tag vor
+  (480 × 40, gedreht, 1 bpp), vom Monatsersten bis Ende des übernächsten Monats (89–92 Tage, rund 220 kB, mindestens
+  59 Tage voraus). So ändert sich die Datei nur am Monatswechsel und beim Sprachwechsel. Die Firmware legt den Streifen
+  für heute ins Datumsfeld, so wie `uhrZeichnen()` die Ziffern setzt. Schrift, Sprache und Format bleiben Sache der App.
+- gebaut **lieber kein Datum als ein falsches**: Liegt heute außerhalb der Streifen oder ist die Uhr nicht gestellt,
+  bleibt das Datumsfeld leer.
+- gebaut **altes Wetter ausblenden**: `home/wetter.txt` nennt den Tag der Vorhersage. Ist er vorbei, macht die Firmware
+  die Wetterzeile samt „Stand …“ weiß; bis 1 Uhr bleibt sie stehen, weil der Abgleich um Mitternacht meist neue bringt.
+- gebaut Ältere Firmware: Die App malt das Datum weiter in die Karte, solange die Firmware unter 0.45.0 ist.
+- offen: Die Hinweiszeilen unter der Uhr (z. B. Bubble-Log-Meldungen mit Uhrzeit) veralten weiter, wenn die App
+  nicht läuft. Auch ausblenden, oder mit Datum versehen?
+- offen: Soll die App nach Update oder Handy-Neustart per Benachrichtigung „Sticky-App antippen“ daran erinnern, dass
+  der Abgleich steht? Selbst öffnen darf sie sich unter Android nicht.
+- geklärt: Das SD-Basekit ist nicht betroffen, es enthält keine Home-Karte (die baut nur die App).
 
 ### Eigene Sensoren (laut Schaltplan, Bus MISC_I2C)
 | Baustein | Adresse | heute | Vorschlag |
