@@ -50,7 +50,8 @@ try {
   const ausdruck = `(async () => {
     for (let i = 0; i < 200 && !window.__sticky?.grundausstattung; i++) await new Promise((r) => setTimeout(r, 100));
     // die App legt beim Start Standards an (Beispiel-Zettel, Geräteliste); Ortsbezogenes darf es nicht geben
-    const heikel = Object.keys(localStorage).filter((k) => /wetter|ort|lineal80|link/i.test(k));
+    // (orteZettelNamen ist nur der Merker „Umzug erledigt“ mit dem Wert 1, seit FW 0.44.0)
+    const heikel = Object.keys(localStorage).filter((k) => /wetter|ort|lineal80|link/i.test(k) && !/orteZettelNamen$/.test(k));
     if (heikel.length) throw new Error('Profil nicht leer: ' + heikel.join(', '));
     const opt = ${JSON.stringify({ fw, en })};
     const dateien = window.__sticky.grundausstattung(opt);
@@ -58,7 +59,13 @@ try {
     const zip = new Uint8Array(await window.__sticky.grundZip(opt).arrayBuffer());
     return JSON.stringify({ dateien: dateien.map((d) => ({ p: d.p, b: b64(d.daten) })), zip: b64(zip) });
   })()`;
-  const r = await cdp('Runtime.evaluate', { expression: ausdruck, awaitPromise: true, returnByValue: true });
+  // Vite lädt die Seite beim ersten Start manchmal neu (Abhängigkeiten vorbereiten): dann noch einmal versuchen
+  let r;
+  for (let versuch = 0; versuch < 5; versuch++) {
+    r = await cdp('Runtime.evaluate', { expression: ausdruck, awaitPromise: true, returnByValue: true });
+    if (!/context was destroyed/i.test(r.error?.message ?? '')) break;
+    await warte(1500);
+  }
   if (r.result?.exceptionDetails || !r.result?.result?.value) throw new Error('Im Browser: ' + JSON.stringify(r.result?.exceptionDetails ?? r).slice(0, 800));
   const { dateien, zip } = JSON.parse(r.result.result.value);
   ws.close();
