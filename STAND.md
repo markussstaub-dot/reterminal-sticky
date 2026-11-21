@@ -5,8 +5,8 @@ status: hold
 bereich: werkstatt
 community: GitHub (MIT) · Seeed Playground-Registry (0.43, PR für 0.45 offen) · FB-Post geplant
 kurz: Seeed reTerminal Sticky (3,97" E-Paper mit Touch, ESP32-S3) als Handy-Erweiterung, Fold6-App als Digital Twin.
-version: FW 0.45.0 auf Markus' Sticky (Katjas: 0.44.0), APK 2026.11.21-1048 auf dem Fold; Playground zeigt 0.43
-wartet: Markus: FB-Post, Sleeve drucken, echte Notfalldaten, Laufzeit im Sparmodus messen; Katjas Sticky auf 0.45.0 bringen; Seeed: Playground-PR #153 für 0.45.0 offen (21.11.); Rest in VORSCHLAEGE-2026-11-18.md
+version: FW 0.45.0 auf beiden Stickys, APK 2026.11.21-1048 auf dem Fold; Playground zeigt 0.43
+wartet: Markus: FB-Post, Sleeve drucken, echte Notfalldaten, Laufzeit im Sparmodus messen; Katjas Sticky: Sparmodus aus („spar“ am Notfallblatt), damit die App die Datumsstreifen aufspielt; Seeed: Playground-PR #153 für 0.45.0 offen (21.11.); Rest in VORSCHLAEGE-2026-11-18.md
 ---
 
 Repo: github.com/markussstaub-dot/reterminal-sticky (öffentlich seit 15.11.2026, Geschichte vorher gesäubert: Name und Hinweis auf Angehörige, MAC; Sicherung der alten Geschichte lokal unter `%LOCALAPPDATA%\sticky-backup`). `backup/`, Modelle und
@@ -14,7 +14,7 @@ Build-Ausgaben sind per `.gitignore` draußen.
 
 ## Zwei Geräte
 - **Markus' Sticky** (BLE-Name `Sticky-559D`, COM7): EDC 0.45.0, Alltagsgerät
-- **Katjas Sticky** (`Sticky-5695`, COM10): EDC 0.44.0 in app0, Sticky Lab in app1; bis Weihnachten Lab-Gerät, dann Übergabe (To-do)
+- **Katjas Sticky** (`Sticky-5695`, COM10): EDC 0.45.0 in app0, Sticky Lab in app1; bis Weihnachten Lab-Gerät, dann Übergabe (To-do)
 - Werks-Firmware beider Geräte liegt in `backup/` (gerätespezifisch, nicht das eine Image auf das andere spielen)
 
 Konzept und offene Fragen: `SPEC.md`. BLE-Protokoll: `PROTOKOLL.md`. Bauverlauf mit Messwerten und Lehren seit

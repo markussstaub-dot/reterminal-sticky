@@ -502,3 +502,8 @@ Neue Einträge unten anhängen. Der aktuelle Stand steht in `STAND.md`.
   bleibt; 01:00 Wetterzeile weg; Uhr zurück → alles wie vorher (Übersicht `fotos/tageswechsel-test-2026-11-21.png`).
   Release v0.45.0 (Firmware-Paket, APK, Basekit DE/EN; deckt 0.43.1 und 0.44.0 mit ab), Playground-PR #153.
   Basekit-Werkzeug: Merker `orteZettelNamen` zugelassen, Neuladen von Vite beim ersten Start abgefangen
+- **21.11.2026 Katjas Sticky auf 0.45.0:** Akku war leer, Home zeigte ebenfalls Freitag. `WER` an COM10 bestätigt
+  Sticky-5695 mit 0.44.0, dann nur die App nach app0 (`esptool --port COM10 -b 460800 write-flash 0x10000
+  edc-sticky.bin` aus dem Release-Paket), danach `WER`: FW 0.45.0, notfall 1, schluessel 1. Er steht nach dem leeren
+  Akku im Notfall-Sparmodus: am USB bleibt der Funk aus, die App verbindet kurz und meldet „napping“, es kommt kein
+  Abgleich. Solange keine `datum.bin` da ist, zeigt Home weiter das alte, von der App gemalte Datum
